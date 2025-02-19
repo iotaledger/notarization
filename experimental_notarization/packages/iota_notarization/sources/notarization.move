@@ -27,12 +27,20 @@ module iota_notarization::notarization {
         description: String,
     }
 
+    /// Can be used for Notarization<S> to store arbitrary binary data
+    public struct DefaultState has store, drop, copy {
+        /// arbitrary binary data
+        data: vector<u8>,
+        /// Mutable metadata that can be updated together with the state data
+        metadata: String,
+    }
+
     /// Represents a notarization record that can be dynamically updated
     /// The generic type T represents the state data type
-    public struct Notarization has key {
+    public struct Notarization<S> has key {
         id: UID,
         /// The state of the notarization that can be updated
-        state: vector<u8>,
+        state: S,
         /// Immutable metadata containing timestamps and version info
         immutable_metadata: ImmutableMetadata,
         /// Timestamp of the last state change
