@@ -75,7 +75,7 @@ module iota_notarization::notarization {
     }
 
     /// Create and transfer a new notarization record to the sender
-    public entry fun create_and_transfer<S: store + drop + copy>(
+    public fun create_and_transfer<S: store + drop + copy>(
         state: S,
         description: String,
         clock: &Clock,
@@ -94,7 +94,7 @@ module iota_notarization::notarization {
 
     /// Update the state of a notarization
     /// Only the owner can update the state
-    public entry fun update_state<S: store + drop + copy>(
+    public fun update_state<S: store + drop + copy>(
         self: &mut Notarization<S>,
         new_state: S,
         clock: &Clock,
@@ -114,7 +114,7 @@ module iota_notarization::notarization {
     }
 
     /// Destroy an empty notarization record
-    public entry fun destroy_empty<S>(
+    public fun destroy_empty<S>(
         self: Notarization<S>,
     ) {
 
