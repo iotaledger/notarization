@@ -51,13 +51,13 @@ module iota_notarization::notarization {
     }
 
     /// Create a new notarization record
-    public fun new(
-        state: vector<u8>,
+    public fun new<S>(
+        state: S,
         description: String,
         clock: &Clock,
         ctx: &mut TxContext
-    ): Notarization {
-        Notarization {
+    ): Notarization<S> {
+        Notarization<S> {
             id: object::new(ctx),
             state,
             immutable_metadata: new_metadata(clock, description),
@@ -67,8 +67,8 @@ module iota_notarization::notarization {
     }
 
     /// Create and transfer a new notarization record to the sender
-    public entry fun create_and_transfer(
-        state: vector<u8>,
+    public entry fun create_and_transfer<S: store + drop + copy>(
+        state: S,
         description: String,
         clock: &Clock,
         ctx: &mut TxContext
@@ -86,9 +86,9 @@ module iota_notarization::notarization {
 
     /// Update the state of a notarization
     /// Only the owner can update the state
-    public entry fun update_state(
-        self: &mut Notarization,
-        new_state: vector<u8>,
+    public entry fun update_state<S: store + drop + copy>(
+        self: &mut Notarization<S>,
+        new_state: S,
         clock: &Clock,
     ) {
         // Update the state
@@ -106,11 +106,11 @@ module iota_notarization::notarization {
     }
 
     /// Destroy an empty notarization record
-    public entry fun destroy_empty(
-        self: Notarization,
+    public entry fun destroy_empty<S>(
+        self: Notarization<S>,
     ) {
 
-        let Notarization {
+        let Notarization<S> {
             id,
             state: _,
             immutable_metadata: _,
@@ -125,32 +125,32 @@ module iota_notarization::notarization {
     // === Getter Functions ===
 
     /// Get the state of the notarization
-    public fun state(self: &Notarization): &vector<u8> {
+    public fun state<S>(self: &Notarization<S>): &S {
         &self.state
     }
 
     /// Get the immutable metadata
-    public fun immutable_metadata(self: &Notarization): &ImmutableMetadata {
+    public fun immutable_metadata<S>(self: &Notarization<S>): &ImmutableMetadata {
         &self.immutable_metadata
     }
 
     /// Get the creation timestamp
-    public fun created_at(self: &Notarization): u64 {
+    public fun created_at<S>(self: &Notarization<S>): u64 {
         self.immutable_metadata.created_at
     }
 
     /// Get the last state change timestamp
-    public fun last_state_change_at(self: &Notarization): u64 {
+    public fun last_state_change_at<S>(self: &Notarization<S>): u64 {
         self.last_state_change_at
     }
 
     /// Get the state version count
-    public fun state_version_count(self: &Notarization): u64 {
+    public fun state_version_count<S>(self: &Notarization<S>): u64 {
         self.state_version_count
     }
 
     /// Get the description of the notarization
-    public fun description(self: &Notarization): &String {
+    public fun description<S>(self: &Notarization<S>): &String {
         &self.immutable_metadata.description
     }
 
