@@ -1,6 +1,7 @@
 module iota_notarization::notarization {
     use iota::event;
     use iota::clock::{Self, Clock};
+    use std::string::String;
 
     // ===== Events =====
     /// Event emitted when the state of a notarization is updated
@@ -22,10 +23,8 @@ module iota_notarization::notarization {
     public struct ImmutableMetadata has store, drop, copy {
         /// Timestamp when the notarization was created
         created_at: u64,
-        /// Timestamp of the last state change
-        last_state_change_at: u64,
-        /// Counter for the number of state updates
-        state_version_count: u64,
+        /// Description of the notarization
+        description: String,
     }
 
     /// Represents a notarization record that can be dynamically updated
@@ -35,39 +34,46 @@ module iota_notarization::notarization {
         /// The state of the notarization that can be updated
         state: vector<u8>,
         /// Immutable metadata containing timestamps and version info
-        metadata: ImmutableMetadata,
+        immutable_metadata: ImmutableMetadata,
+        /// Timestamp of the last state change
+        last_state_change_at: u64,
+        /// Counter for the number of state updates
+        state_version_count: u64,
     }
 
     /// Create new immutable metadata
-    fun new_metadata(clock: &Clock): ImmutableMetadata {
+    fun new_metadata(clock: &Clock, description: String): ImmutableMetadata {
         let timestamp = clock::timestamp_ms(clock);
         ImmutableMetadata {
             created_at: timestamp,
-            last_state_change_at: timestamp,
-            state_version_count: 0,
+            description,
         }
     }
 
     /// Create a new notarization record
     public fun new(
         state: vector<u8>,
+        description: String,
         clock: &Clock,
         ctx: &mut TxContext
     ): Notarization {
         Notarization {
             id: object::new(ctx),
             state,
-            metadata: new_metadata(clock),
+            immutable_metadata: new_metadata(clock, description),
+            last_state_change_at: clock::timestamp_ms(clock),
+            state_version_count: 0, // Initial state
         }
     }
 
     /// Create and transfer a new notarization record to the sender
     public entry fun create_and_transfer(
         state: vector<u8>,
+        description: String,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
-        let notarization = new(state, clock, ctx);
+        let notarization = new(state, description, clock, ctx);
         let id = object::uid_to_inner(&notarization.id);
 
         // Emit creation event
@@ -89,13 +95,13 @@ module iota_notarization::notarization {
         self.state = new_state;
 
         // Update metadata
-        self.metadata.last_state_change_at = clock::timestamp_ms(clock);
-        self.metadata.state_version_count = self.metadata.state_version_count + 1;
+        self.last_state_change_at = clock::timestamp_ms(clock);
+        self.state_version_count = self.state_version_count + 1;
 
         // Emit update event
         event::emit(NotarizationUpdated {
             notarization_obj_id: object::uid_to_inner(&self.id),
-            state_version_count: self.metadata.state_version_count,
+            state_version_count: self.state_version_count,
         });
     }
 
@@ -107,7 +113,9 @@ module iota_notarization::notarization {
         let Notarization {
             id,
             state: _,
-            metadata: _,
+            immutable_metadata: _,
+            last_state_change_at: _,
+            state_version_count: _,
         } = self;
 
         // Clean up the object
@@ -122,23 +130,28 @@ module iota_notarization::notarization {
     }
 
     /// Get the immutable metadata
-    public fun metadata(self: &Notarization): &ImmutableMetadata {
-        &self.metadata
+    public fun immutable_metadata(self: &Notarization): &ImmutableMetadata {
+        &self.immutable_metadata
     }
 
     /// Get the creation timestamp
     public fun created_at(self: &Notarization): u64 {
-        self.metadata.created_at
+        self.immutable_metadata.created_at
     }
 
     /// Get the last state change timestamp
     public fun last_state_change_at(self: &Notarization): u64 {
-        self.metadata.last_state_change_at
+        self.last_state_change_at
     }
 
     /// Get the state version count
     public fun state_version_count(self: &Notarization): u64 {
-        self.metadata.state_version_count
+        self.state_version_count
+    }
+
+    /// Get the description of the notarization
+    public fun description(self: &Notarization): &String {
+        &self.immutable_metadata.description
     }
 
 }
