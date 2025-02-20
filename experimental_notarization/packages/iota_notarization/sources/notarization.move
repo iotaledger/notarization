@@ -24,7 +24,7 @@ module iota_notarization::notarization {
         /// Timestamp when the notarization was created
         created_at: u64,
         /// Description of the notarization
-        description: String,
+        description: Option<String>,
     }
 
     /// Can be used for Notarization<S> to store arbitrary binary data
@@ -33,6 +33,13 @@ module iota_notarization::notarization {
         data: vector<u8>,
         /// Mutable metadata that can be updated together with the state data
         metadata: String,
+    }
+
+    public fun new_default_state(data: vector<u8>, metadata: String): DefaultState {
+        DefaultState {
+            data,
+            metadata,
+        }
     }
 
     /// Represents a notarization record that can be dynamically updated
@@ -50,7 +57,7 @@ module iota_notarization::notarization {
     }
 
     /// Create new immutable metadata
-    fun new_metadata(clock: &Clock, description: String): ImmutableMetadata {
+    fun new_metadata(clock: &Clock, description: Option<String>): ImmutableMetadata {
         let timestamp = clock::timestamp_ms(clock);
         ImmutableMetadata {
             created_at: timestamp,
@@ -61,7 +68,7 @@ module iota_notarization::notarization {
     /// Create a new notarization record
     public fun new<S>(
         state: S,
-        description: String,
+        description: Option<String>,
         clock: &Clock,
         ctx: &mut TxContext
     ): Notarization<S> {
@@ -77,7 +84,7 @@ module iota_notarization::notarization {
     /// Create and transfer a new notarization record to the sender
     public fun create_and_transfer<S: store + drop + copy>(
         state: S,
-        description: String,
+        description: Option<String>,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
@@ -114,7 +121,7 @@ module iota_notarization::notarization {
     }
 
     /// Destroy an empty notarization record
-    public fun destroy_empty<S>(
+    public fun destroy_empty<S: drop + store + copy>(
         self: Notarization<S>,
     ) {
 
@@ -158,7 +165,7 @@ module iota_notarization::notarization {
     }
 
     /// Get the description of the notarization
-    public fun description<S>(self: &Notarization<S>): &String {
+    public fun description<S>(self: &Notarization<S>): &Option<String> {
         &self.immutable_metadata.description
     }
 
