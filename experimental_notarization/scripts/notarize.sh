@@ -1,110 +1,172 @@
 #!/bin/bash
 set -euo pipefail
 
+# ===== Configuration =====
 CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# Configuration (adjust these variables as needed)
-IOTA_CLIENT_BIN="iota" # Ensure this is in your PATH or include full path
 CONTRACT_DIR="$CURRENT_DIR/../packages/iota_notarization"
 CONTRACT_PATH="$CONTRACT_DIR/sources/notarization.move"
+GAS_BUDGET=500000000
 
-# After publishing the module, update MODULE_ADDRESS with its on-chain address
-MODULE_ADDRESS="0xbbfad0bff63ebe02c6de79e2e3650c990a2b47fe93c63d2d5afb83d89c41ecb3"
-WALLET="0xbd29669bb8ec4f388c1dc21db1bee8c3050c0c3d0f781de63845c434dfaa1024" # Replace with your wallet address
-GAS_BUDGET=10000000
+# Module address (update after publishing)
+MODULE_ADDRESS="0x21261a8d9b58db744aa94b71193844917d6cea3a769362a60ba22e9041560a6f"
+CLOCK_ADDRESS="@0x6" # Special address for the clock module
 
+# ===== Core Functions =====
 publish_contract() {
     echo "Publishing contract from: $CONTRACT_DIR"
-    $IOTA_CLIENT_BIN client publish "$CONTRACT_DIR" \
-        --json \
+    iota client publish "$CONTRACT_DIR" \
+        --skip-dependency-verification \
         --gas-budget "$GAS_BUDGET"
-    echo "Contract published. Check the output for the module address and update MODULE_ADDRESS."
+    echo "Contract published successfully."
+    echo "IMPORTANT: Update MODULE_ADDRESS in this script with the new module address"
 }
 
-create_notarization() {
-    local DESCRIPTION="[84, 101, 115, 116, 32, 110, 111, 116, 97, 114, 105, 122, 97, 116, 105, 111, 110]" # Test Notarization
-    local STATE_DATA="[73, 68, 58, 32, 53, 53, 53]"                                                       # ID: 555 in UTF-8
-    local METADATA="[73, 68]"                                                                             # ID
+create_dynamic_notarization() {
+    local data="$1"
+    local metadata="$2"
+    local description="$3"
 
-    echo "Creating a new notarization via PTB with description '$DESCRIPTION' and state data '$STATE_DATA' using Clock address 0x6"
-    $IOTA_CLIENT_BIN client ptb \
-        --make-move-vec "<u8>" $STATE_DATA \
+    echo "Creating dynamic notarization..."
+    echo "Data: $data"
+    echo "Metadata: $metadata"
+    echo "Description: $description"
+
+    iota client ptb \
+        --make-move-vec "<u8>" "$data" \
         --assign state_data \
-        --make-move-vec "<u8>" $DESCRIPTION \
+        --move-call std::option::some "<std::string::String>" "'$description'" \
         --assign description \
-        --move-call "std::string::utf8" \
-        description \
-        --assign move_call_description \
-        --make-move-vec "<u8>" $METADATA \
-        --assign metadata \
-        --move-call "std::string::utf8" \
-        move_call_metadata \
         --move-call "$MODULE_ADDRESS::notarization::new_default_state" \
-        state_data \
-        move_call_metadata
-
-    --assign move_call_state \
-        --move-call "$MODULE_ADDRESS::notarization::create_and_transfer" \
+        state_data "'$metadata'" \
+        --assign move_call_state \
+        --move-call "$MODULE_ADDRESS::notarization::create_dynamic_notarization" \
         "<${MODULE_ADDRESS}::notarization::DefaultState>" \
         move_call_state \
-        move_call_description \
-        "0x6" \
+        description \
+        "$CLOCK_ADDRESS" \
         --gas-budget "$GAS_BUDGET"
-    echo "PTB Notarization creation transaction submitted."
 }
 
-# destroy_empty() {
-#     if [ -z "${1:-}" ]; then
-#         echo "Usage: destroy_empty <notarization_id>"
-#         exit 1
-#     fi
-#     local NOTARIZATION_ID="$1"
-#     echo "Destroying empty notarization with id: $NOTARIZATION_ID"
-#     $IOTA_CLIENT_BIN move call \
-#         --package "$MODULE_ADDRESS" \
-#         --module notarization \
-#         --function destroy_empty \
-#         --args "$NOTARIZATION_ID" \
-#         --sender "$WALLET" \
-#         --gas-budget "$GAS_BUDGET"
-#     echo "Destroy transaction submitted."
-# }
+create_locked_notarization() {
+    local data="$1"
+    local metadata="$2"
+    local description="$3"
+    local update_lock="$4"
+    local delete_lock="$5"
 
-get_state() {
-    if [ -z "${1:-}" ]; then
-        echo "Usage: get_state <notarization_id>"
-        exit 1
-    fi
-    local NOTARIZATION_ID="$1"
-    echo "Querying state for notarization with id: $NOTARIZATION_ID"
-    $IOTA_CLIENT_BIN move query \
+    echo "Creating locked notarization..."
+    echo "Data: $data"
+    echo "Metadata: $metadata"
+    echo "Description: $description"
+    echo "Update lock period: $update_lock"
+    echo "Delete lock period: $delete_lock"
+
+    iota client ptb \
+        --make-move-vec "<u8>" "$data" \
+        --assign state_data \
+        --move-call std::option::some "<std::string::String>" "'$description'" \
+        --assign description \
+        --move-call "$MODULE_ADDRESS::notarization::new_default_state" \
+        state_data "'$metadata'" \
+        --assign move_call_state \
+        --move-call "$MODULE_ADDRESS::lock_configuration::new_lock_configuration" \
+        "$update_lock" "$delete_lock" \
+        --assign lock_config \
+        --move-call "$MODULE_ADDRESS::notarization::create_locked_notarization" \
+        "<${MODULE_ADDRESS}::notarization::DefaultState>" \
+        move_call_state \
+        description \
+        lock_config \
+        "$CLOCK_ADDRESS" \
+        --gas-budget "$GAS_BUDGET"
+}
+
+update_state() {
+    local notarization_id="$1"
+    local new_data="$2"
+    local new_metadata="$3"
+
+
+    echo "Updating notarization state..."
+    echo "Notarization ID: $notarization_id"
+    echo "New data: $new_data"
+    echo "New metadata: $new_metadata"
+
+    iota client ptb \
+        --make-move-vec "<u8>" "$new_data" \
+        --assign new_state_data \
+        --move-call "$MODULE_ADDRESS::notarization::new_default_state" \
+        new_state_data "'$new_metadata'" \
+        --assign new_state \
+        --move-call "$MODULE_ADDRESS::notarization::update_state" \
+        "<${MODULE_ADDRESS}::notarization::DefaultState>" \
+        "@$notarization_id" \
+        new_state \
+        "$CLOCK_ADDRESS" \
+        --gas-budget "$GAS_BUDGET"
+}
+
+destroy_notarization() {
+    local notarization_id="$1"
+
+    echo "Destroying notarization: $notarization_id"
+    iota client call \
         --package "$MODULE_ADDRESS" \
         --module notarization \
-        --function state \
-        --args "$NOTARIZATION_ID"
+        --function destroy \
+        --type-args "${MODULE_ADDRESS}::notarization::DefaultState" \
+        --args "$notarization_id" "$CLOCK_ADDRESS" \
+        --gas-budget "$GAS_BUDGET"
 }
 
 usage() {
-    echo "Usage: $0 {publish|create|destroy|getstate} [arguments]"
+    echo "Usage: $0 <command> [arguments]"
+    echo
     echo "Commands:"
-    echo "  publish               Publish the contract"
-    echo "  create                Create a new notarization"
-    echo "  destroy <id>          Destroy an empty notarization with the specified id"
-    echo "  getstate <id>         Query the state of a notarization with the specified id"
+    echo "  publish                                    Publish the contract"
+    echo "  create-dynamic <data> <metadata> <desc>    Create a dynamic notarization"
+    echo "  create-locked <data> <metadata> <desc> <update_lock> <delete_lock>"
+    echo "                                            Create a locked notarization"
+    echo "  update <id> <new_data> <new_metadata>     Update notarization state"
+    echo "  destroy <id>                              Destroy a notarization"
+    echo
+    echo "Examples:"
+    echo "  $0 create-dynamic '[1,2,3]' 'Test data' 'My notarization'"
+    echo "  $0 create-locked '[1,2,3]' 'Test data' 'Locked notarization' 3600 7200"
+    echo "  $0 update 0x123...abc '[4,5,6]' 'Updated data'"
 }
 
-# Main script logic based on subcommand
 case "${1:-}" in
 publish)
     publish_contract
     ;;
-create)
-    create_notarization
+create-dynamic)
+    if [ $# -ne 4 ]; then
+        echo "Error: create-dynamic requires 3 arguments: <data> <metadata> <description>"
+        exit 1
+    fi
+    create_dynamic_notarization "$2" "$3" "$4"
+    ;;
+create-locked)
+    if [ $# -ne 6 ]; then
+        echo "Error: create-locked requires 5 arguments: <data> <metadata> <description> <update_lock> <delete_lock>"
+        exit 1
+    fi
+    create_locked_notarization "$2" "$3" "$4" "$5" "$6"
+    ;;
+update)
+    if [ $# -ne 4 ]; then
+        echo "Error: update requires 3 arguments: <id> <new_data> <new_metadata>"
+        exit 1
+    fi
+    update_state "$2" "$3" "$4"
     ;;
 destroy)
-    destroy_empty "${2:-}"
-    ;;
-getstate)
-    get_state "${2:-}"
+    if [ $# -ne 2 ]; then
+        echo "Error: destroy requires 1 argument: <id>"
+        exit 1
+    fi
+    destroy_notarization "$2"
     ;;
 *)
     usage
