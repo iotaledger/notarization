@@ -6,11 +6,11 @@ module iota_notarization::timelock_unlock_condition {
 
     // ===== Errors =====
     /// The timelock has not expired yet
-    const ETimelockNotExpired: u64 = 0;
+    const ETimelockNotExpired: u64 = 3;
     /// Invalid timelock unlock condition provided
-    const EInvalidTimelockUnlockCondition: u64 = 1;
+    const EInvalidTimelockUnlockCondition: u64 = 4;
     /// Infinite lock period
-    const EInfiniteLockPeriod: u64 = 2;
+    const EInfiniteLockPeriod: u64 = 5;
 
     /// Special unix_time value that indicates infinite lock
     const INFINITE_LOCK: u32 = 0;
