@@ -1,7 +1,7 @@
 module iota_notarization::lock_configuration {
     use iota_notarization::timelock_unlock_condition::infinite_lock;
 
-    /// Invalid lock order (delete lock period must be greater than update lock period)
+    /// Invalid lock order (delete `lock_period` must be greater than `update_lock` period)
     const EInvalidLockOrder: u64 = 6;
 
     /// Configuration for notarization locks
@@ -19,6 +19,11 @@ module iota_notarization::lock_configuration {
 
     // ===== Lock Configuration Helpers =====
     /// Create a new lock configuration
+    ///
+    /// The `delete_lock_period` always needs to exceed the `update_lock_period`, otherwise an EInvalidLockOrder error is returned.
+    /// The reason for this is that a Verifier might mistakenly only recognise the `update_lock_period`.
+    /// In case the `delete_lock_period` would end earlier than the `update_lock_period` the Verifier could be surprised by
+    /// the Notarization object being destroyed before the `update_lock_period` has endet.
     public fun new_lock_configuration(update_lock_period: u32, delete_lock_period: u32): LockConfiguration {
         assert!(delete_lock_period > update_lock_period, EInvalidLockOrder);
 
