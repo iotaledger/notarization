@@ -47,9 +47,9 @@ module iota_notarization::notarization {
     /// Extended immutable metadata for locked notarizations
     public struct LockMetadata has store {
         /// Lock condition for state updates (unix_time = 0 means infinitely locked)
-        update_lock_condition: TimelockUnlockCondition,
+        update_lock: TimelockUnlockCondition,
         /// Lock condition for deletion (unix_time = 0 means infinitely locked)
-        delete_lock_condition: TimelockUnlockCondition,
+        delete_lock: TimelockUnlockCondition,
     }
 
     // ===== State Types =====
@@ -89,11 +89,11 @@ module iota_notarization::notarization {
         lock_config: &LockConfiguration,
     ): LockMetadata {
         LockMetadata {
-            update_lock_condition: timelock_unlock_condition::new(
+            update_lock: timelock_unlock_condition::new(
                 lock_configuration::update_lock_period(lock_config),
                 clock
             ),
-            delete_lock_condition: timelock_unlock_condition::new(
+            delete_lock: timelock_unlock_condition::new(
                 lock_configuration::delete_lock_period(lock_config),
                 clock
             ),
@@ -182,12 +182,8 @@ module iota_notarization::notarization {
         new_state: S,
         clock: &Clock,
     ) {
-        if (self.immutable_metadata.lock_metadata.is_some()) {
-            let lock_metadata = option::borrow(&self.immutable_metadata.lock_metadata);
-            assert!(
-                !timelock_unlock_condition::is_timelocked(&lock_metadata.update_lock_condition, clock),
-                EUpdateWhileLocked
-            );
+        if (self.is_update_locked(clock)) {
+            abort EUpdateWhileLocked
         };
 
         self.state = new_state;
@@ -206,22 +202,19 @@ module iota_notarization::notarization {
         self: Notarization<S>,
         clock: &Clock,
     ) {
+        if (self.is_delete_locked(clock)){
+            abort EDestroyWhileLocked
+        };
+
         let Notarization { id, state: _, immutable_metadata: ImmutableMetadata {
             created_at: _, description: _, lock_metadata,
         }, last_state_change_at: _, state_version_count: _ } = self;
 
-        let is_locked = option::is_some(&lock_metadata);
+        if (lock_metadata.is_some()) {
+            let LockMetadata { update_lock, delete_lock } = option::destroy_some(lock_metadata);
 
-        if (is_locked) {
-            let LockMetadata { update_lock_condition, delete_lock_condition } = option::destroy_some(lock_metadata);
-
-            assert!(
-                !timelock_unlock_condition::is_timelocked(&delete_lock_condition, clock),
-                EDestroyWhileLocked
-            );
-
-            timelock_unlock_condition::unlock(update_lock_condition, clock);
-            timelock_unlock_condition::unlock(delete_lock_condition, clock);
+            timelock_unlock_condition::destroy_if_unlocked(update_lock, clock);
+            timelock_unlock_condition::destroy_if_unlocked(delete_lock, clock);
         } else {
             // We know dynamic notarizations have no lock metadata
             option::destroy_none(lock_metadata);
@@ -250,7 +243,7 @@ module iota_notarization::notarization {
             false
         } else {
             let lock_metadata = option::borrow(&self.immutable_metadata.lock_metadata);
-            timelock_unlock_condition::is_timelocked(&lock_metadata.update_lock_condition, clock)
+            timelock_unlock_condition::is_timelocked(&lock_metadata.update_lock, clock)
         }
     }
 
@@ -260,7 +253,7 @@ module iota_notarization::notarization {
             false
         } else {
             let lock_metadata = option::borrow(&self.immutable_metadata.lock_metadata);
-            timelock_unlock_condition::is_timelocked(&lock_metadata.delete_lock_condition, clock)
+            timelock_unlock_condition::is_timelocked(&lock_metadata.delete_lock, clock)
         }
     }
 
@@ -271,8 +264,8 @@ module iota_notarization::notarization {
         } else {
             let lock_metadata = option::borrow(&self.immutable_metadata.lock_metadata);
             option::some(lock_configuration::new_lock_configuration(
-                timelock_unlock_condition::unix_time(&lock_metadata.update_lock_condition),
-                timelock_unlock_condition::unix_time(&lock_metadata.delete_lock_condition),
+                timelock_unlock_condition::unix_time(&lock_metadata.update_lock),
+                timelock_unlock_condition::unix_time(&lock_metadata.delete_lock),
             ))
         }
     }

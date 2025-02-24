@@ -39,7 +39,7 @@ module iota_notarization::timelock_unlock_condition {
 
     /// Check and consume the unlock condition.
     /// Aborts if the condition is still locked.
-    public fun unlock(condition: TimelockUnlockCondition, clock: &Clock) {
+    public fun destroy_if_unlocked(condition: TimelockUnlockCondition, clock: &Clock) {
         assert!(is_infinite_lock(&condition), EInfiniteLockPeriod);
         assert!(!is_timelocked(&condition, clock), ETimelockNotExpired);
 

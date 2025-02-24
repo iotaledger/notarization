@@ -2,6 +2,12 @@ module iota_notarization::lock_configuration {
     use iota_notarization::timelock_unlock_condition::infinite_lock;
 
     /// Configuration for notarization locks
+    ///
+    /// ### Warning
+    ///
+    /// If you set this value to 0, the notarization can not be destroyed anymore
+    /// because it will be infinitely delete-locked. You won't get your storage deposit
+    /// back if delete_lock_period is set to infinite
     public struct LockConfiguration has copy, drop, store {
         /// Time until state updates are locked (0 for infinite lock)
         update_lock_period: u32,
