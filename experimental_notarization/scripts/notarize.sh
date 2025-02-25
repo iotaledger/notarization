@@ -7,8 +7,8 @@ CONTRACT_DIR="$CURRENT_DIR/../packages/iota_notarization"
 CONTRACT_PATH="$CONTRACT_DIR/sources/notarization.move"
 GAS_BUDGET=500000000
 
-# Module address (update after publishing)
-MODULE_ADDRESS="0x21261a8d9b58db744aa94b71193844917d6cea3a769362a60ba22e9041560a6f"
+# Package address of the notarization module (update after publishing)
+PACKAGE_ADDRESS="0xf30e78de0bef4c76d1df30b5b8de20195ab46e2270f7a8378fc923b2c9675380"
 CLOCK_ADDRESS="@0x6" # Special address for the clock module
 
 # ===== Core Functions =====
@@ -18,7 +18,7 @@ publish_contract() {
         --skip-dependency-verification \
         --gas-budget "$GAS_BUDGET"
     echo "Contract published successfully."
-    echo "IMPORTANT: Update MODULE_ADDRESS in this script with the new module address"
+    echo "IMPORTANT: Update PACKAGE_ADDRESS in this script with the new package address"
 }
 
 create_dynamic_notarization() {
@@ -36,11 +36,11 @@ create_dynamic_notarization() {
         --assign state_data \
         --move-call std::option::some "<std::string::String>" "'$description'" \
         --assign description \
-        --move-call "$MODULE_ADDRESS::notarization::new_default_state" \
+        --move-call "$PACKAGE_ADDRESS::notarization::new_default_state" \
         state_data "'$metadata'" \
         --assign move_call_state \
-        --move-call "$MODULE_ADDRESS::notarization::create_dynamic_notarization" \
-        "<${MODULE_ADDRESS}::notarization::DefaultState>" \
+        --move-call "$PACKAGE_ADDRESS::notarization::create_dynamic_notarization" \
+        "<${PACKAGE_ADDRESS}::notarization::DefaultState>" \
         move_call_state \
         description \
         "$CLOCK_ADDRESS" \
@@ -66,14 +66,14 @@ create_locked_notarization() {
         --assign state_data \
         --move-call std::option::some "<std::string::String>" "'$description'" \
         --assign description \
-        --move-call "$MODULE_ADDRESS::notarization::new_default_state" \
+        --move-call "$PACKAGE_ADDRESS::notarization::new_default_state" \
         state_data "'$metadata'" \
         --assign move_call_state \
-        --move-call "$MODULE_ADDRESS::lock_configuration::new_lock_configuration" \
+        --move-call "$PACKAGE_ADDRESS::lock_configuration::new_lock_configuration" \
         "$update_lock" "$delete_lock" \
         --assign lock_config \
-        --move-call "$MODULE_ADDRESS::notarization::create_locked_notarization" \
-        "<${MODULE_ADDRESS}::notarization::DefaultState>" \
+        --move-call "$PACKAGE_ADDRESS::notarization::create_locked_notarization" \
+        "<${PACKAGE_ADDRESS}::notarization::DefaultState>" \
         move_call_state \
         description \
         lock_config \
@@ -95,11 +95,11 @@ update_state() {
     iota client ptb \
         --make-move-vec "<u8>" "$new_data" \
         --assign new_state_data \
-        --move-call "$MODULE_ADDRESS::notarization::new_default_state" \
+        --move-call "$PACKAGE_ADDRESS::notarization::new_default_state" \
         new_state_data "'$new_metadata'" \
         --assign new_state \
-        --move-call "$MODULE_ADDRESS::notarization::update_state" \
-        "<${MODULE_ADDRESS}::notarization::DefaultState>" \
+        --move-call "$PACKAGE_ADDRESS::notarization::update_state" \
+        "<${PACKAGE_ADDRESS}::notarization::DefaultState>" \
         "@$notarization_id" \
         new_state \
         "$CLOCK_ADDRESS" \
@@ -111,10 +111,10 @@ destroy_notarization() {
 
     echo "Destroying notarization: $notarization_id"
     iota client call \
-        --package "$MODULE_ADDRESS" \
+        --package "$PACKAGE_ADDRESS" \
         --module notarization \
         --function destroy \
-        --type-args "${MODULE_ADDRESS}::notarization::DefaultState" \
+        --type-args "${PACKAGE_ADDRESS}::notarization::DefaultState" \
         --args "$notarization_id" "$CLOCK_ADDRESS" \
         --gas-budget "$GAS_BUDGET"
 }
@@ -132,7 +132,7 @@ usage() {
     echo
     echo "Examples:"
     echo "  $0 create-dynamic '[1,2,3]' 'Test data' 'My notarization'"
-    echo "  $0 create-locked '[1,2,3]' 'Test data' 'Locked notarization' 3600 7200"
+    echo "  $0 create-locked '[1,2,3]' 'Test data' 'Locked notarization' 2051218800 2051219000"
     echo "  $0 update 0x123...abc '[4,5,6]' 'Updated data'"
 }
 
