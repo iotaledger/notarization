@@ -49,8 +49,9 @@ Prerequisites: Before you can build Move packages you need to install the IOTA C
 
 To build the Move package contained in `experimental_notarization`:
 
-In the folder `experimental_notarization/packages/iota_notarization`:
 ```bash
+$ # In the folder `experimental_notarization/packages/iota_notarization`:
+$
 $ iota move build
 ```
 
@@ -101,7 +102,7 @@ without any further configuration.
 The address of the used Notarization package is configured in the file
 `experimental_notarization/scripts/notarize.sh`
 
-```move
+```
 # Package address of the notarization module (update after publishing)
 PACKAGE_ADDRESS="0xf30e78de0bef4c76d1df30b5b8de20195ab46e2270f7a8378fc923b2c9675380"
 ```
@@ -221,7 +222,7 @@ Transaction Digest: DQL3dEjpeGzzaUS...
 ...
 ```
 
-As being described in the [Create a Locked Notarization](#create-a-locked-notarization) section 
+As being described in the [Create a Dynamic Notarization](#create-a-dynamic-notarization) section 
 you can investigate the created object using the testnet
 explorer and the `ObjectID` logged to the console.
  
