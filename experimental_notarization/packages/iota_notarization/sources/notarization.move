@@ -238,6 +238,7 @@ module iota_notarization::notarization {
     }
 
     // ===== Basic Getter Functions =====
+    public fun state<S: store + drop>(self: &Notarization<S>): &S { &self.state }
     public fun is_locked<S: store + drop>(self: &Notarization<S>): bool { self.immutable_metadata.locking.is_some() }
     public fun created_at<S: store + drop>(self: &Notarization<S>): u64 { self.immutable_metadata.created_at }
     public fun last_change<S: store + drop>(self: &Notarization<S>): u64 { self.last_state_change_at }
