@@ -79,6 +79,12 @@ module iota_notarization::notarization {
         notarization_obj_id: ID,
     }
 
+    /// Event emitted when a `Notarization` is destroyed
+    public struct NotarizationDestroyed has copy, drop {
+        /// ID of the `Notarization` object that was destroyed
+        notarization_obj_id: ID,
+    }
+
     // ===== Constructor Functions =====
     /// Create a new DefaultState
     public fun new_default_state(data: vector<u8>, metadata: String): DefaultState {
@@ -223,7 +229,12 @@ module iota_notarization::notarization {
             option::destroy_none(locking);
         };
 
+        event::emit(NotarizationDestroyed {
+            notarization_obj_id: object::uid_to_inner(&id),
+        });
+
         object::delete(id);
+
     }
 
     // ===== Basic Getter Functions =====
