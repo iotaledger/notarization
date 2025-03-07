@@ -16,8 +16,8 @@ module iota_notarization::notarization {
     const EUpdateWhileLocked: u64 = 0;
     /// Cannot destroy while notarization is locked for deletion
     const EDestroyWhileLocked: u64 = 1;
-    /// Infinite lock period
-    const EInfiniteLockPeriod: u64 = 2;
+    /// A delete_lock is not allowed to be set to be TimeLock::InfiniteLock
+    const EInfiniteDeleteLockPeriod: u64 = 2;
 
     // ===== Core Type =====
     /// A unified notarization type that can be either dynamic or locked
@@ -136,6 +136,8 @@ module iota_notarization::notarization {
         clock: &Clock,
         ctx: &mut TxContext
     ): Notarization<S> {
+        // Assert that the delete lock is not infinite
+        assert!(!delete_lock.is_infinite_lock(), EInfiniteDeleteLockPeriod);
 
         Notarization<S> {
             id: object::new(ctx),
@@ -174,8 +176,6 @@ module iota_notarization::notarization {
         clock: &Clock,
         ctx: &mut TxContext
     ) {
-        assert!(!delete_lock.is_infinite_lock(), EInfiniteLockPeriod);
-
         let notarization = new_locked_notarization(state, description, delete_lock, update_lock, clock, ctx);
 
         let id = object::uid_to_inner(&notarization.id);
@@ -211,9 +211,7 @@ module iota_notarization::notarization {
         self: Notarization<S>,
         clock: &Clock,
     ) {
-        if (self.is_delete_locked(clock)){
-            abort EDestroyWhileLocked
-        };
+        assert!(!self.is_delete_locked(clock), EDestroyWhileLocked);
 
         let Notarization { id, state: _, immutable_metadata: ImmutableMetadata {
             created_at: _, description: _, locking,
@@ -223,8 +221,8 @@ module iota_notarization::notarization {
             let LockMetadata { update_lock, delete_lock } = option::destroy_some(locking);
 
             // destroy the locks
-            update_lock.destroy_if_unlocked(clock);
-            delete_lock.destroy_if_unlocked(clock);
+            update_lock.destroy_if_unlocked_or_infinite_lock(clock);
+            delete_lock.destroy_if_unlocked_or_infinite_lock(clock);
         } else {
             // We know dynamic Notarizations have no lock metadata
             option::destroy_none(locking);
