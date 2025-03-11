@@ -18,6 +18,10 @@ module iota_notarization::notarization {
     const EDestroyWhileLocked: u64 = 1;
     /// A delete_lock is not allowed to be set to be TimeLock::InfiniteLock
     const EInfiniteDeleteLockPeriod: u64 = 2;
+    /// Cannot transfer a notarization that is not transferrable
+    const ENotTransferrable: u64 = 3;
+    /// Cannot transfer a locked notarization
+    const ECannotTransferLocked: u64 = 4;
 
     // ===== Core Type =====
     /// A unified notarization type that can be either dynamic or locked
@@ -33,6 +37,9 @@ module iota_notarization::notarization {
         last_state_change_at: u64,
         /// Counter for the number of state updates
         state_version_count: u64,
+        /// Whether this notarization can be transferred to another owner
+        /// Only applicable for dynamic notarizations
+        transferrable: bool,
     }
 
     // ===== Metadata and Locking =====
@@ -90,6 +97,14 @@ module iota_notarization::notarization {
         notarization_obj_id: ID,
     }
 
+    /// Event emitted when a `Notarization` is transferred
+    public struct NotarizationTransferred has copy, drop {
+        /// ID of the `Notarization` object that was transferred
+        notarization_obj_id: ID,
+        /// Address of the new owner
+        new_owner: address,
+    }
+
     // ===== Constructor Functions =====
     /// Create a new DefaultState
     public fun new_default_state(data: vector<u8>, metadata: Option<String>): DefaultState {
@@ -114,6 +129,7 @@ module iota_notarization::notarization {
         state: S,
         description: Option<String>,
         updateable_metadata: Option<String>,
+        transferrable: bool,
         clock: &Clock,
         ctx: &mut TxContext
     ): Notarization<S> {
@@ -128,6 +144,7 @@ module iota_notarization::notarization {
             updateable_metadata,
             last_state_change_at: clock::timestamp_ms(clock),
             state_version_count: 0,
+            transferrable,
         }
     }
 
@@ -155,6 +172,7 @@ module iota_notarization::notarization {
             updateable_metadata,
             last_state_change_at: clock::timestamp_ms(clock),
             state_version_count: 0,
+            transferrable: false, // Locked notarizations are never transferrable
         }
     }
 
@@ -163,10 +181,11 @@ module iota_notarization::notarization {
         state: S,
         description: Option<String>,
         updateable_metadata: Option<String>,
+        transferrable: bool,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
-        let notarization = new_dynamic_notarization(state, description, updateable_metadata, clock, ctx);
+        let notarization = new_dynamic_notarization(state, description, updateable_metadata, transferrable, clock, ctx);
 
         let id = object::uid_to_inner(&notarization.id);
         event::emit(NotarizationCreated { notarization_obj_id: id });
@@ -223,7 +242,7 @@ module iota_notarization::notarization {
 
         let Notarization { id, state: _, immutable_metadata: ImmutableMetadata {
             created_at: _, description: _, locking,
-        }, updateable_metadata: _, last_state_change_at: _, state_version_count: _ } = self;
+        }, updateable_metadata: _, last_state_change_at: _, state_version_count: _, transferrable: _ } = self;
 
         if (locking.is_some()) {
             let LockMetadata { update_lock, delete_lock } = option::destroy_some(locking);
@@ -239,6 +258,35 @@ module iota_notarization::notarization {
         let id_inner = object::uid_to_inner(&id);
         object::delete(id);
         event::emit(NotarizationDestroyed { notarization_obj_id: id_inner });
+    }
+
+    // ===== Transferability Functions =====
+    /// Transfer a dynamic notarization to a new owner
+    /// Only works for dynamic notarizations that are marked as transferrable
+    public fun transfer_notarization<S: store + drop>(
+        self: Notarization<S>,
+        recipient: address
+    ) {
+        // Ensure this is a dynamic notarization (not locked)
+        assert!(!self.is_locked(), ECannotTransferLocked);
+
+        // Ensure this notarization is transferrable
+        assert!(self.transferrable, ENotTransferrable);
+
+        let id = object::uid_to_inner(&self.id);
+
+        event::emit(NotarizationTransferred {
+            notarization_obj_id: id,
+            new_owner: recipient
+        });
+
+        transfer::public_transfer(self, recipient);
+    }
+
+    /// Check if a notarization is transferrable
+    public fun is_transferrable<S: store + drop>(self: &Notarization<S>): bool {
+        // Only dynamic notarizations can be transferrable
+        !self.is_locked() && self.transferrable
     }
 
     // ===== Metadata Management Functions =====
