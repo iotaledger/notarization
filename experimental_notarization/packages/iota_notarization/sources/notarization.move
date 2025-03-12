@@ -25,10 +25,10 @@ module iota_notarization::notarization {
 
     // ===== Core Type =====
     /// A unified notarization type that can be either dynamic or locked
-    public struct Notarization<S: store + drop + copy> has key, store {
+    public struct Notarization<D: store + drop + copy> has key {
         id: UID,
         /// The state of the `Notarization` that can be updated
-        state: State<S>,
+        state: State<D>,
         /// Variant-specific metadata
         immutable_metadata: ImmutableMetadata,
         /// Provides context or additional information for third parties
@@ -77,11 +77,13 @@ module iota_notarization::notarization {
 
     // ===== Event Types =====
     /// Event emitted when the state of a `Notarization` is updated
-    public struct NotarizationUpdated has copy, drop {
+    public struct NotarizationUpdated<D: store + drop + copy> has copy, drop {
         /// ID of the `Notarization` object that was updated
         notarization_obj_id: ID,
         /// New version number after the update
         state_version_count: u64,
+        /// Updated State
+        updated_state: State<D>
     }
 
     /// Event emitted when a `Notarization` is created
@@ -128,15 +130,15 @@ module iota_notarization::notarization {
 
     // ===== Notarization Creation Functions =====
     /// Create a new dynamic `Notarization`
-    public fun new_dynamic_notarization<S: store + drop + copy>(
-        state: State<S>,
+    public fun new_dynamic_notarization<D: store + drop + copy>(
+        state: State<D>,
         description: Option<String>,
         updateable_metadata: Option<String>,
         transferrable: bool,
         clock: &Clock,
         ctx: &mut TxContext
-    ): Notarization<S> {
-        Notarization<S> {
+    ): Notarization<D> {
+        Notarization<D> {
             id: object::new(ctx),
             state,
             immutable_metadata: ImmutableMetadata {
@@ -152,19 +154,19 @@ module iota_notarization::notarization {
     }
 
     /// Create a new locked `Notarization`
-    public fun new_locked_notarization<S: store + drop + copy>(
-        state: State<S>,
+    public fun new_locked_notarization<D: store + drop + copy>(
+        state: State<D>,
         description: Option<String>,
         updateable_metadata: Option<String>,
         delete_lock: TimeLock,
         update_lock: TimeLock,
         clock: &Clock,
         ctx: &mut TxContext
-    ): Notarization<S> {
+    ): Notarization<D> {
         // Assert that the delete lock is not infinite
         assert!(!delete_lock.is_infinite_lock(), EInfiniteDeleteLockPeriod);
 
-        Notarization<S> {
+        Notarization<D> {
             id: object::new(ctx),
             state,
             immutable_metadata: ImmutableMetadata {
@@ -180,8 +182,8 @@ module iota_notarization::notarization {
     }
 
     /// Create and transfer a new dynamic `Notarization` to the sender
-    public fun create_dynamic_notarization<S: store + drop + copy>(
-        state: State<S>,
+    public fun create_dynamic_notarization<D: store + drop + copy>(
+        state: State<D>,
         description: Option<String>,
         updateable_metadata: Option<String>,
         transferrable: bool,
@@ -197,8 +199,8 @@ module iota_notarization::notarization {
     }
 
     /// Create and transfer a new locked notarization to the sender
-    public fun create_locked_notarization<S: store + drop + copy>(
-        state: State<S>,
+    public fun create_locked_notarization<D: store + drop + copy>(
+        state: State<D>,
         description: Option<String>,
         updateable_metadata: Option<String>,
         delete_lock: TimeLock,
@@ -216,9 +218,9 @@ module iota_notarization::notarization {
     // ===== State Management Functions =====
     /// Update the state of a `Notarization`
     /// Will check locks if the `Notarization` is a locked variant
-    public fun update_state<S: store + drop + copy>(
-        self: &mut Notarization<S>,
-        new_state: State<S>,
+    public fun update_state<D: store + drop + copy>(
+        self: &mut Notarization<D>,
+        new_state: State<D>,
         clock: &Clock,
     ) {
         if (self.is_update_locked(clock)) {
@@ -232,13 +234,14 @@ module iota_notarization::notarization {
         event::emit(NotarizationUpdated {
             notarization_obj_id: object::uid_to_inner(&self.id),
             state_version_count: self.state_version_count,
+            updated_state: new_state
         });
     }
 
     /// Destroy a `Notarization`
     /// Will check locks if the `Notarization` is a locked variant
-    public fun destroy<S: drop + store + copy>(
-        self: Notarization<S>,
+    public fun destroy<D: drop + store + copy>(
+        self: Notarization<D>,
         clock: &Clock,
     ) {
         assert!(!self.is_delete_locked(clock), EDestroyWhileLocked);
@@ -266,8 +269,8 @@ module iota_notarization::notarization {
     // ===== Transferability Functions =====
     /// Transfer a dynamic notarization to a new owner
     /// Only works for dynamic notarizations that are marked as transferrable
-    public fun transfer_notarization<S: store + drop + copy>(
-        self: Notarization<S>,
+    public fun transfer_notarization<D: store + drop + copy>(
+        self: Notarization<D>,
         recipient: address
     ) {
         // Ensure this is a dynamic notarization (not locked)
@@ -283,11 +286,11 @@ module iota_notarization::notarization {
             new_owner: recipient
         });
 
-        transfer::public_transfer(self, recipient);
+        transfer::transfer(self, recipient);
     }
 
     /// Check if a notarization is transferrable
-    public fun is_transferrable<S: store + drop + copy>(self: &Notarization<S>): bool {
+    public fun is_transferrable<D: store + drop + copy>(self: &Notarization<D>): bool {
         // Only dynamic notarizations can be transferrable
         !self.has_locking() && self.transferrable
     }
@@ -296,8 +299,8 @@ module iota_notarization::notarization {
     /// Update the updateable metadata of a `Notarization`
     /// This does not affect the state version count
     /// Will check locks if the `Notarization` is a locked variant (uses the same lock as state updates)
-    public fun update_metadata<S: store + drop + copy>(
-        self: &mut Notarization<S>,
+    public fun update_metadata<D: store + drop + copy>(
+        self: &mut Notarization<D>,
         new_metadata: Option<String>,
         clock: &Clock,
     ) {
@@ -309,26 +312,26 @@ module iota_notarization::notarization {
     }
 
     /// Get the updateable metadata of a `Notarization`
-    public fun get_updateable_metadata<S: store + drop + copy>(self: &Notarization<S>): &Option<String> {
+    public fun get_updateable_metadata<D: store + drop + copy>(self: &Notarization<D>): &Option<String> {
         &self.updateable_metadata
     }
 
     // ===== Basic Getter Functions =====
-    public fun state<S: store + drop + copy>(self: &Notarization<S>): &State<S> { &self.state }
-    public fun has_locking<S: store + drop + copy>(self: &Notarization<S>): bool { self.immutable_metadata.locking.is_some() }
-    public fun created_at<S: store + drop + copy>(self: &Notarization<S>): u64 { self.immutable_metadata.created_at }
-    public fun last_change<S: store + drop + copy>(self: &Notarization<S>): u64 { self.last_state_change_at }
-    public fun version_count<S: store + drop + copy>(self: &Notarization<S>): u64 { self.state_version_count }
-    public fun description<S: store + drop + copy>(self: &Notarization<S>): &Option<String> { &self.immutable_metadata.description }
+    public fun state<D: store + drop + copy>(self: &Notarization<D>): &State<D> { &self.state }
+    public fun has_locking<D: store + drop + copy>(self: &Notarization<D>): bool { self.immutable_metadata.locking.is_some() }
+    public fun created_at<D: store + drop + copy>(self: &Notarization<D>): u64 { self.immutable_metadata.created_at }
+    public fun last_change<D: store + drop + copy>(self: &Notarization<D>): u64 { self.last_state_change_at }
+    public fun version_count<D: store + drop + copy>(self: &Notarization<D>): u64 { self.state_version_count }
+    public fun description<D: store + drop + copy>(self: &Notarization<D>): &Option<String> { &self.immutable_metadata.description }
 
     // ===== Lock-Related Getter Functions =====
     /// Get the lock metadata if this is a locked Notarization
-    public fun lock_metadata<S: store + drop + copy>(self: &Notarization<S>): &Option<LockMetadata> {
+    public fun lock_metadata<D: store + drop + copy>(self: &Notarization<D>): &Option<LockMetadata> {
         &self.immutable_metadata.locking
     }
 
     /// Check if the `Notarization` is locked for updates (always false for dynamic variant)
-    public fun is_update_locked<S: store + drop + copy>(self: &Notarization<S>, clock: &Clock): bool {
+    public fun is_update_locked<D: store + drop + copy>(self: &Notarization<D>, clock: &Clock): bool {
         if (!self.immutable_metadata.locking.is_some()) {
             false
         } else {
@@ -338,7 +341,7 @@ module iota_notarization::notarization {
     }
 
     /// Check if the `Notarization` is locked for deletion (always false for dynamic variant)
-    public fun is_delete_locked<S: store + drop + copy>(self: &Notarization<S>, clock: &Clock): bool {
+    public fun is_delete_locked<D: store + drop + copy>(self: &Notarization<D>, clock: &Clock): bool {
         if (!self.immutable_metadata.locking.is_some()) {
             false
         } else {
