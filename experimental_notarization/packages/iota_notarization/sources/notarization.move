@@ -268,7 +268,7 @@ module iota_notarization::notarization {
         recipient: address
     ) {
         // Ensure this is a dynamic notarization (not locked)
-        assert!(!self.is_locked(), ECannotTransferLocked);
+        assert!(!self.has_locking(), ECannotTransferLocked);
 
         // Ensure this notarization is transferrable
         assert!(self.transferrable, ENotTransferrable);
@@ -286,7 +286,7 @@ module iota_notarization::notarization {
     /// Check if a notarization is transferrable
     public fun is_transferrable<S: store + drop>(self: &Notarization<S>): bool {
         // Only dynamic notarizations can be transferrable
-        !self.is_locked() && self.transferrable
+        !self.has_locking() && self.transferrable
     }
 
     // ===== Metadata Management Functions =====
@@ -312,7 +312,7 @@ module iota_notarization::notarization {
 
     // ===== Basic Getter Functions =====
     public fun state<S: store + drop>(self: &Notarization<S>): &S { &self.state }
-    public fun is_locked<S: store + drop>(self: &Notarization<S>): bool { self.immutable_metadata.locking.is_some() }
+    public fun has_locking<S: store + drop>(self: &Notarization<S>): bool { self.immutable_metadata.locking.is_some() }
     public fun created_at<S: store + drop>(self: &Notarization<S>): u64 { self.immutable_metadata.created_at }
     public fun last_change<S: store + drop>(self: &Notarization<S>): u64 { self.last_state_change_at }
     public fun version_count<S: store + drop>(self: &Notarization<S>): u64 { self.state_version_count }
