@@ -14,9 +14,9 @@ module iota_notarization::timelock {
 
     // ===== Errors =====
     /// Error when attempting to create a timelock with a timestamp in the past
-    const EPastTimestamp: u64 = 3;
+    const EPastTimestamp: u64 = 0;
     /// Error when attempting to destroy a timelock that is still locked
-    const ETimelockNotExpired: u64 = 4;
+    const ETimelockNotExpired: u64 = 1;
 
 
     /// Represents different types of time-based locks that can be applied to
