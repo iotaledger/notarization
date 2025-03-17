@@ -38,7 +38,7 @@ module iota_notarization::timelock {
     }
 
     /// Creates a new infinite lock that never unlocks.
-    public fun new_infinite_lock(): TimeLock {
+    public fun infinite_lock(): TimeLock {
         TimeLock::InfiniteLock
     }
 

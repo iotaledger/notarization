@@ -18,13 +18,13 @@ module iota_notarization::dynamic_notarization {
     /// Event emitted when a dynamic notarization is created
     public struct DynamicNotarizationCreated has copy, drop {
         /// ID of the `Notarization` object that was created
-        notarization_obj_id: iota::object::ID,
+        notarization_obj_id: ID,
     }
 
     /// Event emitted when a dynamic notarization is transferred
     public struct DynamicNotarizationTransferred has copy, drop {
         /// ID of the `Notarization` object that was transferred
-        notarization_obj_id: iota::object::ID,
+        notarization_obj_id: ID,
         /// Address of the new owner
         new_owner: address,
     }
@@ -32,8 +32,8 @@ module iota_notarization::dynamic_notarization {
     /// Create a new dynamic `Notarization`
     public fun new_dynamic_notarization<D: store + drop + copy>(
         state: notarization::State<D>,
-        description: std::option::Option<String>,
-        updateable_metadata: std::option::Option<String>,
+        description: Option<String>,
+        updateable_metadata: Option<String>,
         transferrable: bool,
         clock: &Clock,
         ctx: &mut iota::tx_context::TxContext
@@ -51,8 +51,8 @@ module iota_notarization::dynamic_notarization {
     /// Create and transfer a new dynamic `Notarization` to the sender
     public fun create_dynamic_notarization<D: store + drop + copy>(
         state: notarization::State<D>,
-        description: std::option::Option<String>,
-        updateable_metadata: std::option::Option<String>,
+        description: Option<String>,
+        updateable_metadata: Option<String>,
         transferrable: bool,
         clock: &Clock,
         ctx: &mut iota::tx_context::TxContext
@@ -73,20 +73,25 @@ module iota_notarization::dynamic_notarization {
         recipient: address
     ) {
         // Ensure this is a dynamic notarization (not locked)
-        assert!(!notarization::has_locking(&self), ECannotTransferLocked);
+        assert!(self.lock_metadata().is_none(), ECannotTransferLocked);
 
         // Ensure this notarization is transferrable
-        assert!(notarization::is_transferrable(&self), ENotTransferrable);
+        assert!(is_transferrable(&self), ENotTransferrable);
 
         // Use the core module to transfer the notarization
         notarization::transfer_notarization(self, recipient);
 
         // Emit our own module-specific event
-        let id = iota::object::id_from_address(recipient);
+        let id = object::id_from_address(recipient);
         event::emit(DynamicNotarizationTransferred {
             notarization_obj_id: id,
             new_owner: recipient
         });
+    }
+
+    /// Check if the notarization is transferrable
+    public fun is_transferrable<D: store + drop + copy>(self: &notarization::Notarization<D>): bool {
+        (self.lock_metadata().is_none() && self.transferrable())
     }
 
 }
