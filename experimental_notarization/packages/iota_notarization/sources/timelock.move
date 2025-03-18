@@ -44,11 +44,33 @@ module iota_notarization::timelock {
         TimeLock::InfiniteLock
     }
 
+    /// Create a new lock that is not locked.
+    public fun none(): TimeLock {
+        TimeLock::None
+    }
+
     /// Checks if the provided lock time is an infinite lock.
     public fun is_infinite_lock(lock_time: &TimeLock): bool {
         match (lock_time) {
             TimeLock::InfiniteLock => true,
             _ => false
+        }
+    }
+
+
+    /// Checks if the provided lock time is a UnixTime lock.
+    public fun is_unlock_at(lock_time: &TimeLock): bool {
+        match (lock_time) {
+            TimeLock::UnlockAt(_) => true,
+            _ => false
+        }
+    }
+
+    /// Gets the unlock time from a TimeLock if it is a UnixTime lock.
+    public fun get_unlock_time(lock_time: &TimeLock): Option<u32> {
+        match (lock_time) {
+            TimeLock::UnlockAt(time) => option::some(*time),
+            _ => option::none()
         }
     }
 
@@ -58,12 +80,8 @@ module iota_notarization::timelock {
             TimeLock::UnlockAt(time) => {
                 assert!(!(time > ((clock::timestamp_ms(clock) / 1000) as u32)), ETimelockNotExpired);
             },
-            TimeLock::InfiniteLock => {
-                // Infinite locks are never destroyed
-            },
-            TimeLock::None => {
-                // No action needed for None
-            }
+            TimeLock::InfiniteLock => {},
+            TimeLock::None => {}
 
         }
     }
@@ -74,6 +92,7 @@ module iota_notarization::timelock {
     /// by comparing the current time with the lock's parameters. A lock is considered active if:
     /// 1. For UnixTime locks: The current time hasn't reached the specified unlock time yet
     /// 2. For InfiniteLock: Always returns true as these locks never unlock
+    /// 3. For None: Always returns false as there is no lock
     public fun is_timelocked(condition: &TimeLock, clock: &Clock): bool {
         match (condition) {
             TimeLock::UnlockAt(unix_time) => {

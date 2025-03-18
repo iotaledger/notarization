@@ -15,7 +15,7 @@ module iota_notarization::notarization {
     const EUpdateWhileLocked: u64 = 0;
     /// Cannot destroy while notarization is locked for deletion
     const EDestroyWhileLocked: u64 = 1;
-    /// A delete_lock is not allowed to be set to be TimeLock::InfiniteLock
+    /// A delete_lock must not be infinite
     const EInfiniteDeleteLockPeriod: u64 = 2;
 
     // ===== Core Type =====
@@ -51,12 +51,12 @@ module iota_notarization::notarization {
     /// Defines how a `Notarization` is locked.
     /// Can be used with the optional `ImmutableMetadata::locking`.
     public struct LockMetadata has store {
-        /// Lock condition for state updates
+        /// Update lock condition
         update_lock: TimeLock,
         /// Lock condition for deletion
-        ///
-        /// NOTE: delete lock cannot be infinite
         delete_lock: TimeLock,
+        /// Transfer lock
+        transfer_lock: TimeLock,
     }
 
     // ===== Notarization State =====
@@ -102,10 +102,20 @@ module iota_notarization::notarization {
     public fun new_lock_metadata(
         update_lock: TimeLock,
         delete_lock: TimeLock,
+        transfer_lock: TimeLock
     ): LockMetadata {
+        assert!(!delete_lock.is_infinite_lock(), EInfiniteDeleteLockPeriod);
+
+        if (delete_lock.is_unlock_at()) {
+            let delete_lock = delete_lock.get_unlock_time().destroy_some();
+
+            // Assert
+        };
+
         LockMetadata {
-            update_lock: update_lock,
-            delete_lock: delete_lock
+            update_lock,
+            delete_lock,
+            transfer_lock
         }
     }
 
@@ -113,7 +123,7 @@ module iota_notarization::notarization {
     /// Create a new dynamic `Notarization`
     public(package) fun new_dynamic_notarization<D: store + drop + copy>(
         state: State<D>,
-        description: Option<String>,
+        immutable_description: Option<String>,
         updateable_metadata: Option<String>,
         transferrable: bool,
         clock: &Clock,
@@ -124,7 +134,7 @@ module iota_notarization::notarization {
             state,
             immutable_metadata: ImmutableMetadata {
                 created_at: clock::timestamp_ms(clock),
-                description,
+                description: immutable_description,
                 locking: option::none(),
             },
             updateable_metadata,
@@ -137,7 +147,7 @@ module iota_notarization::notarization {
     /// Create a new locked `Notarization`
     public(package) fun new_locked_notarization<D: store + drop + copy>(
         state: State<D>,
-        description: Option<String>,
+        immutable_description: Option<String>,
         updateable_metadata: Option<String>,
         delete_lock: TimeLock,
         clock: &Clock,
@@ -152,8 +162,8 @@ module iota_notarization::notarization {
             state,
             immutable_metadata: ImmutableMetadata {
                 created_at: clock::timestamp_ms(clock),
-                description,
-                locking: option::some(new_lock_metadata(timelock::infinite_lock(), delete_lock)),
+                description: immutable_description,
+                locking: option::some(new_lock_metadata(timelock::infinite_lock(), delete_lock, timelock::infinite_lock())),
             },
             updateable_metadata,
             last_state_change_at: clock::timestamp_ms(clock),
@@ -192,21 +202,19 @@ module iota_notarization::notarization {
         self: Notarization<D>,
         clock: &Clock,
     ) {
-        assert!(!self.is_delete_locked(clock), EDestroyWhileLocked);
+        assert!(!self.is_fully_locked(clock), EDestroyWhileLocked);
 
         let Notarization { id, state: _, immutable_metadata: ImmutableMetadata {
             created_at: _, description: _, locking,
         }, updateable_metadata: _, last_state_change_at: _, state_version_count: _, transferrable: _ } = self;
 
         if (locking.is_some()) {
-            let LockMetadata { update_lock, delete_lock } = option::destroy_some(locking);
+            let LockMetadata { update_lock, delete_lock, transfer_lock } = option::destroy_some(locking);
 
             // destroy the locks
             timelock::destroy_if_unlocked_or_infinite_lock(update_lock, clock);
-
-            option::do!(delete_lock, |delete_lock| {
-                timelock::destroy_if_unlocked_or_infinite_lock(delete_lock, clock);
-            });
+            timelock::destroy_if_unlocked_or_infinite_lock(delete_lock, clock);
+            timelock::destroy_if_unlocked_or_infinite_lock(transfer_lock, clock);
         } else {
             // We know dynamic Notarizations have no lock metadata
             option::destroy_none(locking);
@@ -277,12 +285,33 @@ module iota_notarization::notarization {
             false
         } else {
             let lock_metadata = option::borrow(&self.immutable_metadata.locking);
-            option::is_some_and!(
-                &lock_metadata.delete_lock,
-                |delete_lock| {
-                    timelock::is_timelocked(delete_lock, clock)
-                }
-            )
+
+            timelock::is_timelocked(&lock_metadata.delete_lock, clock)
+
+        }
+    }
+
+    /// Check if the `Notarization` is locked for transfer
+    public fun is_transfer_locked<D: store + drop + copy>(self: &Notarization<D>, clock: &Clock): bool {
+        if (!self.immutable_metadata.locking.is_some()) {
+            false
+        } else {
+            let lock_metadata = option::borrow(&self.immutable_metadata.locking);
+
+            timelock::is_timelocked(&lock_metadata.transfer_lock, clock)
+        }
+    }
+
+    /// Check if the `Notarization` is fully locked
+    public fun is_fully_locked<D: store + drop + copy>(self: &Notarization<D>, clock: &Clock): bool {
+        if (!self.immutable_metadata.locking.is_some()) {
+            false
+        } else {
+            let lock_metadata = option::borrow(&self.immutable_metadata.locking);
+
+            timelock::is_timelocked(&lock_metadata.update_lock, clock) &&
+            timelock::is_timelocked(&lock_metadata.delete_lock, clock) &&
+            timelock::is_timelocked(&lock_metadata.transfer_lock, clock)
         }
     }
 }

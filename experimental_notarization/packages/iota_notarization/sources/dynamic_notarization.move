@@ -70,13 +70,18 @@ module iota_notarization::dynamic_notarization {
     /// Only works for dynamic notarizations that are marked as transferrable
     public fun transfer<D: store + drop + copy>(
         self: notarization::Notarization<D>,
-        recipient: address
+        recipient: address,
+        clock: &Clock,
+        _: &mut iota::tx_context::TxContext
     ) {
         // Ensure this is a dynamic notarization (not locked)
         assert!(self.lock_metadata().is_none(), ECannotTransferLocked);
 
         // Ensure this notarization is transferrable
         assert!(is_transferrable(&self), ENotTransferrable);
+
+        // Ensure the notarized object is not transfer locked
+        assert!(self.is_transfer_locked(clock), ECannotTransferLocked);
 
         // Use the core module to transfer the notarization
         notarization::transfer_notarization(self, recipient);
