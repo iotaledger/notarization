@@ -56,7 +56,7 @@ module iota_notarization::notarization {
         /// Lock condition for deletion
         ///
         /// NOTE: delete lock cannot be infinite
-        delete_lock: Option<TimeLock>,
+        delete_lock: TimeLock,
     }
 
     // ===== Notarization State =====
@@ -101,7 +101,7 @@ module iota_notarization::notarization {
     /// Create lock metadata
     public fun new_lock_metadata(
         update_lock: TimeLock,
-        delete_lock: Option<TimeLock>,
+        delete_lock: TimeLock,
     ): LockMetadata {
         LockMetadata {
             update_lock: update_lock,
@@ -139,16 +139,13 @@ module iota_notarization::notarization {
         state: State<D>,
         description: Option<String>,
         updateable_metadata: Option<String>,
-        delete_lock: Option<TimeLock>,
+        delete_lock: TimeLock,
         clock: &Clock,
         ctx: &mut TxContext
     ): Notarization<D> {
         // Assert that the delete lock is not infinite
-        if (delete_lock.is_some()) {
-            let delete_lock = option::borrow(&delete_lock);
+        assert!(!delete_lock.is_infinite_lock(), EInfiniteDeleteLockPeriod);
 
-            assert!(!delete_lock.is_infinite_lock(), EInfiniteDeleteLockPeriod);
-        };
 
         Notarization<D> {
             id: object::new(ctx),

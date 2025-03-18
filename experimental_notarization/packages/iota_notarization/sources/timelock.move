@@ -25,7 +25,9 @@ module iota_notarization::timelock {
         /// A lock that unlocks at a specific Unix timestamp (seconds since epoch)
         UnlockAt(u32),
         /// A permanent lock that never unlocks (Only used in State Locking)
-        InfiniteLock
+        InfiniteLock,
+        /// No lock applied
+        None
     }
 
     /// Creates a new time lock that unlocks at a specific Unix timestamp.
@@ -56,7 +58,13 @@ module iota_notarization::timelock {
             TimeLock::UnlockAt(time) => {
                 assert!(!(time > ((clock::timestamp_ms(clock) / 1000) as u32)), ETimelockNotExpired);
             },
-            TimeLock::InfiniteLock => {}
+            TimeLock::InfiniteLock => {
+                // Infinite locks are never destroyed
+            },
+            TimeLock::None => {
+                // No action needed for None
+            }
+
         }
     }
 
@@ -71,7 +79,8 @@ module iota_notarization::timelock {
             TimeLock::UnlockAt(unix_time) => {
                 *unix_time > ((clock::timestamp_ms(clock) / 1000) as u32)
             },
-            TimeLock::InfiniteLock => true
+            TimeLock::InfiniteLock => true,
+            TimeLock::None => false
         }
     }
 
