@@ -76,6 +76,7 @@ module iota_notarization::timelock {
 
     /// Destroys a TimeLock if it's either unlocked or an infinite lock.
     public fun destroy_if_unlocked_or_infinite_lock(condition: TimeLock, clock: &Clock) {
+        // The TimeLock is always destroyed, except of those cases where an assertion is raised
         match (condition) {
             TimeLock::UnlockAt(time) => {
                 assert!(!(time > ((clock::timestamp_ms(clock) / 1000) as u32)), ETimelockNotExpired);
