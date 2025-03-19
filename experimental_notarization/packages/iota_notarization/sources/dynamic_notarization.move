@@ -11,9 +11,9 @@ module iota_notarization::dynamic_notarization {
 
     // ===== Constants =====
     /// Cannot transfer a notarization that is not transferrable
-    const ENotTransferrable: u64 = 3;
+    const ENotTransferrable: u64 = 0;
     /// Cannot transfer a locked notarization
-    const ECannotTransferLocked: u64 = 4;
+    const ECannotTransferLocked: u64 = 1;
 
     /// Event emitted when a dynamic notarization is created
     public struct DynamicNotarizationCreated has copy, drop {
