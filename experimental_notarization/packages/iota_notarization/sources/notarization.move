@@ -15,8 +15,8 @@ module iota_notarization::notarization {
     const EUpdateWhileLocked: u64 = 0;
     /// Cannot destroy while notarization is locked for deletion
     const EDestroyWhileLocked: u64 = 1;
-    /// A delete_lock must not be infinite
-    const EInfiniteDeleteLockPeriod: u64 = 2;
+    /// A lock time must not be satisfied
+    const ELockTimeNotSatisfied: u64 = 2;
 
     // ===== Core Type =====
     /// A unified notarization type that can be either dynamic or locked
@@ -104,12 +104,22 @@ module iota_notarization::notarization {
         delete_lock: TimeLock,
         transfer_lock: TimeLock
     ): LockMetadata {
-        assert!(!delete_lock.is_infinite_lock(), EInfiniteDeleteLockPeriod);
+        assert!(!delete_lock.is_until_destroyed(), ELockTimeNotSatisfied);
 
         if (delete_lock.is_unlock_at()) {
-            let delete_lock = delete_lock.get_unlock_time().destroy_some();
+            let delete_lock_time = delete_lock.get_unlock_time().destroy_some();
 
-            // Assert
+            if (update_lock.is_unlock_at()) {
+                let update_lock_time = update_lock.get_unlock_time().destroy_some();
+
+                assert!(delete_lock_time >= update_lock_time, ELockTimeNotSatisfied)
+            };
+
+            if (transfer_lock.is_unlock_at()) {
+                let transfer_lock_time = transfer_lock.get_unlock_time().destroy_some();
+
+                assert!(delete_lock_time >= transfer_lock_time, ELockTimeNotSatisfied)
+            };
         };
 
         LockMetadata {
@@ -153,9 +163,6 @@ module iota_notarization::notarization {
         clock: &Clock,
         ctx: &mut TxContext
     ): Notarization<D> {
-        // Assert that the delete lock is not infinite
-        assert!(!delete_lock.is_infinite_lock(), EInfiniteDeleteLockPeriod);
-
 
         Notarization<D> {
             id: object::new(ctx),
@@ -163,7 +170,7 @@ module iota_notarization::notarization {
             immutable_metadata: ImmutableMetadata {
                 created_at: clock::timestamp_ms(clock),
                 description: immutable_description,
-                locking: option::some(new_lock_metadata(timelock::infinite_lock(), delete_lock, timelock::infinite_lock())),
+                locking: option::some(new_lock_metadata(timelock::until_destroyed(), delete_lock, timelock::none())),
             },
             updateable_metadata,
             last_state_change_at: clock::timestamp_ms(clock),
@@ -212,9 +219,9 @@ module iota_notarization::notarization {
             let LockMetadata { update_lock, delete_lock, transfer_lock } = option::destroy_some(locking);
 
             // destroy the locks
-            timelock::destroy_if_unlocked_or_infinite_lock(update_lock, clock);
-            timelock::destroy_if_unlocked_or_infinite_lock(delete_lock, clock);
-            timelock::destroy_if_unlocked_or_infinite_lock(transfer_lock, clock);
+            timelock::destroy(update_lock, clock);
+            timelock::destroy(delete_lock, clock);
+            timelock::destroy(transfer_lock, clock);
         } else {
             // We know dynamic Notarizations have no lock metadata
             option::destroy_none(locking);
