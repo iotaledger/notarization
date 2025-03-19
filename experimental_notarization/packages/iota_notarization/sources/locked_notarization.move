@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /// This module provides locked notarization capabilities with timelock controls for updates and deletion
-#[allow(lint(self_transfer))]
 module iota_notarization::locked_notarization {
     use std::string::String;
     use iota::event;
@@ -13,7 +12,7 @@ module iota_notarization::locked_notarization {
     /// Event emitted when a locked notarization is created
     public struct LockedNotarizationCreated has copy, drop {
         /// ID of the `Notarization` object that was created
-        notarization_obj_id: ID,
+        notarization_id: ID,
     }
 
     /// Create a new locked `Notarization`
@@ -47,7 +46,7 @@ module iota_notarization::locked_notarization {
         let notarization = new(state, description, updateable_metadata, delete_lock,  clock, ctx);
 
         let id = object::uid_to_inner(notarization.id());
-        event::emit(LockedNotarizationCreated { notarization_obj_id: id });
+        event::emit(LockedNotarizationCreated { notarization_id: id });
         notarization::transfer_notarization(notarization, tx_context::sender(ctx));
     }
 }

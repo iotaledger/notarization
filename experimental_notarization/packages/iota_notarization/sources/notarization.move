@@ -15,7 +15,7 @@ module iota_notarization::notarization {
     const EUpdateWhileLocked: u64 = 0;
     /// Cannot destroy while notarization is locked for deletion
     const EDestroyWhileLocked: u64 = 1;
-    /// A lock time must not be satisfied
+    /// A lock time is not satisfied
     const ELockTimeNotSatisfied: u64 = 2;
 
     // ===== Core Type =====
@@ -74,7 +74,7 @@ module iota_notarization::notarization {
     /// Event emitted when the state of a `Notarization` is updated
     public struct NotarizationUpdated<D: store + drop + copy> has copy, drop {
         /// ID of the `Notarization` object that was updated
-        notarization_obj_id: ID,
+        notarization_id: ID,
         /// New version number after the update
         state_version_count: u64,
         /// Updated State
@@ -84,7 +84,7 @@ module iota_notarization::notarization {
     /// Event emitted when a `Notarization` is destroyed
     public struct NotarizationDestroyed has copy, drop {
         /// ID of the `Notarization` object that was destroyed
-        notarization_obj_id: ID,
+        notarization_id: ID,
     }
 
     // ===== Constructor Functions =====
@@ -197,7 +197,7 @@ module iota_notarization::notarization {
         self.state_version_count = self.state_version_count + 1;
 
         event::emit(NotarizationUpdated {
-            notarization_obj_id: object::uid_to_inner(&self.id),
+            notarization_id: object::uid_to_inner(&self.id),
             state_version_count: self.state_version_count,
             updated_state: new_state
         });
@@ -229,7 +229,7 @@ module iota_notarization::notarization {
 
         let id_inner = object::uid_to_inner(&id);
         object::delete(id);
-        event::emit(NotarizationDestroyed { notarization_obj_id: id_inner });
+        event::emit(NotarizationDestroyed { notarization_id: id_inner });
     }
 
     /// Re-exports the transfer function from the core module

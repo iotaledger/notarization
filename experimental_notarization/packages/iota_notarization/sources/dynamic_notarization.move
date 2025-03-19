@@ -18,13 +18,13 @@ module iota_notarization::dynamic_notarization {
     /// Event emitted when a dynamic notarization is created
     public struct DynamicNotarizationCreated has copy, drop {
         /// ID of the `Notarization` object that was created
-        notarization_obj_id: ID,
+        notarization_id: ID,
     }
 
     /// Event emitted when a dynamic notarization is transferred
     public struct DynamicNotarizationTransferred has copy, drop {
         /// ID of the `Notarization` object that was transferred
-        notarization_obj_id: ID,
+        notarization_id: ID,
         /// Address of the new owner
         new_owner: address,
     }
@@ -61,7 +61,7 @@ module iota_notarization::dynamic_notarization {
         let notarization = new(state, description, updateable_metadata, transferrable, clock, ctx);
 
         let id = object::uid_to_inner(notarization.id());
-        event::emit(DynamicNotarizationCreated { notarization_obj_id: id });
+        event::emit(DynamicNotarizationCreated { notarization_id: id });
 
         notarization::transfer_notarization(notarization, tx_context::sender(ctx));
     }
@@ -89,7 +89,7 @@ module iota_notarization::dynamic_notarization {
         // Emit our own module-specific event
         let id = object::id_from_address(recipient);
         event::emit(DynamicNotarizationTransferred {
-            notarization_obj_id: id,
+            notarization_id: id,
             new_owner: recipient
         });
     }
