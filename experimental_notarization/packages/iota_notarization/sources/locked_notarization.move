@@ -18,7 +18,7 @@ module iota_notarization::locked_notarization {
     /// Create a new locked `Notarization`
     public fun new<D: store + drop + copy>(
         state: notarization::State<D>,
-        description: Option<String>,
+        immutable_description: Option<String>,
         updateable_metadata:Option<String>,
         delete_lock: TimeLock,
         clock: &Clock,
@@ -26,7 +26,7 @@ module iota_notarization::locked_notarization {
     ): notarization::Notarization<D> {
         notarization::new_locked_notarization(
             state,
-            description,
+            immutable_description,
             updateable_metadata,
             delete_lock,
             clock,
@@ -37,13 +37,13 @@ module iota_notarization::locked_notarization {
     /// Create and transfer a new locked notarization to the sender
     public fun create<D: store + drop + copy>(
         state: notarization::State<D>,
-        description: Option<String>,
+        immutable_description: Option<String>,
         updateable_metadata: Option<String>,
         delete_lock: TimeLock,
         clock: &Clock,
         ctx: &mut iota::tx_context::TxContext
     ) {
-        let notarization = new(state, description, updateable_metadata, delete_lock,  clock, ctx);
+        let notarization = new(state, immutable_description, updateable_metadata, delete_lock,  clock, ctx);
 
         let id = object::uid_to_inner(notarization.id());
         event::emit(LockedNotarizationCreated { notarization_id: id });

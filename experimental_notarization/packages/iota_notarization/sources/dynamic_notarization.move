@@ -32,7 +32,7 @@ module iota_notarization::dynamic_notarization {
     /// Create a new dynamic `Notarization`
     public fun new<D: store + drop + copy>(
         state: notarization::State<D>,
-        description: Option<String>,
+        immutable_description: Option<String>,
         updateable_metadata: Option<String>,
         transferrable: bool,
         clock: &Clock,
@@ -40,7 +40,7 @@ module iota_notarization::dynamic_notarization {
     ): notarization::Notarization<D> {
         notarization::new_dynamic_notarization(
             state,
-            description,
+            immutable_description,
             updateable_metadata,
             transferrable,
             clock,
@@ -51,14 +51,14 @@ module iota_notarization::dynamic_notarization {
     /// Create and transfer a new dynamic `Notarization` to the sender
     public fun create<D: store + drop + copy>(
         state: notarization::State<D>,
-        description: Option<String>,
+        immutable_description: Option<String>,
         updateable_metadata: Option<String>,
         transferrable: bool,
         clock: &Clock,
         ctx: &mut iota::tx_context::TxContext
     ) {
         // Use the core module to create and transfer the notarization
-        let notarization = new(state, description, updateable_metadata, transferrable, clock, ctx);
+        let notarization = new(state, immutable_description, updateable_metadata, transferrable, clock, ctx);
 
         let id = object::uid_to_inner(notarization.id());
         event::emit(DynamicNotarizationCreated { notarization_id: id });
@@ -78,7 +78,7 @@ module iota_notarization::dynamic_notarization {
         assert!(self.lock_metadata().is_none(), ECannotTransferLocked);
 
         // Ensure this notarization is transferrable
-        assert!(is_transferrable(&self), ENotTransferrable);
+        assert!(is_transferable(&self), ENotTransferrable);
 
         // Ensure the notarized object is not transfer locked
         assert!(self.is_transfer_locked(clock), ECannotTransferLocked);
@@ -94,9 +94,9 @@ module iota_notarization::dynamic_notarization {
         });
     }
 
-    /// Check if the notarization is transferrable
-    public fun is_transferrable<D: store + drop + copy>(self: &notarization::Notarization<D>): bool {
-        (self.lock_metadata().is_none() && self.transferrable())
+    /// Check if the notarization is transferable
+    public fun is_transferable<D: store + drop + copy>(self: &notarization::Notarization<D>): bool {
+        (self.lock_metadata().is_none() && self.transferable())
     }
 
 }

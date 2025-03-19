@@ -105,6 +105,16 @@ module iota_notarization::timelock {
         }
     }
 
+    /// Check if a timelock condition is `UnlockAt`
+    public fun is_timelocked_unlock_at(lock_time: &TimeLock, clock: &Clock): bool {
+        match (lock_time) {
+            TimeLock::UnlockAt(time) => {
+                *time > ((clock::timestamp_ms(clock) / 1000) as u32)
+            },
+            _ => false
+        }
+    }
+
     /// Validates that a specified unlock time is in the future.
     public fun is_valid_period(unix_time: u32, current_time: u32): bool {
         unix_time > current_time
