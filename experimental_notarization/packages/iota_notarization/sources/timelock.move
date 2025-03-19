@@ -25,7 +25,7 @@ module iota_notarization::timelock {
     public enum TimeLock has store {
         /// A lock that unlocks at a specific Unix timestamp (seconds since epoch)
         UnlockAt(u32),
-        /// A permanent lock that never unlocks (Only used in State Locking)
+        /// A permanent lock that never unlocks (can't be used for locking delete)
         UntilDestroyed,
         /// No lock applied
         None
