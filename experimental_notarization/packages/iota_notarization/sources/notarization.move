@@ -44,12 +44,11 @@ module iota_notarization::notarization {
         created_at: u64,
         /// Description of the `Notarization`
         description: Option<String>,
-        /// Optional lock metadata for locked `Notarization`
+        /// Optional lock metadata for `Notarization`
         locking: Option<LockMetadata>,
     }
 
     /// Defines how a `Notarization` is locked.
-    /// Can be used with the optional `ImmutableMetadata::locking`.
     public struct LockMetadata has store {
         /// Update lock condition
         update_lock: TimeLock,
@@ -62,7 +61,6 @@ module iota_notarization::notarization {
     // ===== Notarization State =====
     /// Represents the state of a Notarization that can be updated
     /// Contains arbitrary data and metadata that can be updated by the owner
-    /// The arbitrary data is stored in a generic type D.
     public struct State<D: store + drop + copy> has store, drop, copy {
         /// The data being notarized
         data: D,
@@ -182,7 +180,6 @@ module iota_notarization::notarization {
 
     // ===== State Management Functions =====
     /// Update the state of a `Notarization`
-    /// Will check locks if the `Notarization` is a locked variant
     public fun update_state<D: store + drop + copy>(
         self: &mut Notarization<D>,
         new_state: State<D>,
@@ -204,7 +201,6 @@ module iota_notarization::notarization {
     }
 
     /// Destroy a `Notarization`
-    /// Will check locks if the `Notarization` is a locked variant
     public fun destroy<D: drop + store + copy>(
         self: Notarization<D>,
         clock: &Clock,
@@ -245,7 +241,6 @@ module iota_notarization::notarization {
     // ===== Metadata Management Functions =====
     /// Update the updateable metadata of a `Notarization`
     /// This does not affect the state version count
-    /// Will check locks if the `Notarization` is a locked variant (uses the same lock as state updates)
     public fun update_metadata<D: store + drop + copy>(
         self: &mut Notarization<D>,
         new_metadata: Option<String>,
