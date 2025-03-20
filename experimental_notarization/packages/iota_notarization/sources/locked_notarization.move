@@ -8,6 +8,7 @@ module iota_notarization::locked_notarization {
     use iota::clock::Clock;
     use iota_notarization::timelock::TimeLock;
     use iota_notarization::notarization;
+    use iota_notarization::notarization::NotarizationType;
 
     /// Event emitted when a locked notarization is created
     public struct LockedNotarizationCreated has copy, drop {
@@ -23,7 +24,7 @@ module iota_notarization::locked_notarization {
         delete_lock: TimeLock,
         clock: &Clock,
         ctx: &mut TxContext
-    ): notarization::Notarization<D> {
+    ): notarization::Notarization<NotarizationType, D> {
         notarization::new_locked_notarization(
             state,
             immutable_description,

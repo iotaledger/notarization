@@ -9,6 +9,7 @@ module iota_notarization::dynamic_notarization {
     use iota::clock::Clock;
     use iota_notarization::notarization;
     use iota_notarization::timelock::TimeLock;
+    use iota_notarization::notarization::NotarizationType;
 
     // ===== Constants =====
     /// Cannot transfer a notarization that is not transferrable
@@ -38,7 +39,7 @@ module iota_notarization::dynamic_notarization {
         transfer_lock: Option<TimeLock>,
         clock: &Clock,
         ctx: &mut TxContext
-    ): notarization::Notarization<D> {
+    ): notarization::Notarization<NotarizationType, D> {
         notarization::new_dynamic_notarization(
             state,
             immutable_description,
@@ -70,7 +71,7 @@ module iota_notarization::dynamic_notarization {
     /// Transfer a dynamic notarization to a new owner
     /// Only works for dynamic notarizations that are marked as transferrable
     public fun transfer<D: store + drop + copy>(
-        self: notarization::Notarization<D>,
+        self: notarization::Notarization<NotarizationType, D>,
         recipient: address,
         clock: &Clock,
         _: &mut TxContext
@@ -96,7 +97,7 @@ module iota_notarization::dynamic_notarization {
     }
 
     /// Check if the notarization is transferable
-    public fun is_transferable<D: store + drop + copy>(self: &notarization::Notarization<D>, clock: &Clock): bool {
+    public fun is_transferable<D: store + drop + copy>(self: &notarization::Notarization<NotarizationType, D>, clock: &Clock): bool {
         self.lock_metadata().is_none() || !self.is_transfer_locked(clock)
     }
 
