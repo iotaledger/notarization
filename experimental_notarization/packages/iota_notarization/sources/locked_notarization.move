@@ -22,7 +22,7 @@ module iota_notarization::locked_notarization {
         updateable_metadata:Option<String>,
         delete_lock: TimeLock,
         clock: &Clock,
-        ctx: &mut iota::tx_context::TxContext
+        ctx: &mut TxContext
     ): notarization::Notarization<D> {
         notarization::new_locked_notarization(
             state,
@@ -41,7 +41,7 @@ module iota_notarization::locked_notarization {
         updateable_metadata: Option<String>,
         delete_lock: TimeLock,
         clock: &Clock,
-        ctx: &mut iota::tx_context::TxContext
+        ctx: &mut TxContext
     ) {
         let notarization = new(state, immutable_description, updateable_metadata, delete_lock,  clock, ctx);
 
