@@ -11,10 +11,8 @@ module iota_notarization::dynamic_notarization {
     use iota_notarization::timelock::TimeLock;
 
     // ===== Constants =====
-    /// Cannot transfer a notarization that is not transferrable
-    const ENotTransferrable: u64 = 0;
     /// Cannot transfer a locked notarization
-    const ECannotTransferLocked: u64 = 1;
+    const ECannotTransferLocked: u64 = 0;
 
     /// Event emitted when a dynamic notarization is created
     public struct DynamicNotarizationCreated has copy, drop {
@@ -75,16 +73,9 @@ module iota_notarization::dynamic_notarization {
         clock: &Clock,
         _: &mut TxContext
     ) {
-        // Ensure this is a dynamic notarization (not locked)
-        assert!(self.lock_metadata().is_none(), ECannotTransferLocked);
-
         // Ensure this notarization is transferrable
-        assert!(is_transferable(&self, clock), ENotTransferrable);
+        assert!(is_transferable(&self, clock), ECannotTransferLocked);
 
-        // Ensure the notarized object is not transfer locked
-        assert!(self.is_transfer_locked(clock), ECannotTransferLocked);
-
-        // Use the core module to transfer the notarization
         notarization::transfer_notarization(self, recipient);
 
         // Emit our own module-specific event
