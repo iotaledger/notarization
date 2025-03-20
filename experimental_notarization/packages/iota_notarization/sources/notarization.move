@@ -18,7 +18,7 @@ module iota_notarization::notarization {
     /// A lock time is not satisfied
     const ELockTimeNotSatisfied: u64 = 2;
     /// Delete lock cannot be TimeLock::UntilDestroyed
-    const EDUntilDestroyedLockNotAllowed: u64 = 3;
+    const EUntilDestroyedLockNotAllowed: u64 = 3;
 
     // ===== Core Type =====
     /// A unified notarization type that can be either dynamic or locked
@@ -106,7 +106,7 @@ module iota_notarization::notarization {
         delete_lock: TimeLock,
         transfer_lock: TimeLock
     ): LockMetadata {
-        assert!(!delete_lock.is_until_destroyed(), EDUntilDestroyedLockNotAllowed);
+        assert!(!delete_lock.is_until_destroyed(), EUntilDestroyedLockNotAllowed);
 
         if (delete_lock.is_unlock_at()) {
             let delete_lock_time = delete_lock.get_unlock_time().destroy_some();

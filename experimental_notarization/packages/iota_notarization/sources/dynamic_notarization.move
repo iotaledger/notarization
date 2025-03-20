@@ -78,7 +78,7 @@ module iota_notarization::dynamic_notarization {
         assert!(self.lock_metadata().is_none(), ECannotTransferLocked);
 
         // Ensure this notarization is transferrable
-        assert!(is_transferable(&self), ENotTransferrable);
+        assert!(is_transferable(&self, clock), ENotTransferrable);
 
         // Ensure the notarized object is not transfer locked
         assert!(self.is_transfer_locked(clock), ECannotTransferLocked);
@@ -95,8 +95,8 @@ module iota_notarization::dynamic_notarization {
     }
 
     /// Check if the notarization is transferable
-    public fun is_transferable<D: store + drop + copy>(self: &notarization::Notarization<D>): bool {
-        (self.lock_metadata().is_none() && self.transferable())
+    public fun is_transferable<D: store + drop + copy>(self: &notarization::Notarization<D>, clock: &Clock): bool {
+        self.lock_metadata().is_none() || (self.transferable() && !self.is_transfer_locked(clock))
     }
 
 }
