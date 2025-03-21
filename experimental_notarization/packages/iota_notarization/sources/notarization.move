@@ -140,7 +140,7 @@ module iota_notarization::notarization {
         clock: &Clock,
         ctx: &mut TxContext
     ): Notarization<D> {
-    let locking = option::map!(transfer_lock, |lock| new_lock_metadata(lock, timelock::none(), timelock::none()));
+    let locking = option::map!(transfer_lock, |transfer_lock| new_lock_metadata(timelock::none(), timelock::none(), transfer_lock));
 
         Notarization<D> {
             id: object::new(ctx),
