@@ -8,7 +8,8 @@
 /// different types of time-based locks:
 ///
 /// - Simple time locks that unlock at a specific Unix timestamp
-/// - Infinite locks that never unlock.
+/// - UntilDestroyed lock that never unlocks until the notarization is destroyed
+/// - None lock that is not locked
 module iota_notarization::timelock {
     use iota::clock::{Self, Clock};
 
@@ -24,8 +25,8 @@ module iota_notarization::timelock {
     public enum TimeLock has store {
         /// A lock that unlocks at a specific Unix timestamp (seconds since epoch)
         UnlockAt(u32),
-        /// A permanent lock that never unlocks (Only used in State Locking)
-        InfiniteLock,
+        /// A permanent lock that never unlocks (can't be used for locking delete)
+        UntilDestroyed,
         /// No lock applied
         None
     }
@@ -39,27 +40,49 @@ module iota_notarization::timelock {
         TimeLock::UnlockAt(unix_time)
     }
 
-    /// Creates a new infinite lock that never unlocks.
-    public fun infinite_lock(): TimeLock {
-        TimeLock::InfiniteLock
+    /// Creates a new UntilDestroyed lock that never unlocks.
+    public fun until_destroyed(): TimeLock {
+        TimeLock::UntilDestroyed
     }
 
-    /// Checks if the provided lock time is an infinite lock.
-    public fun is_infinite_lock(lock_time: &TimeLock): bool {
+    /// Create a new lock that is not locked.
+    public fun none(): TimeLock {
+        TimeLock::None
+    }
+
+    /// Checks if the provided lock time is an UntilDestroyed lock.
+    public fun is_until_destroyed(lock_time: &TimeLock): bool {
         match (lock_time) {
-            TimeLock::InfiniteLock => true,
+            TimeLock::UntilDestroyed => true,
             _ => false
         }
     }
 
-    /// Destroys a TimeLock if it's either unlocked or an infinite lock.
-    public fun destroy_if_unlocked_or_infinite_lock(condition: TimeLock, clock: &Clock) {
+
+    /// Checks if the provided lock time is a UnixTime lock.
+    public fun is_unlock_at(lock_time: &TimeLock): bool {
+        match (lock_time) {
+            TimeLock::UnlockAt(_) => true,
+            _ => false
+        }
+    }
+
+    /// Gets the unlock time from a TimeLock if it is a UnixTime lock.
+    public fun get_unlock_time(lock_time: &TimeLock): Option<u32> {
+        match (lock_time) {
+            TimeLock::UnlockAt(time) => option::some(*time),
+            _ => option::none()
+        }
+    }
+
+    /// Destroys a TimeLock if it's either unlocked or an UntilDestroyed lock.
+    public fun destroy(condition: TimeLock, clock: &Clock) {
         // The TimeLock is always destroyed, except of those cases where an assertion is raised
         match (condition) {
             TimeLock::UnlockAt(time) => {
                 assert!(!(time > ((clock::timestamp_ms(clock) / 1000) as u32)), ETimelockNotExpired);
             },
-            TimeLock::InfiniteLock => {},
+            TimeLock::UntilDestroyed => {},
             TimeLock::None => {}
 
         }
@@ -70,14 +93,25 @@ module iota_notarization::timelock {
     /// This function evaluates whether a given TimeLock instance is currently in a locked state
     /// by comparing the current time with the lock's parameters. A lock is considered active if:
     /// 1. For UnixTime locks: The current time hasn't reached the specified unlock time yet
-    /// 2. For InfiniteLock: Always returns true as these locks never unlock
+    /// 2. For UntilDestroyed: Always returns true as these locks never unlock until the notarization is destroyed
+    /// 3. For None: Always returns false as there is no lock
     public fun is_timelocked(condition: &TimeLock, clock: &Clock): bool {
         match (condition) {
             TimeLock::UnlockAt(unix_time) => {
                 *unix_time > ((clock::timestamp_ms(clock) / 1000) as u32)
             },
-            TimeLock::InfiniteLock => true,
+            TimeLock::UntilDestroyed => true,
             TimeLock::None => false
+        }
+    }
+
+    /// Check if a timelock condition is `UnlockAt`
+    public fun is_timelocked_unlock_at(lock_time: &TimeLock, clock: &Clock): bool {
+        match (lock_time) {
+            TimeLock::UnlockAt(time) => {
+                *time > ((clock::timestamp_ms(clock) / 1000) as u32)
+            },
+            _ => false
         }
     }
 
