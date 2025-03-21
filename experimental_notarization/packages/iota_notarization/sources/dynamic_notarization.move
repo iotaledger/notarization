@@ -9,7 +9,7 @@ module iota_notarization::dynamic_notarization {
     use iota::clock::Clock;
     use iota_notarization::notarization;
     use iota_notarization::timelock::TimeLock;
-    use iota_notarization::notarization::NotarizationType;
+    use iota_notarization::method::NotarizationType;
 
     // ===== Constants =====
     /// Cannot transfer a notarization that is not transferrable

@@ -9,6 +9,7 @@ module iota_notarization::notarization {
     use iota::clock::{Self, Clock};
     use std::string::String;
     use iota_notarization::timelock::{Self, TimeLock};
+    use iota_notarization::method::{Self, NotarizationType};
 
     // ===== Constants =====
     /// Cannot update state while notarization is locked for updates
@@ -19,11 +20,6 @@ module iota_notarization::notarization {
     const ELockTimeNotSatisfied: u64 = 2;
     /// Delete lock cannot be TimeLock::UntilDestroyed
     const EUntilDestroyedLockNotAllowed: u64 = 3;
-
-    public enum NotarizationType has store, drop, copy {
-        Dynamic,
-        Locked
-    }
 
     // ===== Core Type =====
     /// A unified notarization type that can be either dynamic or locked
@@ -40,7 +36,7 @@ module iota_notarization::notarization {
         /// Counter for the number of state updates
         state_version_count: u64,
         /// Phantom type to ensure type safety
-        notarization_type: T,
+        notarization_type: NotarizationType,
     }
 
     // ===== Metadata and Locking =====
@@ -160,7 +156,7 @@ module iota_notarization::notarization {
             updateable_metadata,
             last_state_change_at: clock::timestamp_ms(clock),
             state_version_count: 0,
-            notarization_type: NotarizationType::Dynamic
+            notarization_type: method::new_dynamic()
         }
     }
 
@@ -185,7 +181,7 @@ module iota_notarization::notarization {
             updateable_metadata,
             last_state_change_at: clock::timestamp_ms(clock),
             state_version_count: 0,
-            notarization_type: NotarizationType::Locked
+            notarization_type: method::new_locked()
         }
     }
 
@@ -325,5 +321,10 @@ module iota_notarization::notarization {
             timelock::is_timelocked_unlock_at(&lock_metadata.delete_lock, clock) ||
             timelock::is_timelocked_unlock_at(&lock_metadata.transfer_lock, clock)
         }
+    }
+
+    /// Indicates which Notarization method is implemented
+    public fun print_notarization_method<T: store + drop + copy, D: store + drop + copy>(self: &Notarization<T, D>): String {
+        self.notarization_type.to_str()
     }
 }
