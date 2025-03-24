@@ -144,7 +144,7 @@ public(package) fun new_dynamic_notarization<D: store + drop + copy>(
     clock: &Clock,
     ctx: &mut TxContext
 ): Notarization<D> {
-let locking = option::map!(transfer_lock, |transfer_lock| new_lock_metadata(timelock::none(), timelock::none(), transfer_lock));
+    let locking = option::map!(transfer_lock, |transfer_lock| new_lock_metadata(timelock::none(), timelock::none(), transfer_lock));
 
     Notarization<D> {
         id: object::new(ctx),
