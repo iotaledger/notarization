@@ -277,7 +277,7 @@ public fun description<D: store + drop + copy>(self: &Notarization<D>): &Option<
 public fun updateable_metadata<D: store + drop + copy>(self: &Notarization<D>): &Option<String> {
     &self.updateable_metadata
 }
-public fun method<D: store + drop + copy>(self: &Notarization<D>): NotarizationType { self.method }
+public fun notarization_method<D: store + drop + copy>(self: &Notarization<D>): NotarizationType { self.method }
 
 // ===== Lock-Related Getter Functions =====
 /// Get the lock metadata if this is a locked Notarization
