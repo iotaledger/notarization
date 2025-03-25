@@ -213,7 +213,7 @@ public fun destroy<D: drop + store + copy>(
     self: Notarization<D>,
     clock: &Clock,
 ) {
-    assert!(!self.is_destroy_allowed(clock), EDestroyWhileLocked);
+    assert!(self.is_destroy_allowed(clock), EDestroyWhileLocked);
 
     let Notarization { id, state: _, immutable_metadata: ImmutableMetadata {
         created_at: _, description: _, locking,
@@ -323,9 +323,9 @@ public fun is_destroy_allowed<D: store + drop + copy>(self: &Notarization<D>, cl
     } else {
         let lock_metadata = option::borrow(&self.immutable_metadata.locking);
 
-        timelock::is_timelocked_unlock_at(&lock_metadata.update_lock, clock) ||
+        !(timelock::is_timelocked_unlock_at(&lock_metadata.update_lock, clock) ||
         timelock::is_timelocked_unlock_at(&lock_metadata.delete_lock, clock) ||
-        timelock::is_timelocked_unlock_at(&lock_metadata.transfer_lock, clock)
+        timelock::is_timelocked_unlock_at(&lock_metadata.transfer_lock, clock))
     }
 }
 
