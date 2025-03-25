@@ -344,3 +344,27 @@ public(package) fun destroy_lock_metadata(lock_metadata: LockMetadata, clock: &C
     timelock::destroy(delete_lock, clock);
     timelock::destroy(transfer_lock, clock);
 }
+
+#[test_only]
+public(package) fun create_custom_notarization<D: store + drop + copy>(
+    state: State<D>,
+    immutable_description: Option<String>,
+    updateable_metadata: Option<String>,
+    lock_metadata: Option<LockMetadata>,
+    clock: &Clock,
+    ctx: &mut TxContext
+): Notarization<D> {
+    Notarization<D> {
+        id: object::new(ctx),
+        state,
+        immutable_metadata: ImmutableMetadata {
+            created_at: clock::timestamp_ms(clock),
+            description: immutable_description,
+            locking: lock_metadata,
+        },
+        updateable_metadata,
+        last_state_change_at: clock::timestamp_ms(clock),
+        state_version_count: 0,
+        method: new_locked()
+    }
+}
