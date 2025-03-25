@@ -10,7 +10,7 @@ use iota::event;
 use iota::clock::{Self, Clock};
 use std::string::String;
 use iota_notarization::timelock::{Self, TimeLock};
-use iota_notarization::method::{NotarizationType, new_dynamic, new_locked};
+use iota_notarization::method::{NotarizationMethod, new_dynamic, new_locked};
 
 // ===== Constants =====
 /// Cannot update state while notarization is locked for updates
@@ -37,7 +37,7 @@ public struct Notarization<D: store + drop + copy> has key {
     /// Counter for the number of state updates
     state_version_count: u64,
     /// Notarization Method
-    method: NotarizationType
+    method: NotarizationMethod
 }
 
 // ===== Metadata and Locking =====
@@ -213,7 +213,7 @@ public fun destroy<D: drop + store + copy>(
     self: Notarization<D>,
     clock: &Clock,
 ) {
-    assert!(!self.is_fully_locked(clock), EDestroyWhileLocked);
+    assert!(!self.is_destroy_allowed(clock), EDestroyWhileLocked);
 
     let Notarization { id, state: _, immutable_metadata: ImmutableMetadata {
         created_at: _, description: _, locking,
@@ -277,7 +277,7 @@ public fun description<D: store + drop + copy>(self: &Notarization<D>): &Option<
 public fun updateable_metadata<D: store + drop + copy>(self: &Notarization<D>): &Option<String> {
     &self.updateable_metadata
 }
-public fun notarization_method<D: store + drop + copy>(self: &Notarization<D>): NotarizationType { self.method }
+public fun notarization_method<D: store + drop + copy>(self: &Notarization<D>): NotarizationMethod { self.method }
 
 // ===== Lock-Related Getter Functions =====
 /// Get the lock metadata if this is a locked Notarization
@@ -316,15 +316,15 @@ public fun is_transfer_locked<D: store + drop + copy>(self: &Notarization<D>, cl
     })
 }
 
-/// Check if the `Notarization` is fully locked
-public fun is_fully_locked<D: store + drop + copy>(self: &Notarization<D>, clock: &Clock): bool {
+/// Check if the `Notarization` can be destroyed
+public fun is_destroy_allowed<D: store + drop + copy>(self: &Notarization<D>, clock: &Clock): bool {
     if (self.method.is_dynamic()) {
         false
     } else {
         let lock_metadata = option::borrow(&self.immutable_metadata.locking);
 
-        timelock::is_timelocked_unlock_at(&lock_metadata.update_lock, clock) &&
-        timelock::is_timelocked_unlock_at(&lock_metadata.delete_lock, clock) &&
+        timelock::is_timelocked_unlock_at(&lock_metadata.update_lock, clock) ||
+        timelock::is_timelocked_unlock_at(&lock_metadata.delete_lock, clock) ||
         timelock::is_timelocked_unlock_at(&lock_metadata.transfer_lock, clock)
     }
 }

@@ -1,50 +1,50 @@
 // Copyright (c) 2024 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-/// This module provides enum NotarizationType used to distinguish programmatically
+/// This module provides enum NotarizationMethod used to distinguish programmatically
 /// between Notarization methods.
 module iota_notarization::method;
 use std::string::{Self, String};
 
 // Indicates the Notarization method.
-public enum NotarizationType has store, drop, copy {
+public enum NotarizationMethod has store, drop, copy {
     Dynamic,
     Locked
 }
 
-/// Returns a new NotarizationType::Dynamic.
-public fun new_dynamic(): NotarizationType {
-    NotarizationType::Dynamic
+/// Returns a new NotarizationMethod::Dynamic.
+public fun new_dynamic(): NotarizationMethod {
+    NotarizationMethod::Dynamic
 }
 
-/// Returns a new NotarizationType::Locked.
-public fun new_locked(): NotarizationType {
-    NotarizationType::Locked
+/// Returns a new NotarizationMethod::Locked.
+public fun new_locked(): NotarizationMethod {
+    NotarizationMethod::Locked
 }
 
-/// Returns true if the NotarizationType is Dynamic
-public fun is_dynamic(method: &NotarizationType): bool {
+/// Returns true if the NotarizationMethod is Dynamic
+public fun is_dynamic(method: &NotarizationMethod): bool {
     match (method) {
-        NotarizationType::Dynamic => true,
-        NotarizationType::Locked => false
+        NotarizationMethod::Dynamic => true,
+        NotarizationMethod::Locked => false
     }
 }
 
-/// Returns true if the NotarizationType is Locked
-public fun is_locked(method: &NotarizationType): bool {
+/// Returns true if the NotarizationMethod is Locked
+public fun is_locked(method: &NotarizationMethod): bool {
     match (method) {
-        NotarizationType::Dynamic => false,
-        NotarizationType::Locked => true
+        NotarizationMethod::Dynamic => false,
+        NotarizationMethod::Locked => true
     }
 }
 
 /// Returns the Notarization method as String
-public fun to_str(method: &NotarizationType): String {
+public fun to_str(method: &NotarizationMethod): String {
     match (method) {
-        NotarizationType::Dynamic => {
+        NotarizationMethod::Dynamic => {
             string::utf8(b"DynamicNotarization")
         },
-        NotarizationType::Locked => {
+        NotarizationMethod::Locked => {
             string::utf8(b"LockedNotarization")
         },
     }
