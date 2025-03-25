@@ -96,7 +96,7 @@ public fun test_create_dynamic_notarization_with_vector_data() {
 
     // Check that the notarization was created and transferred to ADMIN_ADDRESS
     let notarization = scenario.take_from_sender<notarization::Notarization<vector<u8>>>();
-    
+
     // Verify notarization properties
     assert!(notarization::notarization_method(&notarization).is_dynamic(), 0);
     assert!(notarization::description(&notarization) == &std::option::some(string::utf8(b"Test Description")), 0);

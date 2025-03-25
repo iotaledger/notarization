@@ -65,6 +65,7 @@ public struct LockMetadata has store {
     transfer_lock: TimeLock,
 }
 
+
 // ===== Notarization State =====
 /// Represents the state of a Notarization that can be updated
 /// Contains arbitrary data and metadata that can be updated by the owner
@@ -100,6 +101,11 @@ public fun new_state_from_vector(data: vector<u8>, metadata: Option<String>): St
 
 /// Create state from a string data
 public fun new_state_from_string(data: String, metadata: Option<String>): State<String> {
+    State { data, metadata }
+}
+
+/// Create state from generic data
+public fun new_state_from_generic<D: store + drop + copy>(data: D, metadata: Option<String>): State<D> {
     State { data, metadata }
 }
 
@@ -193,9 +199,7 @@ public fun update_state<D: store + drop + copy>(
     new_state: State<D>,
     clock: &Clock,
 ) {
-    if (self.is_update_locked(clock)) {
-        abort EUpdateWhileLocked
-    };
+    assert!(!self.is_update_locked(clock), EUpdateWhileLocked);
 
     self.state = new_state;
     self.last_state_change_at = clock::timestamp_ms(clock);
@@ -254,9 +258,7 @@ public fun update_metadata<D: store + drop + copy>(
     new_metadata: Option<String>,
     clock: &Clock,
 ) {
-    if (self.is_update_locked(clock)) {
-        abort EUpdateWhileLocked
-    };
+    assert!(!self.is_update_locked(clock), EUpdateWhileLocked);
 
     self.updateable_metadata = new_metadata;
 }
@@ -323,9 +325,22 @@ public fun is_fully_locked<D: store + drop + copy>(self: &Notarization<D>, clock
     } else {
         let lock_metadata = option::borrow(&self.immutable_metadata.locking);
 
-        timelock::is_timelocked_unlock_at(&lock_metadata.update_lock, clock) &&
-        timelock::is_timelocked_unlock_at(&lock_metadata.delete_lock, clock) &&
+        timelock::is_timelocked_unlock_at(&lock_metadata.update_lock, clock) ||
+        timelock::is_timelocked_unlock_at(&lock_metadata.delete_lock, clock) ||
         timelock::is_timelocked_unlock_at(&lock_metadata.transfer_lock, clock)
     }
 }
 
+// ===== Test-only Functions =====
+#[test_only]
+public(package) fun destroy_lock_metadata(lock_metadata: LockMetadata, clock: &Clock) {
+    let LockMetadata {
+        update_lock,
+        delete_lock,
+        transfer_lock
+    } = lock_metadata;
+
+    timelock::destroy(update_lock, clock);
+    timelock::destroy(delete_lock, clock);
+    timelock::destroy(transfer_lock, clock);
+}
