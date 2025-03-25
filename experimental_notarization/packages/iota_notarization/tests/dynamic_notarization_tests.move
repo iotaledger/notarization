@@ -15,12 +15,6 @@ use iota_notarization::dynamic_notarization;
 const ADMIN_ADDRESS: address = @0x01;
 const RECIPIENT_ADDRESS: address = @0x02;
 
-// public struct DummyComplexObject {
-//     data: vector<u8>,
-//     hash: string::String,
-//     index: u64
-// }
-
 #[test]
 public fun test_create_dynamic_notarization_with_string_data() {
     let mut scenario = ts::begin(ADMIN_ADDRESS);
