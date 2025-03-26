@@ -2,93 +2,91 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /// This module provides dynamic notarization capabilities that can be freely updated by its owner
-#[allow(lint(self_transfer))]
-module iota_notarization::dynamic_notarization {
-    use std::string::String;
-    use iota::event;
-    use iota::clock::Clock;
-    use iota_notarization::notarization;
-    use iota_notarization::timelock::TimeLock;
+module iota_notarization::dynamic_notarization;
 
-    // ===== Constants =====
-    /// Cannot transfer a locked notarization
-    const ECannotTransferLocked: u64 = 0;
+use std::string::String;
+use iota::event;
+use iota::clock::Clock;
+use iota_notarization::notarization;
+use iota_notarization::timelock::TimeLock;
 
-    /// Event emitted when a dynamic notarization is created
-    public struct DynamicNotarizationCreated has copy, drop {
-        /// ID of the `Notarization` object that was created
-        notarization_id: ID,
-    }
+// ===== Constants =====
+/// Cannot transfer a locked notarization
+const ECannotTransferLocked: u64 = 0;
 
-    /// Event emitted when a dynamic notarization is transferred
-    public struct DynamicNotarizationTransferred has copy, drop {
-        /// ID of the `Notarization` object that was transferred
-        notarization_id: ID,
-        /// Address of the new owner
-        new_owner: address,
-    }
+/// Event emitted when a dynamic notarization is created
+public struct DynamicNotarizationCreated has copy, drop {
+    /// ID of the `Notarization` object that was created
+    notarization_id: ID,
+}
 
-    /// Create a new dynamic `Notarization`
-    public fun new<D: store + drop + copy>(
-        state: notarization::State<D>,
-        immutable_description: Option<String>,
-        updateable_metadata: Option<String>,
-        transfer_lock: Option<TimeLock>,
-        clock: &Clock,
-        ctx: &mut TxContext
-    ): notarization::Notarization<D> {
-        notarization::new_dynamic_notarization(
-            state,
-            immutable_description,
-            updateable_metadata,
-            transfer_lock,
-            clock,
-            ctx
-        )
-    }
+/// Event emitted when a dynamic notarization is transferred
+public struct DynamicNotarizationTransferred has copy, drop {
+    /// ID of the `Notarization` object that was transferred
+    notarization_id: ID,
+    /// Address of the new owner
+    new_owner: address,
+}
 
-    /// Create and transfer a new dynamic `Notarization` to the sender
-    public fun create<D: store + drop + copy>(
-        state: notarization::State<D>,
-        immutable_description: Option<String>,
-        updateable_metadata: Option<String>,
-        transfer_lock: Option<TimeLock>,
-        clock: &Clock,
-        ctx: &mut TxContext
-    ) {
-        // Use the core module to create and transfer the notarization
-        let notarization = new(state, immutable_description, updateable_metadata, transfer_lock, clock, ctx);
+/// Create a new dynamic `Notarization`
+public fun new<D: store + drop + copy>(
+    state: notarization::State<D>,
+    immutable_description: Option<String>,
+    updateable_metadata: Option<String>,
+    transfer_lock: Option<TimeLock>,
+    clock: &Clock,
+    ctx: &mut TxContext
+): notarization::Notarization<D> {
+    notarization::new_dynamic_notarization(
+        state,
+        immutable_description,
+        updateable_metadata,
+        transfer_lock,
+        clock,
+        ctx
+    )
+}
 
-        let id = object::uid_to_inner(notarization.id());
-        event::emit(DynamicNotarizationCreated { notarization_id: id });
+/// Create and transfer a new dynamic `Notarization` to the sender
+public fun create<D: store + drop + copy>(
+    state: notarization::State<D>,
+    immutable_description: Option<String>,
+    updateable_metadata: Option<String>,
+    transfer_lock: Option<TimeLock>,
+    clock: &Clock,
+    ctx: &mut TxContext
+) {
+    // Use the core module to create and transfer the notarization
+    let notarization = new(state, immutable_description, updateable_metadata, transfer_lock, clock, ctx);
 
-        notarization::transfer_notarization(notarization, tx_context::sender(ctx));
-    }
+    let id = object::uid_to_inner(notarization.id());
+    event::emit(DynamicNotarizationCreated { notarization_id: id });
 
-    /// Transfer a dynamic notarization to a new owner
-    /// Only works for dynamic notarizations that are marked as transferrable
-    public fun transfer<D: store + drop + copy>(
-        self: notarization::Notarization<D>,
-        recipient: address,
-        clock: &Clock,
-        _: &mut TxContext
-    ) {
-        // Ensure this notarization is transferrable
-        assert!(is_transferable(&self, clock), ECannotTransferLocked);
+    notarization::transfer_notarization(notarization, tx_context::sender(ctx));
+}
 
-        notarization::transfer_notarization(self, recipient);
+/// Transfer a dynamic notarization to a new owner
+/// Only works for dynamic notarizations that are marked as transferrable
+public fun transfer<D: store + drop + copy>(
+    self: notarization::Notarization<D>,
+    recipient: address,
+    clock: &Clock,
+    _: &mut TxContext
+) {
+    // Ensure this notarization is transferrable
+    assert!(is_transferable(&self, clock), ECannotTransferLocked);
 
-        // Emit our own module-specific event
-        let id = object::id_from_address(recipient);
-        event::emit(DynamicNotarizationTransferred {
-            notarization_id: id,
-            new_owner: recipient
-        });
-    }
+    notarization::transfer_notarization(self, recipient);
 
-    /// Check if the notarization is transferable
-    public fun is_transferable<D: store + drop + copy>(self: &notarization::Notarization<D>, clock: &Clock): bool {
-        self.lock_metadata().is_none() || !self.is_transfer_locked(clock)
-    }
+    // Emit our own module-specific event
+    let id = object::id_from_address(recipient);
+    event::emit(DynamicNotarizationTransferred {
+        notarization_id: id,
+        new_owner: recipient
+    });
+}
 
+/// Check if the notarization is transferable
+public fun is_transferable<D: store + drop + copy>(self: &notarization::Notarization<D>, clock: &Clock): bool {
+    self.lock_metadata().is_none() || !self.is_transfer_locked(clock)
 }
