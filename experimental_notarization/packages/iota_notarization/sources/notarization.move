@@ -21,6 +21,12 @@ const EDestroyWhileLocked: u64 = 1;
 const ELockTimeNotSatisfied: u64 = 2;
 /// Delete lock cannot be TimeLock::UntilDestroyed
 const EUntilDestroyedLockNotAllowed: u64 = 3;
+/// Dynamic notarization cannot have locking metadata
+///
+/// Note: It will only have incase there is `transfer lock`
+const EDynamicNotarizationImmutableMetadataNotAllowed: u64 = 4;
+/// Locked notarization must have locking metadata
+const ELockedNotarizationNeedsImmutableMetadata: u64 = 5;
 
 // ===== Core Type =====
 /// A unified notarization type that can be either dynamic or locked
@@ -287,6 +293,9 @@ public fun lock_metadata<D: store + drop + copy>(self: &Notarization<D>): &Optio
 
 /// Check if the `Notarization` is locked for updates (always false for dynamic variant)
 public fun is_update_locked<D: store + drop + copy>(self: &Notarization<D>, clock: &Clock): bool {
+
+    assert_method_specific_invariants(self);
+
     if (self.method.is_dynamic()) {
         false
     } else {
@@ -298,6 +307,8 @@ public fun is_update_locked<D: store + drop + copy>(self: &Notarization<D>, cloc
 
 /// Check if the `Notarization` is locked for deletion (always false for dynamic variant)
 public fun is_delete_locked<D: store + drop + copy>(self: &Notarization<D>, clock: &Clock): bool {
+    assert_method_specific_invariants(self);
+
     if (self.method.is_dynamic()) {
         false
     } else {
@@ -329,3 +340,15 @@ public fun is_destroy_allowed<D: store + drop + copy>(self: &Notarization<D>, cl
     }
 }
 
+/// Asserts the following Notarization method specific invariants:
+/// - For `NotarizationMethod::Dynamic`:
+///   - `self.immutable_metadata.locking` must be None
+/// - For `NotarizationMethod::Locked`:
+///   - `self.immutable_metadata.locking` must exist
+public fun assert_method_specific_invariants<D: store + drop + copy>(self: &Notarization<D>) {
+    if (self.method.is_dynamic()) {
+        assert!(self.immutable_metadata.locking.is_none(), EDynamicNotarizationImmutableMetadataNotAllowed);
+    } else if (self.method.is_locked()){
+        assert!(self.immutable_metadata.locking.is_some(), ELockedNotarizationNeedsImmutableMetadata);
+    }
+}
