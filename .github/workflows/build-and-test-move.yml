@@ -3,12 +3,12 @@ name: Build and Test
 on:
   pull_request:
     paths:
-      - 'experimental_notarization/iota_notarization/packages/**'
+      - 'experimental_notarization/packages/iota_notarization/**'
   push:
     branches:
       - main
     paths:
-      - 'experimental_notarization/iota_notarization/packages/**'
+      - 'experimental_notarization/packages/iota_notarization/**'
   workflow_dispatch:
     inputs:
       platform:
@@ -21,7 +21,7 @@ on:
         default: ''
 
 env:
-  MOVE_PACKAGES_PATH: experimental_notarization/iota_notarization/packages
+  MOVE_PACKAGES_PATH: experimental_notarization/packages/iota_notarization
 
 jobs:
   check-for-run-condition:
@@ -48,8 +48,10 @@ jobs:
 
       - name: 'Build Move contract'
         run: |
+          set -e
           iota move build -p ${{ env.MOVE_PACKAGES_PATH }} --warnings-as-errors
 
       - name: 'Run Move tests'
         run: |
+          set -e
           iota move test -p ${{ env.MOVE_PACKAGES_PATH }}
