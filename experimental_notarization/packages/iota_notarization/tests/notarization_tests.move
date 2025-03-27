@@ -105,8 +105,8 @@ public fun test_invalid_lock_time_ordering() {
 
     // Try to create lock metadata with invalid time ordering
     // Delete lock time must be >= update lock time
-    let update_lock = timelock::new_unlock_at(2000000, &clock);
-    let delete_lock = timelock::new_unlock_at(1500000, &clock); // Earlier than update_lock
+    let update_lock = timelock::unlock_at(2000000, &clock);
+    let delete_lock = timelock::unlock_at(1500000, &clock); // Earlier than update_lock
     let transfer_lock = timelock::none();
 
     let lock_metadata = notarization::new_lock_metadata(update_lock, delete_lock, transfer_lock);
@@ -215,7 +215,7 @@ public fun test_destroy_while_locked() {
     let state = notarization::new_state_from_string(data, std::option::none());
 
     // Create a locked notarization with delete lock
-    let delete_lock = timelock::new_unlock_at(2000, &clock);
+    let delete_lock = timelock::unlock_at(2000, &clock);
     let notarization = notarization::new_locked_notarization(
         state,
         std::option::none(),
@@ -246,7 +246,7 @@ public fun test_lock_status_checks() {
     let state = notarization::new_state_from_string(data, std::option::none());
 
     // Create a locked notarization with timed locks
-    let delete_lock = timelock::new_unlock_at(2000, &clock);
+    let delete_lock = timelock::unlock_at(2000, &clock);
     let notarization = notarization::new_locked_notarization(
         state,
         std::option::none(),
@@ -322,7 +322,7 @@ public fun test_method_type_checks() {
 }
 
 #[test]
-public fun test_notarization_with_all_locks() {
+public fun test_is_destroy_allowed() {
     let mut scenario = ts::begin(ADMIN_ADDRESS);
     let ctx = ts::ctx(&mut scenario);
 
@@ -333,75 +333,110 @@ public fun test_notarization_with_all_locks() {
     let data = string::utf8(b"Test Data");
     let state = notarization::new_state_from_string(data, std::option::none());
 
-    // Create locks with different expiration times
-    let update_lock = timelock::new_unlock_at(1500, &clock); // Unlocks first
-    let transfer_lock = timelock::new_unlock_at(2000, &clock); // Unlocks second
-    let delete_lock = timelock::new_unlock_at(2500, &clock); // Unlocks last
-
-    let lock_metadata = notarization::new_lock_metadata(update_lock, delete_lock, transfer_lock);
-
-    // Create a dynamic notarization with all locks
-    let mut notarization = notarization::create_custom_notarization(
+    // Case 1: Dynamic notarization with no locks - should be destroyable
+    let notarization1 = notarization::new_dynamic_notarization(
         state,
-        std::option::some(string::utf8(b"Test Description")),
-        std::option::some(string::utf8(b"Test Metadata")),
-        std::option::some(lock_metadata),
+        std::option::none(),
+        std::option::none(),
+        std::option::none(),
         &clock,
         ctx
     );
+    assert!(notarization::is_destroy_allowed(&notarization1, &clock), 0);
+    notarization::destroy(notarization1, &clock);
 
-    // Initial state - all locks should be active
-    assert!(notarization::is_update_locked(&notarization, &clock), 0);
-    assert!(notarization::is_delete_locked(&notarization, &clock), 0);
-    assert!(notarization::is_transfer_locked(&notarization, &clock), 0);
+    // Case 2: Locked notarization with time-based delete lock - should not be destroyable until time passes
+    let delete_lock = timelock::unlock_at(2000, &clock);
+    let notarization2 = notarization::new_locked_notarization(
+        state,
+        std::option::none(),
+        std::option::none(),
+        delete_lock,
+        &clock,
+        ctx
+    );
+    assert!(!notarization::is_destroy_allowed(&notarization2, &clock), 0);
 
-    // Advance time to just before update unlock (1499999)
-    clock::increment_for_testing(&mut clock, 499999);
-    assert!(notarization::is_update_locked(&notarization, &clock), 0);
+    // Advance time past the lock
+    clock::increment_for_testing(&mut clock, 1000000 + 1);
+    assert!(notarization::is_destroy_allowed(&notarization2, &clock), 0);
 
-    // Advance time to just after update unlock (1500001)
-    clock::increment_for_testing(&mut clock, 2);
-    assert!(!notarization::is_update_locked(&notarization, &clock), 0);
+    notarization::destroy(notarization2, &clock);
+    clock::destroy_for_testing(clock);
+    ts::end(scenario);
+}
 
-    // Try updating after unlock
-    let new_data = string::utf8(b"Updated Data");
-    let new_state = notarization::new_state_from_string(new_data, std::option::none());
-    notarization::update_state(&mut notarization, new_state, &clock);
+#[test]
+public fun test_method_specific_invariants() {
+    let mut scenario = ts::begin(ADMIN_ADDRESS);
+    let ctx = ts::ctx(&mut scenario);
 
-    // Verify update worked
-    assert!(notarization::version_count(&notarization) == 1, 0);
+    let mut clock = clock::create_for_testing(ctx);
+    clock::set_for_testing(&mut clock, 1000000);
 
-    // Advance time to just before transfer unlock (1999999)
-    clock::increment_for_testing(&mut clock, 499998);
-    assert!(notarization::is_transfer_locked(&notarization, &clock), 0);
+    // Create initial state
+    let data = string::utf8(b"Test Data");
+    let state = notarization::new_state_from_string(data, std::option::none());
 
-    // Advance time to just after transfer unlock (2000001)
-    clock::increment_for_testing(&mut clock, 2);
-    assert!(!notarization::is_transfer_locked(&notarization, &clock), 0);
+    // Test dynamic notarization invariants
+    let notarization1 = notarization::new_dynamic_notarization(
+        state,
+        std::option::none(),
+        std::option::none(),
+        std::option::none(),
+        &clock,
+        ctx
+    );
+    notarization::assert_method_specific_invariants(&notarization1);
+    notarization::destroy(notarization1, &clock);
 
+    // Test locked notarization invariants
+    let notarization2 = notarization::new_locked_notarization(
+        state,
+        std::option::none(),
+        std::option::none(),
+        timelock::none(),
+        &clock,
+        ctx
+    );
+    notarization::assert_method_specific_invariants(&notarization2);
+    notarization::destroy(notarization2, &clock);
 
+    clock::destroy_for_testing(clock);
+    ts::end(scenario);
+}
 
-    // Now we can transfer the notarization
-    notarization::transfer_notarization(notarization, ADMIN_ADDRESS);
+#[test]
+public fun test_notarization_invariants() {
+    let mut scenario = ts::begin(ADMIN_ADDRESS);
+    let ctx = ts::ctx(&mut scenario);
 
-    scenario.next_tx(ADMIN_ADDRESS);
+    let clock = clock::create_for_testing(ctx);
 
-    // Take it back and verify it's still the same notarization
-    let notarization = scenario.take_from_sender<notarization::Notarization<string::String>>();
-    assert!(notarization::version_count(&notarization) == 1, 0);
-    assert!(notarization::description(&notarization) == &std::option::some(string::utf8(b"Test Description")), 0);
+    // Test locked notarization invariants
+    let update_lock = timelock::until_destroyed();
+    let delete_lock = timelock::none();
+    let transfer_lock = timelock::until_destroyed();
+    let lock_metadata = notarization::new_lock_metadata(update_lock, delete_lock, transfer_lock);
+    let immutable_metadata = notarization::new_immutable_metadata(
+        clock::timestamp_ms(&clock),
+        std::option::none(),
+        std::option::some(lock_metadata)
+    );
 
-    // Advance time to just before delete unlock (2499999)
-    clock::increment_for_testing(&mut clock, 499998);
-    assert!(notarization::is_delete_locked(&notarization, &clock), 0);
+    assert!(notarization::are_locked_notarization_invariants_ok(&immutable_metadata), 0);
 
-    // Advance time to just after delete unlock (2500000)
-    clock::increment_for_testing(&mut clock, 2);
-    assert!(!notarization::is_delete_locked(&notarization, &clock), 0);
+    // Test dynamic notarization invariants
+    let immutable_metadata2 = notarization::new_immutable_metadata(
+        clock::timestamp_ms(&clock),
+        std::option::none(),
+        std::option::none()
+    );
 
-    // Finally, we can destroy it since the delete lock is expired
-    notarization::destroy(notarization, &clock);
+    assert!(notarization::are_dynamic_notarization_invariants_ok(&immutable_metadata2), 0);
 
+    notarization::destroy_immutable_metadata(immutable_metadata, &clock);
+    notarization::destroy_immutable_metadata(immutable_metadata2, &clock);
     clock::destroy_for_testing(clock);
     ts::end(scenario);
 }

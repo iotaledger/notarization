@@ -125,7 +125,7 @@ public fun test_create_dynamic_notarization_with_transfer_lock() {
     let state = notarization::new_state_from_string(data, metadata);
 
     // Create a transfer lock that unlocks at timestamp 2000
-    let transfer_lock = timelock::new_unlock_at(2000, &clock);
+    let transfer_lock = timelock::unlock_at(2000, &clock);
 
     // Create a dynamic notarization with transfer lock
     dynamic_notarization::create(
@@ -230,7 +230,7 @@ public fun test_transfer_locked_dynamic_notarization() {
         let state = notarization::new_state_from_string(data, std::option::none());
 
         // Create a transfer lock that unlocks at timestamp 2000
-        let transfer_lock = timelock::new_unlock_at(2000, &clock);
+        let transfer_lock = timelock::unlock_at(2000, &clock);
 
         // Create a dynamic notarization with transfer lock
         dynamic_notarization::create(
@@ -358,7 +358,7 @@ public fun test_dynamic_notarization_with_until_destroyed_lock() {
     scenario.end();
 }
 
-#[test]
+#[test, expected_failure(abort_code = notarization::EDynamicNotarizationInvariants)]
 public fun test_dynamic_notarization_with_none_lock() {
     let mut scenario = ts::begin(ADMIN_ADDRESS);
     let ctx = scenario.ctx();

@@ -20,7 +20,7 @@ public fun test_new_unlock_at() {
     let mut clock = clock::create_for_testing(ctx);
     clock::set_for_testing(&mut clock, 1000000);
 
-    let lock = timelock::new_unlock_at(1001, &clock);
+    let lock = timelock::unlock_at(1001, &clock);
 
     assert!(timelock::is_unlock_at(&lock));
     assert!(timelock::get_unlock_time(&lock) == std::option::some(1001));
@@ -47,7 +47,7 @@ public fun test_new_unlock_at_past_time() {
     clock::set_for_testing(&mut clock, 1000000);
 
     // Try to create a timelock with a timestamp in the past
-    let lock = timelock::new_unlock_at(999, &clock);
+    let lock = timelock::unlock_at(999, &clock);
 
     // This should never be reached
     timelock::destroy(lock, &clock);
@@ -118,7 +118,7 @@ public fun test_destroy_locked_timelock() {
     clock::set_for_testing(&mut clock, 1000000);
 
     // Create a timelock that unlocks at time 2000
-    let lock = timelock::new_unlock_at(2000, &clock);
+    let lock = timelock::unlock_at(2000, &clock);
 
     // Try to destroy it before it's unlocked
     // This should fail with ETimelockNotExpired
@@ -138,7 +138,7 @@ public fun test_is_timelocked_unlock_at() {
     clock::set_for_testing(&mut clock, 1000000);
 
     // Create different types of locks
-    let unlock_at_lock = timelock::new_unlock_at(2000, &clock);
+    let unlock_at_lock = timelock::unlock_at(2000, &clock);
     let until_destroyed_lock = timelock::until_destroyed();
     let none_lock = timelock::none();
 
@@ -182,14 +182,14 @@ public fun test_edge_cases() {
     clock::set_for_testing(&mut clock, 1000000);
 
     // Test with time just one second in the future
-    let one_second_future = timelock::new_unlock_at(1001, &clock);
+    let one_second_future = timelock::unlock_at(1001, &clock);
     assert!(timelock::is_timelocked(&one_second_future, &clock));
     clock::set_for_testing(&mut clock, 1001000);
     assert!(!timelock::is_timelocked(&one_second_future, &clock));
 
     // Test with time exactly at the current time boundary
     clock::set_for_testing(&mut clock, 2000000);
-    let exact_current_time = timelock::new_unlock_at(2001, &clock);
+    let exact_current_time = timelock::unlock_at(2001, &clock);
     assert!(timelock::is_timelocked(&exact_current_time, &clock));
     clock::set_for_testing(&mut clock, 2001000);
     assert!(!timelock::is_timelocked(&exact_current_time, &clock));

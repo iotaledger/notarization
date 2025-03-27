@@ -29,7 +29,7 @@ public fun test_create_locked_notarization() {
     let state = notarization::new_state_from_string(data, metadata);
 
     // Create a delete lock that unlocks at timestamp 2000
-    let delete_lock = timelock::new_unlock_at(2000, &clock);
+    let delete_lock = timelock::unlock_at(2000, &clock);
 
     // Create a locked notarization
     locked_notarization::create(
@@ -130,7 +130,7 @@ public fun test_update_locked_notarization() {
     let state = notarization::new_state_from_string(data, std::option::none());
 
     // Create a delete lock
-    let delete_lock = timelock::new_unlock_at(2000, &clock);
+    let delete_lock = timelock::unlock_at(2000, &clock);
 
     // Create a locked notarization
     locked_notarization::create(
@@ -176,7 +176,7 @@ public fun test_destroy_locked_notarization_before_unlock() {
     let state = notarization::new_state_from_string(data, std::option::none());
 
     // Create a delete lock that unlocks at timestamp 2000
-    let delete_lock = timelock::new_unlock_at(2000, &clock);
+    let delete_lock = timelock::unlock_at(2000, &clock);
 
     // Create a locked notarization
     locked_notarization::create(
