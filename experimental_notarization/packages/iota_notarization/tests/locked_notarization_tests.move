@@ -5,15 +5,11 @@
 #[test_only]
 module iota_notarization::locked_notarization_tests;
 
+use iota::{clock, test_scenario as ts};
+use iota_notarization::{locked_notarization, notarization, timelock};
 use std::string;
-use iota::clock;
-use iota::test_scenario as ts;
-use iota_notarization::timelock;
-use iota_notarization::notarization;
-use iota_notarization::locked_notarization;
 
 const ADMIN_ADDRESS: address = @0x1;
-
 
 #[test]
 public fun test_create_locked_notarization() {
@@ -38,18 +34,26 @@ public fun test_create_locked_notarization() {
         std::option::some(string::utf8(b"Test Updateable Metadata")),
         delete_lock,
         &clock,
-        ctx
+        ctx,
     );
 
     ts::next_tx(&mut scenario, ADMIN_ADDRESS);
 
     // Check that the notarization was created and transferred to ADMIN_ADDRESS
-    let notarization = ts::take_from_sender<notarization::Notarization<string::String>>(&scenario);
+    let notarization = ts::take_from_sender<notarization::Notarization<string::String>>(
+        &scenario,
+    );
 
     // Verify notarization properties
     assert!(notarization::notarization_method(&notarization).is_locked(), 0);
-    assert!(notarization::description(&notarization) == &std::option::some(string::utf8(b"Test Description")), 0);
-    assert!(notarization::updateable_metadata(&notarization) == &std::option::some(string::utf8(b"Test Updateable Metadata")), 0);
+    assert!(
+        notarization::description(&notarization) == &std::option::some(string::utf8(b"Test Description")),
+        0,
+    );
+    assert!(
+        notarization::updateable_metadata(&notarization) == &std::option::some(string::utf8(b"Test Updateable Metadata")),
+        0,
+    );
     assert!(notarization::created_at(&notarization) == 1000000, 0);
     assert!(notarization::version_count(&notarization) == 0, 0);
 
@@ -92,13 +96,15 @@ public fun test_create_locked_notarization_with_until_destroyed_delete_lock() {
         std::option::none(),
         delete_lock,
         &clock,
-        ctx
+        ctx,
     );
 
     ts::next_tx(&mut scenario, ADMIN_ADDRESS);
 
     // Check that the notarization was created and transferred to ADMIN_ADDRESS
-    let notarization = ts::take_from_sender<notarization::Notarization<string::String>>(&scenario);
+    let notarization = ts::take_from_sender<notarization::Notarization<string::String>>(
+        &scenario,
+    );
 
     // Verify it's not destroyable (has until_destroyed delete lock)
     assert!(notarization::is_delete_locked(&notarization, &clock), 0);
@@ -139,13 +145,15 @@ public fun test_update_locked_notarization() {
         std::option::none(),
         delete_lock,
         &clock,
-        ctx
+        ctx,
     );
 
     ts::next_tx(&mut scenario, ADMIN_ADDRESS);
 
     // Take the notarization and update its state
-    let mut notarization = ts::take_from_sender<notarization::Notarization<string::String>>(&scenario);
+    let mut notarization = ts::take_from_sender<notarization::Notarization<string::String>>(
+        &scenario,
+    );
 
     // Create new state
     let new_data = string::utf8(b"Updated Data");
@@ -185,13 +193,15 @@ public fun test_destroy_locked_notarization_before_unlock() {
         std::option::none(),
         delete_lock,
         &clock,
-        ctx
+        ctx,
     );
 
     ts::next_tx(&mut scenario, ADMIN_ADDRESS);
 
     // Take the notarization
-    let notarization = ts::take_from_sender<notarization::Notarization<string::String>>(&scenario);
+    let notarization = ts::take_from_sender<notarization::Notarization<string::String>>(
+        &scenario,
+    );
 
     // Try to destroy before lock expires - should fail
     notarization::destroy(notarization, &clock);
@@ -223,13 +233,15 @@ public fun test_locked_notarization_with_none_lock() {
         std::option::none(),
         delete_lock,
         &clock,
-        ctx
+        ctx,
     );
 
     ts::next_tx(&mut scenario, ADMIN_ADDRESS);
 
     // Check that the notarization was created and transferred to ADMIN_ADDRESS
-    let notarization = ts::take_from_sender<notarization::Notarization<string::String>>(&scenario);
+    let notarization = ts::take_from_sender<notarization::Notarization<string::String>>(
+        &scenario,
+    );
 
     // Verify it's destroyable (has none delete lock)
     assert!(!notarization::is_delete_locked(&notarization, &clock), 0);

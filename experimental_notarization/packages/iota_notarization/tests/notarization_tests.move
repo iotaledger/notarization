@@ -5,15 +5,13 @@
 #[test_only]
 module iota_notarization::notarization_tests;
 
+use iota::{clock, test_scenario as ts};
+use iota_notarization::{notarization, timelock};
 use std::string;
-use iota::clock;
-use iota::test_scenario::{Self as ts};
-use iota_notarization::timelock;
-use iota_notarization::notarization;
 
 const ADMIN_ADDRESS: address = @0x1;
 
-public struct ComplexObject has store, drop, copy {
+public struct ComplexObject has copy, drop, store {
     field1: u64,
     field2: string::String,
     field3: vector<u8>,
@@ -36,7 +34,6 @@ public fun test_create_notarization_with_complex_object() {
     let mut scenario = ts::begin(ADMIN_ADDRESS);
     let ctx = ts::ctx(&mut scenario);
 
-
     let mut field3 = vector::empty();
     field3.push_back(1u8);
     field3.push_back(2u8);
@@ -47,7 +44,14 @@ public fun test_create_notarization_with_complex_object() {
     let mut clock = clock::create_for_testing(ctx);
     clock::set_for_testing(&mut clock, 1000000);
 
-    let notarization = notarization::new_dynamic_notarization(state, std::option::some(string::utf8(b"Test Description")), std::option::some(string::utf8(b"Test Updateable Metadata")), std::option::none(), &clock, ctx);
+    let notarization = notarization::new_dynamic_notarization(
+        state,
+        std::option::some(string::utf8(b"Test Description")),
+        std::option::some(string::utf8(b"Test Updateable Metadata")),
+        std::option::none(),
+        &clock,
+        ctx,
+    );
     scenario.next_tx(ADMIN_ADDRESS);
 
     notarization::transfer_notarization(notarization, ADMIN_ADDRESS);
@@ -59,8 +63,14 @@ public fun test_create_notarization_with_complex_object() {
 
     // Verify notarization properties
     assert!(notarization::notarization_method(&notarization).is_dynamic(), 0);
-    assert!(notarization::description(&notarization) == &std::option::some(string::utf8(b"Test Description")), 0);
-    assert!(notarization::updateable_metadata(&notarization) == &std::option::some(string::utf8(b"Test Updateable Metadata")), 0);
+    assert!(
+        notarization::description(&notarization) == &std::option::some(string::utf8(b"Test Description")),
+        0,
+    );
+    assert!(
+        notarization::updateable_metadata(&notarization) == &std::option::some(string::utf8(b"Test Updateable Metadata")),
+        0,
+    );
     assert!(notarization::last_change(&notarization) == 1000000, 0);
     assert!(notarization::version_count(&notarization) == 0, 0);
     assert!(notarization::state(&notarization) == state, 0);
@@ -87,7 +97,11 @@ public fun test_until_destroyed_delete_lock_not_allowed() {
     let delete_lock = timelock::until_destroyed();
     let transfer_lock = timelock::none();
 
-    let lock_metadata = notarization::new_lock_metadata(update_lock, delete_lock, transfer_lock);
+    let lock_metadata = notarization::new_lock_metadata(
+        update_lock,
+        delete_lock,
+        transfer_lock,
+    );
 
     // Clean up - won't reach here due to expected failure
     notarization::destroy_lock_metadata(lock_metadata, &clock);
@@ -109,7 +123,11 @@ public fun test_invalid_lock_time_ordering() {
     let delete_lock = timelock::unlock_at(1500000, &clock); // Earlier than update_lock
     let transfer_lock = timelock::none();
 
-    let lock_metadata = notarization::new_lock_metadata(update_lock, delete_lock, transfer_lock);
+    let lock_metadata = notarization::new_lock_metadata(
+        update_lock,
+        delete_lock,
+        transfer_lock,
+    );
 
     // Clean up - won't reach here due to expected failure
     notarization::destroy_lock_metadata(lock_metadata, &clock);
@@ -137,7 +155,7 @@ public fun test_state_updates_and_versioning() {
         std::option::some(string::utf8(b"Test Updateable Metadata")),
         std::option::none(),
         &clock,
-        ctx
+        ctx,
     );
 
     // Verify initial state
@@ -156,10 +174,17 @@ public fun test_state_updates_and_versioning() {
 
     // Update metadata
     clock::increment_for_testing(&mut clock, 1000);
-    notarization::update_metadata(&mut notarization, std::option::some(string::utf8(b"New Metadata")), &clock);
+    notarization::update_metadata(
+        &mut notarization,
+        std::option::some(string::utf8(b"New Metadata")),
+        &clock,
+    );
 
     // Verify metadata was updated
-    assert!(notarization::updateable_metadata(&notarization) == &std::option::some(string::utf8(b"New Metadata")), 0);
+    assert!(
+        notarization::updateable_metadata(&notarization) == &std::option::some(string::utf8(b"New Metadata")),
+        0,
+    );
 
     // Clean up
     notarization::destroy(notarization, &clock);
@@ -187,7 +212,7 @@ public fun test_update_while_locked() {
         std::option::none(),
         timelock::none(), // delete lock
         &clock,
-        ctx
+        ctx,
     );
 
     // Try to update while locked (locked notarizations are always locked for updates)
@@ -222,7 +247,7 @@ public fun test_destroy_while_locked() {
         std::option::none(),
         delete_lock,
         &clock,
-        ctx
+        ctx,
     );
 
     // Try to destroy while locked
@@ -253,7 +278,7 @@ public fun test_lock_status_checks() {
         std::option::none(),
         delete_lock,
         &clock,
-        ctx
+        ctx,
     );
 
     // Check initial lock status
@@ -293,7 +318,7 @@ public fun test_method_type_checks() {
         std::option::none(),
         std::option::none(),
         &clock,
-        ctx
+        ctx,
     );
 
     // Verify dynamic type
@@ -307,7 +332,7 @@ public fun test_method_type_checks() {
         std::option::none(),
         timelock::none(),
         &clock,
-        ctx
+        ctx,
     );
 
     // Verify locked type
@@ -340,7 +365,7 @@ public fun test_is_destroy_allowed() {
         std::option::none(),
         std::option::none(),
         &clock,
-        ctx
+        ctx,
     );
     assert!(notarization::is_destroy_allowed(&notarization1, &clock), 0);
     notarization::destroy(notarization1, &clock);
@@ -353,7 +378,7 @@ public fun test_is_destroy_allowed() {
         std::option::none(),
         delete_lock,
         &clock,
-        ctx
+        ctx,
     );
     assert!(!notarization::is_destroy_allowed(&notarization2, &clock), 0);
 
@@ -385,7 +410,7 @@ public fun test_method_specific_invariants() {
         std::option::none(),
         std::option::none(),
         &clock,
-        ctx
+        ctx,
     );
     notarization::assert_method_specific_invariants(&notarization1);
     notarization::destroy(notarization1, &clock);
@@ -397,7 +422,7 @@ public fun test_method_specific_invariants() {
         std::option::none(),
         timelock::none(),
         &clock,
-        ctx
+        ctx,
     );
     notarization::assert_method_specific_invariants(&notarization2);
     notarization::destroy(notarization2, &clock);
@@ -417,11 +442,15 @@ public fun test_notarization_invariants() {
     let update_lock = timelock::until_destroyed();
     let delete_lock = timelock::none();
     let transfer_lock = timelock::until_destroyed();
-    let lock_metadata = notarization::new_lock_metadata(update_lock, delete_lock, transfer_lock);
+    let lock_metadata = notarization::new_lock_metadata(
+        update_lock,
+        delete_lock,
+        transfer_lock,
+    );
     let immutable_metadata = notarization::new_immutable_metadata(
         clock::timestamp_ms(&clock),
         std::option::none(),
-        std::option::some(lock_metadata)
+        std::option::some(lock_metadata),
     );
 
     assert!(notarization::are_locked_notarization_invariants_ok(&immutable_metadata), 0);
@@ -430,7 +459,7 @@ public fun test_notarization_invariants() {
     let immutable_metadata2 = notarization::new_immutable_metadata(
         clock::timestamp_ms(&clock),
         std::option::none(),
-        std::option::none()
+        std::option::none(),
     );
 
     assert!(notarization::are_dynamic_notarization_invariants_ok(&immutable_metadata2), 0);

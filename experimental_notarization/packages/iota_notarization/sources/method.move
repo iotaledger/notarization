@@ -4,12 +4,13 @@
 /// This module provides enum NotarizationMethod used to distinguish programmatically
 /// between Notarization methods.
 module iota_notarization::method;
+
 use std::string::{Self, String};
 
 // Indicates the Notarization method.
-public enum NotarizationMethod has store, drop, copy {
+public enum NotarizationMethod has copy, drop, store {
     Dynamic,
-    Locked
+    Locked,
 }
 
 /// Returns a new NotarizationMethod::Dynamic.
@@ -26,7 +27,7 @@ public fun new_locked(): NotarizationMethod {
 public fun is_dynamic(method: &NotarizationMethod): bool {
     match (method) {
         NotarizationMethod::Dynamic => true,
-        NotarizationMethod::Locked => false
+        NotarizationMethod::Locked => false,
     }
 }
 
@@ -34,7 +35,7 @@ public fun is_dynamic(method: &NotarizationMethod): bool {
 public fun is_locked(method: &NotarizationMethod): bool {
     match (method) {
         NotarizationMethod::Dynamic => false,
-        NotarizationMethod::Locked => true
+        NotarizationMethod::Locked => true,
     }
 }
 
