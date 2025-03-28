@@ -4,6 +4,17 @@ on:
   pull_request:
     paths:
       - 'experimental_notarization/packages/iota_notarization/**'
+      - develop
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'experimental_notarization/packages/iota_notarization/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   MOVE_PACKAGES_PATH: experimental_notarization/packages/iota_notarization

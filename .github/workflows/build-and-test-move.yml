@@ -21,12 +21,16 @@ on:
         required: false
         default: ''
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   MOVE_PACKAGES_PATH: experimental_notarization/packages/iota_notarization
 
 jobs:
   check-for-run-condition:
-    runs-on: latest
+    runs-on: ubuntu-latest
     outputs:
       should-run: ${{ !github.event.pull_request || github.event.pull_request.draft == false }}
     steps:
