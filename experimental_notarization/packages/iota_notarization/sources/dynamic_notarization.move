@@ -25,7 +25,7 @@ public struct DynamicNotarizationTransferred has copy, drop {
     /// ID of the `Notarization` object that was transferred
     notarization_id: ID,
     /// Address of the new owner
-    new_owner: address,
+    recipient: address,
 }
 
 /// Create a new dynamic `Notarization`
@@ -78,11 +78,11 @@ public fun transfer<D: store + drop + copy>(
 
     notarization::transfer_notarization(self, recipient);
 
-    // Emit our own module-specific event
+
     let id = object::id_from_address(recipient);
     event::emit(DynamicNotarizationTransferred {
         notarization_id: id,
-        new_owner: recipient
+        recipient
     });
 }
 

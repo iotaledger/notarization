@@ -408,8 +408,10 @@ public fun are_locked_notarization_invariants_ok(immutable_metadata: &ImmutableM
 
 /// Indicates if the invariants for `NotarizationMethod::Dynamic` are satisfied:
 ///
-/// - Dynamic notarization can only have transfer locking or no `immutable_metadata.locking`.
-///   If `immutable_metadata.locking` exists, all locks except `transfer_lock` must be `TimeLock::None`
+/// - Dynamic notarization can only have transfer locking or no
+/// `immutable_metadata.locking`.
+///   If `immutable_metadata.locking` exists, all locks except `transfer_lock` 
+///   must be `TimeLock::None`
 ///   and the `transfer_lock` must not be `TimeLock::None`.
 public fun are_dynamic_notarization_invariants_ok(immutable_metadata: &ImmutableMetadata): bool{
     if (immutable_metadata.locking.is_some()) {

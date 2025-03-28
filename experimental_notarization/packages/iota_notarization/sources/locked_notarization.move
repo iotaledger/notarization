@@ -46,7 +46,9 @@ public fun create<D: store + drop + copy>(
     let notarization = new(state, immutable_description, updateable_metadata, delete_lock,  clock, ctx);
 
     let id = object::uid_to_inner(notarization.id());
+
     event::emit(LockedNotarizationCreated { notarization_id: id });
+
     notarization::transfer_notarization(notarization, tx_context::sender(ctx));
 }
 
