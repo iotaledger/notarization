@@ -61,7 +61,7 @@ jobs:
       - name: 'Build Move contract'
         run: |
           set -e
-          iota move build -p ${{ env.MOVE_PACKAGES_PATH }} --warnings-as-errors
+          iota move build -p ${{ env.MOVE_PACKAGES_PATH }} --warnings-are-errors
 
       - name: 'Run Move tests'
         run: |
