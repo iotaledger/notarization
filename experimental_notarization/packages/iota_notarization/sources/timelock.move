@@ -32,7 +32,7 @@ public enum TimeLock has store {
 }
 
 /// Creates a new time lock that unlocks at a specific Unix timestamp.
-public fun new_unlock_at(unix_time: u32, clock: &Clock): TimeLock {
+public fun unlock_at(unix_time: u32, clock: &Clock): TimeLock {
     let now = (clock::timestamp_ms(clock) / 1000) as u32;
 
     assert!(is_valid_period(unix_time, now), EPastTimestamp);
@@ -58,11 +58,18 @@ public fun is_until_destroyed(lock_time: &TimeLock): bool {
     }
 }
 
-
-/// Checks if the provided lock time is a UnixTime lock.
+/// Checks if the provided lock time is a UnlockAt lock.
 public fun is_unlock_at(lock_time: &TimeLock): bool {
     match (lock_time) {
         TimeLock::UnlockAt(_) => true,
+        _ => false
+    }
+}
+
+/// Checks if the provided lock time is a None lock.
+public fun is_none(lock_time: &TimeLock): bool {
+    match (lock_time) {
+        TimeLock::None => true,
         _ => false
     }
 }
