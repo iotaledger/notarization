@@ -21,9 +21,11 @@ const EDestroyWhileLocked: u64 = 1;
 const ELockTimeNotSatisfied: u64 = 2;
 /// Delete lock cannot be TimeLock::UntilDestroyed
 const EUntilDestroyedLockNotAllowed: u64 = 3;
-/// Invariants for dynamic notarization are broken by the specified Notarization configuration
+/// Invariants for dynamic notarization are broken by the specified
+/// Notarization configuration
 const EDynamicNotarizationInvariants: u64 = 4;
-/// Invariants for locked notarization are broken by the specified Notarization configuration
+/// Invariants for locked notarization are broken by the specified
+/// Notarization configuration
 const ELockedNotarizationInvariants: u64 = 5;
 
 // ===== Core Type =====
@@ -69,6 +71,7 @@ public struct LockMetadata has store {
     transfer_lock: TimeLock,
 }
 
+
 // ===== Notarization State =====
 /// Represents the state of a Notarization that can be updated
 /// Contains arbitrary data and metadata that can be updated by the owner
@@ -107,6 +110,11 @@ public fun new_state_from_string(data: String, metadata: Option<String>): State<
     State { data, metadata }
 }
 
+/// Create state from generic data
+public fun new_state_from_generic<D: store + drop + copy>(data: D, metadata: Option<String>): State<D> {
+    State { data, metadata }
+}
+
 /// Create lock metadata
 public fun new_lock_metadata(
     update_lock: TimeLock,
@@ -141,7 +149,7 @@ public fun new_lock_metadata(
     //
     // These edge cases must be handled here, once new Notarization methods wil
     // be added in future versions of iota_notarization, having different invariants.
-    // 
+    //
     // To avoid malicious or at least very surprising behavior
     // the delete_lock must always exceed all other locks (as been asserted above
     // for `delete_lock.is_unlock_at()`).
@@ -157,6 +165,19 @@ public fun new_lock_metadata(
     }
 }
 
+public(package) fun new_immutable_metadata(
+    created_at: u64,
+    description: Option<String>,
+    locking: Option<LockMetadata>
+): ImmutableMetadata {
+    ImmutableMetadata {
+        created_at,
+        description,
+        locking
+    }
+}
+
+
 // ===== Notarization Creation Functions =====
 /// Create a new dynamic `Notarization`
 public(package) fun new_dynamic_notarization<D: store + drop + copy>(
@@ -168,14 +189,14 @@ public(package) fun new_dynamic_notarization<D: store + drop + copy>(
     ctx: &mut TxContext
 ): Notarization<D> {
     let locking = option::map!(transfer_lock, |transfer_lock| new_lock_metadata(timelock::none(), timelock::none(), transfer_lock));
-    
+
     let immutable_metadata = ImmutableMetadata {
         created_at: clock::timestamp_ms(clock),
         description: immutable_description,
         locking,
     };
     assert!(are_dynamic_notarization_invariants_ok(&immutable_metadata), EDynamicNotarizationInvariants);
-    
+
     Notarization<D> {
         id: object::new(ctx),
         state,
@@ -201,7 +222,8 @@ public(package) fun new_locked_notarization<D: store + drop + copy>(
         description: immutable_description,
         locking: option::some(new_lock_metadata(timelock::until_destroyed(), delete_lock, timelock::until_destroyed())),
     };
-    assert!(are_dynamic_notarization_invariants_ok(&immutable_metadata), ELockedNotarizationInvariants);
+
+    assert!(are_locked_notarization_invariants_ok(&immutable_metadata), ELockedNotarizationInvariants);
 
     Notarization<D> {
         id: object::new(ctx),
@@ -221,9 +243,7 @@ public fun update_state<D: store + drop + copy>(
     new_state: State<D>,
     clock: &Clock,
 ) {
-    if (self.is_update_locked(clock)) {
-        abort EUpdateWhileLocked
-    };
+    assert!(!self.is_update_locked(clock), EUpdateWhileLocked);
 
     self.state = new_state;
     self.last_state_change_at = clock::timestamp_ms(clock);
@@ -282,9 +302,7 @@ public fun update_metadata<D: store + drop + copy>(
     new_metadata: Option<String>,
     clock: &Clock,
 ) {
-    if (self.is_update_locked(clock)) {
-        abort EUpdateWhileLocked
-    };
+    assert!(!self.is_update_locked(clock), EUpdateWhileLocked);
 
     self.updateable_metadata = new_metadata;
 }
@@ -352,7 +370,8 @@ public fun is_transfer_locked<D: store + drop + copy>(self: &Notarization<D>, cl
 /// Check if the `Notarization` can be destroyed
 public fun is_destroy_allowed<D: store + drop + copy>(self: &Notarization<D>, clock: &Clock): bool {
     if (self.method.is_dynamic()) {
-        false
+        !option::is_some_and!(&self.immutable_metadata.locking,
+            |lock_metadata| timelock::is_timelocked_unlock_at(&lock_metadata.transfer_lock, clock))
     } else {
         let lock_metadata = option::borrow(&self.immutable_metadata.locking);
 
@@ -363,7 +382,8 @@ public fun is_destroy_allowed<D: store + drop + copy>(self: &Notarization<D>, cl
 }
 
 /// Ensures that the NotarizationMethod specific invariants are hold
-/// See fun `are_locked_notarization_invariants_ok()` and `are_dynamic_notarization_invariants_ok()`
+/// See fun `are_locked_notarization_invariants_ok()` and
+/// `are_dynamic_notarization_invariants_ok()`
 /// for more details.
 public fun assert_method_specific_invariants<D: store + drop + copy>(self: &Notarization<D>) {
     if (self.method.is_dynamic()) {
@@ -374,20 +394,20 @@ public fun assert_method_specific_invariants<D: store + drop + copy>(self: &Nota
 }
 
 /// Indicates if the invariants for `NotarizationMethod::Locked` are satisfied:
-/// 
+///
 /// - `self.immutable_metadata.locking` must exist.
-/// - `transfer_lock` and `update_lock` must be `TimeLock::None`.
+/// - `updated_lock` and `transfer_lock` must be `TimeLock::UntilDestroyed`.
 public fun are_locked_notarization_invariants_ok(immutable_metadata: &ImmutableMetadata): bool{
     if (immutable_metadata.locking.is_some()) {
         let lock_metadata = option::borrow(&immutable_metadata.locking);
-        timelock::is_none(&lock_metadata.transfer_lock) && timelock::is_none(&lock_metadata.update_lock)
+        timelock::is_until_destroyed(&lock_metadata.transfer_lock) && timelock::is_until_destroyed(&lock_metadata.update_lock)
     } else {
         false
     }
 }
 
 /// Indicates if the invariants for `NotarizationMethod::Dynamic` are satisfied:
-/// 
+///
 /// - Dynamic notarization can only have transfer locking or no `immutable_metadata.locking`.
 ///   If `immutable_metadata.locking` exists, all locks except `transfer_lock` must be `TimeLock::None`
 ///   and the `transfer_lock` must not be `TimeLock::None`.
@@ -400,5 +420,61 @@ public fun are_dynamic_notarization_invariants_ok(immutable_metadata: &Immutable
         !timelock::is_none(&lock_metadata.transfer_lock)
     } else {
         true
+    }
+}
+
+
+// ===== Test-only Functions =====
+#[test_only]
+public(package) fun destroy_lock_metadata(lock_metadata: LockMetadata, clock: &Clock) {
+    let LockMetadata {
+        update_lock,
+        delete_lock,
+        transfer_lock
+    } = lock_metadata;
+
+    timelock::destroy(update_lock, clock);
+    timelock::destroy(delete_lock, clock);
+    timelock::destroy(transfer_lock, clock);
+}
+
+#[test_only]
+public(package) fun destroy_immutable_metadata(immutable_metadata: ImmutableMetadata, clock: &Clock) {
+    let ImmutableMetadata {
+        created_at: _,
+        description: _,
+        locking
+    } = immutable_metadata;
+
+    if (option::is_some(&locking)) {
+        let lock_metadata = option::destroy_some(locking);
+        destroy_lock_metadata(lock_metadata, clock);
+    } else {
+        option::destroy_none(locking);
+    }
+}
+
+#[test_only]
+public(package) fun create_custom_notarization<D: store + drop + copy>(
+    state: State<D>,
+    immutable_description: Option<String>,
+    updateable_metadata: Option<String>,
+    lock_metadata: Option<LockMetadata>,
+    method: NotarizationMethod,
+    clock: &Clock,
+    ctx: &mut TxContext
+): Notarization<D> {
+    Notarization<D> {
+        id: object::new(ctx),
+        state,
+        immutable_metadata: ImmutableMetadata {
+            created_at: clock::timestamp_ms(clock),
+            description: immutable_description,
+            locking: lock_metadata,
+        },
+        updateable_metadata,
+        last_state_change_at: clock::timestamp_ms(clock),
+        state_version_count: 0,
+        method: method
     }
 }
