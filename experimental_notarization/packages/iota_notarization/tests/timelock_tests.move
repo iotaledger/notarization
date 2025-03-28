@@ -5,11 +5,10 @@
 #[test_only]
 module iota_notarization::timelock_tests;
 
-use iota::clock;
+use iota::{clock, test_scenario::{Self as ts, ctx}};
 use iota_notarization::timelock;
-use iota::test_scenario::{Self as ts, ctx};
 
-const ADMIN_ADDRESS :address = @0x01;
+const ADMIN_ADDRESS: address = @0x01;
 
 #[test]
 public fun test_new_unlock_at() {
@@ -170,7 +169,7 @@ public fun test_is_valid_period() {
 
     // Test invalid periods
     assert!(!timelock::is_valid_period(1000, 1000)); // Equal time
-    assert!(!timelock::is_valid_period(999, 1000));  // Past time
+    assert!(!timelock::is_valid_period(999, 1000)); // Past time
 }
 
 #[test]
@@ -201,4 +200,3 @@ public fun test_edge_cases() {
 
     ts.end();
 }
-

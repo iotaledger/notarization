@@ -1,0 +1,69 @@
+name: Build and Test
+
+on:
+  pull_request:
+    paths:
+      - 'experimental_notarization/packages/iota_notarization/**'
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'experimental_notarization/packages/iota_notarization/**'
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform to download binary for (linux or macos)'
+        required: true
+        default: 'linux'
+      logfile:
+        description: 'Optional log file to store server log as workflow artifact'
+        required: false
+        default: ''
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  MOVE_PACKAGES_PATH: experimental_notarization/packages/iota_notarization
+
+jobs:
+  check-for-run-condition:
+    runs-on: ubuntu-latest
+    outputs:
+      should-run: ${{ !github.event.pull_request || github.event.pull_request.draft == false }}
+    steps:
+      - run: |
+          # this run step does nothing, but is needed to get the job output
+
+  build-and-test:
+    runs-on: ${{ matrix.os }}
+    needs: check-for-run-condition
+    if: ${{ needs.check-for-run-condition.outputs.should-run == 'true' && github.event_name != 'workflow_dispatch' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - run: echo "Running build and test..."
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up IOTA CLI
+        uses: ./.github/actions/iota-cli-setup
+        with:
+          platform: ${{ matrix.os == 'ubuntu-latest' && 'linux' || 'macos' }}
+          logfile: ${{ github.event.inputs.logfile }}
+
+      - name: 'Build Move contract'
+        run: |
+          set -e
+          iota move build -p ${{ env.MOVE_PACKAGES_PATH }} --warnings-are-errors
+
+      - name: 'Run Move tests'
+        run: |
+          set -e
+          iota move test -p ${{ env.MOVE_PACKAGES_PATH }}

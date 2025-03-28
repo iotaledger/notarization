@@ -1,0 +1,37 @@
+name: Check Move formatting
+
+on:
+  pull_request:
+    paths:
+      - 'experimental_notarization/packages/iota_notarization/**'
+      - develop
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'experimental_notarization/packages/iota_notarization/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  MOVE_PACKAGES_PATH: experimental_notarization/packages/iota_notarization
+
+jobs:
+  prettier-move:
+    name: Check Move files formatting
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.MOVE_PACKAGES_PATH }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        # We don't have the prettier plugin for iota published yet, so
+        # we can use mysten version
+      - run: npm i @mysten/prettier-plugin-move
+      - run: npx prettier-move -c **/*.move
