@@ -34,11 +34,18 @@ jobs:
 
   build-and-test:
     runs-on: ${{ matrix.os }}
+    needs: check-for-run-condition
+    if: ${{ needs.check-for-run-condition.outputs.should-run == 'true' && github.event_name != 'workflow_dispatch' }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
     steps:
       - run: echo "Running build and test..."
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up IOTA CLI
         uses: ./.github/actions/iota-cli-setup
