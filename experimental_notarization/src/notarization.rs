@@ -1,9 +1,13 @@
+// Copyright 2020-2025 IOTA Stiftung
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::error::Error;
 use anyhow::Result;
 use fastcrypto::ed25519::Ed25519PublicKey;
 use fastcrypto::traits::ToFromBytes;
 use identity_iota_interaction::types::base_types::IotaAddress;
 use identity_iota_interaction::types::base_types::ObjectID;
+use identity_iota_interaction::types::crypto::PublicKey;
 use identity_iota_interaction::IotaKeySignature;
 use iota_sdk::IotaClient;
 use secret_storage::Signer;
@@ -23,7 +27,7 @@ impl<S: Signer<IotaKeySignature>> NotarizationBuilder<S> {
             .public_key()
             .await
             .map_err(|e| Error::InvalidKey(e.to_string()))?;
-        let address = convert_to_address(&public_key)?;
+        let address = convert_to_address(public_key.as_ref())?;
 
         // TODO: Create PTB to create and the notarization object on the ledger
         let iota_notarization_pkg_id = ObjectID::from_hex_literal("0x00")?;
@@ -45,7 +49,7 @@ pub struct Notarization {
     /// The address of the client.
     address: IotaAddress,
     /// The public key of the client.
-    public_key: Vec<u8>,
+    public_key: PublicKey,
 }
 
 impl Notarization {
