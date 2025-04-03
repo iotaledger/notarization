@@ -3,11 +3,10 @@
 
 /// This module provides locked notarization capabilities with timelock controls for updates and deletion
 module iota_notarization::locked_notarization;
+
+use iota::{clock::Clock, event};
+use iota_notarization::{notarization, timelock::TimeLock};
 use std::string::String;
-use iota::event;
-use iota::clock::Clock;
-use iota_notarization::timelock::TimeLock;
-use iota_notarization::notarization;
 
 /// Event emitted when a locked notarization is created
 public struct LockedNotarizationCreated has copy, drop {
@@ -19,10 +18,10 @@ public struct LockedNotarizationCreated has copy, drop {
 public fun new<D: store + drop + copy>(
     state: notarization::State<D>,
     immutable_description: Option<String>,
-    updateable_metadata:Option<String>,
+    updateable_metadata: Option<String>,
     delete_lock: TimeLock,
     clock: &Clock,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ): notarization::Notarization<D> {
     notarization::new_locked_notarization(
         state,
@@ -30,7 +29,7 @@ public fun new<D: store + drop + copy>(
         updateable_metadata,
         delete_lock,
         clock,
-        ctx
+        ctx,
     )
 }
 
@@ -41,12 +40,20 @@ public fun create<D: store + drop + copy>(
     updateable_metadata: Option<String>,
     delete_lock: TimeLock,
     clock: &Clock,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ) {
-    let notarization = new(state, immutable_description, updateable_metadata, delete_lock,  clock, ctx);
+    let notarization = new(
+        state,
+        immutable_description,
+        updateable_metadata,
+        delete_lock,
+        clock,
+        ctx,
+    );
 
     let id = object::uid_to_inner(notarization.id());
+
     event::emit(LockedNotarizationCreated { notarization_id: id });
+
     notarization::transfer_notarization(notarization, tx_context::sender(ctx));
 }
-

@@ -11,6 +11,7 @@
 /// - UntilDestroyed lock that never unlocks until the notarization is destroyed
 /// - None lock that is not locked
 module iota_notarization::timelock;
+
 use iota::clock::{Self, Clock};
 
 // ===== Errors =====
@@ -18,7 +19,6 @@ use iota::clock::{Self, Clock};
 const EPastTimestamp: u64 = 0;
 /// Error when attempting to destroy a timelock that is still locked
 const ETimelockNotExpired: u64 = 1;
-
 
 /// Represents different types of time-based locks that can be applied to
 /// notarizations.
@@ -28,7 +28,7 @@ public enum TimeLock has store {
     /// A permanent lock that never unlocks (can't be used for locking delete)
     UntilDestroyed,
     /// No lock applied
-    None
+    None,
 }
 
 /// Creates a new time lock that unlocks at a specific Unix timestamp.
@@ -54,7 +54,7 @@ public fun none(): TimeLock {
 public fun is_until_destroyed(lock_time: &TimeLock): bool {
     match (lock_time) {
         TimeLock::UntilDestroyed => true,
-        _ => false
+        _ => false,
     }
 }
 
@@ -62,7 +62,7 @@ public fun is_until_destroyed(lock_time: &TimeLock): bool {
 public fun is_unlock_at(lock_time: &TimeLock): bool {
     match (lock_time) {
         TimeLock::UnlockAt(_) => true,
-        _ => false
+        _ => false,
     }
 }
 
@@ -70,7 +70,7 @@ public fun is_unlock_at(lock_time: &TimeLock): bool {
 public fun is_none(lock_time: &TimeLock): bool {
     match (lock_time) {
         TimeLock::None => true,
-        _ => false
+        _ => false,
     }
 }
 
@@ -78,7 +78,7 @@ public fun is_none(lock_time: &TimeLock): bool {
 public fun get_unlock_time(lock_time: &TimeLock): Option<u32> {
     match (lock_time) {
         TimeLock::UnlockAt(time) => option::some(*time),
-        _ => option::none()
+        _ => option::none(),
     }
 }
 
@@ -90,8 +90,7 @@ public fun destroy(condition: TimeLock, clock: &Clock) {
             assert!(!(time > ((clock::timestamp_ms(clock) / 1000) as u32)), ETimelockNotExpired);
         },
         TimeLock::UntilDestroyed => {},
-        TimeLock::None => {}
-
+        TimeLock::None => {},
     }
 }
 
@@ -108,7 +107,7 @@ public fun is_timelocked(condition: &TimeLock, clock: &Clock): bool {
             *unix_time > ((clock::timestamp_ms(clock) / 1000) as u32)
         },
         TimeLock::UntilDestroyed => true,
-        TimeLock::None => false
+        TimeLock::None => false,
     }
 }
 
@@ -118,7 +117,7 @@ public fun is_timelocked_unlock_at(lock_time: &TimeLock, clock: &Clock): bool {
         TimeLock::UnlockAt(time) => {
             *time > ((clock::timestamp_ms(clock) / 1000) as u32)
         },
-        _ => false
+        _ => false,
     }
 }
 
