@@ -16,16 +16,14 @@ members = [
 [workspace.dependencies]
 anyhow = "1.0.95"
 cfg-if = "1.0.0"
-identity_iota_interaction = { git = "https://github.com/iotaledger/identity.rs.git", branch = "feat/identity-rebased-alpha", package = "identity_iota_interaction" }
-secret-storage = { git = "https://github.com/iotaledger/secret-storage.git", tag = "v0.1.0", default-features = false }
+fastcrypto = { git = "https://github.com/MystenLabs/fastcrypto", rev = "5f2c63266a065996d53f98156f0412782b468597", package = "fastcrypto" }
+identity_iota_core = { git = "https://github.com/iotaledger/identity.rs.git", branch = "feat/identity-rebased-alpha-public-interaction-rust", default-features = false, features = ["iota-client"], package = "identity_iota_core" }
+identity_iota_interaction = { git = "https://github.com/iotaledger/identity.rs.git", branch = "feat/identity-rebased-alpha-public-interaction-rust", package = "identity_iota_interaction" }
+phf = { version = "0.11.2", features = ["macros"] }
 serde = { version = "1.0", default-features = false, features = ["alloc", "derive"] }
 serde_json = { version = "1.0", default-features = false }
 strum = { version = "0.25", default-features = false, features = ["std", "derive"] }
 thiserror = { version = "1.0", default-features = false }
-
-
-
-
 
 [workspace.lints.clippy]
 result_large_err = "allow"

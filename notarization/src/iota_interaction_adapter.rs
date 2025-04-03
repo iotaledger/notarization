@@ -3,8 +3,7 @@
 
 // The following platform compile switch provides all the
 // ...Adapter types from iota_interaction_rust or iota_interaction_ts
-// like IotaClientAdapter, AssetMoveCallsAdapter, IdentityMoveCallsAdapter,
-// TransactionBuilderAdapter, MigrationMoveCallsAdapter, ... and so on
+// like IotaClientAdapter, TransactionBuilderAdapter ... and so on
 
 cfg_if::cfg_if! {
     if #[cfg(target_arch = "wasm32")] {

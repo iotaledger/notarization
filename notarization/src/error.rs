@@ -1,0 +1,22 @@
+// Copyright 2020-2025 IOTA Stiftung
+// SPDX-License-Identifier: Apache-2.0
+
+use crate::iota_interaction_adapter::AdapterError;
+
+/// Errors that can occur when managing Notarizations
+#[derive(Debug, thiserror::Error, strum::IntoStaticStr)]
+#[non_exhaustive]
+pub enum Error {
+  /// Caused by invalid keys.
+  #[error("invalid key: {0}")]
+  InvalidKey(String),
+  /// Config is invalid.
+  #[error("invalid config: {0}")]
+  InvalidConfig(String),
+  /// An error caused by either a connection issue or an invalid RPC call.
+  #[error("RPC error: {0}")]
+  RpcError(String),
+  /// The provided IOTA Client returned an error
+  #[error("IOTA client error: {0}")]
+  IotaClient(#[from] AdapterError),
+}

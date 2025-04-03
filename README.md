@@ -7,28 +7,6 @@ store data on the IOTA ledger.
 --------------------------------------------------------------------
 >
 > :warning: This repository is currently work in process 
->
-> The folder `experimental_notarization` contains an experimental package 
-> used to investigate and experiment with alternative implementation
-> options and to clarify behavioral questions.
-> The code contained in this package has been developed with the same
-> caution and accuracy as developing productive code, but regarding time
-> consuming architectural challenges (i.e. the used dependencies, 
-> feature flags, quality assurance, Move package administration, ...)
-> this code is not production ready.
->
-> Despite these limitations the `experimental_notarization` code 
-> will be the base of future production code.
->
-> The folder/package `notarization` includes a first sketch of the needed
-> crate dependencies to allow builds for wasm32 and non wasm32 platforms
-> and will be the package containing future production code. Due to
-> several needed visibility changes in *iotaledger/identity.rs* this package
-> cannot be used to build Notarization code at the moment.  
-> 
-> The Move code contained in `experimental_notarization` will most
-> probably just be moved with little changes to the `notarization`
-> package once it is usable to build production code.  
 --------------------------------------------------------------------
 
 The current implementation provides Rust libraries and Move smart contracts.
@@ -47,10 +25,10 @@ Prerequisites: Before you can build Move packages you need to install the IOTA C
 [here](https://docs.iota.org/developer/getting-started/install-iota)
 .
 
-To build the Move package contained in `experimental_notarization`:
+To build the Move package contained in the `notarization` crate:
 
 ```bash
-$ # In the folder `experimental_notarization/packages/iota_notarization`:
+$ # In the folder `notarization/packages/iota_notarization`:
 $
 $ iota move build
 ```
@@ -73,7 +51,7 @@ Before you can use the testscript, please make sure you already prepared the fol
 ### Get Help
 
 To read the provided help of the test script execute the following in the
-folder `experimental_notarization/scripts`:
+folder `notarization/scripts`:
 
 ```bash
 $ ./notarize.sh --help
@@ -100,7 +78,7 @@ You can use the already published package on *testnet* (if it's still available)
 without any further configuration.
 
 The address of the used Notarization package is configured in the file
-`experimental_notarization/scripts/notarize.sh`
+`notarization/scripts/notarize.sh`
 
 ```
 # Package address of the notarization module (update after publishing)
@@ -113,7 +91,7 @@ you need to publish the package before you can test the Notarization functionali
 To publish the package:
 
 ```bash
-$ # In the folder `experimental_notarization/scripts`
+$ # In the folder `notarization/scripts`
 $
 $ ./notarize.sh publish
 Publishing contract from: /home/...
@@ -137,7 +115,7 @@ Please search for the `PackageID` in the `Published Objects` section of the
 `Object Changes` block written to the console log, and copy the value
 of the `PackageID` into your system clipboard.
 
-In the file `experimental_notarization/scripts/notarize.sh`, please replace the
+In the file `notarization/scripts/notarize.sh`, please replace the
 preconfigured value for `PACKAGE_ADDRESS` with the copied value. 
 
 ### Creating Notarizations
@@ -153,7 +131,7 @@ This is described in the following sections in more detail.
 #### Create a Dynamic Notarization
 
 To create a *Dynamic Notarization* execute the following in the
-folder `experimental_notarization/scripts`:
+folder `notarization/scripts`:
 
 ```bash
 $ ./notarize.sh create-dynamic '[1,2,3]' 'Initial version of state data' 'Some immutable Description'
@@ -194,7 +172,7 @@ https://explorer.rebased.iota.org/object/0x354744923ecae0957822be4941d02c4de6e29
 
 To create a *Locked Notarization* being update-locked until January 1st 2035 12am CET
 and delete-locked ca. 3:20 minutes later,
-execute the following in the folder `experimental_notarization/scripts`:
+execute the following in the folder `notarization/scripts`:
 
 ```bash
 $ ./notarize.sh create-locked '[1,2,3]' 'Test data' 'Locked notarization' 2051218800 2051219000
@@ -238,7 +216,7 @@ can only be updated if the *update_lock* has expired.
 
 #### Update a Dynamic Notarization
 
-Please execute in the folder `experimental_notarization/scripts`:
+Please execute in the folder `notarization/scripts`:
 ```bash
 $ ./notarize.sh update 0x354744923ecae0957822be4941d02c4de6e29da7012aaba3eb3072547595f66f '[4,5,6]' 'Data updated first time'
 Updating notarization state...
@@ -285,7 +263,7 @@ https://explorer.rebased.iota.org/object/0x354744923ecae0957822be4941d02c4de6e29
 
 #### Update a Locked Notarization
 
-Please execute in the folder `experimental_notarization/scripts`:
+Please execute in the folder `notarization/scripts`:
 
 ```bash
 $ ./notarize.sh update 0xa1f4688fb8688dc35674a3c3e0ec332be32dcee5abcf131f833587aa9e6ff7fa '[4,5,6]' 'Data updated first time'
