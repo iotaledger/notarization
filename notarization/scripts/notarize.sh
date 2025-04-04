@@ -7,7 +7,7 @@ CONTRACT_DIR="$CURRENT_DIR/../packages/iota_notarization"
 GAS_BUDGET=500000000
 
 # Package address of the notarization module (update after publishing)
-PACKAGE_ADDRESS="0xc942544512ab2d24ba4490c892fb615aafe9ba49b9c831196d6ff55ae6c16563"
+PACKAGE_ADDRESS="0xd19735f16a31930d3240049baead005704a407bd677cb2b89f245a4870a10467"
 CLOCK_ADDRESS="@0x6" # Special address for the clock module
 
 # ===== Core Functions =====
