@@ -4,19 +4,15 @@
 use crate::core::state::State;
 use crate::core::timelock::TimeLock;
 use crate::error::Error;
-use identity_iota_interaction::{ident_str, IotaClientTrait};
-use iota_sdk::types::object::Object;
+use identity_iota_interaction::ident_str;
 use iota_sdk::types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use iota_sdk::IotaClientBuilder;
+
 use std::future::Future;
-use std::str::FromStr;
 
 use identity_iota_core::iota_interaction_rust::IotaClientAdapter;
-use iota_sdk::rpc_types::IotaObjectDataOptions;
 use iota_sdk::types::base_types::ObjectID;
 
-use iota_sdk::types::transaction::{CallArg, ObjectArg, ProgrammableTransaction};
-use iota_sdk::types::{parse_iota_type_tag, TypeTag};
+use iota_sdk::types::transaction::{ObjectArg, ProgrammableTransaction};
 
 use super::utils;
 
@@ -24,7 +20,11 @@ use super::utils;
 /// A unified notarization type that can be either dynamic or locked
 pub struct Notarization;
 
-impl NotarizationOperations for Notarization {
+/// Notarization operations
+///
+/// These operations return the ProgrammableTransactionBuilder
+pub trait NotarizationOperations {
+    /// Build a transaction that creates a new locked notarization
     fn new_locked(
         &self,
         state: State,
@@ -59,6 +59,7 @@ impl NotarizationOperations for Notarization {
         Ok(ptb.finish())
     }
 
+    /// Build a transaction that creates a new dynamic notarization
     fn new_dynamic(
         &self,
         state: State,
@@ -92,36 +93,12 @@ impl NotarizationOperations for Notarization {
 
         Ok(ptb.finish())
     }
-}
-
-/// Operations that can be performed by both locked and dynamic notarizations
-///
-/// These operations return the ProgrammableTransactionBuilder
-pub trait NotarizationOperations {
-    /// Build a transaction that creates a new locked notarization
-    fn new_locked(
-        &self,
-        state: State,
-        immutable_description: Option<String>,
-        updateable_metadata: Option<String>,
-        delete_lock: TimeLock,
-        package_id: ObjectID,
-    ) -> Result<ProgrammableTransaction, Error>;
-
-    /// Build a transaction that creates a new dynamic notarization
-    fn new_dynamic(
-        &self,
-        state: State,
-        immutable_description: Option<String>,
-        updateable_metadata: Option<String>,
-        transfer_lock: Option<TimeLock>,
-        package_id: ObjectID,
-    ) -> Result<ProgrammableTransaction, Error>;
 
     /// Build a transaction that updates the state of a notarization
     fn update_state(
         &self,
         iota_client: &IotaClientAdapter,
+        object_id: ObjectID,
         package_id: ObjectID,
         new_state: State,
     ) -> impl Future<Output = Result<ProgrammableTransaction, Error>> + Send {
@@ -133,10 +110,9 @@ pub trait NotarizationOperations {
             let state_arg = new_state.to_ptb(&mut ptb, package_id)?;
 
             let notarization = {
-                let notarization = utils::get_object_ref_by_id(iota_client, package_id).await?;
-                let notarization = ObjectArg::ImmOrOwnedObject(notarization);
+                let notarization = utils::get_object_ref_by_id(iota_client, object_id).await?;
 
-                ptb.obj(notarization)
+                ptb.obj(ObjectArg::ImmOrOwnedObject(notarization))
                     .map_err(|e| Error::InvalidArgument(e.to_string()))?
             };
             ptb.programmable_move_call(
@@ -166,10 +142,9 @@ pub trait NotarizationOperations {
             let tag = utils::get_type_tag(iota_client, object_id).await?;
 
             let notarization = {
-                let notarization = utils::get_object_ref_by_id(iota_client, package_id).await?;
-                let notarization = ObjectArg::ImmOrOwnedObject(notarization);
+                let notarization = utils::get_object_ref_by_id(iota_client, object_id).await?;
 
-                ptb.obj(notarization)
+                ptb.obj(ObjectArg::ImmOrOwnedObject(notarization))
                     .map_err(|e| Error::InvalidArgument(e.to_string()))?
             };
 
@@ -201,10 +176,9 @@ pub trait NotarizationOperations {
             let metadata = utils::new_move_option_string(new_metadata, &mut ptb)?;
 
             let notarization = {
-                let notarization = utils::get_object_ref_by_id(iota_client, package_id).await?;
-                let notarization = ObjectArg::ImmOrOwnedObject(notarization);
+                let notarization = utils::get_object_ref_by_id(iota_client, object_id).await?;
 
-                ptb.obj(notarization)
+                ptb.obj(ObjectArg::ImmOrOwnedObject(notarization))
                     .map_err(|e| Error::InvalidArgument(e.to_string()))?
             };
 
@@ -232,9 +206,8 @@ pub trait NotarizationOperations {
             let tag = utils::get_type_tag(iota_client, package_id).await?;
             let notarization = {
                 let notarization = utils::get_object_ref_by_id(iota_client, package_id).await?;
-                let notarization = ObjectArg::ImmOrOwnedObject(notarization);
 
-                ptb.obj(notarization)
+                ptb.obj(ObjectArg::ImmOrOwnedObject(notarization))
                     .map_err(|e| Error::InvalidArgument(e.to_string()))?
             };
 
@@ -263,9 +236,8 @@ pub trait NotarizationOperations {
             let tag = utils::get_type_tag(iota_client, package_id).await?;
             let notarization = {
                 let notarization = utils::get_object_ref_by_id(iota_client, object_id).await?;
-                let notarization = ObjectArg::ImmOrOwnedObject(notarization);
 
-                ptb.obj(notarization)
+                ptb.obj(ObjectArg::ImmOrOwnedObject(notarization))
                     .map_err(|e| Error::InvalidArgument(e.to_string()))?
             };
 
@@ -294,9 +266,8 @@ pub trait NotarizationOperations {
             let tag = utils::get_type_tag(iota_client, package_id).await?;
             let notarization = {
                 let notarization = utils::get_object_ref_by_id(iota_client, object_id).await?;
-                let notarization = ObjectArg::ImmOrOwnedObject(notarization);
 
-                ptb.obj(notarization)
+                ptb.obj(ObjectArg::ImmOrOwnedObject(notarization))
                     .map_err(|e| Error::InvalidArgument(e.to_string()))?
             };
 
@@ -325,9 +296,8 @@ pub trait NotarizationOperations {
             let tag = utils::get_type_tag(iota_client, package_id).await?;
             let notarization = {
                 let notarization = utils::get_object_ref_by_id(iota_client, object_id).await?;
-                let notarization = ObjectArg::ImmOrOwnedObject(notarization);
 
-                ptb.obj(notarization)
+                ptb.obj(ObjectArg::ImmOrOwnedObject(notarization))
                     .map_err(|e| Error::InvalidArgument(e.to_string()))?
             };
 
@@ -356,9 +326,8 @@ pub trait NotarizationOperations {
             let tag = utils::get_type_tag(iota_client, package_id).await?;
             let notarization = {
                 let notarization = utils::get_object_ref_by_id(iota_client, object_id).await?;
-                let notarization = ObjectArg::ImmOrOwnedObject(notarization);
 
-                ptb.obj(notarization)
+                ptb.obj(ObjectArg::ImmOrOwnedObject(notarization))
                     .map_err(|e| Error::InvalidArgument(e.to_string()))?
             };
 
@@ -373,4 +342,96 @@ pub trait NotarizationOperations {
             Ok(ptb.finish())
         }
     }
+
+    /// Last change timestamp
+    fn last_change(
+        &self,
+        package_id: ObjectID,
+        object_id: ObjectID,
+        iota_client: &IotaClientAdapter,
+    ) -> impl Future<Output = Result<ProgrammableTransaction, Error>> + Send {
+        async move {
+            let mut ptb = ProgrammableTransactionBuilder::new();
+
+            let tag = utils::get_type_tag(iota_client, package_id).await?;
+            let notarization = {
+                let notarization = utils::get_object_ref_by_id(iota_client, object_id).await?;
+
+                ptb.obj(ObjectArg::ImmOrOwnedObject(notarization))
+                    .map_err(|e| Error::InvalidArgument(e.to_string()))?
+            };
+
+            ptb.programmable_move_call(
+                package_id,
+                ident_str!("notarization").into(),
+                ident_str!("last_change").into(),
+                vec![tag],
+                vec![notarization],
+            );
+
+            Ok(ptb.finish())
+        }
+    }
+
+    /// Version count
+    fn version_count(
+        &self,
+        package_id: ObjectID,
+        object_id: ObjectID,
+        iota_client: &IotaClientAdapter,
+    ) -> impl Future<Output = Result<ProgrammableTransaction, Error>> + Send {
+        async move {
+            let mut ptb = ProgrammableTransactionBuilder::new();
+
+            let tag = utils::get_type_tag(iota_client, package_id).await?;
+            let notarization = {
+                let notarization = utils::get_object_ref_by_id(iota_client, object_id).await?;
+
+                ptb.obj(ObjectArg::ImmOrOwnedObject(notarization))
+                    .map_err(|e| Error::InvalidArgument(e.to_string()))?
+            };
+
+            ptb.programmable_move_call(
+                package_id,
+                ident_str!("notarization").into(),
+                ident_str!("version_count").into(),
+                vec![tag],
+                vec![notarization],
+            );
+
+            Ok(ptb.finish())
+        }
+    }
+
+    /// Created at timestamp
+    fn created_at(
+        &self,
+        package_id: ObjectID,
+        object_id: ObjectID,
+        iota_client: &IotaClientAdapter,
+    ) -> impl Future<Output = Result<ProgrammableTransaction, Error>> + Send {
+        async move {
+            let mut ptb = ProgrammableTransactionBuilder::new();
+
+            let tag = utils::get_type_tag(iota_client, package_id).await?;
+            let notarization = {
+                let notarization = utils::get_object_ref_by_id(iota_client, object_id).await?;
+
+                ptb.obj(ObjectArg::ImmOrOwnedObject(notarization))
+                    .map_err(|e| Error::InvalidArgument(e.to_string()))?
+            };
+
+            ptb.programmable_move_call(
+                package_id,
+                ident_str!("notarization").into(),
+                ident_str!("created_at").into(),
+                vec![tag],
+                vec![notarization],
+            );
+
+            Ok(ptb.finish())
+        }
+    }
 }
+
+impl NotarizationOperations for Notarization {}
