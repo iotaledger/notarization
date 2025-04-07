@@ -1,2 +1,2 @@
-pub mod notarization;
 mod error;
+pub mod notarization;
