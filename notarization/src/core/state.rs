@@ -29,7 +29,7 @@ impl Data {
         match self {
             Data::Vector(_) => TypeTag::Vector(Box::new(TypeTag::U8)),
             Data::Text(_) => {
-                TypeTag::from_str(format!("{}::string::String", MOVE_STDLIB_PACKAGE_ID).as_str())
+                TypeTag::from_str(&format!("{MOVE_STDLIB_PACKAGE_ID}::string::String"))
                     .expect("could not create string tag")
             }
         }

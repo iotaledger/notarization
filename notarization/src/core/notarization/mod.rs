@@ -45,7 +45,7 @@ impl Notarization {
     async fn build_transaction<F>(
         iota_client: &IotaClientAdapter,
         package_id: ObjectID,
-        object_id: Option<ObjectID>,
+        object_id: ObjectID,
         method: impl AsRef<str>,
         additional_args: F,
     ) -> Result<ProgrammableTransaction, Error>
@@ -54,22 +54,16 @@ impl Notarization {
     {
         let mut ptb = ProgrammableTransactionBuilder::new();
 
-        let tag = match object_id {
-            Some(id) => vec![utils::get_type_tag(iota_client, id).await?],
-            None => vec![],
-        };
+        let tag = vec![utils::get_type_tag(iota_client, &object_id).await?];
 
-        let mut args = if let Some(id) = object_id {
-            let notarization = utils::get_object_ref_by_id(iota_client, id).await?;
+        let mut args = {
+            let notarization = utils::get_object_ref_by_id(iota_client, &object_id).await?;
             vec![ptb
                 .obj(ObjectArg::ImmOrOwnedObject(notarization))
                 .map_err(|e| {
                     Error::InvalidArgument(format!("Failed to create object argument: {}", e))
                 })?]
-        } else {
-            vec![]
         };
-
         // Add additional arguments
         args.extend(additional_args(&mut ptb).map_err(|e| {
             Error::InvalidArgument(format!("Failed to add additional arguments: {}", e))
@@ -179,7 +173,7 @@ pub trait NotarizationOperations {
             Notarization::build_transaction(
                 iota_client,
                 package_id,
-                Some(object_id),
+                object_id,
                 "update_state",
                 |ptb| {
                     Ok(vec![
@@ -200,13 +194,9 @@ pub trait NotarizationOperations {
         object_id: ObjectID,
     ) -> impl Future<Output = Result<ProgrammableTransaction, Error>> + Send {
         async move {
-            Notarization::build_transaction(
-                iota_client,
-                package_id,
-                Some(object_id),
-                "destroy",
-                |ptb| Ok(vec![utils::get_clock_ref(ptb)]),
-            )
+            Notarization::build_transaction(iota_client, package_id, object_id, "destroy", |ptb| {
+                Ok(vec![utils::get_clock_ref(ptb)])
+            })
             .await
         }
     }
@@ -223,7 +213,7 @@ pub trait NotarizationOperations {
             Notarization::build_transaction(
                 iota_client,
                 package_id,
-                Some(object_id),
+                object_id,
                 "update_metadata",
                 |ptb| {
                     Ok(vec![
@@ -240,13 +230,14 @@ pub trait NotarizationOperations {
     fn notarization_method(
         &self,
         package_id: ObjectID,
+        object_id: ObjectID,
         iota_client: &IotaClientAdapter,
     ) -> impl Future<Output = Result<ProgrammableTransaction, Error>> + Send {
         async move {
             Notarization::build_transaction(
                 iota_client,
                 package_id,
-                None,
+                object_id,
                 "notarization_method",
                 |_| Ok(vec![]),
             )
@@ -265,7 +256,7 @@ pub trait NotarizationOperations {
             Notarization::build_transaction(
                 iota_client,
                 package_id,
-                Some(object_id),
+                object_id,
                 "is_update_locked",
                 |ptb| Ok(vec![utils::get_clock_ref(ptb)]),
             )
@@ -284,7 +275,7 @@ pub trait NotarizationOperations {
             Notarization::build_transaction(
                 iota_client,
                 package_id,
-                Some(object_id),
+                object_id,
                 "is_destroy_locked",
                 |ptb| Ok(vec![utils::get_clock_ref(ptb)]),
             )
@@ -303,7 +294,7 @@ pub trait NotarizationOperations {
             Notarization::build_transaction(
                 iota_client,
                 package_id,
-                Some(object_id),
+                object_id,
                 "is_transfer_locked",
                 |ptb| Ok(vec![utils::get_clock_ref(ptb)]),
             )
@@ -322,7 +313,7 @@ pub trait NotarizationOperations {
             Notarization::build_transaction(
                 iota_client,
                 package_id,
-                Some(object_id),
+                object_id,
                 "is_destroy_allowed",
                 |ptb| Ok(vec![utils::get_clock_ref(ptb)]),
             )
@@ -341,8 +332,8 @@ pub trait NotarizationOperations {
             Notarization::build_transaction(
                 iota_client,
                 package_id,
-                Some(object_id),
-                "last_change_ts",
+                object_id,
+                "last_change",
                 |_| Ok(vec![]),
             )
             .await
@@ -360,7 +351,7 @@ pub trait NotarizationOperations {
             Notarization::build_transaction(
                 iota_client,
                 package_id,
-                Some(object_id),
+                object_id,
                 "version_count",
                 |_| Ok(vec![]),
             )
@@ -379,7 +370,7 @@ pub trait NotarizationOperations {
             Notarization::build_transaction(
                 iota_client,
                 package_id,
-                Some(object_id),
+                object_id,
                 "created_at",
                 |_| Ok(vec![]),
             )

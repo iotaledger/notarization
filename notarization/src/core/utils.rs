@@ -126,12 +126,12 @@ pub(crate) fn new_move_option_string(
 
 pub async fn get_type_tag(
     iota_client: &IotaClientAdapter,
-    object_id: ObjectID,
+    object_id: &ObjectID,
 ) -> Result<TypeTag, Error> {
     let options = IotaObjectDataOptions::new().with_type();
     let object_response = iota_client
         .read_api()
-        .get_object_with_options(object_id, options)
+        .get_object_with_options(*object_id, options)
         .await
         .map_err(|err| Error::FailedToParseTag(format!("Failed to get object: {err}")))?;
 
@@ -175,11 +175,11 @@ fn parse_type(full_type: &str) -> Result<String, Error> {
 
 pub(crate) async fn get_object_ref_by_id(
     iota_client: &IotaClientAdapter,
-    obj: ObjectID,
+    obj: &ObjectID,
 ) -> Result<ObjectRef, Error> {
     let res = iota_client
         .read_api()
-        .get_object_with_options(obj, IotaObjectDataOptions::new().with_content())
+        .get_object_with_options(*obj, IotaObjectDataOptions::new().with_content())
         .await
         .unwrap();
 
