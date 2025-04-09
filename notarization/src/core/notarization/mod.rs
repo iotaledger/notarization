@@ -104,7 +104,7 @@ pub trait NotarizationOperations {
 
         let tag = state.data.tag();
         let clock = utils::get_clock_ref(&mut ptb);
-        let state_arg = state.to_ptb(&mut ptb, package_id)?;
+        let state_arg = state.into_ptb(&mut ptb, package_id)?;
         let immutable_description = utils::new_move_option_string(immutable_description, &mut ptb)?;
         let updateable_metadata = utils::new_move_option_string(updateable_metadata, &mut ptb)?;
         let delete_lock = delete_lock.to_ptb(&mut ptb, package_id)?;
@@ -139,7 +139,7 @@ pub trait NotarizationOperations {
 
         let tag = state.data.tag();
         let clock = utils::get_clock_ref(&mut ptb);
-        let state_arg = state.to_ptb(&mut ptb, package_id)?;
+        let state_arg = state.into_ptb(&mut ptb, package_id)?;
         let immutable_description = utils::new_move_option_string(immutable_description, &mut ptb)?;
         let updateable_metadata = utils::new_move_option_string(updateable_metadata, &mut ptb)?;
         let transfer_lock = utils::option_to_move(transfer_lock, &mut ptb, package_id)?;
@@ -178,7 +178,7 @@ pub trait NotarizationOperations {
                 |ptb| {
                     Ok(vec![
                         utils::get_clock_ref(ptb),
-                        new_state.to_ptb(ptb, package_id)?,
+                        new_state.into_ptb(ptb, package_id)?,
                     ])
                 },
             )

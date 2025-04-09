@@ -1,7 +1,6 @@
 // Copyright 2020-2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use core::panic;
 
 use anyhow::Result;
 
@@ -143,7 +142,7 @@ impl Notarization {
 
     pub fn update_state<D>(&mut self, data: StateData, _metadata: Option<String>) -> Result<()> {
         // ....
-        use identity_iota_interaction::IotaClientTrait;
+        
         match data {
             StateData::Binary(_data) => {
                 unimplemented!("Create a new Notarization<vec<u8>> object on the ledger")

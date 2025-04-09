@@ -66,7 +66,7 @@ impl State {
     /// Creates a new `Argument` from the `State`.
     ///
     /// To be used when creating a new `Notarization` object on the ledger.
-    pub(super) fn to_ptb(
+    pub(super) fn into_ptb(
         self,
         ptb: &mut ProgrammableTransactionBuilder,
         package_id: ObjectID,
