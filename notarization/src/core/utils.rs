@@ -181,7 +181,7 @@ pub(crate) async fn get_object_ref_by_id(
         .read_api()
         .get_object_with_options(*obj, IotaObjectDataOptions::new().with_content())
         .await
-        .unwrap();
+        .map_err(|err| Error::GenericError(format!("Failed to get object: {err}")))?;
 
     let Some(data) = res.data else {
         return Err(Error::InvalidArgument("no data found".to_string()));
