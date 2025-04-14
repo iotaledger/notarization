@@ -89,7 +89,8 @@ impl Notarization {
 
 /// Notarization operations
 ///
-/// These operations return the ProgrammableTransactionBuilder
+/// These operations return a `ProgrammableTransaction` which is
+/// a single transaction, or command, in a programmable transaction block
 pub trait NotarizationOperations {
     /// Build a transaction that creates a new locked notarization
     fn new_locked(
