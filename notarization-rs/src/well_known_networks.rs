@@ -1,12 +1,9 @@
 // Copyright 2020-2024 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use phf::phf_map;
-use phf::Map;
-
-use identity_iota_interaction::types::base_types::ObjectID;
-
 use identity_iota_core::network::NetworkName;
+use identity_iota_interaction::types::base_types::ObjectID;
+use phf::{phf_map, Map};
 
 /// A Mapping `network_id` -> metadata needed by the library.
 pub(crate) static IOTA_NETWORKS: Map<&str, NotarizationNetworkMetadata> = phf_map! {

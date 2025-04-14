@@ -9,9 +9,8 @@ use iota_sdk::types::programmable_transaction_builder::ProgrammableTransactionBu
 use iota_sdk::types::transaction::Argument;
 use iota_sdk::types::{TypeTag, MOVE_STDLIB_PACKAGE_ID};
 
-use crate::error::Error;
-
 use super::utils;
+use crate::error::Error;
 
 /// The state of the `Notarization` that can be updated
 pub struct State {

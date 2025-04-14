@@ -11,9 +11,8 @@ use iota_sdk::types::transaction::Argument;
 use iota_sdk::types::TypeTag;
 use serde::{Deserialize, Serialize};
 
-use crate::error::Error;
-
 use super::utils;
+use crate::error::Error;
 
 /// Represents different types of time-based locks that can be applied to
 /// notarizations.

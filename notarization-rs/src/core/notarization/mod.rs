@@ -1,22 +1,20 @@
 // Copyright 2020-2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::core::state::State;
-use crate::core::timelock::TimeLock;
-use crate::error::Error;
-use identity_iota_interaction::ident_str;
-use iota_sdk::types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use iota_sdk::types::Identifier;
-
 use std::future::Future;
 use std::str::FromStr;
 
 use identity_iota_core::iota_interaction_rust::IotaClientAdapter;
+use identity_iota_interaction::ident_str;
 use iota_sdk::types::base_types::ObjectID;
-
+use iota_sdk::types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use iota_sdk::types::transaction::{Argument, ObjectArg, ProgrammableTransaction};
+use iota_sdk::types::Identifier;
 
 use super::utils;
+use crate::core::state::State;
+use crate::core::timelock::TimeLock;
+use crate::error::Error;
 
 #[derive(Debug, Clone)]
 /// A unified notarization type that can be either dynamic or locked
