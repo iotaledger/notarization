@@ -3,7 +3,7 @@ set -euo pipefail
 
 # ===== Configuration =====
 CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONTRACT_DIR="$CURRENT_DIR/../packages/iota_notarization"
+CONTRACT_DIR="$CURRENT_DIR/../notarization-move"
 GAS_BUDGET=500000000
 
 # Package address of the notarization module (update after publishing)

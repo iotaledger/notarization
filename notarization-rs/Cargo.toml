@@ -12,7 +12,7 @@ rust-version.workspace = true
 description = "A data notarization toolkit for the IOTA Ledger."
 
 [dependencies]
-anyhow = "1.0.97"
+anyhow.workspace = true
 cfg-if.workspace = true
 fastcrypto.workspace = true
 identity_iota_core.workspace = true
