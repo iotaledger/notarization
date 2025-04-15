@@ -2,29 +2,22 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-
 use fastcrypto::ed25519::Ed25519PublicKey;
 use fastcrypto::traits::ToFromBytes;
-
-use secret_storage::Signer;
-
 use identity_iota_core::NetworkName;
-
-use identity_iota_interaction::types::base_types::IotaAddress;
-use identity_iota_interaction::types::base_types::ObjectID;
+use identity_iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use identity_iota_interaction::types::crypto::PublicKey;
+#[cfg(not(target_arch = "wasm32"))]
+use identity_iota_interaction::IotaClient;
 use identity_iota_interaction::IotaKeySignature;
+#[cfg(target_arch = "wasm32")]
+use iota_interaction_ts::bindings::WasmIotaClient;
+use secret_storage::Signer;
 
 use crate::client_tools::network_id;
 use crate::error::Error;
 use crate::iota_interaction_adapter::IotaClientAdapter;
 use crate::well_known_networks::network_metadata;
-
-#[cfg(not(target_arch = "wasm32"))]
-use identity_iota_interaction::IotaClient;
-
-#[cfg(target_arch = "wasm32")]
-use iota_interaction_ts::bindings::WasmIotaClient;
 
 /// Facilitates creating a [`Notarization`] instance
 pub struct NotarizationBuilder<S: Signer<IotaKeySignature>> {

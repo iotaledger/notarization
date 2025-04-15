@@ -3,11 +3,9 @@
 
 use std::str::FromStr;
 
-use crate::error::Error;
 use identity_iota_core::iota_interaction_rust::IotaClientAdapter;
 use identity_iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
-use identity_iota_interaction::IotaClientTrait;
-use identity_iota_interaction::{ident_str, MoveType};
+use identity_iota_interaction::{ident_str, IotaClientTrait, MoveType};
 use iota_sdk::rpc_types::IotaObjectDataOptions;
 use iota_sdk::types::base_types::{
     ObjectID, ObjectRef, STD_OPTION_MODULE_NAME, STD_UTF8_MODULE_NAME,
@@ -17,6 +15,8 @@ use iota_sdk::types::{
     TypeTag, IOTA_CLOCK_OBJECT_ID, IOTA_CLOCK_OBJECT_SHARED_VERSION, MOVE_STDLIB_PACKAGE_ID,
 };
 use serde::Serialize;
+
+use crate::error::Error;
 
 /// Adds a reference to the on-chain clock to `ptb`'s arguments.
 pub(crate) fn get_clock_ref(ptb: &mut Ptb) -> Argument {

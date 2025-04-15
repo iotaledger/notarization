@@ -1,11 +1,11 @@
 // Copyright 2020-2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::error::Error;
 use identity_iota_core::iota_interaction_adapter::IotaClientAdapter;
 use identity_iota_core::network::NetworkName;
-
 use identity_iota_interaction::IotaClientTrait;
+
+use crate::error::Error;
 
 /// Returns the network-id also known as chain-identifier provided by the specified iota_client
 pub async fn network_id(iota_client: &IotaClientAdapter) -> Result<NetworkName, Error> {

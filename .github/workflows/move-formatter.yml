@@ -3,21 +3,21 @@ name: Check Move formatting
 on:
   pull_request:
     paths:
-      - 'notarization/packages/iota_notarization/**'
+      - 'notarization-move/**'
       - develop
   push:
     branches:
       - main
       - develop
     paths:
-      - 'notarization/packages/iota_notarization/**'
+      - 'notarization-move/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  MOVE_PACKAGES_PATH: notarization/packages/iota_notarization
+  MOVE_PACKAGES_PATH: notarization-move
 
 jobs:
   prettier-move:
