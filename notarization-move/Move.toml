@@ -7,9 +7,10 @@ edition = "2024.beta"
 
 [dependencies]
 # 'tag' keyword not supported here, therefore use rev instead
-# 'tag = "v0.10.3-rc"' equals 'rev = "21768a84e4fe2815ea7f674db645269ae8546d07"', which we use here
-MoveStdlib = { git = "https://github.com/iotaledger/iota.git", subdir = "crates/iota-framework/packages/move-stdlib", rev = "21768a84e4fe2815ea7f674db645269ae8546d07" }
-Iota = { git = "https://github.com/iotaledger/iota.git", subdir = "crates/iota-framework/packages/iota-framework", rev = "21768a84e4fe2815ea7f674db645269ae8546d07" }
+# 'tag = "v0.11.6-rc"' equals 'rev = "80fc853da5811f842be7bf749d6a981a17c9e565", which we use here
+# 'tag = "v0.10.3-rc"' equals 'rev = "21768a84e4fe2815ea7f674db645269ae8546d07"'
+MoveStdlib = { git = "https://github.com/iotaledger/iota.git", subdir = "crates/iota-framework/packages/move-stdlib", rev = "80fc853da5811f842be7bf749d6a981a17c9e565" }
+Iota = { git = "https://github.com/iotaledger/iota.git", subdir = "crates/iota-framework/packages/iota-framework", rev = "80fc853da5811f842be7bf749d6a981a17c9e565" }
 
 [addresses]
 iota_notarization = "0x0"

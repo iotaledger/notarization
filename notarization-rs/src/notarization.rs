@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use fastcrypto::ed25519::Ed25519PublicKey;
-use fastcrypto::traits::ToFromBytes;
 use identity_iota_core::NetworkName;
 use identity_iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use identity_iota_interaction::types::crypto::PublicKey;
@@ -19,7 +17,42 @@ use crate::error::Error;
 use crate::iota_interaction_adapter::IotaClientAdapter;
 use crate::well_known_networks::network_metadata;
 
+/// Indicates the used Notarization method.
+pub enum NotarizationMethod {
+    Dynamic,
+    Locked,
+}
+
+/// Account of a user that uses an IOTA client to execute transactions.
+/// Is not needed for read access.
+#[derive(Clone)]
+pub struct ClientAccount<S: Signer<IotaKeySignature>> {
+    /// The signer of the client.
+    pub signer: S,
+    /// The address of the client account.
+    pub address: IotaAddress,
+    /// The public key of the client account.
+    pub public_key: PublicKey,
+}
+
+impl<S: Signer<IotaKeySignature>> ClientAccount<S> {
+    pub async fn new(signer: S) -> Result<Self> {
+        let public_key = signer
+            .public_key()
+            .await
+            .map_err(|e| Error::InvalidKey(e.to_string()))?;
+        let address = IotaAddress::from(&public_key);
+
+        Ok(ClientAccount {
+            signer,
+            address,
+            public_key,
+        })
+    }
+}
+
 /// Facilitates creating a [`Notarization`] instance
+#[derive(Clone)]
 pub struct NotarizationBuilder<S: Signer<IotaKeySignature>> {
     iota_client: IotaClientAdapter,
     iota_notarization_pkg_id: ObjectID,
@@ -29,52 +62,78 @@ pub struct NotarizationBuilder<S: Signer<IotaKeySignature>> {
 
 impl<S: Signer<IotaKeySignature>> NotarizationBuilder<S> {
     cfg_if::cfg_if! {
-      if #[cfg(target_arch = "wasm32")] {
-        /// Create a new [`NotarizationBuilder`] from a given [`IotaClient`].
-        ///
-        /// # Failures
-        /// This function fails if the provided `iota_client` is connected to an unrecognized
-        /// network.
-        ///
-        /// # Notes
-        /// When trying to connect to a local or unofficial network prefer using
-        /// [`NotarizationBuilder::new_with_pkg_id`].
-        pub async fn new(iota_client: WasmIotaClient) -> Result<Self, Error> {
-          Self::new_internal(IotaClientAdapter::new(iota_client)?).await
+        if #[cfg(target_arch = "wasm32")] {
+            /// Create a new [`NotarizationBuilder`] from a given [`IotaClient`].
+            ///
+            /// # Failures
+            /// This function fails if the provided `iota_client` is connected to an unrecognized
+            /// network.
+            ///
+            /// # Notes
+            /// When trying to connect to a local or unofficial network prefer using
+            /// [`NotarizationBuilder::new_with_pkg_id`].
+            pub async fn new(iota_client: WasmIotaClient) -> Result<Self, Error> {
+                Self::new_internal(IotaClientAdapter::new(iota_client)?).await
+            }
+
+            /// Create a new [`NotarizationBuilder`] from the given [`IotaClient`] and uses
+            /// the Move code published to the specified iota_notarization_pkg_id.
+            pub async fn new_with_pkg_id(iota_client: WasmIotaClient, iota_notarization_pkg_id: ObjectID) -> Result<Self, Error> {
+                Self::new_with_pkg_id_internal(
+                    IotaClientAdapter::new(iota_client)?,
+                    iota_notarization_pkg_id
+                ).await
+            }
+        } else {
+            /// Attempts to create a new [`NotarizationBuilder`] from a given [`IotaClient`].
+            ///
+            /// # Failures
+            /// This function fails if the provided `iota_client` is connected to an unrecognized
+            /// network.
+            ///
+            /// # Notes
+            /// When trying to connect to a local or unofficial network prefer using
+            /// [`NotarizationBuilder::new_with_pkg_id`].
+            pub async fn new(iota_client: IotaClient) -> Result<Self, Error> {
+                Self::new_internal(IotaClientAdapter::new(iota_client)?).await
+            }
+
+            /// Create a new [`NotarizationBuilder`] from the given [`IotaClient`] and uses
+            /// the Move code published to the specified iota_notarization_pkg_id.
+            pub async fn new_with_pkg_id(iota_client: IotaClient, iota_notarization_pkg_id: ObjectID) -> Result<Self, Error> {
+                Self::new_with_pkg_id_internal(
+                    IotaClientAdapter::new(iota_client)?,
+                    iota_notarization_pkg_id
+                ).await
+            }
         }
-      } else {
-        /// Attempts to create a new [`NotarizationBuilder`] from a given [`IotaClient`].
-        ///
-        /// # Failures
-        /// This function fails if the provided `iota_client` is connected to an unrecognized
-        /// network.
-        ///
-        /// # Notes
-        /// When trying to connect to a local or unofficial network prefer using
-        /// [`NotarizationBuilder::new_with_pkg_id`].
-        pub async fn new(iota_client: IotaClient) -> Result<Self, Error> {
-          Self::new_internal(IotaClientAdapter::new(iota_client)?).await
-        }
-      }
     }
 
-    pub async fn finish(self) -> Result<Notarization> {
-        let Some(signer) = self.signer else {
-            anyhow::bail!("Signer is not set")
-        };
-        let public_key = signer
-            .public_key()
-            .await
-            .map_err(|e| Error::InvalidKey(e.to_string()))?;
-        let address = convert_to_address(public_key.as_ref())?;
+    pub async fn create_dynamic(self) -> Result<Notarization<S>> {
+        self.create(NotarizationMethod::Dynamic).await
+    }
 
-        // TODO: Create PTB to create and the notarization object on the ledger
+    pub async fn create_locked(self) -> Result<Notarization<S>> {
+        self.create(NotarizationMethod::Locked).await
+    }
+
+    pub async fn create(self, method: NotarizationMethod) -> Result<Notarization<S>> {
+        let account = if let Some(signer) = self.signer {
+            Some(ClientAccount::new(signer).await?)
+        } else {
+            None
+        };
+
         let iota_notarization_pkg_id = ObjectID::from_hex_literal("0x00")?;
+
+        // TODO: Create and execute the PTB to create the notarization object on the ledger
+        let notarization_id = ObjectID::from_hex_literal("0x00")?;
+
         Ok(Notarization {
             iota_client: self.iota_client,
             iota_notarization_pkg_id,
-            address,
-            public_key,
+            notarization_id,
+            account,
         })
     }
 
@@ -97,6 +156,24 @@ impl<S: Signer<IotaKeySignature>> NotarizationBuilder<S> {
             signer: None,
         })
     }
+
+    async fn new_with_pkg_id_internal(
+        iota_client: IotaClientAdapter,
+        iota_notarization_pkg_id: ObjectID,
+    ) -> Result<Self, Error> {
+        let network = network_id(&iota_client).await?;
+        Ok(NotarizationBuilder {
+            iota_client,
+            iota_notarization_pkg_id,
+            network,
+            signer: None,
+        })
+    }
+
+    pub fn signer(mut self, signer: S) -> Self {
+        self.signer = Some(signer);
+        self
+    }
 }
 
 pub enum StateData {
@@ -106,31 +183,34 @@ pub enum StateData {
 
 /// Manages an existing Notarization object stored on the ledger
 #[derive(Clone)]
-pub struct Notarization {
+pub struct Notarization<S: Signer<IotaKeySignature>> {
     iota_client: IotaClientAdapter,
-    /// References the managed notarization object sored on the ledger
+    /// Package ID of the used Notarization smart contract
     iota_notarization_pkg_id: ObjectID,
-
-    /// The address of the client.
-    address: IotaAddress,
-    /// The public key of the client.
-    public_key: PublicKey,
+    /// References the managed notarization object stored on the ledger
+    notarization_id: ObjectID,
+    /// The client account of the user, only needed for write access
+    account: Option<ClientAccount<S>>,
 }
 
-impl Notarization {
-    // pub async fn new_from_ledger(iota_client: IotaClient, notarization_id: ObjectID) -> Result<Self> {
-    //   let mut notarization = Self::new(iota_client);
-    //   notarization.iota_notarization_pkg_id = Some(notarization_id);
-    //   notarization
-    // }
-    //
-    // pub fn is_stored_on_ledger(&self) -> bool {
-    //   self.iota_notarization_pkg_id.is_some()
-    // }
-    //
-    // pub fn create() {
-    //
-    // }
+impl<S: Signer<IotaKeySignature>> Notarization<S> {
+    pub fn signer(&self) -> Option<&S> {
+        self.account.as_ref().map(|account| &account.signer)
+    }
+
+    pub async fn new(
+        iota_client: IotaClientAdapter,
+        iota_notarization_pkg_id: ObjectID,
+        notarization_id: ObjectID,
+        account: Option<ClientAccount<S>>,
+    ) -> Result<Self> {
+        Ok(Notarization {
+            iota_client,
+            iota_notarization_pkg_id,
+            notarization_id,
+            account,
+        })
+    }
 
     pub fn update_state<D>(&mut self, data: StateData, _metadata: Option<String>) -> Result<()> {
         // ....
@@ -144,15 +224,4 @@ impl Notarization {
             }
         }
     }
-}
-
-/// Utility function to convert a public key's bytes into an [`IotaAddress`].
-pub fn convert_to_address(sender_public_key: &[u8]) -> Result<IotaAddress, Error> {
-    let public_key = Ed25519PublicKey::from_bytes(sender_public_key).map_err(|err| {
-        Error::InvalidKey(format!(
-            "could not parse public key to Ed25519 public key; {err}"
-        ))
-    })?;
-
-    Ok(IotaAddress::from(&public_key))
 }
