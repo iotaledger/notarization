@@ -4,11 +4,11 @@
 use std::str::FromStr;
 use std::time::SystemTime;
 
-use identity_iota_interaction::{ident_str, MoveType};
-use iota_sdk::types::base_types::ObjectID;
-use iota_sdk::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
-use iota_sdk::types::transaction::Argument;
-use iota_sdk::types::TypeTag;
+use iota_interaction::{ident_str, MoveType};
+use iota_interaction::types::base_types::ObjectID;
+use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
+use iota_interaction::types::transaction::Argument;
+use iota_interaction::types::TypeTag;
 use serde::{Deserialize, Serialize};
 
 use super::utils;

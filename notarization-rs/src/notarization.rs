@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use identity_iota_core::NetworkName;
-use identity_iota_interaction::types::base_types::{IotaAddress, ObjectID};
-use identity_iota_interaction::types::crypto::PublicKey;
+use product_common::network_name::NetworkName;
+use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::crypto::PublicKey;
 #[cfg(not(target_arch = "wasm32"))]
-use identity_iota_interaction::IotaClient;
-use identity_iota_interaction::IotaKeySignature;
+use iota_interaction::IotaClient;
+use iota_interaction::IotaKeySignature;
 #[cfg(target_arch = "wasm32")]
 use iota_interaction_ts::bindings::WasmIotaClient;
 use secret_storage::Signer;
@@ -95,14 +95,14 @@ impl<S: Signer<IotaKeySignature>> NotarizationBuilder<S> {
             /// When trying to connect to a local or unofficial network prefer using
             /// [`NotarizationBuilder::new_with_pkg_id`].
             pub async fn new(iota_client: IotaClient) -> Result<Self, Error> {
-                Self::new_internal(IotaClientAdapter::new(iota_client)?).await
+                Self::new_internal(IotaClientAdapter::new(iota_client).map_err(|e| Error::IotaClient(e))?).await
             }
 
             /// Create a new [`NotarizationBuilder`] from the given [`IotaClient`] and uses
             /// the Move code published to the specified iota_notarization_pkg_id.
             pub async fn new_with_pkg_id(iota_client: IotaClient, iota_notarization_pkg_id: ObjectID) -> Result<Self, Error> {
                 Self::new_with_pkg_id_internal(
-                    IotaClientAdapter::new(iota_client)?,
+                    IotaClientAdapter::new(iota_client).map_err(|e| Error::IotaClient(e))?,
                     iota_notarization_pkg_id
                 ).await
             }

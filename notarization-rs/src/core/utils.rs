@@ -3,15 +3,15 @@
 
 use std::str::FromStr;
 
-use identity_iota_core::iota_interaction_rust::IotaClientAdapter;
-use identity_iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
-use identity_iota_interaction::{ident_str, IotaClientTrait, MoveType};
-use iota_sdk::rpc_types::IotaObjectDataOptions;
-use iota_sdk::types::base_types::{
+use iota_interaction_rust::IotaClientAdapter;
+use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
+use iota_interaction::{ident_str, IotaClientTrait, MoveType};
+use iota_interaction::rpc_types::IotaObjectDataOptions;
+use iota_interaction::types::base_types::{
     ObjectID, ObjectRef, STD_OPTION_MODULE_NAME, STD_UTF8_MODULE_NAME,
 };
-use iota_sdk::types::transaction::{Argument, ObjectArg};
-use iota_sdk::types::{
+use iota_interaction::types::transaction::{Argument, ObjectArg};
+use iota_interaction::types::{
     TypeTag, IOTA_CLOCK_OBJECT_ID, IOTA_CLOCK_OBJECT_SHARED_VERSION, MOVE_STDLIB_PACKAGE_ID,
 };
 use serde::Serialize;

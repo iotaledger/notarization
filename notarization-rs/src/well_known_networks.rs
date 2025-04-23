@@ -1,8 +1,8 @@
 // Copyright 2020-2024 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use identity_iota_core::network::NetworkName;
-use identity_iota_interaction::types::base_types::ObjectID;
+use product_common::network_name::NetworkName;
+use iota_interaction::types::base_types::ObjectID;
 use phf::{phf_map, Map};
 
 /// A Mapping `network_id` -> metadata needed by the library.
@@ -60,7 +60,7 @@ impl NotarizationNetworkMetadata {
 
 // #[cfg(test)]
 // mod test {
-//   use identity_iota_interaction::IotaClientBuilder;
+//   use iota_interaction::IotaClientBuilder;
 
 //   use crate::notarization::NotarizationBuilder;
 //   use crate::notarization::Notarization;

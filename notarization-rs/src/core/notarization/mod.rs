@@ -4,12 +4,12 @@
 use std::future::Future;
 use std::str::FromStr;
 
-use identity_iota_core::iota_interaction_rust::IotaClientAdapter;
-use identity_iota_interaction::ident_str;
-use iota_sdk::types::base_types::ObjectID;
-use iota_sdk::types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use iota_sdk::types::transaction::{Argument, ObjectArg, ProgrammableTransaction};
-use iota_sdk::types::Identifier;
+use iota_interaction_rust::IotaClientAdapter;
+use iota_interaction::ident_str;
+use iota_interaction::types::base_types::ObjectID;
+use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder;
+use iota_interaction::types::transaction::{Argument, ObjectArg, ProgrammableTransaction};
+use iota_interaction::types::Identifier;
 
 use super::utils;
 use crate::core::state::State;

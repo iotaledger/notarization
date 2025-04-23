@@ -3,13 +3,14 @@
 
 use std::process::Output;
 use anyhow::Context;
-use identity_iota_core::iota_interaction_adapter::IotaClientAdapter;
-use identity_iota_core::network::NetworkName;
+use crate::iota_interaction_adapter::IotaClientAdapter;
+use product_common::network_name::NetworkName;
 use crate::error::Error;
 
-use identity_iota_interaction::IotaClientTrait;
-use identity_iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::IotaClientTrait;
+use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use serde::Deserialize;
+#[cfg(not(target_arch = "wasm32"))]
 use tokio::process::Command;
 
 const FUND_WITH_ACTIVE_ADDRESS_FUNDING_TX_BUDGET: u64 = 5_000_000;
