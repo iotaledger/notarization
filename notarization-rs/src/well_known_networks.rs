@@ -1,9 +1,9 @@
 // Copyright 2020-2024 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use product_common::network_name::NetworkName;
 use iota_interaction::types::base_types::ObjectID;
 use phf::{phf_map, Map};
+use product_common::network_name::NetworkName;
 
 /// A Mapping `network_id` -> metadata needed by the library.
 pub(crate) static IOTA_NETWORKS: Map<&str, NotarizationNetworkMetadata> = phf_map! {
@@ -34,10 +34,7 @@ pub(crate) fn network_metadata(network_id: &str) -> Option<&'static Notarization
 impl NotarizationNetworkMetadata {
     const fn new(alias: Option<&'static str>, pkgs: &'static [&'static str]) -> Self {
         assert!(!pkgs.is_empty());
-        Self {
-            alias,
-            package: pkgs,
-        }
+        Self { alias, package: pkgs }
     }
 
     /// Returns the latest `IotaNotarization` package ID on this network.
@@ -52,8 +49,7 @@ impl NotarizationNetworkMetadata {
     /// Returns a [`NetworkName`] if `alias` is set.
     pub(crate) fn network_alias(&self) -> Option<NetworkName> {
         self.alias.map(|alias| {
-            NetworkName::try_from(alias)
-                .expect("an hardcoded network alias is valid (unless a dev messed it up)")
+            NetworkName::try_from(alias).expect("an hardcoded network alias is valid (unless a dev messed it up)")
         })
     }
 }
