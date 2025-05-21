@@ -24,7 +24,7 @@ use crate::core::NotarizationMethod;
 use crate::error::Error;
 use crate::iota_interaction_adapter::IotaClientAdapter;
 use crate::package;
-use crate::package::MAINNET_CHAIN_ID;
+use product_common::package_registry::MAINNET_CHAIN_ID;
 
 /// A read-only client for interacting with IOTA Notarization module objects on a specific network.
 ///
@@ -39,7 +39,7 @@ pub struct NotarizationClientReadOnly {
     /// The [`ObjectID`] of the deployed Notarization package (smart contract).
     /// All interactions go through this package ID.
     notarization_pkg_id: ObjectID,
-    /// The name of the network this client is connected to (e.g., "iota", "testnet").
+    /// The name of the network this client is connected to (e.g., "mainnet", "testnet").
     network: NetworkName,
     chain_id: String,
 }

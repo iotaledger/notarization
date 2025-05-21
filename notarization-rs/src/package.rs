@@ -11,7 +11,6 @@ use product_common::package_registry::PackageRegistry;
 use tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard, TryLockError};
 
 use crate::error::Error;
-pub(crate) const MAINNET_CHAIN_ID: &str = "6364aad5";
 
 type PackageRegistryLock = RwLockReadGuard<'static, PackageRegistry>;
 type PackageRegistryLockMut = RwLockWriteGuard<'static, PackageRegistry>;
