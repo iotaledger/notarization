@@ -8,4 +8,3 @@ pub mod core;
 pub mod error;
 pub(crate) mod iota_interaction_adapter;
 pub mod package;
-mod well_known_networks;
