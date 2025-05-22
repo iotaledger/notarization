@@ -18,13 +18,12 @@ use serde::de::DeserializeOwned;
 
 use crate::client_tools::network_id;
 use crate::core::operations::{NotarizationImpl, NotarizationOperations};
-use crate::core::state::{Data, State};
+use crate::core::state::State;
 use crate::core::timelock::LockMetadata;
 use crate::core::NotarizationMethod;
 use crate::error::Error;
 use crate::iota_interaction_adapter::IotaClientAdapter;
 use crate::package;
-use product_common::package_registry::MAINNET_CHAIN_ID;
 
 /// A read-only client for interacting with IOTA Notarization module objects on a specific network.
 ///
@@ -112,12 +111,13 @@ impl NotarizationClientReadOnly {
         .package_id(&network)
         .ok_or_else(|| {
         Error::InvalidConfig(format!(
-          "no information for a published `notarization` package on network {network}; try to use `NotarizationClientReadOnly::new_with_package_id`"
-        ))
-      })?;
+            "no information for a published `notarization` package on network {network}; try to use `NotarizationClientReadOnly::new_with_package_id`"
+            ))
+        })?;
             let network = match chain_id.as_str() {
-                // Replace Mainnet's name with "iota".
-                MAINNET_CHAIN_ID => NetworkName::try_from("iota").expect("valid network name"),
+                product_common::package_registry::MAINNET_CHAIN_ID => {
+                    NetworkName::try_from("iota").expect("valid network name")
+                }
                 _ => package_registry
                     .chain_alias(&chain_id)
                     .and_then(|alias| NetworkName::try_from(alias).ok())
@@ -294,21 +294,7 @@ impl NotarizationClientReadOnly {
     ///
     /// # Returns
     /// A `Result` containing the [`State<Data>`] or an [`Error`].
-    pub async fn state(&self, notarized_object_id: ObjectID) -> Result<State<Data>, Error> {
-        self.state_as::<Data>(notarized_object_id).await
-    }
-
-    /// Retrieves the `state` of a notarization object by its `object_id` and deserializes it into the specified type
-    /// `T`.
-    ///
-    /// # Type Parameters
-    ///
-    /// * `T`: The type to deserialize the state data into. Must implement [`DeserializeOwned`].
-    ///
-    /// # Arguments
-    ///
-    /// * `notarized_object_id`: The [`ObjectID`] of the notarized object.
-    pub async fn state_as<T: DeserializeOwned>(&self, notarized_object_id: ObjectID) -> Result<State<T>, Error> {
+    pub async fn state(&self, notarized_object_id: ObjectID) -> Result<State, Error> {
         let tx = NotarizationImpl::state(self.notarization_pkg_id, notarized_object_id, &self.iota_client).await?;
 
         self.execute_read_only_transaction(tx).await
@@ -422,5 +408,38 @@ impl CoreClientReadOnly for NotarizationClientReadOnly {
     /// This is part of the [`CoreClientReadOnly`] trait implementation.
     fn client_adapter(&self) -> &IotaClientAdapter {
         &self.iota_client
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use iota_interaction::IotaClientBuilder;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_notarization_client_read_only() {
+        let iota_client = IotaClientBuilder::default().build_devnet().await.unwrap();
+
+        let client = NotarizationClientReadOnly::new(iota_client.into()).await.unwrap();
+        let notarization_pkg_id = client.package_id();
+        println!("notarization_pkg_id: {:?}", notarization_pkg_id);
+    }
+
+    #[tokio::test]
+    async fn test_notarization_get_state() {
+        let iota_client = IotaClientBuilder::default().build_devnet().await.unwrap();
+
+        let client = NotarizationClientReadOnly::new(iota_client.into()).await.unwrap();
+
+        let state = client
+            .state(
+                "0x1784f612773a74129abd06278415e1f93326f1f438be0570173777e962d05832"
+                    .parse()
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        println!("state: {:?}", state);
     }
 }

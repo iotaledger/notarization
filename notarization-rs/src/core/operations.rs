@@ -12,7 +12,6 @@ use iota_interaction::types::Identifier;
 use iota_interaction_rust::IotaClientAdapter;
 
 use super::move_utils;
-use super::state::Data;
 use crate::core::state::State;
 use crate::core::timelock::TimeLock;
 use crate::error::Error;
@@ -89,7 +88,7 @@ pub trait NotarizationOperations {
     fn new_locked(
         &self,
         package_id: ObjectID,
-        state: State<Data>,
+        state: State,
         immutable_description: Option<String>,
         updateable_metadata: Option<String>,
         delete_lock: TimeLock,
@@ -124,7 +123,7 @@ pub trait NotarizationOperations {
     fn new_dynamic(
         &self,
         package_id: ObjectID,
-        state: State<Data>,
+        state: State,
         immutable_description: Option<String>,
         updateable_metadata: Option<String>,
         transfer_lock: Option<TimeLock>,
@@ -161,7 +160,7 @@ pub trait NotarizationOperations {
         iota_client: &IotaClientAdapter,
         package_id: ObjectID,
         object_id: ObjectID,
-        new_state: State<Data>,
+        new_state: State,
     ) -> Result<ProgrammableTransaction, Error> {
         NotarizationImpl::build_transaction(iota_client, package_id, object_id, "update_state", |ptb| {
             Ok(vec![

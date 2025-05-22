@@ -14,13 +14,14 @@ use super::move_utils;
 use crate::error::Error;
 
 /// The state of the `Notarization` that can be updated
-#[derive(Debug, Clone, Deserialize)]
-pub struct State<T = Data> {
-    pub data: T,
-    metadata: Option<String>,
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct State {
+    pub data: Data,
+    #[serde(default)]
+    pub metadata: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Data {
     Bytes(Vec<u8>),
     Text(String),
@@ -31,16 +32,12 @@ impl Data {
         match self {
             Data::Bytes(_) => TypeTag::Vector(Box::new(TypeTag::U8)),
             Data::Text(_) => TypeTag::from_str(&format!("{MOVE_STDLIB_PACKAGE_ID}::string::String"))
-                .expect("could not create string tag"),
+                .expect("should be valid type tag"),
         }
     }
 }
 
 impl State {
-    pub fn new(data: Data, metadata: Option<String>) -> Self {
-        Self { data, metadata }
-    }
-
     pub fn data(&self) -> &Data {
         &self.data
     }
