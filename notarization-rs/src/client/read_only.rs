@@ -10,6 +10,7 @@ use std::ops::Deref;
 
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::transaction::{ProgrammableTransaction, TransactionKind};
+use iota_interaction::types::TypeTag;
 use iota_interaction::{IotaClient, IotaClientTrait};
 use product_common::core_client::CoreClientReadOnly;
 use product_common::network_name::NetworkName;
@@ -17,6 +18,7 @@ use product_common::package_registry::{Env, Metadata};
 use serde::de::DeserializeOwned;
 
 use crate::client_tools::network_id;
+use crate::core::move_utils::parse_type;
 use crate::core::operations::{NotarizationImpl, NotarizationOperations};
 use crate::core::state::State;
 use crate::core::timelock::LockMetadata;
@@ -89,7 +91,7 @@ impl NotarizationClientReadOnly {
         #[cfg(target_arch = "wasm32")] iota_client: WasmIotaClient,
         #[cfg(not(target_arch = "wasm32"))] iota_client: IotaClient,
     ) -> Result<Self, Error> {
-        let client = IotaClientAdapter::new(iota_client.into());
+        let client = IotaClientAdapter::new(iota_client);
         let network = network_id(&client).await?;
         Self::new_internal(client, network).await
     }
@@ -152,7 +154,7 @@ impl NotarizationClientReadOnly {
         #[cfg(not(target_arch = "wasm32"))] iota_client: IotaClient,
         package_id: ObjectID,
     ) -> Result<Self, Error> {
-        let client = IotaClientAdapter::new(iota_client.into());
+        let client = IotaClientAdapter::new(iota_client);
         let network = network_id(&client).await?;
 
         // Use the passed pkg_id to add a new env or override the information of an existing one.
@@ -285,8 +287,12 @@ impl NotarizationClientReadOnly {
 
     /// Retrieves the `state` of a notarization object by its `object_id`.
     ///
-    /// This method assumes the state data is of the default [`Data`] type (`Vec<u8>` or `String`).
-    /// Use [`Self::state_as`] to deserialize the state into a custom type.
+    /// This method specifically handles notarized objects with **default state types only**
+    /// (`Vec<u8>` or `String`). The notarization system guarantees that objects accessed
+    /// through this method contain state data of these primitive types.
+    ///
+    /// For custom types, use [`Self::state_as`] which provides type-safe deserialization
+    /// without the default type constraints.
     ///
     /// # Arguments
     ///
@@ -295,6 +301,58 @@ impl NotarizationClientReadOnly {
     /// # Returns
     /// A `Result` containing the [`State<Data>`] or an [`Error`].
     pub async fn state(&self, notarized_object_id: ObjectID) -> Result<State, Error> {
+        let tx = NotarizationImpl::state(self.notarization_pkg_id, notarized_object_id, &self.iota_client).await?;
+
+        let inspection_result = self
+            .iota_client
+            .read_api()
+            .dev_inspect_transaction_block(IotaAddress::ZERO, TransactionKind::programmable(tx), None, None, None)
+            .await
+            .map_err(|err| Error::UnexpectedApiResponse(format!("Failed to inspect transaction block: {err}")))?;
+
+        let execution_results = inspection_result
+            .results
+            .ok_or_else(|| Error::UnexpectedApiResponse("DevInspectResults missing 'results' field".to_string()))?;
+
+        let (return_value_bytes, tag) = execution_results
+            .first()
+            .ok_or_else(|| Error::UnexpectedApiResponse("Execution results list is empty".to_string()))?
+            .return_values
+            .first()
+            .ok_or_else(|| Error::InvalidArgument("should have at least one return value".to_string()))?;
+
+        // Type safety is guaranteed by the public notarization API design:
+        // Only default types (String or Vec<u8>) are allowed for objects accessed via this endpoint.
+        // The following workaround inspects the runtime type to handle the String vs Vec<u8> distinction.
+        let tag: TypeTag = tag
+            .clone()
+            .try_into()
+            .map_err(|err| Error::InvalidArgument(format!("Invalid type tag: {err}")))?;
+        let identifier = tag.to_canonical_string(false);
+        let type_param_str = parse_type(&identifier)?;
+
+        // Deserialize based on detected type and convert to unified State<Data> representation
+        let state = if type_param_str.contains("String") {
+            let state: State<String> = bcs::from_bytes(return_value_bytes)?;
+            State::new_from_string(state.data, state.metadata)
+        } else {
+            let state: State<Vec<u8>> = bcs::from_bytes(return_value_bytes)?;
+            State::new_from_vector(state.data, state.metadata)
+        };
+
+        Ok(state)
+    }
+
+    /// Retrieves the `state` of a notarization object by its `object_id` and deserializes it into a custom type `T`.
+    /// This method is useful when the state data is of a custom type.
+    ///
+    /// # Arguments
+    ///
+    /// * `notarized_object_id`: The [`ObjectID`] of the notarized object.
+    ///
+    /// # Returns
+    /// A `Result` containing the [`State<T>`] or an [`Error`].
+    pub async fn state_as<T: DeserializeOwned>(&self, notarized_object_id: ObjectID) -> Result<State<T>, Error> {
         let tx = NotarizationImpl::state(self.notarization_pkg_id, notarized_object_id, &self.iota_client).await?;
 
         self.execute_read_only_transaction(tx).await
@@ -421,7 +479,7 @@ mod tests {
     async fn test_notarization_client_read_only() {
         let iota_client = IotaClientBuilder::default().build_devnet().await.unwrap();
 
-        let client = NotarizationClientReadOnly::new(iota_client.into()).await.unwrap();
+        let client = NotarizationClientReadOnly::new(iota_client).await.unwrap();
         let notarization_pkg_id = client.package_id();
         println!("notarization_pkg_id: {:?}", notarization_pkg_id);
     }
@@ -430,7 +488,7 @@ mod tests {
     async fn test_notarization_get_state() {
         let iota_client = IotaClientBuilder::default().build_devnet().await.unwrap();
 
-        let client = NotarizationClientReadOnly::new(iota_client.into()).await.unwrap();
+        let client = NotarizationClientReadOnly::new(iota_client).await.unwrap();
 
         let state = client
             .state(

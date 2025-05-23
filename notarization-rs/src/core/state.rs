@@ -15,8 +15,8 @@ use crate::error::Error;
 
 /// The state of the `Notarization` that can be updated
 #[derive(Debug, Clone, Deserialize, PartialEq)]
-pub struct State {
-    pub data: Data,
+pub struct State<T = Data> {
+    pub data: T,
     #[serde(default)]
     pub metadata: Option<String>,
 }

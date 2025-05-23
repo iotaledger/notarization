@@ -149,7 +149,7 @@ pub async fn get_type_tag(iota_client: &IotaClientAdapter, object_id: &ObjectID)
 /// let type_param_str = parse_type(full_type).unwrap();
 /// assert_eq!(type_param_str, "vector<u8>");
 /// ```
-fn parse_type(full_type: &str) -> Result<String, Error> {
+pub(crate) fn parse_type(full_type: &str) -> Result<String, Error> {
     if let (Some(start), Some(end)) = (full_type.find('<'), full_type.rfind('>')) {
         Ok(full_type[start + 1..end].to_string())
     } else {
