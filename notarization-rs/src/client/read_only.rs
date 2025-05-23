@@ -334,10 +334,10 @@ impl NotarizationClientReadOnly {
         // Deserialize based on detected type and convert to unified State<Data> representation
         let state = if type_param_str.contains("String") {
             let state: State<String> = bcs::from_bytes(return_value_bytes)?;
-            State::new_from_string(state.data, state.metadata)
+            State::from_string(state.data, state.metadata)
         } else {
             let state: State<Vec<u8>> = bcs::from_bytes(return_value_bytes)?;
-            State::new_from_vector(state.data, state.metadata)
+            State::from_bytes(state.data, state.metadata)
         };
 
         Ok(state)

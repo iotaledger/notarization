@@ -14,7 +14,7 @@ use super::move_utils;
 use crate::error::Error;
 
 /// The state of the `Notarization` that can be updated
-#[derive(Debug, Clone, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Serialize)]
 pub struct State<T = Data> {
     pub data: T,
     #[serde(default)]
@@ -46,14 +46,14 @@ impl State {
         &self.metadata
     }
 
-    pub fn new_from_vector(data: Vec<u8>, metadata: Option<String>) -> Self {
+    pub fn from_bytes(data: Vec<u8>, metadata: Option<String>) -> Self {
         Self {
             data: Data::Bytes(data),
             metadata,
         }
     }
 
-    pub fn new_from_string(data: String, metadata: Option<String>) -> Self {
+    pub fn from_string(data: String, metadata: Option<String>) -> Self {
         Self {
             data: Data::Text(data),
             metadata,

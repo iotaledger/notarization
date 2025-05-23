@@ -9,6 +9,7 @@ use product_common::network_name::NetworkName;
 use secret_storage::Signer;
 
 use super::read_only::NotarizationClientReadOnly;
+use crate::core::builder::{Dynamic, Locked, NotarizationBuilder};
 use crate::error::Error;
 
 /// A client for interacting with the IOTA network.
@@ -45,6 +46,16 @@ where
             read_client: client,
             signer,
         })
+    }
+}
+
+impl<S> NotarizationClient<S> {
+    pub fn create_locked_notarization(&self) -> NotarizationBuilder<Locked> {
+        NotarizationBuilder::locked()
+    }
+
+    pub fn create_dynamic_notarization(&self) -> NotarizationBuilder<Dynamic> {
+        NotarizationBuilder::dynamic()
     }
 }
 
