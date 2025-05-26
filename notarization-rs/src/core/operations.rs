@@ -57,12 +57,8 @@ impl NotarizationImpl {
         let tag = vec![move_utils::get_type_tag(client, &object_id).await?];
 
         let mut args = {
-            // let notarization = move_utils::get_object_ref_by_id(client, &object_id).await?;
+            let notarization = move_utils::get_object_ref_by_id(client, &object_id).await?;
 
-            let notarization = client
-                .get_object_by_id(object_id)
-                .await
-                .expect("Failed to get object ref");
             vec![ptb
                 .obj(ObjectArg::ImmOrOwnedObject(notarization))
                 .map_err(|e| Error::InvalidArgument(format!("Failed to create object argument: {}", e)))?]
@@ -74,11 +70,11 @@ impl NotarizationImpl {
         );
 
         // Create method identifier
-        let method_id = Identifier::from_str(method.as_ref())
+        let function = Identifier::from_str(method.as_ref())
             .map_err(|e| Error::InvalidArgument(format!("Invalid method name '{}': {}", method.as_ref(), e)))?;
 
         // Build the move call
-        ptb.programmable_move_call(package_id, ident_str!("notarization").into(), method_id, tag, args);
+        ptb.programmable_move_call(package_id, ident_str!("notarization").into(), function, tag, args);
 
         Ok(ptb.finish())
     }
@@ -93,7 +89,6 @@ impl NotarizationImpl {
 pub trait NotarizationOperations {
     /// Build a transaction that creates a new locked notarization
     fn new_locked(
-        &self,
         package_id: ObjectID,
         state: State,
         immutable_description: Option<String>,
@@ -128,7 +123,6 @@ pub trait NotarizationOperations {
 
     /// Build a transaction that creates a new dynamic notarization
     fn new_dynamic(
-        &self,
         package_id: ObjectID,
         state: State,
         immutable_description: Option<String>,
@@ -163,7 +157,6 @@ pub trait NotarizationOperations {
 
     /// Build a transaction that updates the state of a notarization
     async fn update_state<C>(
-        &self,
         client: &C,
         package_id: ObjectID,
         object_id: ObjectID,
@@ -182,12 +175,7 @@ pub trait NotarizationOperations {
     }
 
     /// Build a transaction that destroys a notarization
-    async fn destroy<C>(
-        &self,
-        client: &C,
-        package_id: ObjectID,
-        object_id: ObjectID,
-    ) -> Result<ProgrammableTransaction, Error>
+    async fn destroy<C>(client: &C, package_id: ObjectID, object_id: ObjectID) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
@@ -199,7 +187,6 @@ pub trait NotarizationOperations {
 
     /// Build a transaction that updates the metadata of a notarization
     async fn update_metadata<C>(
-        &self,
         client: &C,
         package_id: ObjectID,
         object_id: ObjectID,

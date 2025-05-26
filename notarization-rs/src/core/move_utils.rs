@@ -165,8 +165,12 @@ pub(crate) fn parse_type(full_type: &str) -> Result<String, Error> {
     }
 }
 
-pub(crate) async fn get_object_ref_by_id(iota_client: &IotaClientAdapter, obj: &ObjectID) -> Result<ObjectRef, Error> {
+pub(crate) async fn get_object_ref_by_id(
+    iota_client: &impl CoreClientReadOnly,
+    obj: &ObjectID,
+) -> Result<ObjectRef, Error> {
     let res = iota_client
+        .client_adapter()
         .read_api()
         .get_object_with_options(*obj, IotaObjectDataOptions::new().with_content())
         .await

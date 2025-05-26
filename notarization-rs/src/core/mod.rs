@@ -1,9 +1,11 @@
 // Copyright 2020-2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
+
 use serde::{Deserialize, Serialize};
 
 pub mod builder;
 pub mod destroy;
+pub mod event;
 pub mod metadata;
 pub mod move_utils;
 pub mod notarization;

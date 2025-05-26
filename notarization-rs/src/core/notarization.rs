@@ -1,5 +1,7 @@
 use async_trait::async_trait;
-use iota_interaction::rpc_types::{IotaExecutionStatus, IotaTransactionBlockEffects, IotaTransactionBlockEffectsAPI};
+use iota_interaction::rpc_types::{
+    IotaExecutionStatus, IotaTransactionBlockEffects, IotaTransactionBlockEffectsAPI, IotaTransactionBlockEvents,
+};
 use iota_interaction::types::id::UID;
 use iota_interaction::types::object::Owner;
 use iota_interaction::types::transaction::ProgrammableTransaction;
@@ -7,37 +9,57 @@ use iota_interaction::{IotaTransactionBlockEffectsMutAPI, OptionalSend, Optional
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use serde::{Deserialize, Serialize};
+use serde_aux::field_attributes::deserialize_number_from_string;
+use serde_json::Value;
 use tokio::sync::OnceCell;
 
 use super::builder::NotarizationBuilder;
+use super::event::{DynamicNotarizationCreated, Event, LockedNotarizationCreated};
+use super::metadata::ImmutableMetadata;
 use super::operations::{NotarizationImpl, NotarizationOperations};
-use super::state::State;
+use super::state::{Data, State};
 use super::timelock::LockMetadata;
 use super::NotarizationMethod;
 use crate::error::Error;
 use crate::package::notarization_package_id;
 
-/// The immutable metadata of a notarization.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-struct ImmutableMetadata {
-    /// Timestamp when the `Notarization` was created
-    created_at: u64,
-    /// Description of the `Notarization`
-    description: Option<String>,
-    /// Optional lock metadata for `Notarization`
-    locking: Option<LockMetadata>,
+#[serde(untagged)]
+pub enum IotaData {
+    Bytes(Vec<u8>),
+    Text(String),
+}
+
+impl From<Data> for IotaData {
+    fn from(data: Data) -> Self {
+        match data {
+            Data::Bytes(bytes) => IotaData::Bytes(bytes),
+            Data::Text(text) => IotaData::Text(text),
+        }
+    }
+}
+
+impl From<IotaData> for Data {
+    fn from(data: IotaData) -> Self {
+        match data {
+            IotaData::Bytes(bytes) => Data::Bytes(bytes),
+            IotaData::Text(text) => Data::Text(text),
+        }
+    }
 }
 
 /// A notarization that is stored on the chain.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct OnChainNotarization {
     id: UID,
-    state: State,
-    immutable_metadata: ImmutableMetadata,
-    updateable_metadata: Option<String>,
-    last_state_change_at: u64,
-    state_version_count: u64,
-    method: NotarizationMethod,
+    pub state: State<IotaData>,
+    pub immutable_metadata: ImmutableMetadata,
+    pub updateable_metadata: Option<String>,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
+    pub last_state_change_at: u64,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
+    pub state_version_count: u64,
+    pub method: NotarizationMethod,
 }
 
 #[derive(Debug, Clone)]
@@ -71,8 +93,6 @@ impl<M: Clone> CreateNotarization<M> {
 
         let state = state.ok_or_else(|| Error::InvalidArgument("State is required".to_string()))?;
 
-        let operations = NotarizationImpl;
-
         match method {
             NotarizationMethod::Dynamic => {
                 if delete_lock.is_some() {
@@ -81,7 +101,7 @@ impl<M: Clone> CreateNotarization<M> {
                     ));
                 }
 
-                operations.new_dynamic(
+                NotarizationImpl::new_dynamic(
                     package_id,
                     state,
                     immutable_description,
@@ -100,7 +120,7 @@ impl<M: Clone> CreateNotarization<M> {
                     Error::InvalidArgument("Delete lock is required for locked notarizations".to_string())
                 })?;
 
-                operations.new_locked(
+                NotarizationImpl::new_locked(
                     package_id,
                     state,
                     immutable_description,
@@ -126,54 +146,58 @@ impl<M: Clone + OptionalSend + OptionalSync> Transaction for CreateNotarization<
         self.cached_ptb.get_or_try_init(|| self.make_ptb(client)).await.cloned()
     }
 
-    async fn apply<C>(
+    async fn apply_with_events<C>(
         mut self,
-        effects: &mut IotaTransactionBlockEffects,
+        _: &mut IotaTransactionBlockEffects,
+        events: Option<IotaTransactionBlockEvents>,
         client: &C,
     ) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        if let IotaExecutionStatus::Failure { error } = effects.status() {
-            return Err(Error::TransactionUnexpectedResponse(error.clone()));
-        }
-        let created_objects = effects
-            .created()
-            .iter()
-            .enumerate()
-            .filter(|(_, elem)| matches!(elem.owner, Owner::ObjectOwner(_)))
-            .map(|(i, obj)| (i, obj.object_id()));
+        let events =
+            events.ok_or_else(|| Error::TransactionUnexpectedResponse("events should be provided".to_string()))?;
 
-        // Will try getting the notarization with similar state and metadata
-        let is_target_notarization = |notarization: &OnChainNotarization| {
-            let state = self.builder.state.clone().expect("State is required");
+        let method = self.builder.method.clone();
 
-            notarization.state == state
-                && notarization.immutable_metadata.description == self.builder.immutable_description.clone()
-                && notarization.updateable_metadata == self.builder.updateable_metadata.clone()
-        };
+        let data = events
+            .data
+            .first()
+            .ok_or_else(|| Error::TransactionUnexpectedResponse("events should be provided".to_string()))?;
 
-        let mut target_notarization_pos = None;
-        let mut target_notarization = None;
-        for (i, obj_id) in created_objects {
-            match client.get_object_by_id::<OnChainNotarization>(obj_id).await {
-                Ok(notarization) if is_target_notarization(&notarization) => {
-                    target_notarization_pos = Some(i);
-                    target_notarization = Some(notarization);
-                    break;
-                }
-                _ => continue,
+        println!("data: {:?}", data);
+
+        let notarization_id = match method {
+            NotarizationMethod::Dynamic => {
+                let event: Event<DynamicNotarizationCreated> = serde_json::from_value(data.parsed_json.clone())
+                    .map_err(|e| Error::TransactionUnexpectedResponse(format!("failed to parse event: {}", e)))?;
+
+                event.data.notarization_id
             }
-        }
+            NotarizationMethod::Locked => {
+                let event: Event<LockedNotarizationCreated> = serde_json::from_value(data.parsed_json.clone())
+                    .map_err(|e| Error::TransactionUnexpectedResponse(format!("failed to parse event: {}", e)))?;
 
-        let (Some(i), Some(notarization)) = (target_notarization_pos, target_notarization) else {
-            return Err(Error::TransactionUnexpectedResponse(
-                "failed to find the correct notarization in this transaction's effects".to_owned(),
-            ));
+                event.data.notarization_id
+            }
         };
 
-        effects.created_mut().swap_remove(i);
+        println!("reached here");
 
-        Ok(notarization)
+        let notarization = client
+            .get_object_by_id::<Value>(notarization_id)
+            .await
+            .map_err(|e| Error::ObjectLookup(e.to_string()))?;
+
+        println!("notarization: {:?}", notarization);
+
+        Ok(serde_json::from_value(notarization).map_err(|e| Error::ObjectLookup(e.to_string()))?)
+    }
+
+    async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        unreachable!()
     }
 }
