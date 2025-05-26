@@ -419,6 +419,8 @@ impl NotarizationClientReadOnly {
             .await
             .map_err(|err| Error::UnexpectedApiResponse(format!("Failed to inspect transaction block: {err}")))?;
 
+        println!("inspection_result: {:?}", inspection_result);
+
         let execution_results = inspection_result
             .results
             .ok_or_else(|| Error::UnexpectedApiResponse("DevInspectResults missing 'results' field".to_string()))?;
@@ -480,7 +482,7 @@ mod tests {
         let client = NotarizationClientReadOnly::new(iota_client).await.unwrap();
 
         let state = client
-            .state(
+            .notarization_method(
                 "0x1784f612773a74129abd06278415e1f93326f1f438be0570173777e962d05832"
                     .parse()
                     .unwrap(),

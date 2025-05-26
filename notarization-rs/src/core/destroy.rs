@@ -32,10 +32,9 @@ impl DestroyNotarization {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        let operations = NotarizationImpl;
         let package_id = notarization_package_id(client).await?;
 
-        operations.destroy(client, package_id, self.notarized_object_id).await
+        NotarizationImpl::destroy(client, package_id, self.notarized_object_id).await
     }
 }
 

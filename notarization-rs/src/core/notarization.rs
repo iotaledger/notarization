@@ -1,43 +1,43 @@
 use async_trait::async_trait;
-use iota_interaction::rpc_types::{IotaExecutionStatus, IotaTransactionBlockEffects, IotaTransactionBlockEffectsAPI};
+use iota_interaction::rpc_types::{
+    IotaExecutionStatus, IotaTransactionBlockEffects, IotaTransactionBlockEffectsAPI, IotaTransactionBlockEvents,
+};
 use iota_interaction::types::id::UID;
 use iota_interaction::types::object::Owner;
 use iota_interaction::types::transaction::ProgrammableTransaction;
 use iota_interaction::{IotaTransactionBlockEffectsMutAPI, OptionalSend, OptionalSync};
+use iota_sdk::rpc_types::{IotaData as _, IotaObjectDataOptions};
+use iota_sdk::types::base_types::ObjectID;
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+use serde_aux::field_attributes::deserialize_number_from_string;
+use serde_json::Value;
 use tokio::sync::OnceCell;
 
 use super::builder::NotarizationBuilder;
+use super::event::{DynamicNotarizationCreated, Event, LockedNotarizationCreated};
+use super::metadata::ImmutableMetadata;
 use super::operations::{NotarizationImpl, NotarizationOperations};
-use super::state::State;
+use super::state::{Data, State};
 use super::timelock::LockMetadata;
 use super::NotarizationMethod;
 use crate::error::Error;
 use crate::package::notarization_package_id;
-
-/// The immutable metadata of a notarization.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-struct ImmutableMetadata {
-    /// Timestamp when the `Notarization` was created
-    created_at: u64,
-    /// Description of the `Notarization`
-    description: Option<String>,
-    /// Optional lock metadata for `Notarization`
-    locking: Option<LockMetadata>,
-}
+use iota_interaction::IotaClientTrait;
 
 /// A notarization that is stored on the chain.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct OnChainNotarization {
-    id: UID,
-    state: State,
-    immutable_metadata: ImmutableMetadata,
-    updateable_metadata: Option<String>,
-    last_state_change_at: u64,
-    state_version_count: u64,
-    method: NotarizationMethod,
+    pub id: UID,
+    // TODO: remove this field and use the state field instead
+    pub state: State<String>,
+    pub immutable_metadata: ImmutableMetadata,
+    pub updateable_metadata: Option<String>,
+    pub last_state_change_at: u64,
+    pub state_version_count: u64,
+    pub method: NotarizationMethod,
 }
 
 #[derive(Debug, Clone)]
@@ -71,8 +71,6 @@ impl<M: Clone> CreateNotarization<M> {
 
         let state = state.ok_or_else(|| Error::InvalidArgument("State is required".to_string()))?;
 
-        let operations = NotarizationImpl;
-
         match method {
             NotarizationMethod::Dynamic => {
                 if delete_lock.is_some() {
@@ -81,7 +79,7 @@ impl<M: Clone> CreateNotarization<M> {
                     ));
                 }
 
-                operations.new_dynamic(
+                NotarizationImpl::new_dynamic(
                     package_id,
                     state,
                     immutable_description,
@@ -100,7 +98,7 @@ impl<M: Clone> CreateNotarization<M> {
                     Error::InvalidArgument("Delete lock is required for locked notarizations".to_string())
                 })?;
 
-                operations.new_locked(
+                NotarizationImpl::new_locked(
                     package_id,
                     state,
                     immutable_description,
@@ -126,54 +124,75 @@ impl<M: Clone + OptionalSend + OptionalSync> Transaction for CreateNotarization<
         self.cached_ptb.get_or_try_init(|| self.make_ptb(client)).await.cloned()
     }
 
-    async fn apply<C>(
+    async fn apply_with_events<C>(
         mut self,
-        effects: &mut IotaTransactionBlockEffects,
+        _: &mut IotaTransactionBlockEffects,
+        events: Option<IotaTransactionBlockEvents>,
         client: &C,
     ) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        if let IotaExecutionStatus::Failure { error } = effects.status() {
-            return Err(Error::TransactionUnexpectedResponse(error.clone()));
-        }
-        let created_objects = effects
-            .created()
-            .iter()
-            .enumerate()
-            .filter(|(_, elem)| matches!(elem.owner, Owner::ObjectOwner(_)))
-            .map(|(i, obj)| (i, obj.object_id()));
+        let events =
+            events.ok_or_else(|| Error::TransactionUnexpectedResponse("events should be provided".to_string()))?;
 
-        // Will try getting the notarization with similar state and metadata
-        let is_target_notarization = |notarization: &OnChainNotarization| {
-            let state = self.builder.state.clone().expect("State is required");
+        let method = self.builder.method.clone();
 
-            notarization.state == state
-                && notarization.immutable_metadata.description == self.builder.immutable_description.clone()
-                && notarization.updateable_metadata == self.builder.updateable_metadata.clone()
-        };
+        let data = events
+            .data
+            .first()
+            .ok_or_else(|| Error::TransactionUnexpectedResponse("events should be provided".to_string()))?;
 
-        let mut target_notarization_pos = None;
-        let mut target_notarization = None;
-        for (i, obj_id) in created_objects {
-            match client.get_object_by_id::<OnChainNotarization>(obj_id).await {
-                Ok(notarization) if is_target_notarization(&notarization) => {
-                    target_notarization_pos = Some(i);
-                    target_notarization = Some(notarization);
-                    break;
-                }
-                _ => continue,
+        println!("data: {:?}", data);
+
+        let notarization_id = match method {
+            NotarizationMethod::Dynamic => {
+                let event: Event<DynamicNotarizationCreated> = serde_json::from_value(data.parsed_json.clone())
+                    .map_err(|e| Error::TransactionUnexpectedResponse(format!("failed to parse event: {}", e)))?;
+
+                event.data.notarization_id
             }
-        }
+            NotarizationMethod::Locked => {
+                let event: Event<LockedNotarizationCreated> = serde_json::from_value(data.parsed_json.clone())
+                    .map_err(|e| Error::TransactionUnexpectedResponse(format!("failed to parse event: {}", e)))?;
 
-        let (Some(i), Some(notarization)) = (target_notarization_pos, target_notarization) else {
-            return Err(Error::TransactionUnexpectedResponse(
-                "failed to find the correct notarization in this transaction's effects".to_owned(),
-            ));
+                event.data.notarization_id
+            }
         };
 
-        effects.created_mut().swap_remove(i);
+        let notarization = get_object_ref_by_id_with_bcs::<OnChainNotarization>(client, &notarization_id)
+            .await
+            .map_err(|e| Error::ObjectLookup(e.to_string()))?;
 
         Ok(notarization)
     }
+
+    async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        unreachable!()
+    }
+}
+
+pub(crate) async fn get_object_ref_by_id_with_bcs<T: DeserializeOwned>(
+    client: &impl CoreClientReadOnly,
+    object_id: &ObjectID,
+) -> Result<T, Error> {
+    let notarization = client
+        .client_adapter()
+        .read_api()
+        .get_object_with_options(*object_id, IotaObjectDataOptions::bcs_lossless())
+        .await
+        .map_err(|err| Error::ObjectLookup(err.to_string()))?
+        .data
+        .ok_or_else(|| Error::ObjectLookup("missing data in response".to_string()))?
+        .bcs
+        .ok_or_else(|| Error::ObjectLookup("missing object content in data".to_string()))?
+        .try_into_move()
+        .ok_or_else(|| Error::ObjectLookup("failed to convert data to move object".to_string()))?
+        .deserialize()
+        .map_err(|err| Error::ObjectLookup(err.to_string()))?;
+
+    Ok(notarization)
 }

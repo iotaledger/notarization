@@ -8,11 +8,25 @@ use iota_interaction::types::transaction::ProgrammableTransaction;
 use iota_interaction::OptionalSync;
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
+use serde::{Deserialize, Serialize};
+use serde_aux::field_attributes::deserialize_number_from_string;
 use tokio::sync::OnceCell;
 
 use super::operations::{NotarizationImpl, NotarizationOperations};
+use super::timelock::LockMetadata;
 use crate::error::Error;
 use crate::package::notarization_package_id;
+
+/// The immutable metadata of a notarization.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ImmutableMetadata {
+    /// Timestamp when the `Notarization` was created
+    pub created_at: u64,
+    /// Description of the `Notarization`
+    pub description: Option<String>,
+    /// Optional lock metadata for `Notarization`
+    pub locking: Option<LockMetadata>,
+}
 
 pub struct UpdateMetadata {
     metadata: Option<String>,
@@ -33,12 +47,9 @@ impl UpdateMetadata {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        let operations = NotarizationImpl;
         let package_id = notarization_package_id(client).await?;
 
-        operations
-            .update_metadata(client, package_id, self.object_id, self.metadata.clone())
-            .await
+        NotarizationImpl::update_metadata(client, package_id, self.object_id, self.metadata.clone()).await
     }
 }
 

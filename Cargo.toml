@@ -16,10 +16,10 @@ async-trait = "0.1.88"
 cfg-if = "1.0"
 bcs = { version = "0.1.6" }
 fastcrypto = { git = "https://github.com/MystenLabs/fastcrypto", rev = "2f502fd8570fe4e9cff36eea5bbd6fef22002898", package = "fastcrypto" }
-iota_interaction = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/add-dev-inspect-tx", package = "iota_interaction" }
-iota_interaction_rust = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/add-dev-inspect-tx", package = "iota_interaction_rust" }
+iota_interaction = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/extend-transaction-trait", package = "iota_interaction" }
+iota_interaction_rust = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/extend-transaction-trait", package = "iota_interaction_rust" }
 phf = { version = "0.11.2", features = ["macros"] }
-product_common = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/add-dev-inspect-tx", package = "product_common" }
+product_common = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/extend-transaction-trait", package = "product_common" }
 serde = { version = "1.0", default-features = false, features = [
     "alloc",
     "derive",
@@ -30,6 +30,7 @@ strum = { version = "0.27", default-features = false, features = [
     "derive",
 ] }
 thiserror = { version = "2.0", default-features = false }
+serde-aux = "4.7"
 
 [workspace.lints.clippy]
 result_large_err = "allow"

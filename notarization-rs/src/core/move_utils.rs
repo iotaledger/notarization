@@ -57,6 +57,32 @@ pub(crate) fn option_to_move<T: MoveType + Serialize>(
     Ok(arg)
 }
 
+pub(crate) fn option_to_move_with_tag(
+    option: Option<Argument>,
+    tag: TypeTag,
+    ptb: &mut Ptb,
+) -> Result<Argument, Error> {
+    let arg = if let Some(t) = option {
+        ptb.programmable_move_call(
+            MOVE_STDLIB_PACKAGE_ID,
+            STD_OPTION_MODULE_NAME.into(),
+            ident_str!("some").into(),
+            vec![tag],
+            vec![t],
+        )
+    } else {
+        ptb.programmable_move_call(
+            MOVE_STDLIB_PACKAGE_ID,
+            STD_OPTION_MODULE_NAME.into(),
+            ident_str!("none").into(),
+            vec![tag],
+            vec![],
+        )
+    };
+
+    Ok(arg)
+}
+
 pub(crate) fn ptb_pure<T>(ptb: &mut Ptb, name: &str, value: T) -> Result<Argument, Error>
 where
     T: Serialize + core::fmt::Debug,
@@ -120,11 +146,10 @@ pub async fn get_type_tag<C>(client: &C, object_id: &ObjectID) -> Result<TypeTag
 where
     C: CoreClientReadOnly + OptionalSync,
 {
-    let options = IotaObjectDataOptions::new().with_type();
     let object_response = client
         .client_adapter()
         .read_api()
-        .get_object_with_options(*object_id, options)
+        .get_object_with_options(*object_id, IotaObjectDataOptions::new().with_type())
         .await
         .map_err(|err| Error::FailedToParseTag(format!("Failed to get object: {err}")))?;
 
@@ -165,8 +190,12 @@ pub(crate) fn parse_type(full_type: &str) -> Result<String, Error> {
     }
 }
 
-pub(crate) async fn get_object_ref_by_id(iota_client: &IotaClientAdapter, obj: &ObjectID) -> Result<ObjectRef, Error> {
+pub(crate) async fn get_object_ref_by_id(
+    iota_client: &impl CoreClientReadOnly,
+    obj: &ObjectID,
+) -> Result<ObjectRef, Error> {
     let res = iota_client
+        .client_adapter()
         .read_api()
         .get_object_with_options(*obj, IotaObjectDataOptions::new().with_content())
         .await

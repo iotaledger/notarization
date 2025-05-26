@@ -73,11 +73,8 @@ impl NotarizationBuilder<Dynamic> {
         self
     }
 
-    pub fn finish(self) -> Result<TransactionBuilder<CreateNotarization<Dynamic>>, Error> {
-        if self.transfer_lock.is_none() {
-            return Err(Error::InvalidArgument("Dynamic needs transfer_at()".to_string()));
-        }
-        Ok(TransactionBuilder::new(CreateNotarization::new(self)))
+    pub fn finish(self) -> TransactionBuilder<CreateNotarization<Dynamic>> {
+        TransactionBuilder::new(CreateNotarization::new(self))
     }
 }
 
