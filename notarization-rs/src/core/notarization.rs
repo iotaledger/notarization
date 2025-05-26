@@ -6,8 +6,11 @@ use iota_interaction::types::id::UID;
 use iota_interaction::types::object::Owner;
 use iota_interaction::types::transaction::ProgrammableTransaction;
 use iota_interaction::{IotaTransactionBlockEffectsMutAPI, OptionalSend, OptionalSync};
+use iota_sdk::rpc_types::{IotaData as _, IotaObjectDataOptions};
+use iota_sdk::types::base_types::ObjectID;
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_aux::field_attributes::deserialize_number_from_string;
 use serde_json::Value;
@@ -22,42 +25,17 @@ use super::timelock::LockMetadata;
 use super::NotarizationMethod;
 use crate::error::Error;
 use crate::package::notarization_package_id;
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(untagged)]
-pub enum IotaData {
-    Bytes(Vec<u8>),
-    Text(String),
-}
-
-impl From<Data> for IotaData {
-    fn from(data: Data) -> Self {
-        match data {
-            Data::Bytes(bytes) => IotaData::Bytes(bytes),
-            Data::Text(text) => IotaData::Text(text),
-        }
-    }
-}
-
-impl From<IotaData> for Data {
-    fn from(data: IotaData) -> Self {
-        match data {
-            IotaData::Bytes(bytes) => Data::Bytes(bytes),
-            IotaData::Text(text) => Data::Text(text),
-        }
-    }
-}
+use iota_interaction::IotaClientTrait;
 
 /// A notarization that is stored on the chain.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct OnChainNotarization {
-    id: UID,
-    pub state: State<IotaData>,
+    pub id: UID,
+    // TODO: remove this field and use the state field instead
+    pub state: State<String>,
     pub immutable_metadata: ImmutableMetadata,
     pub updateable_metadata: Option<String>,
-    #[serde(deserialize_with = "deserialize_number_from_string")]
     pub last_state_change_at: u64,
-    #[serde(deserialize_with = "deserialize_number_from_string")]
     pub state_version_count: u64,
     pub method: NotarizationMethod,
 }
@@ -182,16 +160,11 @@ impl<M: Clone + OptionalSend + OptionalSync> Transaction for CreateNotarization<
             }
         };
 
-        println!("reached here");
-
-        let notarization = client
-            .get_object_by_id::<Value>(notarization_id)
+        let notarization = get_object_ref_by_id_with_bcs::<OnChainNotarization>(client, &notarization_id)
             .await
             .map_err(|e| Error::ObjectLookup(e.to_string()))?;
 
-        println!("notarization: {:?}", notarization);
-
-        Ok(serde_json::from_value(notarization).map_err(|e| Error::ObjectLookup(e.to_string()))?)
+        Ok(notarization)
     }
 
     async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
@@ -200,4 +173,26 @@ impl<M: Clone + OptionalSend + OptionalSync> Transaction for CreateNotarization<
     {
         unreachable!()
     }
+}
+
+pub(crate) async fn get_object_ref_by_id_with_bcs<T: DeserializeOwned>(
+    client: &impl CoreClientReadOnly,
+    object_id: &ObjectID,
+) -> Result<T, Error> {
+    let notarization = client
+        .client_adapter()
+        .read_api()
+        .get_object_with_options(*object_id, IotaObjectDataOptions::bcs_lossless())
+        .await
+        .map_err(|err| Error::ObjectLookup(err.to_string()))?
+        .data
+        .ok_or_else(|| Error::ObjectLookup("missing data in response".to_string()))?
+        .bcs
+        .ok_or_else(|| Error::ObjectLookup("missing object content in data".to_string()))?
+        .try_into_move()
+        .ok_or_else(|| Error::ObjectLookup("failed to convert data to move object".to_string()))?
+        .deserialize()
+        .map_err(|err| Error::ObjectLookup(err.to_string()))?;
+
+    Ok(notarization)
 }

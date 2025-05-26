@@ -21,7 +21,6 @@ use crate::package::notarization_package_id;
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ImmutableMetadata {
     /// Timestamp when the `Notarization` was created
-    #[serde(deserialize_with = "deserialize_number_from_string")]
     pub created_at: u64,
     /// Description of the `Notarization`
     pub description: Option<String>,

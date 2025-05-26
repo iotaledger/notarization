@@ -482,7 +482,7 @@ mod tests {
         let client = NotarizationClientReadOnly::new(iota_client).await.unwrap();
 
         let state = client
-            .state(
+            .notarization_method(
                 "0x1784f612773a74129abd06278415e1f93326f1f438be0570173777e962d05832"
                     .parse()
                     .unwrap(),

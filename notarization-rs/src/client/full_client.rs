@@ -123,7 +123,11 @@ where
     }
 
     /// Creates a transaction that transfers a notarization to a new owner
-    pub fn transfer(&self, recipient: IotaAddress, object_id: ObjectID) -> TransactionBuilder<TransferNotarization> {
+    pub fn transfer_notarization(
+        &self,
+        object_id: ObjectID,
+        recipient: IotaAddress,
+    ) -> TransactionBuilder<TransferNotarization> {
         TransactionBuilder::new(TransferNotarization::new(recipient, object_id))
     }
 }
