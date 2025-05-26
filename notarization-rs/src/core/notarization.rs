@@ -144,7 +144,7 @@ impl<M: Clone + OptionalSend + OptionalSync> Transaction for CreateNotarization<
             .filter(|(_, elem)| matches!(elem.owner, Owner::ObjectOwner(_)))
             .map(|(i, obj)| (i, obj.object_id()));
 
-        // Will try getting the notarization with similiar state and metadata
+        // Will try getting the notarization with similar state and metadata
         let is_target_notarization = |notarization: &OnChainNotarization| {
             let state = self.builder.state.clone().expect("State is required");
 

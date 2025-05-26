@@ -10,8 +10,9 @@ use iota_interaction::types::transaction::{Argument, ObjectArg};
 use iota_interaction::types::{
     TypeTag, IOTA_CLOCK_OBJECT_ID, IOTA_CLOCK_OBJECT_SHARED_VERSION, MOVE_STDLIB_PACKAGE_ID,
 };
-use iota_interaction::{ident_str, IotaClientTrait, MoveType};
+use iota_interaction::{ident_str, IotaClientTrait, MoveType, OptionalSync};
 use iota_interaction_rust::IotaClientAdapter;
+use product_common::core_client::CoreClientReadOnly;
 use serde::Serialize;
 
 use crate::error::Error;
@@ -115,9 +116,13 @@ pub(crate) fn new_move_option_string(value: Option<String>, ptb: &mut Ptb) -> Re
     }
 }
 
-pub async fn get_type_tag(iota_client: &IotaClientAdapter, object_id: &ObjectID) -> Result<TypeTag, Error> {
+pub async fn get_type_tag<C>(client: &C, object_id: &ObjectID) -> Result<TypeTag, Error>
+where
+    C: CoreClientReadOnly + OptionalSync,
+{
     let options = IotaObjectDataOptions::new().with_type();
-    let object_response = iota_client
+    let object_response = client
+        .client_adapter()
         .read_api()
         .get_object_with_options(*object_id, options)
         .await
