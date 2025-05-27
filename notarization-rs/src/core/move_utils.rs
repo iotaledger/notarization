@@ -11,7 +11,6 @@ use iota_interaction::types::{
     TypeTag, IOTA_CLOCK_OBJECT_ID, IOTA_CLOCK_OBJECT_SHARED_VERSION, MOVE_STDLIB_PACKAGE_ID,
 };
 use iota_interaction::{ident_str, IotaClientTrait, MoveType, OptionalSync};
-use iota_interaction_rust::IotaClientAdapter;
 use product_common::core_client::CoreClientReadOnly;
 use serde::Serialize;
 

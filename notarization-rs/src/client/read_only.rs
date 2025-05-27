@@ -11,7 +11,7 @@ use std::ops::Deref;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::transaction::{ProgrammableTransaction, TransactionKind};
 use iota_interaction::types::TypeTag;
-use iota_interaction::{IotaClient, IotaClientTrait};
+use iota_interaction::IotaClientTrait;
 use product_common::core_client::CoreClientReadOnly;
 use product_common::network_name::NetworkName;
 use product_common::package_registry::{Env, Metadata};
@@ -26,6 +26,12 @@ use crate::core::NotarizationMethod;
 use crate::error::Error;
 use crate::iota_interaction_adapter::IotaClientAdapter;
 use crate::package;
+
+#[cfg(not(target_arch = "wasm32"))]
+use iota_interaction::IotaClient;
+
+#[cfg(target_arch = "wasm32")]
+use iota_interaction_ts::bindings::WasmIotaClient;
 
 /// A read-only client for interacting with IOTA Notarization module objects on a specific network.
 ///

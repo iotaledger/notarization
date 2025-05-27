@@ -9,7 +9,6 @@ use iota_interaction::types::programmable_transaction_builder::ProgrammableTrans
 use iota_interaction::types::transaction::{Argument, ObjectArg, ProgrammableTransaction};
 use iota_interaction::types::Identifier;
 use iota_interaction::{ident_str, MoveType, OptionalSync};
-use iota_interaction_rust::IotaClientAdapter;
 use product_common::core_client::CoreClientReadOnly;
 
 use super::move_utils;

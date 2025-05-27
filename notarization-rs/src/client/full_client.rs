@@ -3,7 +3,6 @@ use std::ops::Deref;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::crypto::PublicKey;
 use iota_interaction::{IotaKeySignature, OptionalSync};
-use iota_interaction_rust::IotaClientAdapter;
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use product_common::network_name::NetworkName;
 use product_common::transaction::transaction_builder::TransactionBuilder;
@@ -16,6 +15,7 @@ use crate::core::metadata::UpdateMetadata;
 use crate::core::state::{State, UpdateState};
 use crate::core::transfer::TransferNotarization;
 use crate::error::Error;
+use crate::iota_interaction_adapter::IotaClientAdapter;
 
 /// A client for interacting with the IOTA network.
 #[derive(Clone)]
