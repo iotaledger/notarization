@@ -13,6 +13,7 @@ use notarization::core::notarization::OnChainNotarization;
 use notarization::core::state::{Data, State};
 use notarization::core::timelock::TimeLock;
 use notarization::core::NotarizationMethod;
+use product_common::core_client::CoreClientReadOnly;
 
 #[tokio::test]
 async fn create_simple_dynamic_notarization_works() -> anyhow::Result<()> {
@@ -26,8 +27,6 @@ async fn create_simple_dynamic_notarization_works() -> anyhow::Result<()> {
         .build_and_execute(&mut test_client)
         .await?
         .output;
-
-    println!("onchain_notarization: {:?}", onchain_notarization);
 
     assert_eq!(
         onchain_notarization.immutable_metadata.description,
@@ -145,7 +144,7 @@ async fn test_update_state_dynamic_notarization() -> anyhow::Result<()> {
         .id;
 
     let new_state = State::from_string("updated_state".to_string(), Some("state_metadata".to_string()));
-    
+
     let update_result = test_client
         .update_state(new_state.clone(), *notarization_id.object_id())
         .build_and_execute(&mut test_client)
@@ -154,7 +153,7 @@ async fn test_update_state_dynamic_notarization() -> anyhow::Result<()> {
     assert!(update_result.is_ok(), "State update should succeed");
 
     let retrieved_state = test_client.state(*notarization_id.object_id()).await?;
-    assert_eq!(retrieved_state.data.as_string()?, "updated_state");
+    assert_eq!(retrieved_state.data.as_text()?, "updated_state");
     assert_eq!(retrieved_state.metadata, Some("state_metadata".to_string()));
 
     let version_count = test_client.state_version_count(*notarization_id.object_id()).await?;
@@ -179,7 +178,7 @@ async fn test_update_metadata_dynamic_notarization() -> anyhow::Result<()> {
         .id;
 
     let new_metadata = Some("updated_metadata".to_string());
-    
+
     let update_result = test_client
         .update_metadata(new_metadata.clone(), *notarization_id.object_id())
         .build_and_execute(&mut test_client)
@@ -215,7 +214,10 @@ async fn test_destroy_dynamic_notarization_no_locks() -> anyhow::Result<()> {
         .build_and_execute(&mut test_client)
         .await;
 
-    assert!(destroy_result.is_ok(), "Destroy should succeed for unlocked notarization");
+    assert!(
+        destroy_result.is_ok(),
+        "Destroy should succeed for unlocked notarization"
+    );
 
     Ok(())
 }
@@ -254,10 +256,13 @@ async fn test_read_only_methods_dynamic_notarization() -> anyhow::Result<()> {
 
     let description = "Test Description".to_string();
     let updateable_metadata = "Test Metadata".to_string();
-    
+
     let notarization_id = test_client
         .create_dynamic_notarization()
-        .with_state(State::from_string("test_state".to_string(), Some("state_meta".to_string())))
+        .with_state(State::from_string(
+            "test_state".to_string(),
+            Some("state_meta".to_string()),
+        ))
         .with_immutable_description(description.clone())
         .with_updateable_metadata(updateable_metadata.clone())
         .finish()
@@ -273,7 +278,7 @@ async fn test_read_only_methods_dynamic_notarization() -> anyhow::Result<()> {
     assert_eq!(retrieved_metadata, Some(updateable_metadata));
 
     let state = test_client.state(*notarization_id.object_id()).await?;
-    assert_eq!(state.data.as_string()?, "test_state");
+    assert_eq!(state.data.as_text()?, "test_state");
     assert_eq!(state.metadata, Some("state_meta".to_string()));
 
     let created_at = test_client.created_at_ts(*notarization_id.object_id()).await?;
@@ -317,14 +322,38 @@ async fn test_lock_checking_methods() -> anyhow::Result<()> {
         .output
         .id;
 
-    assert!(test_client.is_transfer_locked(*locked_notarization_id.object_id()).await?);
-    assert!(!test_client.is_transfer_locked(*unlocked_notarization_id.object_id()).await?);
+    assert!(
+        test_client
+            .is_transfer_locked(*locked_notarization_id.object_id())
+            .await?
+    );
+    assert!(
+        !test_client
+            .is_transfer_locked(*unlocked_notarization_id.object_id())
+            .await?
+    );
 
-    assert!(!test_client.is_update_locked(*locked_notarization_id.object_id()).await?);
-    assert!(!test_client.is_update_locked(*unlocked_notarization_id.object_id()).await?);
+    assert!(
+        !test_client
+            .is_update_locked(*locked_notarization_id.object_id())
+            .await?
+    );
+    assert!(
+        !test_client
+            .is_update_locked(*unlocked_notarization_id.object_id())
+            .await?
+    );
 
-    assert!(!test_client.is_destroy_locked(*locked_notarization_id.object_id()).await?);
-    assert!(!test_client.is_destroy_locked(*unlocked_notarization_id.object_id()).await?);
+    assert!(
+        !test_client
+            .is_destroy_locked(*locked_notarization_id.object_id())
+            .await?
+    );
+    assert!(
+        !test_client
+            .is_destroy_locked(*unlocked_notarization_id.object_id())
+            .await?
+    );
 
     let lock_metadata_locked = test_client.lock_metadata(*locked_notarization_id.object_id()).await?;
     assert!(lock_metadata_locked.is_some());
@@ -350,7 +379,7 @@ async fn test_multiple_state_updates() -> anyhow::Result<()> {
 
     for i in 1..=3 {
         let new_state = State::from_string(format!("state_v{}", i), Some(format!("metadata_{}", i)));
-        
+
         test_client
             .update_state(new_state, *notarization_id.object_id())
             .build_and_execute(&mut test_client)
@@ -360,7 +389,7 @@ async fn test_multiple_state_updates() -> anyhow::Result<()> {
         assert_eq!(version_count, i as u64);
 
         let state = test_client.state(*notarization_id.object_id()).await?;
-        assert_eq!(state.data.as_string()?, format!("state_v{}", i));
+        assert_eq!(state.data.as_text()?, format!("state_v{}", i));
         assert_eq!(state.metadata, Some(format!("metadata_{}", i)));
     }
 
@@ -386,7 +415,7 @@ async fn test_bytes_state_operations() -> anyhow::Result<()> {
 
     let updated_data = vec![10, 20, 30];
     let new_state = State::from_bytes(updated_data.clone(), Some("bytes_metadata".to_string()));
-    
+
     test_client
         .update_state(new_state, *notarization_id.object_id())
         .build_and_execute(&mut test_client)

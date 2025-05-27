@@ -31,8 +31,7 @@ use iota_interaction::IotaClientTrait;
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct OnChainNotarization {
     pub id: UID,
-    // TODO: remove this field and use the state field instead
-    pub state: State<String>,
+    pub state: State,
     pub immutable_metadata: ImmutableMetadata,
     pub updateable_metadata: Option<String>,
     pub last_state_change_at: u64,
@@ -142,8 +141,6 @@ impl<M: Clone + OptionalSend + OptionalSync> Transaction for CreateNotarization<
             .data
             .first()
             .ok_or_else(|| Error::TransactionUnexpectedResponse("events should be provided".to_string()))?;
-
-        println!("data: {:?}", data);
 
         let notarization_id = match method {
             NotarizationMethod::Dynamic => {

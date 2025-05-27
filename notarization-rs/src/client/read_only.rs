@@ -419,8 +419,6 @@ impl NotarizationClientReadOnly {
             .await
             .map_err(|err| Error::UnexpectedApiResponse(format!("Failed to inspect transaction block: {err}")))?;
 
-        println!("inspection_result: {:?}", inspection_result);
-
         let execution_results = inspection_result
             .results
             .ok_or_else(|| Error::UnexpectedApiResponse("DevInspectResults missing 'results' field".to_string()))?;

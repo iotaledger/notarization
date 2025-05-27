@@ -1,6 +1,7 @@
 // Copyright 2020-2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+use core::fmt;
 use std::str::FromStr;
 
 use async_trait::async_trait;
@@ -12,7 +13,7 @@ use iota_interaction::types::{TypeTag, MOVE_STDLIB_PACKAGE_ID};
 use iota_interaction::{ident_str, MoveType, OptionalSync};
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use tokio::sync::OnceCell;
 
 use super::move_utils;
@@ -28,10 +29,25 @@ pub struct State<T = Data> {
     pub metadata: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, PartialEq)]
 pub enum Data {
     Bytes(Vec<u8>),
     Text(String),
+}
+
+impl<'de> Deserialize<'de> for Data {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let raw_bytes = Vec::<u8>::deserialize(deserializer)?;
+
+        if let Ok(text) = String::from_utf8(raw_bytes.clone()) {
+            return Ok(Data::Text(text));
+        }
+
+        Ok(Data::Bytes(raw_bytes))
+    }
 }
 
 impl Data {
@@ -40,6 +56,20 @@ impl Data {
             Data::Bytes(_) => TypeTag::Vector(Box::new(TypeTag::U8)),
             Data::Text(_) => TypeTag::from_str(&format!("{MOVE_STDLIB_PACKAGE_ID}::string::String"))
                 .expect("should be valid type tag"),
+        }
+    }
+
+    pub fn as_bytes(self) -> Result<Vec<u8>, Error> {
+        match self {
+            Data::Bytes(data) => Ok(data),
+            Data::Text(_) => Err(Error::GenericError("Data is not a vector".to_string())),
+        }
+    }
+
+    pub fn as_text(self) -> Result<String, Error> {
+        match self {
+            Data::Bytes(_) => Err(Error::GenericError("Data is not a string".to_string())),
+            Data::Text(data) => Ok(data),
         }
     }
 }

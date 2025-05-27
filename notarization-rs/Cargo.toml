@@ -19,6 +19,7 @@ phf.workspace = true
 product_common = { workspace = true, default-features = false, features = [
     "transaction",
 ] }
+serde-value = "0.7.0"
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
