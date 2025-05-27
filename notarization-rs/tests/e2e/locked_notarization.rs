@@ -3,20 +3,17 @@
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::client::get_funded_test_client;
-use anyhow::anyhow;
-use anyhow::Context;
-use iota_interaction::IotaClientTrait;
-use iota_sdk::rpc_types::{IotaData, IotaObjectDataOptions};
 use iota_sdk::types::base_types::IotaAddress;
-use notarization::core::notarization::OnChainNotarization;
-use notarization::core::state::{Data, State};
+use notarization::core::state::State;
 use notarization::core::timelock::TimeLock;
 use notarization::core::NotarizationMethod;
+use product_common::core_client::CoreClientReadOnly;
+
+use crate::client::get_funded_test_client;
 
 #[tokio::test]
 async fn create_simple_locked_notarization_works() -> anyhow::Result<()> {
-    let mut test_client = get_funded_test_client().await?;
+    let test_client = get_funded_test_client().await?;
 
     let now_ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
     let unlock_at = now_ts + 86400; // unlock in 24 hours
@@ -27,11 +24,9 @@ async fn create_simple_locked_notarization_works() -> anyhow::Result<()> {
         .with_immutable_description("Test Locked Notarization".to_string())
         .with_delete_at(TimeLock::UnlockAt(unlock_at as u32))
         .finish()?
-        .build_and_execute(&mut test_client)
+        .build_and_execute(&test_client)
         .await?
         .output;
-
-    println!("onchain_notarization: {:?}", onchain_notarization);
 
     assert_eq!(
         onchain_notarization.immutable_metadata.description,
@@ -46,7 +41,7 @@ async fn create_simple_locked_notarization_works() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn create_locked_notarization_with_updateable_metadata() -> anyhow::Result<()> {
-    let mut test_client = get_funded_test_client().await?;
+    let test_client = get_funded_test_client().await?;
 
     let now_ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
     let unlock_at = now_ts + 86400;
@@ -61,7 +56,7 @@ async fn create_locked_notarization_with_updateable_metadata() -> anyhow::Result
         .with_updateable_metadata("Initial metadata".to_string())
         .with_delete_at(TimeLock::UnlockAt(unlock_at as u32))
         .finish()?
-        .build_and_execute(&mut test_client)
+        .build_and_execute(&test_client)
         .await?
         .output;
 
@@ -76,7 +71,7 @@ async fn create_locked_notarization_with_updateable_metadata() -> anyhow::Result
 
 #[tokio::test]
 async fn create_locked_notarization_with_none_delete_lock() -> anyhow::Result<()> {
-    let mut test_client = get_funded_test_client().await?;
+    let test_client = get_funded_test_client().await?;
 
     let onchain_notarization = test_client
         .create_locked_notarization()
@@ -84,23 +79,23 @@ async fn create_locked_notarization_with_none_delete_lock() -> anyhow::Result<()
         .with_immutable_description("Never Locked Document".to_string())
         .with_delete_at(TimeLock::None)
         .finish()?
-        .build_and_execute(&mut test_client)
+        .build_and_execute(&test_client)
         .await?
         .output;
 
     assert_eq!(onchain_notarization.method, NotarizationMethod::Locked);
 
-    let is_delete_locked = test_client
-        .is_destroy_locked(*onchain_notarization.id.object_id())
+    let is_delete_allowed = test_client
+        .is_destroy_allowed(*onchain_notarization.id.object_id())
         .await?;
-    assert!(!is_delete_locked, "Should not be delete locked with TimeLock::None");
+    assert!(!is_delete_allowed, "Should be delete allowed with TimeLock::None");
 
     Ok(())
 }
 
 #[tokio::test]
 async fn test_update_state_locked_notarization_fails() -> anyhow::Result<()> {
-    let mut test_client = get_funded_test_client().await?;
+    let test_client = get_funded_test_client().await?;
 
     let now_ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
     let unlock_at = now_ts + 86400;
@@ -110,7 +105,7 @@ async fn test_update_state_locked_notarization_fails() -> anyhow::Result<()> {
         .with_state(State::from_string("initial_state".to_string(), None))
         .with_delete_at(TimeLock::UnlockAt(unlock_at as u32))
         .finish()?
-        .build_and_execute(&mut test_client)
+        .build_and_execute(&test_client)
         .await?
         .output
         .id;
@@ -119,7 +114,7 @@ async fn test_update_state_locked_notarization_fails() -> anyhow::Result<()> {
 
     let update_result = test_client
         .update_state(new_state, *notarization_id.object_id())
-        .build_and_execute(&mut test_client)
+        .build_and_execute(&test_client)
         .await;
 
     assert!(
@@ -132,7 +127,7 @@ async fn test_update_state_locked_notarization_fails() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn test_update_metadata_locked_notarization_fails() -> anyhow::Result<()> {
-    let mut test_client = get_funded_test_client().await?;
+    let test_client = get_funded_test_client().await?;
 
     let now_ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
     let unlock_at = now_ts + 86400;
@@ -143,7 +138,7 @@ async fn test_update_metadata_locked_notarization_fails() -> anyhow::Result<()> 
         .with_updateable_metadata("initial_metadata".to_string())
         .with_delete_at(TimeLock::UnlockAt(unlock_at as u32))
         .finish()?
-        .build_and_execute(&mut test_client)
+        .build_and_execute(&test_client)
         .await?
         .output
         .id;
@@ -152,7 +147,7 @@ async fn test_update_metadata_locked_notarization_fails() -> anyhow::Result<()> 
 
     let update_result = test_client
         .update_metadata(new_metadata, *notarization_id.object_id())
-        .build_and_execute(&mut test_client)
+        .build_and_execute(&test_client)
         .await;
 
     assert!(
@@ -165,7 +160,7 @@ async fn test_update_metadata_locked_notarization_fails() -> anyhow::Result<()> 
 
 #[tokio::test]
 async fn test_destroy_locked_notarization_before_unlock_fails() -> anyhow::Result<()> {
-    let mut test_client = get_funded_test_client().await?;
+    let test_client = get_funded_test_client().await?;
 
     let now_ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
     let unlock_at = now_ts + 86400; // unlock in 24 hours
@@ -175,14 +170,14 @@ async fn test_destroy_locked_notarization_before_unlock_fails() -> anyhow::Resul
         .with_state(State::from_string("test_state".to_string(), None))
         .with_delete_at(TimeLock::UnlockAt(unlock_at as u32))
         .finish()?
-        .build_and_execute(&mut test_client)
+        .build_and_execute(&test_client)
         .await?
         .output
         .id;
 
     let destroy_result = test_client
         .destroy(*notarization_id.object_id())
-        .build_and_execute(&mut test_client)
+        .build_and_execute(&test_client)
         .await;
 
     assert!(
@@ -195,31 +190,38 @@ async fn test_destroy_locked_notarization_before_unlock_fails() -> anyhow::Resul
 
 #[tokio::test]
 async fn test_destroy_locked_notarization_with_none_lock_succeeds() -> anyhow::Result<()> {
-    let mut test_client = get_funded_test_client().await?;
+    let test_client = get_funded_test_client().await?;
 
     let notarization_id = test_client
         .create_locked_notarization()
         .with_state(State::from_string("test_state".to_string(), None))
         .with_delete_at(TimeLock::None)
         .finish()?
-        .build_and_execute(&mut test_client)
+        .build_and_execute(&test_client)
         .await?
         .output
         .id;
 
     let destroy_result = test_client
         .destroy(*notarization_id.object_id())
-        .build_and_execute(&mut test_client)
+        .build_and_execute(&test_client)
         .await;
 
     assert!(destroy_result.is_ok(), "Destroy should succeed with TimeLock::None");
+
+    // check if the notarization is destroyed
+    let res = test_client
+        .get_object_ref_by_id(*notarization_id.object_id())
+        .await
+        .transpose();
+    assert!(res.is_none(), "Notarization should be destroyed");
 
     Ok(())
 }
 
 #[tokio::test]
 async fn test_read_only_methods_locked_notarization() -> anyhow::Result<()> {
-    let mut test_client = get_funded_test_client().await?;
+    let test_client = get_funded_test_client().await?;
 
     let description = "Locked Test Description".to_string();
     let updateable_metadata = "Locked Test Metadata".to_string();
@@ -236,7 +238,7 @@ async fn test_read_only_methods_locked_notarization() -> anyhow::Result<()> {
         .with_updateable_metadata(updateable_metadata.clone())
         .with_delete_at(TimeLock::UnlockAt(unlock_at as u32))
         .finish()?
-        .build_and_execute(&mut test_client)
+        .build_and_execute(&test_client)
         .await?
         .output
         .id;
@@ -268,7 +270,7 @@ async fn test_read_only_methods_locked_notarization() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn test_lock_checking_methods_locked_notarization() -> anyhow::Result<()> {
-    let mut test_client = get_funded_test_client().await?;
+    let test_client = get_funded_test_client().await?;
 
     let now_ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
     let unlock_at = now_ts + 86400;
@@ -279,7 +281,7 @@ async fn test_lock_checking_methods_locked_notarization() -> anyhow::Result<()> 
         .with_state(State::from_string("test_state".to_string(), None))
         .with_delete_at(TimeLock::UnlockAt(unlock_at as u32))
         .finish()?
-        .build_and_execute(&mut test_client)
+        .build_and_execute(&test_client)
         .await?
         .output
         .id;
@@ -290,7 +292,7 @@ async fn test_lock_checking_methods_locked_notarization() -> anyhow::Result<()> 
         .with_state(State::from_string("test_state".to_string(), None))
         .with_delete_at(TimeLock::None)
         .finish()?
-        .build_and_execute(&mut test_client)
+        .build_and_execute(&test_client)
         .await?
         .output
         .id;
@@ -309,13 +311,13 @@ async fn test_lock_checking_methods_locked_notarization() -> anyhow::Result<()> 
 
     // Delete locks depend on the TimeLock setting
     assert!(
-        test_client
-            .is_destroy_locked(*locked_notarization_id.object_id())
+        !test_client
+            .is_destroy_allowed(*locked_notarization_id.object_id())
             .await?
     );
     assert!(
-        !test_client
-            .is_destroy_locked(*unlocked_notarization_id.object_id())
+        test_client
+            .is_destroy_allowed(*unlocked_notarization_id.object_id())
             .await?
     );
 
@@ -343,7 +345,7 @@ async fn test_lock_checking_methods_locked_notarization() -> anyhow::Result<()> 
 
 #[tokio::test]
 async fn test_bytes_state_operations_locked_notarization() -> anyhow::Result<()> {
-    let mut test_client = get_funded_test_client().await?;
+    let test_client = get_funded_test_client().await?;
 
     let initial_data = vec![1, 2, 3, 4, 5];
     let notarization_id = test_client
@@ -351,7 +353,7 @@ async fn test_bytes_state_operations_locked_notarization() -> anyhow::Result<()>
         .with_state(State::from_bytes(initial_data.clone(), None))
         .with_delete_at(TimeLock::None)
         .finish()?
-        .build_and_execute(&mut test_client)
+        .build_and_execute(&test_client)
         .await?
         .output
         .id;
@@ -365,7 +367,7 @@ async fn test_bytes_state_operations_locked_notarization() -> anyhow::Result<()>
 
     let update_result = test_client
         .update_state(new_state, *notarization_id.object_id())
-        .build_and_execute(&mut test_client)
+        .build_and_execute(&test_client)
         .await;
 
     assert!(
@@ -378,14 +380,14 @@ async fn test_bytes_state_operations_locked_notarization() -> anyhow::Result<()>
 
 #[tokio::test]
 async fn test_locked_notarization_transfer_fails() -> anyhow::Result<()> {
-    let mut test_client = get_funded_test_client().await?;
+    let test_client = get_funded_test_client().await?;
 
     let notarization_id = test_client
         .create_locked_notarization()
         .with_state(State::from_string("test_state".to_string(), None))
         .with_delete_at(TimeLock::None)
         .finish()?
-        .build_and_execute(&mut test_client)
+        .build_and_execute(&test_client)
         .await?
         .output
         .id;
@@ -395,7 +397,7 @@ async fn test_locked_notarization_transfer_fails() -> anyhow::Result<()> {
     // Transfer should fail because locked notarizations have transfer_lock = UntilDestroyed
     let transfer_result = test_client
         .transfer_notarization(*notarization_id.object_id(), alice)
-        .build_and_execute(&mut test_client)
+        .build_and_execute(&test_client)
         .await;
 
     assert!(transfer_result.is_err(), "Transfer should fail for locked notarization");
@@ -405,7 +407,7 @@ async fn test_locked_notarization_transfer_fails() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn test_locked_notarization_different_delete_lock_times() -> anyhow::Result<()> {
-    let mut test_client = get_funded_test_client().await?;
+    let test_client = get_funded_test_client().await?;
 
     let now_ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
     let short_unlock = now_ts + 3600; // 1 hour
@@ -417,7 +419,7 @@ async fn test_locked_notarization_different_delete_lock_times() -> anyhow::Resul
         .with_state(State::from_string("short_lock".to_string(), None))
         .with_delete_at(TimeLock::UnlockAt(short_unlock as u32))
         .finish()?
-        .build_and_execute(&mut test_client)
+        .build_and_execute(&test_client)
         .await?
         .output
         .id;
@@ -428,14 +430,14 @@ async fn test_locked_notarization_different_delete_lock_times() -> anyhow::Resul
         .with_state(State::from_string("long_lock".to_string(), None))
         .with_delete_at(TimeLock::UnlockAt(long_unlock as u32))
         .finish()?
-        .build_and_execute(&mut test_client)
+        .build_and_execute(&test_client)
         .await?
         .output
         .id;
 
     // Both should be delete locked initially
-    assert!(test_client.is_destroy_locked(*short_lock_id.object_id()).await?);
-    assert!(test_client.is_destroy_locked(*long_lock_id.object_id()).await?);
+    assert!(!test_client.is_destroy_allowed(*short_lock_id.object_id()).await?);
+    assert!(!test_client.is_destroy_allowed(*long_lock_id.object_id()).await?);
 
     // Both should have lock metadata
     let short_lock_metadata = test_client.lock_metadata(*short_lock_id.object_id()).await?;

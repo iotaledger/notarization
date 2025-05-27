@@ -1,4 +1,4 @@
-use iota_interaction::types::base_types::{ObjectID, ObjectRef, STD_OPTION_MODULE_NAME, STD_UTF8_MODULE_NAME};
+use iota_interaction::types::base_types::ObjectID;
 use serde::{Deserialize, Serialize};
 /// An event that can be emitted by the ITH.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

@@ -9,7 +9,6 @@ use iota_interaction::OptionalSync;
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use serde::{Deserialize, Serialize};
-use serde_aux::field_attributes::deserialize_number_from_string;
 use tokio::sync::OnceCell;
 
 use super::operations::{NotarizationImpl, NotarizationOperations};

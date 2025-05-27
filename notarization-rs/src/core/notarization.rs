@@ -1,31 +1,26 @@
 use async_trait::async_trait;
 use iota_interaction::rpc_types::{
-    IotaExecutionStatus, IotaTransactionBlockEffects, IotaTransactionBlockEffectsAPI, IotaTransactionBlockEvents,
+    IotaTransactionBlockEffects, IotaTransactionBlockEvents,
 };
 use iota_interaction::types::id::UID;
-use iota_interaction::types::object::Owner;
 use iota_interaction::types::transaction::ProgrammableTransaction;
-use iota_interaction::{IotaTransactionBlockEffectsMutAPI, OptionalSend, OptionalSync};
+use iota_interaction::{IotaClientTrait, OptionalSend, OptionalSync};
 use iota_sdk::rpc_types::{IotaData as _, IotaObjectDataOptions};
 use iota_sdk::types::base_types::ObjectID;
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use serde_aux::field_attributes::deserialize_number_from_string;
-use serde_json::Value;
 use tokio::sync::OnceCell;
 
 use super::builder::NotarizationBuilder;
 use super::event::{DynamicNotarizationCreated, Event, LockedNotarizationCreated};
 use super::metadata::ImmutableMetadata;
 use super::operations::{NotarizationImpl, NotarizationOperations};
-use super::state::{Data, State};
-use super::timelock::LockMetadata;
+use super::state::State;
 use super::NotarizationMethod;
 use crate::error::Error;
 use crate::package::notarization_package_id;
-use iota_interaction::IotaClientTrait;
 
 /// A notarization that is stored on the chain.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

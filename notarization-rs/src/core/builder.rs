@@ -68,7 +68,7 @@ impl NotarizationBuilder<Dynamic> {
     }
 
     /// Set transfer lock (only available for Dynamic)
-    pub fn with_transfer_at(mut self, lock: TimeLock) -> Self {
+    pub fn with_transfer_lock(mut self, lock: TimeLock) -> Self {
         self.transfer_lock = Some(lock);
         self
     }
