@@ -3,17 +3,15 @@
 
 use std::str::FromStr;
 
-use identity_iota_core::iota_interaction_rust::IotaClientAdapter;
-use identity_iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
-use identity_iota_interaction::{ident_str, IotaClientTrait, MoveType};
-use iota_sdk::rpc_types::IotaObjectDataOptions;
-use iota_sdk::types::base_types::{
-    ObjectID, ObjectRef, STD_OPTION_MODULE_NAME, STD_UTF8_MODULE_NAME,
-};
-use iota_sdk::types::transaction::{Argument, ObjectArg};
-use iota_sdk::types::{
+use iota_interaction::rpc_types::IotaObjectDataOptions;
+use iota_interaction::types::base_types::{ObjectID, ObjectRef, STD_OPTION_MODULE_NAME, STD_UTF8_MODULE_NAME};
+use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
+use iota_interaction::types::transaction::{Argument, ObjectArg};
+use iota_interaction::types::{
     TypeTag, IOTA_CLOCK_OBJECT_ID, IOTA_CLOCK_OBJECT_SHARED_VERSION, MOVE_STDLIB_PACKAGE_ID,
 };
+use iota_interaction::{ident_str, IotaClientTrait, MoveType};
+use iota_interaction_rust::IotaClientAdapter;
 use serde::Serialize;
 
 use crate::error::Error;
@@ -71,18 +69,15 @@ where
 
 #[allow(dead_code)]
 pub(crate) fn ptb_obj(ptb: &mut Ptb, name: &str, value: ObjectArg) -> Result<Argument, Error> {
-    ptb.obj(value).map_err(|err| {
-        Error::InvalidArgument(format!(
-            "could not serialize object {name} {value:?}; {err}"
-        ))
-    })
+    ptb.obj(value)
+        .map_err(|err| Error::InvalidArgument(format!("could not serialize object {name} {value:?}; {err}")))
 }
 
 /// Creates a new move string
 pub(crate) fn new_move_string(value: String, ptb: &mut Ptb) -> Result<Argument, Error> {
-    let v = ptb.pure(value.as_bytes()).map_err(|err| {
-        Error::InvalidArgument(format!("could not serialize string value; {err}"))
-    })?;
+    let v = ptb
+        .pure(value.as_bytes())
+        .map_err(|err| Error::InvalidArgument(format!("could not serialize string value; {err}")))?;
     Ok(ptb.programmable_move_call(
         MOVE_STDLIB_PACKAGE_ID,
         STD_UTF8_MODULE_NAME.into(),
@@ -93,19 +88,15 @@ pub(crate) fn new_move_string(value: String, ptb: &mut Ptb) -> Result<Argument, 
 }
 
 /// Create new option string
-pub(crate) fn new_move_option_string(
-    value: Option<String>,
-    ptb: &mut Ptb,
-) -> Result<Argument, Error> {
-    let string_tag =
-        TypeTag::from_str(format!("{}::string::String", MOVE_STDLIB_PACKAGE_ID).as_str())
-            .map_err(|err| Error::InvalidArgument(format!("could not create string tag; {err}")))?;
+pub(crate) fn new_move_option_string(value: Option<String>, ptb: &mut Ptb) -> Result<Argument, Error> {
+    let string_tag = TypeTag::from_str(format!("{}::string::String", MOVE_STDLIB_PACKAGE_ID).as_str())
+        .map_err(|err| Error::InvalidArgument(format!("could not create string tag; {err}")))?;
 
     match value {
         Some(v) => {
-            let v = ptb.pure(v.as_bytes()).map_err(|err| {
-                Error::InvalidArgument(format!("could not serialize string value; {err}"))
-            })?;
+            let v = ptb
+                .pure(v.as_bytes())
+                .map_err(|err| Error::InvalidArgument(format!("could not serialize string value; {err}")))?;
             Ok(ptb.programmable_move_call(
                 MOVE_STDLIB_PACKAGE_ID,
                 STD_OPTION_MODULE_NAME.into(),
@@ -124,10 +115,7 @@ pub(crate) fn new_move_option_string(
     }
 }
 
-pub async fn get_type_tag(
-    iota_client: &IotaClientAdapter,
-    object_id: &ObjectID,
-) -> Result<TypeTag, Error> {
+pub async fn get_type_tag(iota_client: &IotaClientAdapter, object_id: &ObjectID) -> Result<TypeTag, Error> {
     let options = IotaObjectDataOptions::new().with_type();
     let object_response = iota_client
         .read_api()
@@ -146,9 +134,8 @@ pub async fn get_type_tag(
 
     let type_param_str = parse_type(&full_type_str)?;
 
-    let tag = TypeTag::from_str(&type_param_str).map_err(|e| {
-        Error::FailedToParseTag(format!("Failed to parse tag '{}': {}", type_param_str, e))
-    })?;
+    let tag = TypeTag::from_str(&type_param_str)
+        .map_err(|e| Error::FailedToParseTag(format!("Failed to parse tag '{}': {}", type_param_str, e)))?;
 
     Ok(tag)
 }
@@ -162,7 +149,7 @@ pub async fn get_type_tag(
 /// let type_param_str = parse_type(full_type).unwrap();
 /// assert_eq!(type_param_str, "vector<u8>");
 /// ```
-fn parse_type(full_type: &str) -> Result<String, Error> {
+pub(crate) fn parse_type(full_type: &str) -> Result<String, Error> {
     if let (Some(start), Some(end)) = (full_type.find('<'), full_type.rfind('>')) {
         Ok(full_type[start + 1..end].to_string())
     } else {
@@ -173,10 +160,7 @@ fn parse_type(full_type: &str) -> Result<String, Error> {
     }
 }
 
-pub(crate) async fn get_object_ref_by_id(
-    iota_client: &IotaClientAdapter,
-    obj: &ObjectID,
-) -> Result<ObjectRef, Error> {
+pub(crate) async fn get_object_ref_by_id(iota_client: &IotaClientAdapter, obj: &ObjectID) -> Result<ObjectRef, Error> {
     let res = iota_client
         .read_api()
         .get_object_with_options(*obj, IotaObjectDataOptions::new().with_content())

@@ -3,43 +3,41 @@
 
 use std::str::FromStr;
 
-use identity_iota_interaction::ident_str;
-use iota_sdk::types::base_types::ObjectID;
-use iota_sdk::types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use iota_sdk::types::transaction::Argument;
-use iota_sdk::types::{TypeTag, MOVE_STDLIB_PACKAGE_ID};
+use iota_interaction::ident_str;
+use iota_interaction::types::base_types::ObjectID;
+use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder;
+use iota_interaction::types::transaction::Argument;
+use iota_interaction::types::{TypeTag, MOVE_STDLIB_PACKAGE_ID};
+use serde::{Deserialize, Serialize};
 
-use super::utils;
+use super::move_utils;
 use crate::error::Error;
 
 /// The state of the `Notarization` that can be updated
-pub struct State {
-    pub data: Data,
-    metadata: Option<String>,
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct State<T = Data> {
+    pub data: T,
+    #[serde(default)]
+    pub metadata: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Data {
-    Vector(Vec<u8>),
+    Bytes(Vec<u8>),
     Text(String),
 }
 
 impl Data {
     pub(crate) fn tag(&self) -> TypeTag {
         match self {
-            Data::Vector(_) => TypeTag::Vector(Box::new(TypeTag::U8)),
-            Data::Text(_) => {
-                TypeTag::from_str(&format!("{MOVE_STDLIB_PACKAGE_ID}::string::String"))
-                    .expect("could not create string tag")
-            }
+            Data::Bytes(_) => TypeTag::Vector(Box::new(TypeTag::U8)),
+            Data::Text(_) => TypeTag::from_str(&format!("{MOVE_STDLIB_PACKAGE_ID}::string::String"))
+                .expect("should be valid type tag"),
         }
     }
 }
 
 impl State {
-    pub fn new(data: Data, metadata: Option<String>) -> Self {
-        Self { data, metadata }
-    }
-
     pub fn data(&self) -> &Data {
         &self.data
     }
@@ -50,7 +48,7 @@ impl State {
 
     pub fn new_from_vector(data: Vec<u8>, metadata: Option<String>) -> Self {
         Self {
-            data: Data::Vector(data),
+            data: Data::Bytes(data),
             metadata,
         }
     }
@@ -71,7 +69,7 @@ impl State {
         package_id: ObjectID,
     ) -> Result<Argument, Error> {
         match self.data {
-            Data::Vector(data) => new_from_vector(ptb, data, self.metadata, package_id),
+            Data::Bytes(data) => new_from_vector(ptb, data, self.metadata, package_id),
             Data::Text(data) => new_from_string(ptb, data, self.metadata, package_id),
         }
     }
@@ -83,8 +81,8 @@ pub(crate) fn new_from_vector(
     metadata: Option<String>,
     package_id: ObjectID,
 ) -> Result<Argument, Error> {
-    let data = utils::ptb_pure(ptb, "data", data)?;
-    let metadata = utils::new_move_option_string(metadata, ptb)?;
+    let data = move_utils::ptb_pure(ptb, "data", data)?;
+    let metadata = move_utils::new_move_option_string(metadata, ptb)?;
 
     Ok(ptb.programmable_move_call(
         package_id,
@@ -101,8 +99,8 @@ pub(crate) fn new_from_string(
     metadata: Option<String>,
     package_id: ObjectID,
 ) -> Result<Argument, Error> {
-    let data = utils::new_move_string(data, ptb)?;
-    let metadata = utils::new_move_option_string(metadata, ptb)?;
+    let data = move_utils::new_move_string(data, ptb)?;
+    let metadata = move_utils::new_move_option_string(metadata, ptb)?;
 
     Ok(ptb.programmable_move_call(
         package_id,

@@ -9,6 +9,6 @@ cfg_if::cfg_if! {
     if #[cfg(target_arch = "wasm32")] {
         pub(crate) use iota_interaction_ts::*;
     } else {
-        pub(crate) use identity_iota_core::iota_interaction_rust::*;
+        pub(crate) use iota_interaction_rust::*;
     }
 }

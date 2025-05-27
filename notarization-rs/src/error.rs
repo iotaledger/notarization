@@ -31,4 +31,10 @@ pub enum Error {
     /// Invalid unlock time
     #[error("Invalid unlock time: {0}")]
     TimeLock(String),
+    /// The response from the IOTA node API was not in the expected format.
+    #[error("unexpected API response: {0}")]
+    UnexpectedApiResponse(String),
+    /// Failed to deserialize data using BCS.
+    #[error("BCS deserialization error: {0}")]
+    DeserializationError(#[from] bcs::Error),
 }

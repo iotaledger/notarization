@@ -1,0 +1,83 @@
+use std::ops::Deref;
+
+use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::crypto::PublicKey;
+use iota_interaction::{IotaKeySignature, OptionalSync};
+use iota_interaction_rust::IotaClientAdapter;
+use product_common::core_client::{CoreClient, CoreClientReadOnly};
+use product_common::network_name::NetworkName;
+use secret_storage::Signer;
+
+use super::read_only::NotarizationClientReadOnly;
+use crate::error::Error;
+
+/// A client for interacting with the IOTA network.
+#[derive(Clone)]
+pub struct NotarizationClient<S> {
+    /// [`NotarizationClientReadOnly`] instance, used for read-only operations.
+    read_client: NotarizationClientReadOnly,
+    /// The public key of the client.
+    public_key: PublicKey,
+    /// The signer of the client.
+    signer: S,
+}
+
+impl<S> Deref for NotarizationClient<S> {
+    type Target = NotarizationClientReadOnly;
+    fn deref(&self) -> &Self::Target {
+        &self.read_client
+    }
+}
+
+impl<S> NotarizationClient<S>
+where
+    S: Signer<IotaKeySignature>,
+{
+    /// Create a new [`NotarizationClient`].
+    pub async fn new(client: NotarizationClientReadOnly, signer: S) -> Result<Self, Error> {
+        let public_key = signer
+            .public_key()
+            .await
+            .map_err(|e| Error::InvalidKey(e.to_string()))?;
+
+        Ok(Self {
+            public_key,
+            read_client: client,
+            signer,
+        })
+    }
+}
+
+impl<S> CoreClientReadOnly for NotarizationClient<S>
+where
+    S: OptionalSync,
+{
+    fn client_adapter(&self) -> &IotaClientAdapter {
+        &self.read_client
+    }
+
+    fn package_id(&self) -> ObjectID {
+        self.read_client.package_id()
+    }
+
+    fn network_name(&self) -> &NetworkName {
+        self.read_client.network()
+    }
+}
+
+impl<S> CoreClient<S> for NotarizationClient<S>
+where
+    S: Signer<IotaKeySignature> + OptionalSync,
+{
+    fn sender_address(&self) -> IotaAddress {
+        IotaAddress::from(&self.public_key)
+    }
+
+    fn signer(&self) -> &S {
+        &self.signer
+    }
+
+    fn sender_public_key(&self) -> &PublicKey {
+        &self.public_key
+    }
+}
