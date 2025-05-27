@@ -3,3 +3,4 @@
 
 mod client;
 mod dynamic_notarization;
+mod locked_notarization;
