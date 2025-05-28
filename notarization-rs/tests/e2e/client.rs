@@ -17,10 +17,11 @@ use product_common::test_utils::{
 };
 use tokio::sync::OnceCell;
 
-/// Directory containing the scripts used for testing.
-///
-/// Default value is the `scripts` directory relative to the current crate.
-pub const SCRIPT_FILE: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../scripts/publish_package.sh");
+/// Script file for publishing the package.
+pub const PUBLISH_SCRIPT_FILE: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../notarization-move/scripts/publish_package.sh"
+);
 
 static PACKAGE_ID: OnceCell<ObjectID> = OnceCell::const_new();
 
@@ -50,7 +51,7 @@ impl TestClient {
         let api_endpoint = std::env::var("API_ENDPOINT").unwrap_or_else(|_| IOTA_LOCAL_NETWORK_URL.to_string());
         let client = IotaClientBuilder::default().build(&api_endpoint).await?;
         let package_id = PACKAGE_ID
-            .get_or_try_init(|| init_product_package(&client, None, Some(SCRIPT_FILE)))
+            .get_or_try_init(|| init_product_package(&client, None, Some(PUBLISH_SCRIPT_FILE)))
             .await
             .copied()?;
 
