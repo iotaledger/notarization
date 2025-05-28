@@ -105,13 +105,13 @@ impl State {
         package_id: ObjectID,
     ) -> Result<Argument, Error> {
         match self.data {
-            Data::Bytes(data) => new_from_vector(ptb, data, self.metadata, package_id),
-            Data::Text(data) => new_from_string(ptb, data, self.metadata, package_id),
+            Data::Bytes(data) => state_from_bytes(ptb, data, self.metadata, package_id),
+            Data::Text(data) => state_from_string(ptb, data, self.metadata, package_id),
         }
     }
 }
 
-pub(crate) fn new_from_vector(
+pub(crate) fn state_from_bytes(
     ptb: &mut ProgrammableTransactionBuilder,
     data: Vec<u8>,
     metadata: Option<String>,
@@ -123,13 +123,13 @@ pub(crate) fn new_from_vector(
     Ok(ptb.programmable_move_call(
         package_id,
         ident_str!("notarization").into(),
-        ident_str!("new_state_from_vector").into(),
+        ident_str!("new_state_from_bytes").into(),
         vec![],
         vec![data, metadata],
     ))
 }
 
-pub(crate) fn new_from_string(
+pub(crate) fn state_from_string(
     ptb: &mut ProgrammableTransactionBuilder,
     data: String,
     metadata: Option<String>,

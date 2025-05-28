@@ -101,7 +101,7 @@ public struct NotarizationDestroyed has copy, drop {
 
 // ===== Constructor Functions =====
 /// Create a new state from a vector<u8> data
-public fun new_state_from_vector(data: vector<u8>, metadata: Option<String>): State<vector<u8>> {
+public fun new_state_from_bytes(data: vector<u8>, metadata: Option<String>): State<vector<u8>> {
     State { data, metadata }
 }
 

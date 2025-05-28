@@ -37,8 +37,8 @@ path = "02_create_dynamic_notarization.rs"
 name = "02_create_dynamic_notarization"
 
 [[example]]
-path = "03_update_locked_notarization.rs"
-name = "03_update_locked_notarization"
+path = "03_update_dynamic_notarization.rs"
+name = "03_update_dynamic_notarization"
 
 [[example]]
 path = "04_destroy_notarization.rs"

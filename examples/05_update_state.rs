@@ -75,38 +75,16 @@ async fn main() -> Result<()> {
         assert_eq!(version_count, i as u64);
     }
 
-    // Demonstrate working with binary data
-    println!("\n🔢 Demonstrating binary state updates...");
-
-    let binary_data = vec![0x48, 0x65, 0x6C, 0x6C, 0x6F]; // "Hello" in bytes
-    let binary_state = State::from_bytes(binary_data.clone(), Some("Binary data example".to_string()));
-
-    // Update with binary state
-    notarization_client
-        .update_state(binary_state, *notarization_id.object_id())
-        .build_and_execute(&notarization_client)
-        .await?;
-
-    println!("✅ Binary state update completed");
-
-    // Retrieve and verify binary state
-    let binary_retrieved = notarization_client.state(*notarization_id.object_id()).await?;
-
-    let retrieved_bytes = binary_retrieved.data.as_bytes()?;
-    println!("Retrieved binary data: {:?}", retrieved_bytes);
-    println!("As text: {}", String::from_utf8_lossy(&retrieved_bytes));
-
-    // Verify binary data matches
-    assert_eq!(retrieved_bytes, binary_data);
-
     // Show final version count
     let final_version_count = notarization_client
         .state_version_count(*notarization_id.object_id())
         .await?;
 
+    let final_state = notarization_client.state(*notarization_id.object_id()).await?;
+
     println!("\n📊 Final Statistics:");
     println!("Total updates performed: {}", final_version_count);
-    println!("Final metadata: {:?}", binary_retrieved.metadata);
+    println!("Final metadata: {:?}", final_state.metadata);
 
     // Get last state change timestamp
     let last_change = notarization_client
@@ -118,7 +96,7 @@ async fn main() -> Result<()> {
     println!("\n🎯 Key Points:");
     println!("✓ Dynamic notarizations support state updates");
     println!("✓ Each update increments the version count");
-    println!("✓ Both text and binary data are supported");
+    println!("✓ Both text and bytes data are supported");
     println!("✓ State metadata can be updated alongside content");
     println!("✓ Timestamps track when changes were made");
 

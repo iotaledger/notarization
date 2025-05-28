@@ -4,10 +4,10 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
+use examples::get_funded_client;
 use notarization::core::state::State;
 use notarization::core::timelock::TimeLock;
 use notarization::core::NotarizationMethod;
-use examples::get_funded_client;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -44,10 +44,7 @@ async fn main() -> Result<()> {
     // Create a dynamic notarization with transfer lock
     let locked_transfer_notarization = notarization_client
         .create_dynamic_notarization()
-        .with_state(State::from_string(
-            "Transfer-locked content".to_string(),
-            None,
-        ))
+        .with_state(State::from_string("Transfer-locked content".to_string(), None))
         .with_immutable_description("Transfer-locked document".to_string())
         .with_transfer_lock(TimeLock::UnlockAt(unlock_at as u32))
         .finish()
