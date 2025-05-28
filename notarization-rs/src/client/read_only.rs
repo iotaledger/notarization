@@ -10,7 +10,6 @@ use std::ops::Deref;
 
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::transaction::{ProgrammableTransaction, TransactionKind};
-use iota_interaction::types::TypeTag;
 use iota_interaction::{IotaClient, IotaClientTrait};
 use product_common::core_client::CoreClientReadOnly;
 use product_common::network_name::NetworkName;
@@ -18,7 +17,6 @@ use product_common::package_registry::{Env, Metadata};
 use serde::de::DeserializeOwned;
 
 use crate::client_tools::network_id;
-use crate::core::move_utils::parse_type;
 use crate::core::operations::{NotarizationImpl, NotarizationOperations};
 use crate::core::state::State;
 use crate::core::timelock::LockMetadata;
@@ -177,8 +175,7 @@ impl NotarizationClientReadOnly {
     /// # Returns
     /// A `Result` containing the timestamp as a `u64` or an [`Error`].
     pub async fn last_state_change_ts(&self, notarized_object_id: ObjectID) -> Result<u64, Error> {
-        let tx =
-            NotarizationImpl::last_change_ts(self.notarization_pkg_id, notarized_object_id, &self.iota_client).await?;
+        let tx = NotarizationImpl::last_change_ts(self.notarization_pkg_id, notarized_object_id, self).await?;
 
         self.execute_read_only_transaction(tx).await
     }
@@ -194,7 +191,7 @@ impl NotarizationClientReadOnly {
     /// # Returns
     /// A `Result` containing the timestamp as a `u64` or an [`Error`].
     pub async fn created_at_ts(&self, notarized_object_id: ObjectID) -> Result<u64, Error> {
-        let tx = NotarizationImpl::created_at(self.notarization_pkg_id, notarized_object_id, &self.iota_client).await?;
+        let tx = NotarizationImpl::created_at(self.notarization_pkg_id, notarized_object_id, self).await?;
 
         self.execute_read_only_transaction(tx).await
     }
@@ -210,8 +207,7 @@ impl NotarizationClientReadOnly {
     /// # Returns
     /// A `Result` containing the version count as a `u64` or an [`Error`].
     pub async fn state_version_count(&self, notarized_object_id: ObjectID) -> Result<u64, Error> {
-        let tx =
-            NotarizationImpl::version_count(self.notarization_pkg_id, notarized_object_id, &self.iota_client).await?;
+        let tx = NotarizationImpl::version_count(self.notarization_pkg_id, notarized_object_id, self).await?;
 
         self.execute_read_only_transaction(tx).await
     }
@@ -227,8 +223,7 @@ impl NotarizationClientReadOnly {
     /// # Returns
     /// A `Result` containing an `Option<String>` or an [`Error`]. `None` if no description is set.
     pub async fn description(&self, notarized_object_id: ObjectID) -> Result<Option<String>, Error> {
-        let tx =
-            NotarizationImpl::description(self.notarization_pkg_id, notarized_object_id, &self.iota_client).await?;
+        let tx = NotarizationImpl::description(self.notarization_pkg_id, notarized_object_id, self).await?;
 
         self.execute_read_only_transaction(tx).await
     }
@@ -244,9 +239,7 @@ impl NotarizationClientReadOnly {
     /// # Returns
     /// A `Result` containing an `Option<String>` or an [`Error`]. `None` if no updateable metadata is set.
     pub async fn updateable_metadata(&self, notarized_object_id: ObjectID) -> Result<Option<String>, Error> {
-        let tx =
-            NotarizationImpl::updateable_metadata(self.notarization_pkg_id, notarized_object_id, &self.iota_client)
-                .await?;
+        let tx = NotarizationImpl::updateable_metadata(self.notarization_pkg_id, notarized_object_id, self).await?;
 
         self.execute_read_only_transaction(tx).await
     }
@@ -262,9 +255,7 @@ impl NotarizationClientReadOnly {
     /// # Returns
     /// A `Result` containing the [`NotarizationMethod`] or an [`Error`].
     pub async fn notarization_method(&self, notarized_object_id: ObjectID) -> Result<NotarizationMethod, Error> {
-        let tx =
-            NotarizationImpl::notarization_method(self.notarization_pkg_id, notarized_object_id, &self.iota_client)
-                .await?;
+        let tx = NotarizationImpl::notarization_method(self.notarization_pkg_id, notarized_object_id, self).await?;
         self.execute_read_only_transaction(tx).await
     }
 
@@ -279,8 +270,7 @@ impl NotarizationClientReadOnly {
     /// # Returns
     /// A `Result` containing an `Option<LockMetadata>` or an [`Error`]. `None` if no locks are set.
     pub async fn lock_metadata(&self, notarized_object_id: ObjectID) -> Result<Option<LockMetadata>, Error> {
-        let tx =
-            NotarizationImpl::lock_metadata(self.notarization_pkg_id, notarized_object_id, &self.iota_client).await?;
+        let tx = NotarizationImpl::lock_metadata(self.notarization_pkg_id, notarized_object_id, self).await?;
 
         self.execute_read_only_transaction(tx).await
     }
@@ -301,46 +291,9 @@ impl NotarizationClientReadOnly {
     /// # Returns
     /// A `Result` containing the [`State<Data>`] or an [`Error`].
     pub async fn state(&self, notarized_object_id: ObjectID) -> Result<State, Error> {
-        let tx = NotarizationImpl::state(self.notarization_pkg_id, notarized_object_id, &self.iota_client).await?;
+        let tx = NotarizationImpl::state(self.notarization_pkg_id, notarized_object_id, self).await?;
 
-        let inspection_result = self
-            .iota_client
-            .read_api()
-            .dev_inspect_transaction_block(IotaAddress::ZERO, TransactionKind::programmable(tx), None, None, None)
-            .await
-            .map_err(|err| Error::UnexpectedApiResponse(format!("Failed to inspect transaction block: {err}")))?;
-
-        let execution_results = inspection_result
-            .results
-            .ok_or_else(|| Error::UnexpectedApiResponse("DevInspectResults missing 'results' field".to_string()))?;
-
-        let (return_value_bytes, tag) = execution_results
-            .first()
-            .ok_or_else(|| Error::UnexpectedApiResponse("Execution results list is empty".to_string()))?
-            .return_values
-            .first()
-            .ok_or_else(|| Error::InvalidArgument("should have at least one return value".to_string()))?;
-
-        // Type safety is guaranteed by the public notarization API design:
-        // Only default types (String or Vec<u8>) are allowed for objects accessed via this endpoint.
-        // The following workaround inspects the runtime type to handle the String vs Vec<u8> distinction.
-        let tag: TypeTag = tag
-            .clone()
-            .try_into()
-            .map_err(|err| Error::InvalidArgument(format!("Invalid type tag: {err}")))?;
-        let identifier = tag.to_canonical_string(false);
-        let type_param_str = parse_type(&identifier)?;
-
-        // Deserialize based on detected type and convert to unified State<Data> representation
-        let state = if type_param_str.contains("String") {
-            let state: State<String> = bcs::from_bytes(return_value_bytes)?;
-            State::new_from_string(state.data, state.metadata)
-        } else {
-            let state: State<Vec<u8>> = bcs::from_bytes(return_value_bytes)?;
-            State::new_from_vector(state.data, state.metadata)
-        };
-
-        Ok(state)
+        self.execute_read_only_transaction(tx).await
     }
 
     /// Retrieves the `state` of a notarization object by its `object_id` and deserializes it into a custom type `T`.
@@ -353,7 +306,7 @@ impl NotarizationClientReadOnly {
     /// # Returns
     /// A `Result` containing the [`State<T>`] or an [`Error`].
     pub async fn state_as<T: DeserializeOwned>(&self, notarized_object_id: ObjectID) -> Result<State<T>, Error> {
-        let tx = NotarizationImpl::state(self.notarization_pkg_id, notarized_object_id, &self.iota_client).await?;
+        let tx = NotarizationImpl::state(self.notarization_pkg_id, notarized_object_id, self).await?;
 
         self.execute_read_only_transaction(tx).await
     }
@@ -367,23 +320,21 @@ impl NotarizationClientReadOnly {
     /// # Returns
     /// A `Result` containing `true` if the object is update-locked, `false` otherwise, or an [`Error`].
     pub async fn is_update_locked(&self, notarized_object_id: ObjectID) -> Result<bool, Error> {
-        let tx = NotarizationImpl::is_update_locked(self.notarization_pkg_id, notarized_object_id, &self.iota_client)
-            .await?;
+        let tx = NotarizationImpl::is_update_locked(self.notarization_pkg_id, notarized_object_id, self).await?;
 
         self.execute_read_only_transaction(tx).await
     }
 
-    /// Checks if the notarized object is currently locked against destruction.
+    /// Checks if the notarized object is currently allowed to be destroyed.
     ///
     /// # Arguments
     ///
     /// * `notarized_object_id`: The [`ObjectID`] of the notarized object.
     ///
     /// # Returns
-    /// A `Result` containing `true` if the object is destroy-locked, `false` otherwise, or an [`Error`].
-    pub async fn is_destroy_locked(&self, notarized_object_id: ObjectID) -> Result<bool, Error> {
-        let tx = NotarizationImpl::is_destroy_locked(self.notarization_pkg_id, notarized_object_id, &self.iota_client)
-            .await?;
+    /// A `Result` containing `true` if the object is destroy-allowed, `false` otherwise, or an [`Error`].
+    pub async fn is_destroy_allowed(&self, notarized_object_id: ObjectID) -> Result<bool, Error> {
+        let tx = NotarizationImpl::is_destroy_allowed(self.notarization_pkg_id, notarized_object_id, self).await?;
 
         self.execute_read_only_transaction(tx).await
     }
@@ -397,8 +348,7 @@ impl NotarizationClientReadOnly {
     /// # Returns
     /// A `Result` containing `true` if the object is transfer-locked, `false` otherwise, or an [`Error`].
     pub async fn is_transfer_locked(&self, notarized_object_id: ObjectID) -> Result<bool, Error> {
-        let tx = NotarizationImpl::is_transfer_locked(self.notarization_pkg_id, notarized_object_id, &self.iota_client)
-            .await?;
+        let tx = NotarizationImpl::is_transfer_locked(self.notarization_pkg_id, notarized_object_id, self).await?;
 
         self.execute_read_only_transaction(tx).await
     }
@@ -466,38 +416,5 @@ impl CoreClientReadOnly for NotarizationClientReadOnly {
     /// This is part of the [`CoreClientReadOnly`] trait implementation.
     fn client_adapter(&self) -> &IotaClientAdapter {
         &self.iota_client
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use iota_interaction::IotaClientBuilder;
-
-    use super::*;
-
-    #[tokio::test]
-    async fn test_notarization_client_read_only() {
-        let iota_client = IotaClientBuilder::default().build_devnet().await.unwrap();
-
-        let client = NotarizationClientReadOnly::new(iota_client).await.unwrap();
-        let notarization_pkg_id = client.package_id();
-        println!("notarization_pkg_id: {:?}", notarization_pkg_id);
-    }
-
-    #[tokio::test]
-    async fn test_notarization_get_state() {
-        let iota_client = IotaClientBuilder::default().build_devnet().await.unwrap();
-
-        let client = NotarizationClientReadOnly::new(iota_client).await.unwrap();
-
-        let state = client
-            .state(
-                "0x1784f612773a74129abd06278415e1f93326f1f438be0570173777e962d05832"
-                    .parse()
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-        println!("state: {:?}", state);
     }
 }

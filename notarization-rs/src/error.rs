@@ -37,4 +37,10 @@ pub enum Error {
     /// Failed to deserialize data using BCS.
     #[error("BCS deserialization error: {0}")]
     DeserializationError(#[from] bcs::Error),
+    /// The response from the IOTA node API was not in the expected format.
+    #[error("unexpected API response: {0}")]
+    TransactionUnexpectedResponse(String),
+    /// Failed to get object with options
+    #[error("Failed to get object with options: {0}")]
+    ObjectLookup(String),
 }

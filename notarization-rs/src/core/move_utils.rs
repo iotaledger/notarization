@@ -10,8 +10,8 @@ use iota_interaction::types::transaction::{Argument, ObjectArg};
 use iota_interaction::types::{
     TypeTag, IOTA_CLOCK_OBJECT_ID, IOTA_CLOCK_OBJECT_SHARED_VERSION, MOVE_STDLIB_PACKAGE_ID,
 };
-use iota_interaction::{ident_str, IotaClientTrait, MoveType};
-use iota_interaction_rust::IotaClientAdapter;
+use iota_interaction::{ident_str, IotaClientTrait, OptionalSync};
+use product_common::core_client::CoreClientReadOnly;
 use serde::Serialize;
 
 use crate::error::Error;
@@ -26,21 +26,17 @@ pub(crate) fn get_clock_ref(ptb: &mut Ptb) -> Argument {
     .expect("network has a singleton clock instantiated")
 }
 
-pub(crate) fn option_to_move<T: MoveType + Serialize>(
-    option: Option<T>,
+pub(crate) fn option_to_move_with_tag(
+    option: Option<Argument>,
+    tag: TypeTag,
     ptb: &mut Ptb,
-    package: ObjectID,
 ) -> Result<Argument, Error> {
     let arg = if let Some(t) = option {
-        let t = ptb
-            .pure(t)
-            .map_err(|err| Error::InvalidArgument(format!("could not serialize value; {err}")))?;
-
         ptb.programmable_move_call(
             MOVE_STDLIB_PACKAGE_ID,
             STD_OPTION_MODULE_NAME.into(),
             ident_str!("some").into(),
-            vec![T::move_type(package)],
+            vec![tag],
             vec![t],
         )
     } else {
@@ -48,7 +44,7 @@ pub(crate) fn option_to_move<T: MoveType + Serialize>(
             MOVE_STDLIB_PACKAGE_ID,
             STD_OPTION_MODULE_NAME.into(),
             ident_str!("none").into(),
-            vec![T::move_type(package)],
+            vec![tag],
             vec![],
         )
     };
@@ -115,11 +111,14 @@ pub(crate) fn new_move_option_string(value: Option<String>, ptb: &mut Ptb) -> Re
     }
 }
 
-pub async fn get_type_tag(iota_client: &IotaClientAdapter, object_id: &ObjectID) -> Result<TypeTag, Error> {
-    let options = IotaObjectDataOptions::new().with_type();
-    let object_response = iota_client
+pub async fn get_type_tag<C>(client: &C, object_id: &ObjectID) -> Result<TypeTag, Error>
+where
+    C: CoreClientReadOnly + OptionalSync,
+{
+    let object_response = client
+        .client_adapter()
         .read_api()
-        .get_object_with_options(*object_id, options)
+        .get_object_with_options(*object_id, IotaObjectDataOptions::new().with_type())
         .await
         .map_err(|err| Error::FailedToParseTag(format!("Failed to get object: {err}")))?;
 
@@ -160,8 +159,12 @@ pub(crate) fn parse_type(full_type: &str) -> Result<String, Error> {
     }
 }
 
-pub(crate) async fn get_object_ref_by_id(iota_client: &IotaClientAdapter, obj: &ObjectID) -> Result<ObjectRef, Error> {
+pub(crate) async fn get_object_ref_by_id(
+    iota_client: &impl CoreClientReadOnly,
+    obj: &ObjectID,
+) -> Result<ObjectRef, Error> {
     let res = iota_client
+        .client_adapter()
         .read_api()
         .get_object_with_options(*obj, IotaObjectDataOptions::new().with_content())
         .await
