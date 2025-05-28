@@ -1,3 +1,6 @@
+// Copyright 2020-2025 IOTA Stiftung
+// SPDX-License-Identifier: Apache-2.0
+
 use anyhow::Context;
 use iota_sdk::{IotaClientBuilder, IOTA_LOCAL_NETWORK_URL};
 use notarization::client::full_client::NotarizationClient;

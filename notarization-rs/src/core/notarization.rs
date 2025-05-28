@@ -1,7 +1,8 @@
+// Copyright 2020-2025 IOTA Stiftung
+// SPDX-License-Identifier: Apache-2.0
+
 use async_trait::async_trait;
-use iota_interaction::rpc_types::{
-    IotaTransactionBlockEffects, IotaTransactionBlockEvents,
-};
+use iota_interaction::rpc_types::{IotaTransactionBlockEffects, IotaTransactionBlockEvents};
 use iota_interaction::types::id::UID;
 use iota_interaction::types::transaction::ProgrammableTransaction;
 use iota_interaction::{IotaClientTrait, OptionalSend, OptionalSync};
