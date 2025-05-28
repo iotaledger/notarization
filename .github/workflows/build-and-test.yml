@@ -4,12 +4,14 @@ on:
   push:
     branches:
       - main
+      - develop
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - main
       - "feat/**"
       - "support/**"
+      - "develop"
     paths:
       - ".github/workflows/build-and-test.yml"
       - ".github/workflows/shared-build-wasm.yml"
