@@ -15,36 +15,27 @@ description = "A data notarization toolkit for the IOTA Ledger."
 anyhow.workspace = true
 async-trait.workspace = true
 bcs.workspace = true
-cfg-if.workspace = true
-fastcrypto.workspace = true
-phf.workspace = true
 product_common = { workspace = true, default-features = false, features = ["transaction"] }
 serde.workspace = true
-serde-value = "0.7.0"
 serde_json.workspace = true
 strum.workspace = true
 thiserror.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-iota_interaction = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/extend-transaction-trait", package = "iota_interaction", default-features = false }
-iota_interaction_rust = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/extend-transaction-trait", package = "iota_interaction_rust", default-features = false }
-iota-config = { git = "https://github.com/iotaledger/iota.git", package = "iota-config", tag = "v0.12.0-rc" }
-iota-sdk = { git = "https://github.com/iotaledger/iota.git", package = "iota-sdk", tag = "v0.12.0-rc" }
-move-core-types = { git = "https://github.com/iotaledger/iota.git", package = "move-core-types", tag = "v0.12.0-rc" }
-secret-storage = { git = "https://github.com/iotaledger/secret-storage.git", tag = "v0.3.0", default-features = false }
-shared-crypto = { git = "https://github.com/iotaledger/iota.git", package = "shared-crypto", tag = "v0.12.0-rc" }
-tokio = { version = "1.29.0", default-features = false, features = ["macros", "sync", "rt", "process"] }
-serde-aux.workspace = true
+iota_interaction = { workspace = true, default-features = false }
+iota_interaction_rust = { workspace = true, default-features = false }
+iota-sdk = { workspace = true }
+secret-storage = { workspace = true, default-features = false }
+tokio = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-iota_interaction = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/extend-transaction-trait", package = "iota_interaction", default-features = false }
-iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/extend-transaction-trait", package = "iota_interaction_ts" }
+iota_interaction = { workspace = true, default-features = false }
+iota_interaction_ts = { workspace = true }
 
 [dev-dependencies]
 async-trait.workspace = true
-iota_interaction = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/extend-transaction-trait", package = "iota_interaction" }
-lazy_static = "1.5.0"
-product_common = { workspace = true, default-features = false, features = ["transaction", "test-utils"] }
+iota_interaction = { workspace = true }
+product_common = { workspace = true, features = ["transaction", "test-utils"] }
 
 [features]
 default = ["send-sync"]

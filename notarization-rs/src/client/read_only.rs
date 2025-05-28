@@ -17,10 +17,10 @@ use product_common::package_registry::{Env, Metadata};
 use serde::de::DeserializeOwned;
 
 use crate::client_tools::network_id;
+use crate::core::NotarizationMethod;
 use crate::core::operations::{NotarizationImpl, NotarizationOperations};
 use crate::core::state::State;
 use crate::core::timelock::LockMetadata;
-use crate::core::NotarizationMethod;
 use crate::error::Error;
 use crate::iota_interaction_adapter::IotaClientAdapter;
 use crate::package;

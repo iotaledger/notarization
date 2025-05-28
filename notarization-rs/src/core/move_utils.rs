@@ -8,9 +8,9 @@ use iota_interaction::types::base_types::{ObjectID, ObjectRef, STD_OPTION_MODULE
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
 use iota_interaction::types::transaction::{Argument, ObjectArg};
 use iota_interaction::types::{
-    TypeTag, IOTA_CLOCK_OBJECT_ID, IOTA_CLOCK_OBJECT_SHARED_VERSION, MOVE_STDLIB_PACKAGE_ID,
+    IOTA_CLOCK_OBJECT_ID, IOTA_CLOCK_OBJECT_SHARED_VERSION, MOVE_STDLIB_PACKAGE_ID, TypeTag,
 };
-use iota_interaction::{ident_str, IotaClientTrait, OptionalSync};
+use iota_interaction::{IotaClientTrait, OptionalSync, ident_str};
 use product_common::core_client::CoreClientReadOnly;
 use serde::Serialize;
 

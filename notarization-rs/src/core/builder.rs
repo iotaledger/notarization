@@ -5,8 +5,8 @@ use std::marker::PhantomData;
 
 use product_common::transaction::transaction_builder::TransactionBuilder;
 
-use super::notarization::CreateNotarization;
 use super::NotarizationMethod;
+use super::notarization::CreateNotarization;
 use crate::core::state::State;
 use crate::core::timelock::TimeLock;
 use crate::error::Error;

@@ -14,12 +14,12 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use tokio::sync::OnceCell;
 
+use super::NotarizationMethod;
 use super::builder::NotarizationBuilder;
 use super::event::{DynamicNotarizationCreated, Event, LockedNotarizationCreated};
 use super::metadata::ImmutableMetadata;
 use super::operations::{NotarizationImpl, NotarizationOperations};
 use super::state::State;
-use super::NotarizationMethod;
 use crate::error::Error;
 use crate::package::notarization_package_id;
 

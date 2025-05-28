@@ -4,11 +4,11 @@
 use std::str::FromStr;
 
 use async_trait::async_trait;
+use iota_interaction::types::Identifier;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use iota_interaction::types::transaction::{Argument, ObjectArg, ProgrammableTransaction};
-use iota_interaction::types::Identifier;
-use iota_interaction::{ident_str, MoveType, OptionalSync};
+use iota_interaction::{MoveType, OptionalSync, ident_str};
 use product_common::core_client::CoreClientReadOnly;
 
 use super::move_utils;
@@ -58,9 +58,10 @@ impl NotarizationImpl {
         let mut args = {
             let notarization = move_utils::get_object_ref_by_id(client, &object_id).await?;
 
-            vec![ptb
-                .obj(ObjectArg::ImmOrOwnedObject(notarization))
-                .map_err(|e| Error::InvalidArgument(format!("Failed to create object argument: {}", e)))?]
+            vec![
+                ptb.obj(ObjectArg::ImmOrOwnedObject(notarization))
+                    .map_err(|e| Error::InvalidArgument(format!("Failed to create object argument: {}", e)))?,
+            ]
         };
         // Add additional arguments
         args.extend(
