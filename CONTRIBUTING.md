@@ -15,6 +15,7 @@ If you have a general or technical question, you can use one of the following re
 - [**IOTA Builders Discord:**](https://discord.com/invite/iota-builders) For real-time chats with the developers
 - [**IOTA Main Community Discord:**](https://discord.iota.org/) For real-time chats with community members
 - [**IOTA Governance:**](https://govern.iota.org/) For technical, research or governance discussions with the Research and Development Department at the IOTA Foundation
+
 </details>
 
 <br>
@@ -28,6 +29,7 @@ To contribute to wallet on GitHub, you can:
 - Report a bug
 - Suggest a new feature
 - Build a new feature
+
 </details>
 
 <br>
@@ -55,6 +57,7 @@ To report a bug, [open a new issue](https://github.com/iotaledger/notarization/i
 **Note:** Minor changes such as fixing a typo can but do not need an open issue.
 
 If you also want to fix the bug, submit a [pull request](#pull-requests) and reference the issue.
+
 </details>
 
 <br>
@@ -92,6 +95,7 @@ Otherwise, your feature may not be approved at all.
 ### Building a new feature
 
 To build a new feature, check out a new branch based on the `develop` branch, and be sure to document any public-facing APIs, using code comments.
+
 </details>
 
 <br>
@@ -110,20 +114,21 @@ Before submitting a pull request, please follow these steps to have your contrib
 
 - A pull request can be merged only if it references an open issue
 
-    **Note:** You don't need to open an issue for minor changes such as typos, but you can if you want.
+  **Note:** You don't need to open an issue for minor changes such as typos, but you can if you want.
 
 ### Submitting a pull request
 
 The following is a typical workflow for submitting a new pull request:
 
 1. Fork this repository
-2. Create a new branch based on your fork. For example, `git checkout -b fix/my-fix` or ` git checkout -b feat/my-feature`.
+2. Create a new branch based on your fork. For example, `git checkout -b fix/my-fix` or `git checkout -b feat/my-feature`.
 3. Commit changes and push them to your fork
 4. Target your pull request to be merged with `develop`
 
 If all [status checks](https://help.github.com/articles/about-status-checks/) pass, and the maintainer approves the PR, it will be merged.
 
 **Note:** Reviewers may ask you to complete additional work, tests, or other changes before your pull request can be approved and merged.
+
 </details>
 
 <br>

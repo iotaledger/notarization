@@ -9,24 +9,16 @@ publish = false
 anyhow = "1.0.62"
 iota-sdk = { git = "https://github.com/iotaledger/iota.git", package = "iota-sdk", tag = "v0.12.0-rc" }
 
-product_common = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/extend-transaction-trait", package = "product_common", features = [
-    "core-client",
-    "transaction",
-    "test-utils",
-] }
+product_common = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/extend-transaction-trait", package = "product_common", features = ["core-client", "transaction", "test-utils"] }
 rand = "0.8.5"
 
+notarization = { path = "../notarization-rs" }
 secret-storage = { git = "https://github.com/iotaledger/secret-storage.git", tag = "v0.3.0" }
 serde_json = { version = "1.0", default-features = false }
-tokio = { version = "1.43", default-features = false, features = [
-    "rt",
-    "macros",
-] }
-notarization = { path = "../notarization-rs" }
+tokio = { version = "1.43", default-features = false, features = ["rt", "macros"] }
 
 [lib]
 path = "utils/utils.rs"
-
 
 [[example]]
 path = "01_create_locked_notarization.rs"
