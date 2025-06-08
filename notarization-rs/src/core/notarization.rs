@@ -122,15 +122,12 @@ impl<M: Clone + OptionalSend + OptionalSync> Transaction for CreateNotarization<
     async fn apply_with_events<C>(
         mut self,
         _: &mut IotaTransactionBlockEffects,
-        events: Option<IotaTransactionBlockEvents>,
+        events: &mut IotaTransactionBlockEvents,
         client: &C,
     ) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        let events =
-            events.ok_or_else(|| Error::TransactionUnexpectedResponse("events should be provided".to_string()))?;
-
         let method = self.builder.method.clone();
 
         let data = events

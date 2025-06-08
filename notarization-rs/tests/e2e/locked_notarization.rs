@@ -347,7 +347,7 @@ async fn test_lock_checking_methods_locked_notarization() -> anyhow::Result<()> 
 async fn test_bytes_state_operations_locked_notarization() -> anyhow::Result<()> {
     let test_client = get_funded_test_client().await?;
 
-    let initial_data = vec![1, 2, 3, 4, 5];
+    let initial_data = vec![91, 45, 30, 84, 76];
     let notarization_id = test_client
         .create_locked_notarization()
         .with_state(State::from_bytes(initial_data.clone(), None))
@@ -359,6 +359,7 @@ async fn test_bytes_state_operations_locked_notarization() -> anyhow::Result<()>
         .id;
 
     let state = test_client.state(*notarization_id.object_id()).await?;
+    println!("state: {:?}", state);
     assert_eq!(state.data.as_bytes()?, initial_data);
 
     // Attempting to update state should fail for locked notarization
