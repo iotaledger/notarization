@@ -143,7 +143,7 @@ where
 ///
 /// # Example
 ///
-/// ```no_run
+/// ```rust,ignore
 /// let full_type = "0x123::notarization::Notarization<vector<u8>>";
 /// let type_param_str = parse_type(full_type).unwrap();
 /// assert_eq!(type_param_str, "vector<u8>");

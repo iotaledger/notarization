@@ -85,10 +85,10 @@ async fn create_locked_notarization_with_none_delete_lock() -> anyhow::Result<()
 
     assert_eq!(onchain_notarization.method, NotarizationMethod::Locked);
 
-    let is_delete_allowed = test_client
+    let is_destroy_allowed = test_client
         .is_destroy_allowed(*onchain_notarization.id.object_id())
         .await?;
-    assert!(!is_delete_allowed, "Should be delete allowed with TimeLock::None");
+    assert!(is_destroy_allowed, "destroy should be allowed with TimeLock::None");
 
     Ok(())
 }
