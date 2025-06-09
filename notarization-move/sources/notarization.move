@@ -101,7 +101,7 @@ public struct NotarizationDestroyed has copy, drop {
 
 // ===== Constructor Functions =====
 /// Create a new state from a vector<u8> data
-public fun new_state_from_vector(data: vector<u8>, metadata: Option<String>): State<vector<u8>> {
+public fun new_state_from_bytes(data: vector<u8>, metadata: Option<String>): State<vector<u8>> {
     State { data, metadata }
 }
 
@@ -425,7 +425,9 @@ public fun is_destroy_allowed<D: store + drop + copy>(self: &Notarization<D>, cl
 /// See fun `are_locked_notarization_invariants_ok()` and
 /// `are_dynamic_notarization_invariants_ok()`
 /// for more details.
-public(package) fun assert_method_specific_invariants<D: store + drop + copy>(self: &Notarization<D>) {
+public(package) fun assert_method_specific_invariants<D: store + drop + copy>(
+    self: &Notarization<D>,
+) {
     if (self.method.is_dynamic()) {
         assert!(
             are_dynamic_notarization_invariants_ok(&self.immutable_metadata),
@@ -443,7 +445,9 @@ public(package) fun assert_method_specific_invariants<D: store + drop + copy>(se
 ///
 /// - `self.immutable_metadata.locking` must exist.
 /// - `updated_lock` and `transfer_lock` must be `TimeLock::UntilDestroyed`.
-public(package) fun are_locked_notarization_invariants_ok(immutable_metadata: &ImmutableMetadata): bool {
+public(package) fun are_locked_notarization_invariants_ok(
+    immutable_metadata: &ImmutableMetadata,
+): bool {
     if (immutable_metadata.locking.is_some()) {
         let lock_metadata = option::borrow(&immutable_metadata.locking);
         timelock::is_until_destroyed(&lock_metadata.transfer_lock) && timelock::is_until_destroyed(&lock_metadata.update_lock)
@@ -459,7 +463,9 @@ public(package) fun are_locked_notarization_invariants_ok(immutable_metadata: &I
 ///   If `immutable_metadata.locking` exists, all locks except `transfer_lock`
 ///   must be `TimeLock::None`
 ///   and the `transfer_lock` must not be `TimeLock::None`.
-public(package) fun are_dynamic_notarization_invariants_ok(immutable_metadata: &ImmutableMetadata): bool {
+public(package) fun are_dynamic_notarization_invariants_ok(
+    immutable_metadata: &ImmutableMetadata,
+): bool {
     if (immutable_metadata.locking.is_some()) {
         let lock_metadata = option::borrow(&immutable_metadata.locking);
 

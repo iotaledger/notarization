@@ -77,7 +77,7 @@ public fun test_create_dynamic_notarization_with_vector_data() {
     vector::push_back(&mut data, 2u8);
     vector::push_back(&mut data, 3u8);
     let metadata = std::option::some(string::utf8(b"Test Metadata"));
-    let state = notarization::new_state_from_vector(data, metadata);
+    let state = notarization::new_state_from_bytes(data, metadata);
 
     // Create a dynamic notarization with no transfer lock
     dynamic_notarization::create(

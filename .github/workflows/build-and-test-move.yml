@@ -1,4 +1,4 @@
-name: Build and Test
+name: Build and Test Move
 
 on:
   pull_request:
@@ -37,7 +37,7 @@ jobs:
       - run: |
           # this run step does nothing, but is needed to get the job output
 
-  build-and-test:
+  build-and-test-move:
     runs-on: ${{ matrix.os }}
     needs: check-for-run-condition
     if: ${{ needs.check-for-run-condition.outputs.should-run == 'true' && github.event_name != 'workflow_dispatch' }}
