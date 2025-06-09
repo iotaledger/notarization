@@ -4,7 +4,7 @@
 use std::str::FromStr;
 
 use iota_interaction::rpc_types::IotaObjectDataOptions;
-use iota_interaction::types::base_types::{ObjectID, ObjectRef, STD_OPTION_MODULE_NAME, STD_UTF8_MODULE_NAME};
+use iota_interaction::types::base_types::{ObjectID, ObjectRef, STD_OPTION_MODULE_NAME};
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
 use iota_interaction::types::transaction::{Argument, ObjectArg};
 use iota_interaction::types::{
@@ -63,54 +63,7 @@ where
     })
 }
 
-#[allow(dead_code)]
-pub(crate) fn ptb_obj(ptb: &mut Ptb, name: &str, value: ObjectArg) -> Result<Argument, Error> {
-    ptb.obj(value)
-        .map_err(|err| Error::InvalidArgument(format!("could not serialize object {name} {value:?}; {err}")))
-}
-
-/// Creates a new move string
-pub(crate) fn new_move_string(value: String, ptb: &mut Ptb) -> Result<Argument, Error> {
-    let v = ptb
-        .pure(value.as_bytes())
-        .map_err(|err| Error::InvalidArgument(format!("could not serialize string value; {err}")))?;
-    Ok(ptb.programmable_move_call(
-        MOVE_STDLIB_PACKAGE_ID,
-        STD_UTF8_MODULE_NAME.into(),
-        ident_str!("utf8").into(),
-        vec![],
-        vec![v],
-    ))
-}
-
-/// Create new option string
-pub(crate) fn new_move_option_string(value: Option<String>, ptb: &mut Ptb) -> Result<Argument, Error> {
-    let string_tag = TypeTag::from_str(format!("{}::string::String", MOVE_STDLIB_PACKAGE_ID).as_str())
-        .map_err(|err| Error::InvalidArgument(format!("could not create string tag; {err}")))?;
-
-    match value {
-        Some(v) => {
-            let v = ptb
-                .pure(v.as_bytes())
-                .map_err(|err| Error::InvalidArgument(format!("could not serialize string value; {err}")))?;
-            Ok(ptb.programmable_move_call(
-                MOVE_STDLIB_PACKAGE_ID,
-                STD_OPTION_MODULE_NAME.into(),
-                ident_str!("some").into(),
-                vec![string_tag],
-                vec![v],
-            ))
-        }
-        None => Ok(ptb.programmable_move_call(
-            MOVE_STDLIB_PACKAGE_ID,
-            STD_OPTION_MODULE_NAME.into(),
-            ident_str!("none").into(),
-            vec![string_tag],
-            vec![],
-        )),
-    }
-}
-
+/// Get the type tag of an object
 pub async fn get_type_tag<C>(client: &C, object_id: &ObjectID) -> Result<TypeTag, Error>
 where
     C: CoreClientReadOnly + OptionalSync,

@@ -100,8 +100,8 @@ pub trait NotarizationOperations {
         let tag = state.data.tag();
         let clock = move_utils::get_clock_ref(&mut ptb);
         let state_arg = state.into_ptb(&mut ptb, package_id)?;
-        let immutable_description = move_utils::new_move_option_string(immutable_description, &mut ptb)?;
-        let updatable_metadata = move_utils::new_move_option_string(updatable_metadata, &mut ptb)?;
+        let immutable_description = move_utils::ptb_pure(&mut ptb, "immutable_description", immutable_description)?;
+        let updatable_metadata = move_utils::ptb_pure(&mut ptb, "updatable_metadata", updatable_metadata)?;
         let delete_lock = delete_lock.to_ptb(&mut ptb, package_id)?;
 
         ptb.programmable_move_call(
@@ -128,8 +128,8 @@ pub trait NotarizationOperations {
         let tag = state.data.tag();
         let clock = move_utils::get_clock_ref(&mut ptb);
         let state_arg = state.into_ptb(&mut ptb, package_id)?;
-        let immutable_description = move_utils::new_move_option_string(immutable_description, &mut ptb)?;
-        let updatable_metadata = move_utils::new_move_option_string(updatable_metadata, &mut ptb)?;
+        let immutable_description = move_utils::ptb_pure(&mut ptb, "immutable_description", immutable_description)?;
+        let updatable_metadata = move_utils::ptb_pure(&mut ptb, "updatable_metadata", updatable_metadata)?;
         let transfer_lock = transfer_lock
             .map(|lock| lock.to_ptb(&mut ptb, package_id))
             .transpose()?;
@@ -195,7 +195,7 @@ pub trait NotarizationOperations {
     {
         NotarizationImpl::build_transaction(client, package_id, object_id, "update_metadata", |ptb| {
             Ok(vec![
-                move_utils::new_move_option_string(new_metadata, ptb)?,
+                move_utils::ptb_pure(ptb, "new_metadata", new_metadata)?,
                 move_utils::get_clock_ref(ptb),
             ])
         })

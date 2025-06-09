@@ -118,7 +118,7 @@ pub(crate) fn state_from_bytes(
     package_id: ObjectID,
 ) -> Result<Argument, Error> {
     let data = move_utils::ptb_pure(ptb, "data", data)?;
-    let metadata = move_utils::new_move_option_string(metadata, ptb)?;
+    let metadata = move_utils::ptb_pure(ptb, "metadata", metadata)?;
 
     Ok(ptb.programmable_move_call(
         package_id,
@@ -135,8 +135,8 @@ pub(crate) fn state_from_string(
     metadata: Option<String>,
     package_id: ObjectID,
 ) -> Result<Argument, Error> {
-    let data = move_utils::new_move_string(data, ptb)?;
-    let metadata = move_utils::new_move_option_string(metadata, ptb)?;
+    let data = move_utils::ptb_pure(ptb, "data", data)?;
+    let metadata = move_utils::ptb_pure(ptb, "metadata", metadata)?;
 
     Ok(ptb.programmable_move_call(
         package_id,
