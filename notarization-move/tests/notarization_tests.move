@@ -68,7 +68,7 @@ public fun test_create_notarization_with_complex_object() {
         0,
     );
     assert!(
-        notarization::updateable_metadata(&notarization) == &std::option::some(string::utf8(b"Test Updateable Metadata")),
+        notarization::updatable_metadata(&notarization) == &std::option::some(string::utf8(b"Test Updateable Metadata")),
         0,
     );
     assert!(notarization::last_change(&notarization) == 1000000, 0);
@@ -182,7 +182,7 @@ public fun test_state_updates_and_versioning() {
 
     // Verify metadata was updated
     assert!(
-        notarization::updateable_metadata(&notarization) == &std::option::some(string::utf8(b"New Metadata")),
+        notarization::updatable_metadata(&notarization) == &std::option::some(string::utf8(b"New Metadata")),
         0,
     );
 

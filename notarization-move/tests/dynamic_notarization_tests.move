@@ -29,7 +29,7 @@ public fun test_create_dynamic_notarization_with_string_data() {
     dynamic_notarization::create(
         state,
         std::option::some(string::utf8(b"Test Description")),
-        std::option::some(string::utf8(b"Test Updateable Metadata")),
+        std::option::some(string::utf8(b"Test Updatable Metadata")),
         std::option::none(),
         &clock,
         ctx,
@@ -47,7 +47,7 @@ public fun test_create_dynamic_notarization_with_string_data() {
         0,
     );
     assert!(
-        notarization::updateable_metadata(&notarization) == &std::option::some(string::utf8(b"Test Updateable Metadata")),
+        notarization::updatable_metadata(&notarization) == &std::option::some(string::utf8(b"Test Updatable Metadata")),
         0,
     );
     assert!(notarization::created_at(&notarization) == 1000000, 0);
@@ -83,7 +83,7 @@ public fun test_create_dynamic_notarization_with_vector_data() {
     dynamic_notarization::create(
         state,
         std::option::some(string::utf8(b"Test Description")),
-        std::option::some(string::utf8(b"Test Updateable Metadata")),
+        std::option::some(string::utf8(b"Test Updatable Metadata")),
         std::option::none(),
         &clock,
         ctx,
@@ -101,7 +101,7 @@ public fun test_create_dynamic_notarization_with_vector_data() {
         0,
     );
     assert!(
-        notarization::updateable_metadata(&notarization) == &std::option::some(string::utf8(b"Test Updateable Metadata")),
+        notarization::updatable_metadata(&notarization) == &std::option::some(string::utf8(b"Test Updatable Metadata")),
         0,
     );
     assert!(notarization::created_at(&notarization) == 1000000, 0);
@@ -138,7 +138,7 @@ public fun test_create_dynamic_notarization_with_transfer_lock() {
     dynamic_notarization::create(
         state,
         std::option::some(string::utf8(b"Test Description")),
-        std::option::some(string::utf8(b"Test Updateable Metadata")),
+        std::option::some(string::utf8(b"Test Updatable Metadata")),
         std::option::some(transfer_lock),
         &clock,
         ctx,
@@ -306,14 +306,14 @@ public fun test_update_dynamic_notarization() {
     // Verify the update
     assert!(notarization::version_count(&notarization) == 1, 0);
     assert!(notarization::state(&notarization) == &new_state, 0);
-    // Also update the updateable metadata
+    // Also update the updatable metadata
     notarization::update_metadata(
         &mut notarization,
-        std::option::some(string::utf8(b"New Updateable Metadata")),
+        std::option::some(string::utf8(b"New Updatable Metadata")),
         &clock,
     );
     assert!(
-        notarization::updateable_metadata(&notarization) == &std::option::some(string::utf8(b"New Updateable Metadata")),
+        notarization::updatable_metadata(&notarization) == &std::option::some(string::utf8(b"New Updatable Metadata")),
         0,
     );
 

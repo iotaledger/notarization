@@ -228,7 +228,7 @@ impl NotarizationClientReadOnly {
         self.execute_read_only_transaction(tx).await
     }
 
-    /// Retrieves the `updateable_metadata` of a notarization object by its `object_id`.
+    /// Retrieves the `updatable_metadata` of a notarization object by its `object_id`.
     ///
     /// This metadata is an optional string that can be updated after creation.
     ///
@@ -237,9 +237,9 @@ impl NotarizationClientReadOnly {
     /// * `notarized_object_id`: The [`ObjectID`] of the notarized object.
     ///
     /// # Returns
-    /// A `Result` containing an `Option<String>` or an [`Error`]. `None` if no updateable metadata is set.
-    pub async fn updateable_metadata(&self, notarized_object_id: ObjectID) -> Result<Option<String>, Error> {
-        let tx = NotarizationImpl::updateable_metadata(self.notarization_pkg_id, notarized_object_id, self).await?;
+    /// A `Result` containing an `Option<String>` or an [`Error`]. `None` if no updatable metadata is set.
+    pub async fn updatable_metadata(&self, notarized_object_id: ObjectID) -> Result<Option<String>, Error> {
+        let tx = NotarizationImpl::updatable_metadata(self.notarization_pkg_id, notarized_object_id, self).await?;
 
         self.execute_read_only_transaction(tx).await
     }

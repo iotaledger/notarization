@@ -18,7 +18,7 @@ async fn main() -> Result<()> {
     println!("Creating a dynamic notarization with comprehensive metadata...");
 
     let description = "Comprehensive test document".to_string();
-    let updateable_metadata = "Initial document metadata".to_string();
+    let updatable_metadata = "Initial document metadata".to_string();
 
     let dynamic_notarization_id = notarization_client
         .create_dynamic_notarization()
@@ -27,7 +27,7 @@ async fn main() -> Result<()> {
             Some("State-level metadata".to_string()),
         ))
         .with_immutable_description(description.clone())
-        .with_updateable_metadata(updateable_metadata.clone())
+        .with_updatable_metadata(updatable_metadata.clone())
         .finish()
         .build_and_execute(&notarization_client)
         .await?
@@ -47,9 +47,9 @@ async fn main() -> Result<()> {
 
     // 2. Get updateable metadata
     let retrieved_metadata = notarization_client
-        .updateable_metadata(*dynamic_notarization_id.object_id())
+        .updatable_metadata(*dynamic_notarization_id.object_id())
         .await?;
-    println!("📋 Updateable metadata: {:?}", retrieved_metadata);
+    println!("📋 Updatable metadata: {:?}", retrieved_metadata);
 
     // 3. Get current state
     let current_state = notarization_client.state(*dynamic_notarization_id.object_id()).await?;
@@ -141,7 +141,7 @@ async fn main() -> Result<()> {
             Some("Locked state metadata".to_string()),
         ))
         .with_immutable_description("Locked test document".to_string())
-        .with_updateable_metadata("Locked document metadata".to_string())
+        .with_updatable_metadata("Locked document metadata".to_string())
         .with_delete_at(TimeLock::UnlockAt(unlock_at as u32))
         .finish()?
         .build_and_execute(&notarization_client)

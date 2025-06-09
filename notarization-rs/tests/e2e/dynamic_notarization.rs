@@ -29,7 +29,7 @@ async fn create_simple_dynamic_notarization_works() -> anyhow::Result<()> {
         Some("Test Notarization".to_string())
     );
     assert_eq!(onchain_notarization.immutable_metadata.locking, None);
-    assert_eq!(onchain_notarization.updateable_metadata, None);
+    assert_eq!(onchain_notarization.updatable_metadata, None);
     assert_eq!(onchain_notarization.state_version_count, 0);
     assert_eq!(onchain_notarization.method, NotarizationMethod::Dynamic);
     Ok(())
@@ -165,7 +165,7 @@ async fn test_update_metadata_dynamic_notarization() -> anyhow::Result<()> {
         .create_dynamic_notarization()
         .with_state(State::from_string("test_state".to_string(), None))
         .with_immutable_description("Test Notarization".to_string())
-        .with_updateable_metadata("initial_metadata".to_string())
+        .with_updatable_metadata("initial_metadata".to_string())
         .finish()
         .build_and_execute(&test_client)
         .await?
@@ -181,7 +181,7 @@ async fn test_update_metadata_dynamic_notarization() -> anyhow::Result<()> {
 
     assert!(update_result.is_ok(), "Metadata update should succeed");
 
-    let retrieved_metadata = test_client.updateable_metadata(*notarization_id.object_id()).await?;
+    let retrieved_metadata = test_client.updatable_metadata(*notarization_id.object_id()).await?;
     assert_eq!(retrieved_metadata, new_metadata);
 
     let version_count = test_client.state_version_count(*notarization_id.object_id()).await?;
@@ -257,7 +257,7 @@ async fn test_read_only_methods_dynamic_notarization() -> anyhow::Result<()> {
     let test_client = get_funded_test_client().await?;
 
     let description = "Test Description".to_string();
-    let updateable_metadata = "Test Metadata".to_string();
+    let updatable_metadata = "Test Metadata".to_string();
 
     let notarization_id = test_client
         .create_dynamic_notarization()
@@ -266,7 +266,7 @@ async fn test_read_only_methods_dynamic_notarization() -> anyhow::Result<()> {
             Some("state_meta".to_string()),
         ))
         .with_immutable_description(description.clone())
-        .with_updateable_metadata(updateable_metadata.clone())
+        .with_updatable_metadata(updatable_metadata.clone())
         .finish()
         .build_and_execute(&test_client)
         .await?
@@ -276,8 +276,8 @@ async fn test_read_only_methods_dynamic_notarization() -> anyhow::Result<()> {
     let retrieved_description = test_client.description(*notarization_id.object_id()).await?;
     assert_eq!(retrieved_description, Some(description));
 
-    let retrieved_metadata = test_client.updateable_metadata(*notarization_id.object_id()).await?;
-    assert_eq!(retrieved_metadata, Some(updateable_metadata));
+    let retrieved_metadata = test_client.updatable_metadata(*notarization_id.object_id()).await?;
+    assert_eq!(retrieved_metadata, Some(updatable_metadata));
 
     let state = test_client.state(*notarization_id.object_id()).await?;
     assert_eq!(state.data.as_text()?, "test_state");

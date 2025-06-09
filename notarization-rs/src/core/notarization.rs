@@ -29,7 +29,7 @@ pub struct OnChainNotarization {
     pub id: UID,
     pub state: State,
     pub immutable_metadata: ImmutableMetadata,
-    pub updateable_metadata: Option<String>,
+    pub updatable_metadata: Option<String>,
     pub last_state_change_at: u64,
     pub state_version_count: u64,
     pub method: NotarizationMethod,
@@ -55,7 +55,7 @@ impl<M: Clone> CreateNotarization<M> {
         let NotarizationBuilder {
             state,
             immutable_description,
-            updateable_metadata,
+            updatable_metadata,
             method,
             delete_lock,
             transfer_lock,
@@ -78,7 +78,7 @@ impl<M: Clone> CreateNotarization<M> {
                     package_id,
                     state,
                     immutable_description,
-                    updateable_metadata,
+                    updatable_metadata,
                     transfer_lock,
                 )
             }
@@ -97,7 +97,7 @@ impl<M: Clone> CreateNotarization<M> {
                     package_id,
                     state,
                     immutable_description,
-                    updateable_metadata,
+                    updatable_metadata,
                     delete_lock,
                 )
             }
