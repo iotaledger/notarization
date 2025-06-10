@@ -26,7 +26,7 @@ async fn main() -> Result<()> {
             Some("Version 1.0".to_string()),
         ))
         .with_immutable_description("Dynamic document".to_string())
-        .with_updateable_metadata("Initial metadata".to_string())
+        .with_updatable_metadata("Initial metadata".to_string())
         .finish()
         .build_and_execute(&notarization_client)
         .await?

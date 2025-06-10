@@ -228,7 +228,7 @@ impl NotarizationClientReadOnly {
         self.execute_read_only_transaction(tx).await
     }
 
-    /// Retrieves the `updateable_metadata` of a notarization object by its `object_id`.
+    /// Retrieves the `updatable_metadata` of a notarization object by its `object_id`.
     ///
     /// This metadata is an optional string that can be updated after creation.
     ///
@@ -237,9 +237,9 @@ impl NotarizationClientReadOnly {
     /// * `notarized_object_id`: The [`ObjectID`] of the notarized object.
     ///
     /// # Returns
-    /// A `Result` containing an `Option<String>` or an [`Error`]. `None` if no updateable metadata is set.
-    pub async fn updateable_metadata(&self, notarized_object_id: ObjectID) -> Result<Option<String>, Error> {
-        let tx = NotarizationImpl::updateable_metadata(self.notarization_pkg_id, notarized_object_id, self).await?;
+    /// A `Result` containing an `Option<String>` or an [`Error`]. `None` if no updatable metadata is set.
+    pub async fn updatable_metadata(&self, notarized_object_id: ObjectID) -> Result<Option<String>, Error> {
+        let tx = NotarizationImpl::updatable_metadata(self.notarization_pkg_id, notarized_object_id, self).await?;
 
         self.execute_read_only_transaction(tx).await
     }
@@ -291,31 +291,25 @@ impl NotarizationClientReadOnly {
     /// # Returns
     /// A `Result` containing the [`State<Data>`] or an [`Error`].
     pub async fn state(&self, notarized_object_id: ObjectID) -> Result<State, Error> {
-        // Get the type tag to determine how to deserialize
         let type_tag = move_utils::get_type_tag(self, &notarized_object_id).await?;
         let type_str = type_tag.to_string();
 
-        // Get the raw state
         let tx = NotarizationImpl::state(self.notarization_pkg_id, notarized_object_id, self).await?;
 
-        // Based on the type tag, deserialize appropriately
         if type_str == "vector<u8>" {
-            // Force deserialization as bytes
             let state: State<Vec<u8>> = self.execute_read_only_transaction(tx).await?;
             Ok(State {
                 data: Data::Bytes(state.data),
                 metadata: state.metadata,
             })
         } else if type_str.contains("::string::String") {
-            // Force deserialization as string
             let state: State<String> = self.execute_read_only_transaction(tx).await?;
             Ok(State {
                 data: Data::Text(state.data),
                 metadata: state.metadata,
             })
         } else {
-            // Fallback to current behavior
-            self.execute_read_only_transaction(tx).await
+            return Err(Error::InvalidArgument(format!("Unsupported state type: {type_str}")));
         }
     }
 

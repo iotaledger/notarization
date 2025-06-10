@@ -39,13 +39,19 @@ impl<'de> Deserialize<'de> for Data {
     where
         D: Deserializer<'de>,
     {
-        let raw_bytes = Vec::<u8>::deserialize(deserializer)?;
+        // Handle both raw bytes and string representations from BCS
+        let bytes = Vec::<u8>::deserialize(deserializer)?;
 
-        if let Ok(text) = String::from_utf8(raw_bytes.clone()) {
-            return Ok(Data::Text(text));
+        if let Ok(text) = String::from_utf8(bytes.clone()) {
+            // Additional check: if it looks like actual text (not just valid UTF-8 bytes)
+            if text.chars().all(|c| c.is_ascii_graphic() || c.is_ascii_whitespace()) {
+                Ok(Data::Text(text))
+            } else {
+                Ok(Data::Bytes(bytes))
+            }
+        } else {
+            Ok(Data::Bytes(bytes))
         }
-
-        Ok(Data::Bytes(raw_bytes))
     }
 }
 
@@ -118,7 +124,7 @@ pub(crate) fn state_from_bytes(
     package_id: ObjectID,
 ) -> Result<Argument, Error> {
     let data = move_utils::ptb_pure(ptb, "data", data)?;
-    let metadata = move_utils::new_move_option_string(metadata, ptb)?;
+    let metadata = move_utils::ptb_pure(ptb, "metadata", metadata)?;
 
     Ok(ptb.programmable_move_call(
         package_id,
@@ -135,8 +141,8 @@ pub(crate) fn state_from_string(
     metadata: Option<String>,
     package_id: ObjectID,
 ) -> Result<Argument, Error> {
-    let data = move_utils::new_move_string(data, ptb)?;
-    let metadata = move_utils::new_move_option_string(metadata, ptb)?;
+    let data = move_utils::ptb_pure(ptb, "data", data)?;
+    let metadata = move_utils::ptb_pure(ptb, "metadata", metadata)?;
 
     Ok(ptb.programmable_move_call(
         package_id,

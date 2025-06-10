@@ -161,15 +161,15 @@ jobs:
 
       - name: test Notarization Move package
         if: matrix.os != 'windows-latest'
-        # publish the package and set the PRODUCT_IOTA_PKG_ID env variable
+        # publish the package and set the IOTA_NOTARIZATION_PKG_ID env variable
         run: |
           iota move test
         working-directory: notarization-move
 
       - name: publish Notarization Move package
         if: matrix.os != 'windows-latest'
-        # publish the package and set the PRODUCT_IOTA_PKG_ID env variable
-        run: echo "PRODUCT_IOTA_PKG_ID=$(./publish_package.sh)" >> "$GITHUB_ENV"
+        # publish the package and set the IOTA_NOTARIZATION_PKG_ID env variable
+        run: echo "IOTA_NOTARIZATION_PKG_ID=$(./publish_package.sh)" >> "$GITHUB_ENV"
         working-directory: notarization-move/scripts/
 
       - name: Run tests
@@ -252,8 +252,8 @@ jobs:
 
 #       - name: publish Notarization Move package
 #         if: matrix.os != 'windows-latest'
-#         # publish the package and set the PRODUCT_IOTA_PKG_ID env variable
-#         run: echo "PRODUCT_IOTA_PKG_ID=$(./publish_package.sh)" >> "$GITHUB_ENV"
+#         # publish the package and set the IOTA_NOTARIZATION_PKG_ID env variable
+#         run: echo "IOTA_NOTARIZATION_PKG_ID=$(./publish_package.sh)" >> "$GITHUB_ENV"
 #         working-directory: notarization-move/scripts/
 
 #       - name: Install JS dependencies
@@ -297,8 +297,8 @@ jobs:
 #           iota-version: ${{ env.IOTA_VERSION }}
 
 #       - name: publish Notarization Move package
-#         # publish the package and set the PRODUCT_IOTA_PKG_ID env variable
-#         run: echo "PRODUCT_IOTA_PKG_ID=$(./publish_package.sh)" >> "$GITHUB_ENV"
+#         # publish the package and set the IOTA_NOTARIZATION_PKG_ID env variable
+#         run: echo "IOTA_NOTARIZATION_PKG_ID=$(./publish_package.sh)" >> "$GITHUB_ENV"
 #         working-directory: notarization-move/scripts/
 
 #       - name: Build Docker image
@@ -310,7 +310,7 @@ jobs:
 #           tags: cypress-test:latest
 #           load: true
 #           build-args: |
-#             PRODUCT_IOTA_PKG_ID=${{ env.PRODUCT_IOTA_PKG_ID }}
+#             IOTA_NOTARIZATION_PKG_ID=${{ env.IOTA_NOTARIZATION_PKG_ID }}
 
 #       - name: Run cypress
 #         run: docker run --network host cypress-test test:browser:${{ matrix.browser }}

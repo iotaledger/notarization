@@ -31,7 +31,7 @@ public fun test_create_locked_notarization() {
     locked_notarization::create(
         state,
         std::option::some(string::utf8(b"Test Description")),
-        std::option::some(string::utf8(b"Test Updateable Metadata")),
+        std::option::some(string::utf8(b"Test Updatable Metadata")),
         delete_lock,
         &clock,
         ctx,
@@ -51,7 +51,7 @@ public fun test_create_locked_notarization() {
         0,
     );
     assert!(
-        notarization::updateable_metadata(&notarization) == &std::option::some(string::utf8(b"Test Updateable Metadata")),
+        notarization::updatable_metadata(&notarization) == &std::option::some(string::utf8(b"Test Updatable Metadata")),
         0,
     );
     assert!(notarization::created_at(&notarization) == 1000000, 0);
