@@ -402,7 +402,7 @@ async fn test_multiple_state_updates() -> anyhow::Result<()> {
 async fn test_bytes_state_operations() -> anyhow::Result<()> {
     let test_client = get_funded_test_client().await?;
 
-    let initial_data = vec![11, 22, 33, 44, 55];
+    let initial_data = vec![1, 2, 3, 4, 5];
     let notarization_id = test_client
         .create_dynamic_notarization()
         .with_state(State::from_bytes(initial_data.clone(), None))
