@@ -51,6 +51,38 @@ impl<M: Clone> CreateNotarization<M> {
         }
     }
 
+    /// Indicates if the invariants for `NotarizationMethod::Dynamic` are satisfied:
+    ///
+    /// - Dynamic notarization can only have transfer locking or no
+    ///   `immutable_metadata.locking`.
+    ///   If `immutable_metadata.locking` exists, all locks except `transfer_lock`
+    ///   must be `TimeLock::None`
+    ///   and the `transfer_lock` must not be `TimeLock::None`.
+    fn are_dynamic_notarization_invariants_ok(locking: &Option<LockMetadata>) -> bool {
+        match locking {
+            Some(lock_metadata) => {
+                lock_metadata.delete_lock == TimeLock::None
+                    && lock_metadata.update_lock == TimeLock::None
+                    && lock_metadata.transfer_lock != TimeLock::None
+            }
+            None => true,
+        }
+    }
+
+    /// Indicates if the invariants for `NotarizationMethod::Locked` are satisfied:
+    ///
+    /// - `locking` must exist.
+    /// - `update_lock` and `transfer_lock` must be `TimeLock::UntilDestroyed`.
+    fn are_locked_notarization_invariants_ok(locking: &Option<LockMetadata>) -> bool {
+        match locking {
+            Some(lock_metadata) => {
+                lock_metadata.transfer_lock == TimeLock::UntilDestroyed
+                    && lock_metadata.update_lock == TimeLock::UntilDestroyed
+            }
+            None => false,
+        }
+    }
+
     /// Makes a [`ProgrammableTransaction`] for the [`CreateNotarization`] instance.
     async fn make_ptb(&self, client: &impl CoreClientReadOnly) -> Result<ProgrammableTransaction, Error> {
         let NotarizationBuilder {
@@ -83,7 +115,7 @@ impl<M: Clone> CreateNotarization<M> {
                 });
 
                 // Check invariants
-                if !are_dynamic_notarization_invariants_ok(&locking) {
+                if !Self::are_dynamic_notarization_invariants_ok(&locking) {
                     return Err(Error::InvalidArgument(
                         "Dynamic notarization invariants are not satisfied".to_string(),
                     ));
@@ -116,7 +148,7 @@ impl<M: Clone> CreateNotarization<M> {
                 });
 
                 // Check invariants
-                if !are_locked_notarization_invariants_ok(&locking) {
+                if !Self::are_locked_notarization_invariants_ok(&locking) {
                     return Err(Error::InvalidArgument(
                         "Locked notarization invariants are not satisfied".to_string(),
                     ));
@@ -216,34 +248,41 @@ pub(crate) async fn get_object_ref_by_id_with_bcs<T: DeserializeOwned>(
     Ok(notarization)
 }
 
-/// Indicates if the invariants for `NotarizationMethod::Dynamic` are satisfied:
-///
-/// - Dynamic notarization can only have transfer locking or no
-/// `immutable_metadata.locking`.
-///   If `immutable_metadata.locking` exists, all locks except `transfer_lock`
-///   must be `TimeLock::None`
-///   and the `transfer_lock` must not be `TimeLock::None`.
-fn are_dynamic_notarization_invariants_ok(locking: &Option<LockMetadata>) -> bool {
-    match locking {
-        Some(lock_metadata) => {
-            lock_metadata.delete_lock == TimeLock::None
-                && lock_metadata.update_lock == TimeLock::None
-                && lock_metadata.transfer_lock != TimeLock::None
-        }
-        None => true,
-    }
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-/// Indicates if the invariants for `NotarizationMethod::Locked` are satisfied:
-///
-/// - `locking` must exist.
-/// - `update_lock` and `transfer_lock` must be `TimeLock::UntilDestroyed`.
-fn are_locked_notarization_invariants_ok(locking: &Option<LockMetadata>) -> bool {
-    match locking {
-        Some(lock_metadata) => {
-            lock_metadata.transfer_lock == TimeLock::UntilDestroyed
-                && lock_metadata.update_lock == TimeLock::UntilDestroyed
-        }
-        None => false,
+    #[test]
+    fn test_dynamic_notarization_invariants() {
+        let are_dynamic_notarization_invariants_ok = CreateNotarization::<()>::are_dynamic_notarization_invariants_ok;
+
+        assert!(are_dynamic_notarization_invariants_ok(&None));
+        assert!(are_dynamic_notarization_invariants_ok(&Some(LockMetadata {
+            update_lock: TimeLock::None,
+            delete_lock: TimeLock::None,
+            transfer_lock: TimeLock::UntilDestroyed,
+        })));
+        assert!(!are_dynamic_notarization_invariants_ok(&Some(LockMetadata {
+            update_lock: TimeLock::None,
+            delete_lock: TimeLock::None,
+            transfer_lock: TimeLock::None,
+        })));
+    }
+
+    #[test]
+    fn test_locked_notarization_invariants() {
+        let are_locked_notarization_invariants_ok = CreateNotarization::<()>::are_locked_notarization_invariants_ok;
+
+        assert!(!are_locked_notarization_invariants_ok(&None));
+        assert!(are_locked_notarization_invariants_ok(&Some(LockMetadata {
+            update_lock: TimeLock::UntilDestroyed,
+            delete_lock: TimeLock::UntilDestroyed,
+            transfer_lock: TimeLock::UntilDestroyed,
+        })));
+        assert!(!are_locked_notarization_invariants_ok(&Some(LockMetadata {
+            update_lock: TimeLock::UntilDestroyed,
+            delete_lock: TimeLock::UntilDestroyed,
+            transfer_lock: TimeLock::None,
+        })));
     }
 }
