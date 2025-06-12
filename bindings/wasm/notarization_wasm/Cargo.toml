@@ -21,10 +21,11 @@ async-trait = { version = "0.1", default-features = false }
 bcs = "0.1.6"
 console_error_panic_hook = { version = "0.1" }
 fastcrypto = { git = "https://github.com/MystenLabs/fastcrypto", rev = "2f502fd8570fe4e9cff36eea5bbd6fef22002898", package = "fastcrypto" }
-iota_interaction = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.1.0-alpha", package = "iota_interaction", default-features = false }
-iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.1.0-alpha", package = "iota_interaction_ts" }
+iota_interaction = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.2.1", package = "iota_interaction", default-features = false }
+iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.2.1", package = "iota_interaction_ts" }
 js-sys = { version = "0.3.61" }
-product_common = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.1.0-alpha", package = "product_common", features = ["core-client", "transaction", "wasm-utils"] }
+prefix-hex = { version = "0.7", default-features = false }
+product_common = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.2.1", package = "product_common", features = ["core-client", "transaction", "bindings"] }
 serde = { version = "1.0", features = ["derive"] }
 serde-wasm-bindgen = "0.6.5"
 serde_json = { version = "1.0", default-features = false }
@@ -69,7 +70,7 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(wasm_bindgen_unstable_test
 # * Remember also to comment out the patch in the root workspace Cargo.toml file
 # --------------------------------------------------------------------------
 [patch."https://github.com/iotaledger/product-core.git"]
-iota_interaction = { version = "1.6.0-alpha", path = "../../../../product-core/iota_interaction" }
-#iota_interaction_rust = { version = "1.6.0-alpha", path = "../../../../product-core/iota_interaction_rust" }
-iota_interaction_ts = { version = "1.6.0-alpha", path = "../../../../product-core/bindings/wasm/iota_interaction_ts" }
-product_common = { version = "1.6.0-alpha", path = "../../../../product-core/product_common" }
+iota_interaction = { version = "0.2.1", path = "../../../../product-core/iota_interaction" }
+#iota_interaction_rust = { version = "0.2.1", path = "../../../../product-core/iota_interaction_rust" }
+iota_interaction_ts = { version = "0.2.1", path = "../../../../product-core/bindings/wasm/iota_interaction_ts" }
+product_common = { version = "0.2.1", path = "../../../../product-core/product_common" }

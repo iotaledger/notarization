@@ -34,8 +34,8 @@ to [rustup.rs](https://rustup.rs) for the installation.
 - [Node.js](https://nodejs.org/en) (>= `v20`)
 - [Rust](https://www.rust-lang.org/) (>= 1.65)
 - [Cargo](https://doc.rust-lang.org/cargo/) (>= 1.65)
-- for running example: a local network node with the IOTA notarization package deployed as described
-- [here](https://docs.iota.org/iota-identity/getting-started/local-network-setup)
+- for running example: a local network node with the IOTA notarization package deployed as being described
+  [here](https://docs.iota.org/iota-identity/getting-started/local-network-setup) for IOTA Identity
 
 ### 1. Install `wasm-bindgen-cli`
 

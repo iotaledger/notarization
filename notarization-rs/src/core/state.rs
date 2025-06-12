@@ -1,7 +1,6 @@
 // Copyright 2020-2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use core::fmt;
 use std::str::FromStr;
 
 use async_trait::async_trait;
@@ -10,7 +9,7 @@ use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use iota_interaction::types::transaction::{Argument, ProgrammableTransaction};
 use iota_interaction::types::{TypeTag, MOVE_STDLIB_PACKAGE_ID};
-use iota_interaction::{ident_str, MoveType, OptionalSync};
+use iota_interaction::{ident_str, OptionalSync};
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use serde::{Deserialize, Deserializer, Serialize};

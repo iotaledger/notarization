@@ -9,12 +9,16 @@
 // complains about RefCell<Account> in future_to_promise, should only panic in multithreaded code/web workers
 #![allow(clippy::await_holding_refcell_ref)]
 
-#[macro_use]
 extern crate serde;
 
 use wasm_bindgen::prelude::*;
 
 pub(crate) mod wasm_notarization_client_read_only;
+pub(crate) mod wasm_notarization_client;
+pub(crate) mod wasm_notarization_builder;
+pub(crate) mod wasm_types;
+pub(crate) mod wasm_time_lock;
+mod wasm_notarization;
 
 /// Initializes the console error panic hook for better error messages
 #[wasm_bindgen(start)]
@@ -29,5 +33,10 @@ pub fn start() -> Result<(), JsValue> {
 #[wasm_bindgen(typescript_custom_section)]
 const CUSTOM_IMPORTS: &'static str = r#"
 import {
+  Transaction,
+  TransactionOutput,
+  TransactionBuilder,
+  CoreClient,
+  CoreClientReadOnly
 } from '../lib/index';
 "#;

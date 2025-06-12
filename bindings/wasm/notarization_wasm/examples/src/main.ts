@@ -1,0 +1,27 @@
+// Copyright 2020-2025 IOTA Stiftung
+// SPDX-License-Identifier: Apache-2.0
+
+import { createLocked } from "./0_create_locked";
+import { createDynamic } from "./1_create_dynamic";
+
+export async function main(example?: string) {
+    // Extract example name.
+    const argument = example ?? process.argv?.[2]?.toLowerCase();
+    if (!argument) {
+        throw "Please specify an example name, e.g. '0_create_did'";
+    }
+
+    switch (argument) {
+        case "0_create_locked":
+            return await createLocked();
+        case "1_create_dynamic":
+            return await createDynamic();
+        default:
+            throw "Unknown example name: '" + argument + "'";
+    }
+}
+
+main()
+    .catch((error) => {
+        console.log("Example error:", error);
+    });

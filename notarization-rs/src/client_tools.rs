@@ -3,8 +3,7 @@
 
 use std::process::Output;
 
-use anyhow::Context;
-use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::IotaClientTrait;
 use product_common::network_name::NetworkName;
 use serde::Deserialize;

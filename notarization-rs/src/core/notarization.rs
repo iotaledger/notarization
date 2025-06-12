@@ -1,27 +1,25 @@
+use iota_interaction_ts::console_log;
+
 use async_trait::async_trait;
 use iota_interaction::rpc_types::{
-    IotaExecutionStatus, IotaTransactionBlockEffects, IotaTransactionBlockEffectsAPI, IotaTransactionBlockEvents,
+    IotaTransactionBlockEffects, IotaTransactionBlockEvents,
 };
 use iota_interaction::types::id::UID;
-use iota_interaction::types::object::Owner;
 use iota_interaction::types::transaction::ProgrammableTransaction;
-use iota_interaction::{IotaTransactionBlockEffectsMutAPI, OptionalSend, OptionalSync};
+use iota_interaction::{OptionalSend, OptionalSync};
 use iota_interaction::rpc_types::{IotaData as _, IotaObjectDataOptions};
 use iota_interaction::types::base_types::ObjectID;
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use serde_aux::field_attributes::deserialize_number_from_string;
-use serde_json::Value;
 use tokio::sync::OnceCell;
 
 use super::builder::NotarizationBuilder;
 use super::event::{DynamicNotarizationCreated, Event, LockedNotarizationCreated};
 use super::metadata::ImmutableMetadata;
 use super::operations::{NotarizationImpl, NotarizationOperations};
-use super::state::{Data, State};
-use super::timelock::LockMetadata;
+use super::state::State;
 use super::NotarizationMethod;
 use crate::error::Error;
 use crate::package::notarization_package_id;
@@ -124,19 +122,15 @@ impl<M: Clone + OptionalSend + OptionalSync> Transaction for CreateNotarization<
     }
 
     async fn apply_with_events<C>(
-        mut self,
-        _: &mut IotaTransactionBlockEffects,
-        events: Option<IotaTransactionBlockEvents>,
+        self,
+        _effects: &mut IotaTransactionBlockEffects,
+        events: &mut IotaTransactionBlockEvents,
         client: &C,
     ) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        let events =
-            events.ok_or_else(|| Error::TransactionUnexpectedResponse("events should be provided".to_string()))?;
-
         let method = self.builder.method.clone();
-
         let data = events
             .data
             .first()

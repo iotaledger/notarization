@@ -30,8 +30,8 @@ async-trait.workspace = true
 bcs.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-iota_interaction = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/extend-transaction-trait", package = "iota_interaction", default-features = false }
-iota_interaction_rust = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/extend-transaction-trait", package = "iota_interaction_rust", default-features = false }
+iota_interaction = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.2.1", package = "iota_interaction", default-features = false }
+iota_interaction_rust = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.2.1", package = "iota_interaction_rust", default-features = false }
 iota-config = { git = "https://github.com/iotaledger/iota.git", package = "iota-config", tag = "v0.12.0-rc" }
 iota-sdk = { git = "https://github.com/iotaledger/iota.git", package = "iota-sdk", tag = "v0.12.0-rc" }
 move-core-types = { git = "https://github.com/iotaledger/iota.git", package = "move-core-types", tag = "v0.12.0-rc" }
@@ -44,10 +44,10 @@ tokio = { version = "1.43", default-features = false, features = [
 ] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-iota_interaction = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/extend-transaction-trait", package = "iota_interaction", default-features = false }
-iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/extend-transaction-trait", package = "iota_interaction_ts" }
+iota_interaction = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.2.1", package = "iota_interaction", default-features = false }
+iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.2.1", package = "iota_interaction_ts" }
 tokio = { version = "1.43", default-features = false, features = ["sync"] }
-
+wasm-bindgen = { version = "0.2.100", default-features = false}
 
 [dev-dependencies]
 async-trait.workspace = true
@@ -56,7 +56,7 @@ identity_storage = { git = "https://github.com/iotaledger/identity.rs.git", bran
     "send-sync-storage",
     "storage-signer",
 ] }
-iota_interaction = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/extend-transaction-trait", package = "iota_interaction" }
+iota_interaction = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.2.1", package = "iota_interaction" }
 lazy_static = "1.5.0"
 product_common = { workspace = true, default-features = false, features = [
     "transaction",

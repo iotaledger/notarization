@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "outDir": "./dist/node",
+    "baseUrl": "./",
+    "lib": [
+      "ES6",
+      "dom"
+    ],
+    "esModuleInterop": true,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "paths": {
+      "@iota/notarization-wasm": [
+        "../node"
+      ],
+      "@iota/iota-interaction-ts/*": [
+        "../node_modules/@iota/iota-interaction-ts/node/*"
+      ]
+    }
+  },
+  "exclude": [
+    "tests"
+  ]
+}

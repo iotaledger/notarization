@@ -44,3 +44,13 @@ pub enum Error {
     #[error("Failed to get object with options: {0}")]
     ObjectLookup(String),
 }
+
+cfg_if::cfg_if! {
+    if #[cfg(target_arch = "wasm32")] {
+        use std::borrow::Cow;
+        use iota_interaction_ts::error::{WasmError, ErrorMessage};
+        use iota_interaction_ts::impl_wasm_error_from;
+        
+        impl_wasm_error_from!(Error);
+    }
+}

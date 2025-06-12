@@ -1,0 +1,22 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": "./",
+    "paths": {
+      "~notarization_wasm": [
+        "../web/notarization_wasm",
+        "./notarization_wasm.js"
+      ],
+      "@iota/iota-interaction-ts/*": [
+        "../node_modules/@iota/iota-interaction-ts/web/*",
+        "@iota/iota-interaction-ts/web/"
+      ],
+      "../lib": [
+        "."
+      ]
+    },
+    "outDir": "../web",
+    "declarationDir": "../web",
+    "module": "ES2022"
+  }
+}
