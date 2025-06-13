@@ -5,9 +5,9 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
 use examples::get_funded_client;
+use notarization::core::NotarizationMethod;
 use notarization::core::state::State;
 use notarization::core::timelock::TimeLock;
-use notarization::core::NotarizationMethod;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -26,7 +26,7 @@ async fn main() -> Result<()> {
             Some("Version 1.0".to_string()),
         ))
         .with_immutable_description("Dynamic document".to_string())
-        .with_updateable_metadata("Initial metadata".to_string())
+        .with_updatable_metadata("Initial metadata".to_string())
         .finish()
         .build_and_execute(&notarization_client)
         .await?

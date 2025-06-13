@@ -5,10 +5,7 @@
 // ...Adapter types from iota_interaction_rust or iota_interaction_ts
 // like IotaClientAdapter, TransactionBuilderAdapter ... and so on
 
-cfg_if::cfg_if! {
-    if #[cfg(target_arch = "wasm32")] {
-        pub(crate) use iota_interaction_ts::*;
-    } else {
-        pub(crate) use iota_interaction_rust::*;
-    }
-}
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) use iota_interaction_rust::*;
+#[cfg(target_arch = "wasm32")]
+pub(crate) use iota_interaction_ts::*;

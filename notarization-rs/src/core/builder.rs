@@ -1,9 +1,12 @@
+// Copyright 2020-2025 IOTA Stiftung
+// SPDX-License-Identifier: Apache-2.0
+
 use std::marker::PhantomData;
 
 use product_common::transaction::transaction_builder::TransactionBuilder;
 
-use super::notarization::CreateNotarization;
 use super::NotarizationMethod;
+use super::notarization::CreateNotarization;
 use crate::core::state::State;
 use crate::core::timelock::TimeLock;
 use crate::error::Error;
@@ -18,7 +21,7 @@ pub struct Dynamic;
 pub struct NotarizationBuilder<M> {
     pub state: Option<State>,
     pub immutable_description: Option<String>,
-    pub updateable_metadata: Option<String>,
+    pub updatable_metadata: Option<String>,
     pub delete_lock: Option<TimeLock>,
     pub transfer_lock: Option<TimeLock>,
     pub method: NotarizationMethod,
@@ -31,7 +34,7 @@ impl NotarizationBuilder<Locked> {
         Self {
             state: None,
             immutable_description: None,
-            updateable_metadata: None,
+            updatable_metadata: None,
             delete_lock: None,
             transfer_lock: None,
             method: NotarizationMethod::Locked,
@@ -59,7 +62,7 @@ impl NotarizationBuilder<Dynamic> {
         Self {
             state: None,
             immutable_description: None,
-            updateable_metadata: None,
+            updatable_metadata: None,
             delete_lock: None,
             transfer_lock: None,
             method: NotarizationMethod::Dynamic,
@@ -101,8 +104,8 @@ impl<M> NotarizationBuilder<M> {
     }
 
     /// Set metadata
-    pub fn with_updateable_metadata(mut self, metadata: String) -> Self {
-        self.updateable_metadata = Some(metadata);
+    pub fn with_updatable_metadata(mut self, metadata: String) -> Self {
+        self.updatable_metadata = Some(metadata);
         self
     }
 }

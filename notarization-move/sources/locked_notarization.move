@@ -18,7 +18,7 @@ public struct LockedNotarizationCreated has copy, drop {
 public fun new<D: store + drop + copy>(
     state: notarization::State<D>,
     immutable_description: Option<String>,
-    updateable_metadata: Option<String>,
+    updatable_metadata: Option<String>,
     delete_lock: TimeLock,
     clock: &Clock,
     ctx: &mut TxContext,
@@ -26,7 +26,7 @@ public fun new<D: store + drop + copy>(
     notarization::new_locked_notarization(
         state,
         immutable_description,
-        updateable_metadata,
+        updatable_metadata,
         delete_lock,
         clock,
         ctx,
@@ -37,7 +37,7 @@ public fun new<D: store + drop + copy>(
 public fun create<D: store + drop + copy>(
     state: notarization::State<D>,
     immutable_description: Option<String>,
-    updateable_metadata: Option<String>,
+    updatable_metadata: Option<String>,
     delete_lock: TimeLock,
     clock: &Clock,
     ctx: &mut TxContext,
@@ -45,7 +45,7 @@ public fun create<D: store + drop + copy>(
     let notarization = new(
         state,
         immutable_description,
-        updateable_metadata,
+        updatable_metadata,
         delete_lock,
         clock,
         ctx,

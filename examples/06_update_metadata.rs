@@ -21,7 +21,7 @@ async fn main() -> Result<()> {
             Some("State metadata".to_string()),
         ))
         .with_immutable_description("Document for metadata testing".to_string())
-        .with_updateable_metadata("Initial document metadata".to_string())
+        .with_updatable_metadata("Initial document metadata".to_string())
         .finish()
         .build_and_execute(&notarization_client)
         .await?
@@ -31,8 +31,8 @@ async fn main() -> Result<()> {
     println!("✅ Created dynamic notarization: {:?}", notarization_id);
 
     // Show initial metadata
-    let initial_updateable_metadata = notarization_client
-        .updateable_metadata(*notarization_id.object_id())
+    let initial_updatable_metadata = notarization_client
+        .updatable_metadata(*notarization_id.object_id())
         .await?;
 
     let initial_description = notarization_client.description(*notarization_id.object_id()).await?;
@@ -43,7 +43,7 @@ async fn main() -> Result<()> {
 
     println!("\n📄 Initial Metadata:");
     println!("Immutable description: {:?}", initial_description);
-    println!("Updateable metadata: {:?}", initial_updateable_metadata);
+    println!("Updatable metadata: {:?}", initial_updatable_metadata);
     println!("State version count: {}", initial_version_count);
 
     // Update metadata multiple times
@@ -70,7 +70,7 @@ async fn main() -> Result<()> {
 
         // Verify the update
         let current_metadata = notarization_client
-            .updateable_metadata(*notarization_id.object_id())
+            .updatable_metadata(*notarization_id.object_id())
             .await?;
 
         let version_count = notarization_client
@@ -115,12 +115,12 @@ async fn main() -> Result<()> {
     println!("Last state change: {}", last_state_change);
 
     // Final metadata state
-    let final_updateable_metadata = notarization_client
-        .updateable_metadata(*notarization_id.object_id())
+    let final_updatable_metadata = notarization_client
+        .updatable_metadata(*notarization_id.object_id())
         .await?;
 
     println!("\n📊 Final State:");
-    println!("Final updateable metadata: {:?}", final_updateable_metadata);
+    println!("Final updatable metadata: {:?}", final_updatable_metadata);
     println!(
         "State version count: {}",
         notarization_client
@@ -129,7 +129,7 @@ async fn main() -> Result<()> {
     );
 
     println!("\n🎯 Key Points:");
-    println!("✓ Updateable metadata can be changed on dynamic notarizations");
+    println!("✓ Updatable metadata can be changed on dynamic notarizations");
     println!("✓ Metadata updates don't affect state version count");
     println!("✓ Metadata can be set to None (cleared)");
     println!("✓ Immutable description cannot be changed after creation");

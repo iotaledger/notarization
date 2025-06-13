@@ -1,23 +1,27 @@
+// Copyright 2020-2025 IOTA Stiftung
+// SPDX-License-Identifier: Apache-2.0
+
 use std::ops::Deref;
 use std::sync::Arc;
 
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::crypto::PublicKey;
-use iota_interaction::{IotaClientBuilder, KeytoolSigner, IOTA_LOCAL_NETWORK_URL};
+use iota_interaction::{IOTA_LOCAL_NETWORK_URL, IotaClientBuilder, KeytoolSigner};
 use iota_interaction_rust::IotaClientAdapter;
 use notarization::client::full_client::NotarizationClient;
 use notarization::client::read_only::NotarizationClientReadOnly;
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use product_common::network_name::NetworkName;
 use product_common::test_utils::{
-    get_active_address, get_balance, init_product_package, request_funds, TEST_GAS_BUDGET,
+    TEST_GAS_BUDGET, get_active_address, get_balance, init_product_package, request_funds,
 };
 use tokio::sync::OnceCell;
 
-/// Directory containing the scripts used for testing.
-///
-/// Default value is the `scripts` directory relative to the current crate.
-pub const SCRIPT_FILE: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../scripts/publish_package.sh");
+/// Script file for publishing the package.
+pub const PUBLISH_SCRIPT_FILE: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../notarization-move/scripts/publish_package.sh"
+);
 
 static PACKAGE_ID: OnceCell<ObjectID> = OnceCell::const_new();
 
@@ -47,7 +51,7 @@ impl TestClient {
         let api_endpoint = std::env::var("API_ENDPOINT").unwrap_or_else(|_| IOTA_LOCAL_NETWORK_URL.to_string());
         let client = IotaClientBuilder::default().build(&api_endpoint).await?;
         let package_id = PACKAGE_ID
-            .get_or_try_init(|| init_product_package(&client, None, Some(SCRIPT_FILE)))
+            .get_or_try_init(|| init_product_package(&client, None, Some(PUBLISH_SCRIPT_FILE)))
             .await
             .copied()?;
 

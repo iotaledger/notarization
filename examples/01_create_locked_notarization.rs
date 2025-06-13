@@ -5,9 +5,9 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
 use examples::get_funded_client;
+use notarization::core::NotarizationMethod;
 use notarization::core::state::State;
 use notarization::core::timelock::TimeLock;
-use notarization::core::NotarizationMethod;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -30,7 +30,7 @@ async fn main() -> Result<()> {
             Some("Document metadata".to_string()),
         ))
         .with_immutable_description("Critical legal document".to_string())
-        .with_updateable_metadata("Initial document metadata".to_string())
+        .with_updatable_metadata("Initial document metadata".to_string())
         .with_delete_at(TimeLock::UnlockAt(unlock_at as u32))
         .finish()?
         .build_and_execute(&notarization_client)
@@ -41,7 +41,7 @@ async fn main() -> Result<()> {
     println!("Notarization ID: {:?}", locked_notarization.id);
     println!("Method: {:?}", locked_notarization.method);
     println!("Description: {:?}", locked_notarization.immutable_metadata.description);
-    println!("Updateable metadata: {:?}", locked_notarization.updateable_metadata);
+    println!("Updatable metadata: {:?}", locked_notarization.updatable_metadata);
     println!("State version count: {}", locked_notarization.state_version_count);
 
     // Verify the notarization method is locked

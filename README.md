@@ -1,13 +1,14 @@
-## About 
+## About
 
 IOTA Notarization is a flexible toolkit that offers multiple methods - such as
 Locked Notarization and Dynamic Notarization — to securely anchor, update, or
 store data on the IOTA ledger.
 
---------------------------------------------------------------------
->
-> :warning: This repository is currently work in process 
---------------------------------------------------------------------
+---
+
+> :warning: This repository is currently work in process
+
+---
 
 The current implementation provides Rust libraries and Move smart contracts.
 
@@ -16,8 +17,9 @@ which are published by the IOTA foundation as package here:
 [TODO add Notarization package link to latest version here]().
 
 The Rust libraries provide convenience functions to:
-* interact with the Notarization Move smart contracts
-* query state and meta data information from IOTA nodes and indexers
+
+- interact with the Notarization Move smart contracts
+- query state and meta data information from IOTA nodes and indexers
 
 ## Build
 
@@ -33,7 +35,7 @@ $
 $ iota move build
 ```
 
-## Run the test script *notarize.sh*
+## Run the test script _notarize.sh_
 
 The provided experimental test script can be used to publish the Notarization package
 and to experiment with the Notarization object, stored on the ledger.
@@ -41,13 +43,14 @@ and to experiment with the Notarization object, stored on the ledger.
 ### Prerequisites
 
 Before you can use the testscript, please make sure you already prepared the following
-* Prepare you local IOTA CLI environment as being described
+
+- Prepare you local IOTA CLI environment as being described
   [here](https://docs.iota.org/developer/getting-started/connect)
-* Activate the correct network environment (testnet, local,
+- Activate the correct network environment (testnet, local,
   devnet) by executing: `iota client switch --env <network-alias>`
-* Fetch some gas budget from the faucet
+- Fetch some gas budget from the faucet
   by executing: `iota client faucet`
-  
+
 ### Get Help
 
 To read the provided help of the test script execute the following in the
@@ -69,12 +72,11 @@ $ ./notarize.sh --help
     ./notarize.sh create-dynamic '[1,2,3]' 'Test data' 'My notarization'
     ./notarize.sh create-locked '[1,2,3]' 'Test data' 'Locked notarization' 3600 7200
     ./notarize.sh update 0x123...abc '[4,5,6]' 'Updated data'
-
 ```
 
 ### Publish the Move package
 
-You can use the already published package on *testnet* (if it's still available)
+You can use the already published package on _testnet_ (if it's still available)
 without any further configuration.
 
 The address of the used Notarization package is configured in the file
@@ -116,21 +118,21 @@ Please search for the `PackageID` in the `Published Objects` section of the
 of the `PackageID` into your system clipboard.
 
 In the file `scripts/notarize.sh`, please replace the
-preconfigured value for `PACKAGE_ADDRESS` with the copied value. 
+preconfigured value for `PACKAGE_ADDRESS` with the copied value.
 
 ### Creating Notarizations
 
 The test script provides two options to create Notarization objects for
-*Dynamic-* and *Locked-Notarization* methods:
+_Dynamic-_ and _Locked-Notarization_ methods:
 
-* `./notarize.sh create-dynamic ...`
-* `./notarize.sh create-locked ...`
+- `./notarize.sh create-dynamic ...`
+- `./notarize.sh create-locked ...`
 
 This is described in the following sections in more detail.
 
 #### Create a Dynamic Notarization
 
-To create a *Dynamic Notarization* execute the following in the
+To create a _Dynamic Notarization_ execute the following in the
 folder `scripts`:
 
 ```bash
@@ -158,6 +160,7 @@ Transaction Digest: 3DvXWMK4ZHfnFT...
 ...
 ...
 ```
+
 Please search the `ObjectID` in the `Created Objects` section of the
 `Object Changes` block written to the console, and copy/note it for later use.
 
@@ -170,7 +173,7 @@ https://explorer.rebased.iota.org/object/0x354744923ecae0957822be4941d02c4de6e29
 
 #### Create a Locked Notarization
 
-To create a *Locked Notarization* being update-locked until January 1st 2035 12am CET
+To create a _Locked Notarization_ being update-locked until January 1st 2035 12am CET
 and delete-locked ca. 3:20 minutes later,
 execute the following in the folder `scripts`:
 
@@ -200,10 +203,10 @@ Transaction Digest: DQL3dEjpeGzzaUS...
 ...
 ```
 
-As being described in the [Create a Dynamic Notarization](#create-a-dynamic-notarization) section 
+As being described in the [Create a Dynamic Notarization](#create-a-dynamic-notarization) section
 you can investigate the created object using the testnet
 explorer and the `ObjectID` logged to the console.
- 
+
 To investigate the above created object please use the following link:
 https://explorer.rebased.iota.org/object/0xa1f4688fb8688dc35674a3c3e0ec332be32dcee5abcf131f833587aa9e6ff7fa?network=testnet
 
@@ -211,12 +214,13 @@ https://explorer.rebased.iota.org/object/0xa1f4688fb8688dc35674a3c3e0ec332be32dc
 
 To update Notarizations the test script provides the `update` option.
 
-*Dynamic Notarizations* can be locked at any time while *Locked Notarizations*
-can only be updated if the *update_lock* has expired.
+_Dynamic Notarizations_ can be locked at any time while _Locked Notarizations_
+can only be updated if the _update_lock_ has expired.
 
 #### Update a Dynamic Notarization
 
 Please execute in the folder `scripts`:
+
 ```bash
 $ ./notarize.sh update 0x354744923ecae0957822be4941d02c4de6e29da7012aaba3eb3072547595f66f '[4,5,6]' 'Data updated first time'
 Updating notarization state...
@@ -258,6 +262,7 @@ Transaction Digest: GNQxcRavA2PZfzgE7cFhGfCmxWrs3VwAvfQd5xTedY7Q
 │  └── 
 ...
 ```
+
 To investigate the above created object please use the following link:
 https://explorer.rebased.iota.org/object/0x354744923ecae0957822be4941d02c4de6e29da7012aaba3eb3072547595f66f?network=testnet
 
@@ -276,8 +281,8 @@ Error executing transaction '4AK61oFuAzbyrthwxYJtQuDHPJXsCJFL6gX7ak3XUjgb': 3rd 
 
 As the example Notarization object, already published in the examples above, is
 update-locked until January 1st 2035 the update is not possible for a while,
-which is indicated by the smart contract code with an error: 
-`<PackageID>::notarization::update_state' at instruction 10 with code 0` 
+which is indicated by the smart contract code with an error:
+`<PackageID>::notarization::update_state' at instruction 10 with code 0`
 which can be translated to an
 `iota_notarization::notarization::EUpdateWhileLocked` error.
 
