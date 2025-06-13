@@ -6,6 +6,7 @@ use js_sys::Object;
 use wasm_bindgen::prelude::*;
 
 use notarization::core::builder::Locked;
+use notarization::core::builder::Dynamic;
 use notarization::core::notarization::{CreateNotarization, OnChainNotarization};
 
 use iota_interaction_ts::core_client::WasmCoreClientReadOnly;
@@ -15,6 +16,7 @@ use iota_interaction_ts::error::{Result, WasmResult};
 use product_common::transaction::transaction_builder::Transaction;
 use product_common::bindings::core_client::WasmManagedCoreClientReadOnly;
 use crate::wasm_notarization_builder::WasmNotarizationBuilderLocked;
+use crate::wasm_notarization_builder::WasmNotarizationBuilderDynamic;
 use crate::wasm_types::{WasmState};
 use crate::wasm_types::WasmImmutableMetadata;
 
@@ -42,6 +44,23 @@ impl WasmOnChainNotarization {
     pub fn method(&self) -> JsValue {
         serde_wasm_bindgen::to_value(&self.0.method).unwrap()
     }
+}
+
+async fn apply_with_events<M: Clone>(
+    notarization: CreateNotarization<M>,
+    wasm_effects: &WasmIotaTransactionBlockEffects,
+    wasm_events: &WasmIotaTransactionBlockEvents,
+    client: &WasmCoreClientReadOnly,
+) -> Result<WasmOnChainNotarization> {
+    let managed_client = WasmManagedCoreClientReadOnly::from_wasm(client)?;
+    let mut effects = wasm_effects.clone().into();
+    let mut events = wasm_events.clone().into();
+    let apply_result = notarization.apply_with_events(&mut effects, &mut events, &managed_client).await;
+    let rem_wasm_effects = WasmIotaTransactionBlockEffects::from(&effects);
+    Object::assign(wasm_effects, &rem_wasm_effects);
+    let rem_wasm_events = WasmIotaTransactionBlockEvents::from(&events);
+    Object::assign(wasm_events, &rem_wasm_events);
+    apply_result.wasm_result().map(WasmOnChainNotarization::new)
 }
 
 #[wasm_bindgen(js_name = CreateNotarizationLocked, inspectable)]
@@ -81,21 +100,48 @@ impl WasmCreateNotarizationLocked {
         wasm_events: &WasmIotaTransactionBlockEvents,
         client: &WasmCoreClientReadOnly,
     ) -> Result<WasmOnChainNotarization> {
-        let test = IotaTransactionBlockEvents::from(wasm_events.clone());
-
-        let managed_client = WasmManagedCoreClientReadOnly::from_wasm(client)?;
-        let mut effects = wasm_effects.clone().into();
-        let mut events = wasm_events.clone().into();
-        let apply_result = self.0.apply_with_events(&mut effects, &mut events, &managed_client).await;
-        let rem_wasm_effects = WasmIotaTransactionBlockEffects::from(&effects);
-        Object::assign(wasm_effects, &rem_wasm_effects);
-        let rem_wasm_events = WasmIotaTransactionBlockEvents::from(&events);
-        Object::assign(wasm_events, &rem_wasm_events);
-        apply_result.wasm_result().map(WasmOnChainNotarization::new)
+        apply_with_events(self.0, wasm_effects, wasm_events, client).await
     }
 }
 
-/*
-#[wasm_bindgen(js_name = CreateNotarizationDynamic)]
+#[wasm_bindgen(js_name = CreateNotarizationDynamic, inspectable)]
 pub struct WasmCreateNotarizationDynamic(pub(crate) CreateNotarization<Dynamic>);
-*/
+
+#[wasm_bindgen(js_class = CreateNotarizationDynamic)]
+impl WasmCreateNotarizationDynamic {
+    #[wasm_bindgen(constructor)]
+    pub fn new(builder: WasmNotarizationBuilderDynamic) -> Self {
+        WasmCreateNotarizationDynamic(CreateNotarization::<Dynamic>::new(builder.0))
+    }
+
+    #[wasm_bindgen(js_name = buildProgrammableTransaction)]
+    pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
+        let managed_client = WasmManagedCoreClientReadOnly::from_wasm(client)?;
+        let pt = self
+            .0
+            .build_programmable_transaction(&managed_client)
+            .await
+            .wasm_result()?;
+        bcs::to_bytes(&pt).wasm_result()
+    }
+
+    #[wasm_bindgen]
+    pub async fn apply(
+        self,
+        _wasm_effects: &WasmIotaTransactionBlockEffects,
+        _client: &WasmCoreClientReadOnly,
+    ) -> Result<WasmOnChainNotarization> {
+        unimplemented!("Function CreateNotarizationDynamic::apply() should never be called.");
+    }
+
+    #[wasm_bindgen(js_name = applyWithEvents)]
+    pub async fn apply_with_events(
+        self,
+        wasm_effects: &WasmIotaTransactionBlockEffects,
+        wasm_events: &WasmIotaTransactionBlockEvents,
+        client: &WasmCoreClientReadOnly,
+    ) -> Result<WasmOnChainNotarization> {
+        apply_with_events(self.0, wasm_effects, wasm_events, client).await
+    }
+}
+

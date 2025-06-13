@@ -18,7 +18,7 @@ export async function createLocked(): Promise<void> {
     let utf8Encode = new TextEncoder();
 
     // create a new Locked Notarization
-    console.log("Creating new locked notarization");
+    console.log("Building a simple locked notarization and publish it to the IOTA network");
     const { output: notarization } = await notarizationClient
         .createLocked()
         // Control the type of State data by choosing one of the `with...State` functions below.
@@ -32,7 +32,7 @@ export async function createLocked(): Promise<void> {
         .finish()
         .buildAndExecute(notarizationClient);
 
-    console.log("✅ Locked notarization created successfully!");
+    console.log("\n✅ Locked notarization created successfully!");
 
     // check some important properties of the received OnChainNotarization
     console.log("\n----------------------------------------------------");

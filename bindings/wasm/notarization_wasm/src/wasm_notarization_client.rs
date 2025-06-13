@@ -10,6 +10,7 @@ use iota_interaction_ts::error::{Result, WasmResult};
 use notarization::NotarizationClient;
 
 use crate::wasm_notarization_client_read_only::WasmNotarizationClientReadOnly;
+use crate::wasm_notarization_builder::WasmNotarizationBuilderDynamic;
 use crate::wasm_notarization_builder::WasmNotarizationBuilderLocked;
 
 use wasm_bindgen::prelude::*;
@@ -74,12 +75,10 @@ impl WasmNotarizationClient {
     WasmNotarizationClientReadOnly((*self.0).clone())
   }
 
-  /*
   #[wasm_bindgen(js_name = createDynamic)]
   pub fn create_dynamic(&self) -> WasmNotarizationBuilderDynamic {
-    WasmNotarizationBuilderDynamic((*self.0).create_dynamic_notarization())
+    WasmNotarizationBuilderDynamic(self.0.create_dynamic_notarization())
   }
-  */
 
   #[wasm_bindgen(js_name = createLocked)]
   pub fn create_locked(&self) -> WasmNotarizationBuilderLocked {
