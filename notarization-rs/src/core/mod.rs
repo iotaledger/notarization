@@ -9,15 +9,10 @@
 use serde::{Deserialize, Serialize};
 
 pub mod builder;
-pub mod destroy;
-pub mod event;
-pub mod metadata;
 pub mod move_utils;
-pub mod notarization;
 pub mod operations;
-pub mod state;
-pub mod timelock;
-pub mod transfer;
+pub mod transactions;
+pub mod types;
 
 /// Indicates the used Notarization method.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

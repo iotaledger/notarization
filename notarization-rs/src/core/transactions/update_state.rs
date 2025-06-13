@@ -4,28 +4,56 @@
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::IotaTransactionBlockEffects;
-use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::types::transaction::ProgrammableTransaction;
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;
 
-use super::operations::{NotarizationImpl, NotarizationOperations};
+use super::super::operations::{NotarizationImpl, NotarizationOperations};
+use super::super::types::State;
 use crate::error::Error;
 use crate::package::notarization_package_id;
 
-/// A transaction that transfers ownership of a dynamic notarization.
-pub struct TransferNotarization {
-    recipient: IotaAddress,
+/// A transaction that updates the state of an existing notarization.
+///
+/// This transaction can only be used with dynamic notarizations, as locked
+/// notarizations are immutable after creation.
+///
+/// ## Example
+///
+/// ```rust,no_run
+/// # use notarization::core::transactions::UpdateState;
+/// # use notarization::core::types::State;
+/// # use iota_interaction::types::base_types::ObjectID;
+/// # use std::str::FromStr;
+/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+/// let new_state = State::from_string(
+///     "Updated content v2".to_string(),
+///     Some("Second revision".to_string()),
+/// );
+///
+/// let object_id = ObjectID::from_str("0x123...")?;
+/// let update_tx = UpdateState::new(new_state, object_id);
+/// # Ok(())
+/// # }
+/// ```
+pub struct UpdateState {
+    state: State,
     object_id: ObjectID,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
-impl TransferNotarization {
-    /// Creates a new transfer transaction.
-    pub fn new(recipient: IotaAddress, object_id: ObjectID) -> Self {
+impl UpdateState {
+    /// Creates a new state update transaction.
+    ///
+    /// ## Parameters
+    ///
+    /// - `state`: The new state to set
+    /// - `object_id`: The ID of the notarization to update
+    pub fn new(state: State, object_id: ObjectID) -> Self {
         Self {
-            recipient,
+            state,
             object_id,
             cached_ptb: OnceCell::new(),
         }
@@ -36,14 +64,15 @@ impl TransferNotarization {
         C: CoreClientReadOnly + OptionalSync,
     {
         let package_id = notarization_package_id(client).await?;
+        let new_state = self.state.clone();
 
-        NotarizationImpl::transfer_notarization(package_id, self.object_id, self.recipient, client).await
+        NotarizationImpl::update_state(client, package_id, self.object_id, new_state).await
     }
 }
 
 #[cfg_attr(not(feature = "send-sync"), async_trait(?Send))]
 #[cfg_attr(feature = "send-sync", async_trait)]
-impl Transaction for TransferNotarization {
+impl Transaction for UpdateState {
     type Error = Error;
 
     type Output = ();

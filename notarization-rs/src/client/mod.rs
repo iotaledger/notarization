@@ -9,3 +9,6 @@
 
 pub mod full_client;
 pub mod read_only;
+
+pub use full_client::*;
+pub use read_only::*;

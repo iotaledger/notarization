@@ -10,7 +10,7 @@ use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;
 
-use super::operations::{NotarizationImpl, NotarizationOperations};
+use super::super::operations::{NotarizationImpl, NotarizationOperations};
 use crate::error::Error;
 use crate::package::notarization_package_id;
 

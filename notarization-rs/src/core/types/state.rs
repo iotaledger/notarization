@@ -23,44 +23,34 @@
 //! ### Creating State from Text
 //!
 //! ```rust
-//! use notarization::State;
+//! use notarization::core::types::State;
 //!
 //! let state = State::from_string(
 //!     "Contract Agreement v2.1".to_string(),
-//!     Some("Legal document".to_string())
+//!     Some("Legal document".to_string()),
 //! );
 //! ```
 //!
 //! ### Creating State from Bytes
 //!
 //! ```rust
-//! use notarization::State;
+//! use notarization::core::types::State;
 //!
 //! let pdf_content = vec![0x25, 0x50, 0x44, 0x46]; // PDF header
-//! let state = State::from_bytes(
-//!     pdf_content,
-//!     Some("Signed contract PDF".to_string())
-//! );
+//! let state = State::from_bytes(pdf_content, Some("Signed contract PDF".to_string()));
 //! ```
 
 use std::str::FromStr;
 
-use async_trait::async_trait;
-use iota_interaction::rpc_types::IotaTransactionBlockEffects;
+use iota_interaction::ident_str;
 use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use iota_interaction::types::transaction::{Argument, ProgrammableTransaction};
+use iota_interaction::types::transaction::Argument;
 use iota_interaction::types::{MOVE_STDLIB_PACKAGE_ID, TypeTag};
-use iota_interaction::{OptionalSync, ident_str};
-use product_common::core_client::CoreClientReadOnly;
-use product_common::transaction::transaction_builder::Transaction;
 use serde::{Deserialize, Deserializer, Serialize};
-use tokio::sync::OnceCell;
 
-use super::move_utils;
-use super::operations::{NotarizationImpl, NotarizationOperations};
+use super::super::move_utils;
 use crate::error::Error;
-use crate::package::notarization_package_id;
 
 /// Represents the state of a notarization.
 ///
@@ -131,8 +121,8 @@ impl Data {
     /// ## Example
     ///
     /// ```rust
-    /// # use notarization::{State, Data};
-    /// # use notarization::Error;
+    /// # use notarization::core::types::{State, Data};
+    /// # use notarization::error::Error;
     /// let state = State::from_bytes(vec![1, 2, 3], None);
     /// let bytes = state.data.as_bytes()?;
     /// assert_eq!(bytes, vec![1, 2, 3]);
@@ -154,8 +144,8 @@ impl Data {
     /// ## Example
     ///
     /// ```rust
-    /// # use notarization::{State, Data};
-    /// # use notarization::Error;
+    /// # use notarization::core::types::{State, Data};
+    /// # use notarization::error::Error;
     /// let state = State::from_string("Hello".to_string(), None);
     /// let text = state.data.as_text()?;
     /// assert_eq!(text, "Hello");
@@ -192,14 +182,11 @@ impl State {
     /// ## Example
     ///
     /// ```rust
-    /// use notarization::State;
+    /// use notarization::core::types::State;
     ///
     /// // Store a file's content
     /// let file_bytes = vec![0xFF, 0xD8, 0xFF];
-    /// let state = State::from_bytes(
-    ///     file_bytes,
-    ///     Some("Profile photo JPEG".to_string())
-    /// );
+    /// let state = State::from_bytes(file_bytes, Some("Profile photo JPEG".to_string()));
     /// ```
     pub fn from_bytes(data: Vec<u8>, metadata: Option<String>) -> Self {
         Self {
@@ -220,13 +207,13 @@ impl State {
     /// ## Example
     ///
     /// ```rust
-    /// use notarization::State;
+    /// use notarization::core::types::State;
     ///
     /// // Store a JSON configuration
     /// let config = r#"{"version": "1.0", "enabled": true}"#;
     /// let state = State::from_string(
     ///     config.to_string(),
-    ///     Some("Service configuration".to_string())
+    ///     Some("Service configuration".to_string()),
     /// );
     /// ```
     pub fn from_string(data: String, metadata: Option<String>) -> Self {
@@ -239,7 +226,7 @@ impl State {
     /// Creates a new `Argument` from the `State`.
     ///
     /// To be used when creating a new `Notarization` object on the ledger.
-    pub(super) fn into_ptb(
+    pub(in crate::core) fn into_ptb(
         self,
         ptb: &mut ProgrammableTransactionBuilder,
         package_id: ObjectID,
@@ -287,80 +274,4 @@ fn state_from_string(
         vec![],
         vec![data, metadata],
     ))
-}
-
-/// A transaction that updates the state of an existing notarization.
-///
-/// This transaction can only be used with dynamic notarizations, as locked
-/// notarizations are immutable after creation.
-///
-/// ## Example
-///
-/// ```rust,no_run
-/// # use notarization::{UpdateState, State};
-/// # use iota_interaction::types::base_types::ObjectID;
-/// # use std::str::FromStr;
-/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-/// let new_state = State::from_string(
-///     "Updated content v2".to_string(),
-///     Some("Second revision".to_string())
-/// );
-///
-/// let object_id = ObjectID::from_str("0x123...")?;
-/// let update_tx = UpdateState::new(new_state, object_id);
-/// # Ok(())
-/// # }
-/// ```
-pub struct UpdateState {
-    state: State,
-    object_id: ObjectID,
-    cached_ptb: OnceCell<ProgrammableTransaction>,
-}
-
-impl UpdateState {
-    /// Creates a new state update transaction.
-    ///
-    /// ## Parameters
-    ///
-    /// - `state`: The new state to set
-    /// - `object_id`: The ID of the notarization to update
-    pub fn new(state: State, object_id: ObjectID) -> Self {
-        Self {
-            state,
-            object_id,
-            cached_ptb: OnceCell::new(),
-        }
-    }
-
-    async fn make_ptb<C>(&self, client: &C) -> Result<ProgrammableTransaction, Error>
-    where
-        C: CoreClientReadOnly + OptionalSync,
-    {
-        let package_id = notarization_package_id(client).await?;
-        let new_state = self.state.clone();
-
-        NotarizationImpl::update_state(client, package_id, self.object_id, new_state).await
-    }
-}
-
-#[cfg_attr(not(feature = "send-sync"), async_trait(?Send))]
-#[cfg_attr(feature = "send-sync", async_trait)]
-impl Transaction for UpdateState {
-    type Error = Error;
-
-    type Output = ();
-
-    async fn build_programmable_transaction<C>(&self, client: &C) -> Result<ProgrammableTransaction, Self::Error>
-    where
-        C: CoreClientReadOnly + OptionalSync,
-    {
-        self.cached_ptb.get_or_try_init(|| self.make_ptb(client)).await.cloned()
-    }
-
-    async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
-    where
-        C: CoreClientReadOnly + OptionalSync,
-    {
-        Ok(())
-    }
 }

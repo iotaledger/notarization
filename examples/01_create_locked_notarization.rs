@@ -6,8 +6,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use anyhow::Result;
 use examples::get_funded_client;
 use notarization::core::NotarizationMethod;
-use notarization::core::state::State;
-use notarization::core::timelock::TimeLock;
+use notarization::core::types::{State, TimeLock};
 
 #[tokio::main]
 async fn main() -> Result<()> {
