@@ -170,8 +170,8 @@ pub trait NotarizationOperations {
     {
         NotarizationImpl::build_transaction(client, package_id, object_id, "update_state", |ptb| {
             Ok(vec![
-                move_utils::get_clock_ref(ptb),
                 new_state.into_ptb(ptb, package_id)?,
+                move_utils::get_clock_ref(ptb),
             ])
         })
         .await
@@ -200,8 +200,8 @@ pub trait NotarizationOperations {
     {
         NotarizationImpl::build_transaction(client, package_id, object_id, "update_metadata", |ptb| {
             Ok(vec![
-                move_utils::get_clock_ref(ptb),
                 move_utils::new_move_option_string(new_metadata, ptb)?,
+                move_utils::get_clock_ref(ptb),
             ])
         })
         .await
@@ -234,8 +234,8 @@ pub trait NotarizationOperations {
         .await
     }
 
-    /// Build a transaction that checks if the notarization is locked for deletion
-    async fn is_destroy_locked<C>(
+    /// Build a transaction that checks if the notarization is allowed to be destroyed
+    async fn is_destroy_allowed<C>(
         package_id: ObjectID,
         object_id: ObjectID,
         client: &C,
@@ -243,7 +243,7 @@ pub trait NotarizationOperations {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        NotarizationImpl::build_transaction(client, package_id, object_id, "is_destroy_locked", |ptb| {
+        NotarizationImpl::build_transaction(client, package_id, object_id, "is_destroy_allowed", |ptb| {
             Ok(vec![move_utils::get_clock_ref(ptb)])
         })
         .await
@@ -259,21 +259,6 @@ pub trait NotarizationOperations {
         C: CoreClientReadOnly + OptionalSync,
     {
         NotarizationImpl::build_transaction(client, package_id, object_id, "is_transfer_locked", |ptb| {
-            Ok(vec![move_utils::get_clock_ref(ptb)])
-        })
-        .await
-    }
-
-    /// Build a transaction that checks if the notarization can be destroyed
-    async fn is_destroy_allowed<C>(
-        package_id: ObjectID,
-        object_id: ObjectID,
-        client: &C,
-    ) -> Result<ProgrammableTransaction, Error>
-    where
-        C: CoreClientReadOnly + OptionalSync,
-    {
-        NotarizationImpl::build_transaction(client, package_id, object_id, "is_destroy_allowed", |ptb| {
             Ok(vec![move_utils::get_clock_ref(ptb)])
         })
         .await

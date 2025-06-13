@@ -10,7 +10,7 @@ use iota_interaction::types::transaction::{Argument, ObjectArg};
 use iota_interaction::types::{
     TypeTag, IOTA_CLOCK_OBJECT_ID, IOTA_CLOCK_OBJECT_SHARED_VERSION, MOVE_STDLIB_PACKAGE_ID,
 };
-use iota_interaction::{ident_str, IotaClientTrait, MoveType, OptionalSync};
+use iota_interaction::{ident_str, IotaClientTrait, OptionalSync};
 use product_common::core_client::CoreClientReadOnly;
 use serde::Serialize;
 
@@ -24,36 +24,6 @@ pub(crate) fn get_clock_ref(ptb: &mut Ptb) -> Argument {
         mutable: false,
     })
     .expect("network has a singleton clock instantiated")
-}
-
-pub(crate) fn option_to_move<T: MoveType + Serialize>(
-    option: Option<T>,
-    ptb: &mut Ptb,
-    package: ObjectID,
-) -> Result<Argument, Error> {
-    let arg = if let Some(t) = option {
-        let t = ptb
-            .pure(t)
-            .map_err(|err| Error::InvalidArgument(format!("could not serialize value; {err}")))?;
-
-        ptb.programmable_move_call(
-            MOVE_STDLIB_PACKAGE_ID,
-            STD_OPTION_MODULE_NAME.into(),
-            ident_str!("some").into(),
-            vec![T::move_type(package)],
-            vec![t],
-        )
-    } else {
-        ptb.programmable_move_call(
-            MOVE_STDLIB_PACKAGE_ID,
-            STD_OPTION_MODULE_NAME.into(),
-            ident_str!("none").into(),
-            vec![T::move_type(package)],
-            vec![],
-        )
-    };
-
-    Ok(arg)
 }
 
 pub(crate) fn option_to_move_with_tag(
