@@ -45,7 +45,7 @@ export async function createLocked(): Promise<void> {
     console.log("Immutable description: ", notarization.immutableMetadata.description);
     console.log("Immutable locking metadata: ", notarization.immutableMetadata.locking);
     console.log("Updateable metadata: ", notarization.updateableMetadata);
-    console.log("State version count: ", notarization.description);
+    console.log("State version count: ", notarization.stateVersionCount);
 
     // This is how the complete OnChainNotarization looks like
     console.log("\n----------------------------------------------------");
