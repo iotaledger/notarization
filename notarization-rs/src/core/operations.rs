@@ -8,7 +8,7 @@ use iota_interaction::types::Identifier;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use iota_interaction::types::transaction::{Argument, ObjectArg, ProgrammableTransaction};
-use iota_interaction::{MoveType, OptionalSync, ident_str};
+use iota_interaction::{OptionalSync, ident_str};
 use product_common::core_client::CoreClientReadOnly;
 
 use super::move_utils;
@@ -121,7 +121,7 @@ pub(crate) trait NotarizationOperations {
         state: State,
         immutable_description: Option<String>,
         updatable_metadata: Option<String>,
-        transfer_lock: Option<TimeLock>,
+        transfer_lock: TimeLock,
     ) -> Result<ProgrammableTransaction, Error> {
         let mut ptb = ProgrammableTransactionBuilder::new();
 
@@ -130,11 +130,7 @@ pub(crate) trait NotarizationOperations {
         let state_arg = state.into_ptb(&mut ptb, package_id)?;
         let immutable_description = move_utils::ptb_pure(&mut ptb, "immutable_description", immutable_description)?;
         let updatable_metadata = move_utils::ptb_pure(&mut ptb, "updatable_metadata", updatable_metadata)?;
-        let transfer_lock = transfer_lock
-            .map(|lock| lock.to_ptb(&mut ptb, package_id))
-            .transpose()?;
-        let transfer_lock =
-            move_utils::option_to_move_with_tag(transfer_lock, TimeLock::move_type(package_id), &mut ptb)?;
+        let transfer_lock = transfer_lock.to_ptb(&mut ptb, package_id)?;
 
         ptb.programmable_move_call(
             package_id,
