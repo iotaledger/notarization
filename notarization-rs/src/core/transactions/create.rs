@@ -110,7 +110,7 @@ impl<M: Clone> CreateNotarization<M> {
                     state,
                     immutable_description,
                     updatable_metadata,
-                    transfer_lock,
+                    transfer_lock.unwrap_or(TimeLock::None),
                 )
             }
             NotarizationMethod::Locked => {
@@ -120,14 +120,10 @@ impl<M: Clone> CreateNotarization<M> {
                     ));
                 }
 
-                let delete_lock = delete_lock.ok_or_else(|| {
-                    Error::InvalidArgument("Delete lock is required for locked notarizations".to_string())
-                })?;
-
                 // Construct the locking metadata for locked notarization
                 let locking = Some(LockMetadata {
                     update_lock: TimeLock::UntilDestroyed,
-                    delete_lock: delete_lock.clone(),
+                    delete_lock: delete_lock.clone().unwrap_or(TimeLock::None),
                     transfer_lock: TimeLock::UntilDestroyed,
                 });
 
@@ -143,7 +139,7 @@ impl<M: Clone> CreateNotarization<M> {
                     state,
                     immutable_description,
                     updatable_metadata,
-                    delete_lock,
+                    delete_lock.unwrap_or(TimeLock::None),
                 )
             }
         }

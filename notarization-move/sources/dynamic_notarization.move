@@ -31,7 +31,7 @@ public fun new<D: store + drop + copy>(
     state: notarization::State<D>,
     immutable_description: Option<String>,
     updatable_metadata: Option<String>,
-    transfer_lock: Option<TimeLock>,
+    transfer_lock: TimeLock,
     clock: &Clock,
     ctx: &mut TxContext,
 ): notarization::Notarization<D> {
@@ -50,7 +50,7 @@ public fun create<D: store + drop + copy>(
     state: notarization::State<D>,
     immutable_description: Option<String>,
     updatable_metadata: Option<String>,
-    transfer_lock: Option<TimeLock>,
+    transfer_lock: TimeLock,
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
