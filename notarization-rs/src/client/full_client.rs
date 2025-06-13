@@ -1,6 +1,79 @@
 // Copyright 2020-2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! # Notarization Client
+//!
+//! The full client provides read-write access to notarizations on the IOTA blockchain.
+//!
+//! ## Overview
+//!
+//! This client extends [`NotarizationClientReadOnly`] with transaction capabilities,
+//! allowing you to create, update, transfer, and destroy notarizations.
+//!
+//! ## Transaction Flow
+//!
+//! All transaction methods return a [`TransactionBuilder`] that follows this pattern:
+//!
+//! ```rust,no_run
+//! # use notarization::{NotarizationClient, State};
+//! # use iota_interaction::types::base_types::ObjectID;
+//! # async fn example(client: &NotarizationClient<impl secret_storage::Signer<iota_interaction::IotaKeySignature>>) -> Result<(), Box<dyn std::error::Error>> {
+//! # let object_id = ObjectID::ZERO;
+//! // 1. Create the transaction
+//! let result = client
+//!     .update_state(State::from_string("New data".to_string(), None), object_id)
+//!     // 2. Configure transaction parameters (all optional)
+//!     .with_gas_budget(1_000_000)     // Set custom gas budget
+//!     .with_sender(sender_address)     // Override sender address
+//!     .with_gas_payment(vec![coin])   // Use specific coins for gas
+//!     // 3. Build and execute
+//!     .build_and_execute(&client)      // Signs and submits transaction
+//!     .await?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Available Configuration Methods
+//!
+//! The [`TransactionBuilder`] provides these configuration methods:
+//! - `with_gas_budget(amount)` - Set gas budget (default: estimated)
+//! - `with_gas_payment(coins)` - Use specific coins for gas payment
+//! - `with_gas_owner(address)` - Set gas payer (default: sender)
+//! - `with_gas_price(price)` - Override gas price (default: network price)
+//! - `with_sender(address)` - Override transaction sender
+//! - `with_sponsor(callback)` - Have another party pay for gas
+//!
+//! ## Example: Complete Notarization Workflow
+//!
+//! ```rust,no_run
+//! # use notarization::{NotarizationClient, State, TimeLock};
+//! # async fn example(client: &NotarizationClient<impl secret_storage::Signer<iota_interaction::IotaKeySignature>>) -> Result<(), Box<dyn std::error::Error>> {
+//! // 1. Create a dynamic notarization
+//! let create_result = client
+//!     .create_dynamic_notarization()
+//!     .with_string_state("Initial data", Some("Version 1"))
+//!     .with_immutable_description("Status Monitor")
+//!     .finish()
+//!     .build_and_execute(&client)
+//!     .await?;
+//!
+//! let object_id = create_result.output;
+//!
+//! // 2. Update the state
+//! client
+//!     .update_state(State::from_string("Updated data", Some("Version 2")), object_id)
+//!     .build_and_execute(&client)
+//!     .await?;
+//!
+//! // 3. Transfer to another owner
+//! client
+//!     .transfer_notarization(object_id, recipient_address)
+//!     .build_and_execute(&client)
+//!     .await?;
+//! # Ok(())
+//! # }
+//! ```
+
 use std::ops::Deref;
 
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
@@ -20,7 +93,14 @@ use crate::core::state::{State, UpdateState};
 use crate::core::transfer::TransferNotarization;
 use crate::error::Error;
 
-/// A client for interacting with the IOTA network.
+/// A client for creating and managing notarizations on the IOTA blockchain.
+///
+/// This client combines read-only capabilities with transaction signing,
+/// enabling full interaction with notarizations.
+///
+/// ## Type Parameter
+///
+/// - `S`: The signer type that implements [`Signer<IotaKeySignature>`]
 #[derive(Clone)]
 pub struct NotarizationClient<S> {
     /// [`NotarizationClientReadOnly`] instance, used for read-only operations.
@@ -42,7 +122,28 @@ impl<S> NotarizationClient<S>
 where
     S: Signer<IotaKeySignature>,
 {
-    /// Create a new [`NotarizationClient`].
+    /// Creates a new client with signing capabilities.
+    ///
+    /// ## Parameters
+    ///
+    /// - `client`: A read-only client for blockchain interaction
+    /// - `signer`: A signer for transaction authorization
+    ///
+    /// ## Errors
+    ///
+    /// Returns an error if the signer's public key cannot be retrieved.
+    ///
+    /// ## Example
+    ///
+    /// ```rust,no_run
+    /// # use notarization::{NotarizationClient, NotarizationClientReadOnly};
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let read_client = NotarizationClientReadOnly::new(adapter, package_id)?;
+    /// let signer = get_signer()?; // Your signer implementation
+    /// let client = NotarizationClient::new(read_client, signer).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn new(client: NotarizationClientReadOnly, signer: S) -> Result<Self, Error> {
         let public_key = signer
             .public_key()
@@ -60,47 +161,48 @@ where
 impl<S> NotarizationClient<S> {
     /// Creates a builder for a locked notarization.
     ///
-    /// A locked notarization is immutable once created and requires a delete lock
-    /// to be specified. This type of notarization cannot have transfer locks and
-    /// provides the highest level of data integrity guarantees.
+    /// ## Example
     ///
-    /// # Returns
-    ///
-    /// A [`NotarizationBuilder<Locked>`] that can be used to configure and create
-    /// a locked notarization.
-    ///
-    /// # Example
-    ///
-    /// ```rust,ignore
-    /// let builder = client.create_locked_notarization()
-    ///     .with_state(my_state)
-    ///     .with_description("Important document")
-    ///     .with_delete_lock(delete_lock);
+    /// ```rust,no_run
+    /// # use notarization::{NotarizationClient, TimeLock};
+    /// # async fn example(client: &NotarizationClient<impl secret_storage::Signer<iota_interaction::IotaKeySignature>>) -> Result<(), Box<dyn std::error::Error>> {
+    /// let result = client
+    ///     .create_locked_notarization()
+    ///     .with_string_state("Contract v1.0", Some("PDF hash"))
+    ///     .with_immutable_description("Employment Agreement")
+    ///     .with_delete_at(TimeLock::UnlockAt(1735689600))
+    ///     .finish()?
+    ///     .build_and_execute(&client)
+    ///     .await?;
+    /// # Ok(())
+    /// # }
     /// ```
+    ///
+    /// See [`NotarizationBuilder<Locked>`] for configuration options.
     pub fn create_locked_notarization(&self) -> NotarizationBuilder<Locked> {
         NotarizationBuilder::locked()
     }
 
     /// Creates a builder for a dynamic notarization.
     ///
-    /// A dynamic notarization allows for updates to its metadata and state after
-    /// creation. It supports optional transfer locks to control ownership
-    /// changes but cannot have delete locks. This provides flexibility for
-    /// evolving data while maintaining notarization integrity.
+    /// ## Example
     ///
-    /// # Returns
-    ///
-    /// A [`NotarizationBuilder<Dynamic>`] that can be used to configure and
-    /// create a dynamic notarization.
-    ///
-    /// # Example
-    ///
-    /// ```rust,ignore
-    /// let builder = client.create_dynamic_notarization()
-    ///     .with_state(my_state)
-    ///     .with_description("Evolving document")
-    ///     .with_transfer_lock(transfer_lock);
+    /// ```rust,no_run
+    /// # use notarization::{NotarizationClient, TimeLock};
+    /// # async fn example(client: &NotarizationClient<impl secret_storage::Signer<iota_interaction::IotaKeySignature>>) -> Result<(), Box<dyn std::error::Error>> {
+    /// let result = client
+    ///     .create_dynamic_notarization()
+    ///     .with_string_state("Status: Active", None)
+    ///     .with_immutable_description("Service Monitor")
+    ///     .with_transfer_lock(TimeLock::None)
+    ///     .finish()
+    ///     .build_and_execute(&client)
+    ///     .await?;
+    /// # Ok(())
+    /// # }
     /// ```
+    ///
+    /// See [`NotarizationBuilder<Dynamic>`] for configuration options.
     pub fn create_dynamic_notarization(&self) -> NotarizationBuilder<Dynamic> {
         NotarizationBuilder::dynamic()
     }
@@ -110,22 +212,122 @@ impl<S> NotarizationClient<S>
 where
     S: Signer<IotaKeySignature> + OptionalSync,
 {
-    /// Creates a transaction that updates the state of a notarization
+    /// Updates the state of a dynamic notarization.
+    ///
+    /// This increments the version counter and updates the last modified timestamp.
+    /// Only works on dynamic notarizations.
+    ///
+    /// ## Parameters
+    ///
+    /// - `state`: The new state to set
+    /// - `object_id`: The ID of the notarization to update
+    ///
+    /// ## Example
+    ///
+    /// ```rust,no_run
+    /// # use notarization::{NotarizationClient, State};
+    /// # use iota_interaction::types::base_types::ObjectID;
+    /// # async fn example(client: &NotarizationClient<impl secret_storage::Signer<iota_interaction::IotaKeySignature>>, object_id: ObjectID) -> Result<(), Box<dyn std::error::Error>> {
+    /// client
+    ///     .update_state(
+    ///         State::from_string("Status: Completed", Some("Final version")),
+    ///         object_id
+    ///     )
+    ///     .build_and_execute(&client)
+    ///     .await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// Returns a [`TransactionBuilder`]. See [module docs](self) for transaction flow.
     pub fn update_state(&self, state: State, object_id: ObjectID) -> TransactionBuilder<UpdateState> {
         TransactionBuilder::new(UpdateState::new(state, object_id))
     }
 
-    /// Creates a transaction that destroys a notarization
+    /// Destroys a notarization permanently.
+    ///
+    /// The notarization must not have active time locks preventing deletion.
+    ///
+    /// ## Parameters
+    ///
+    /// - `object_id`: The ID of the notarization to destroy
+    ///
+    /// ## Example
+    ///
+    /// ```rust,no_run
+    /// # use notarization::NotarizationClient;
+    /// # use iota_interaction::types::base_types::ObjectID;
+    /// # async fn example(client: &NotarizationClient<impl secret_storage::Signer<iota_interaction::IotaKeySignature>>, object_id: ObjectID) -> Result<(), Box<dyn std::error::Error>> {
+    /// client
+    ///     .destroy(object_id)
+    ///     .build_and_execute(&client)
+    ///     .await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// Returns a [`TransactionBuilder`]. See [module docs](self) for transaction flow.
     pub fn destroy(&self, object_id: ObjectID) -> TransactionBuilder<DestroyNotarization> {
         TransactionBuilder::new(DestroyNotarization::new(object_id))
     }
 
-    /// Creates a transaction that updates the metadata of a notarization
+    /// Updates the metadata of a dynamic notarization.
+    ///
+    /// Only the updatable metadata can be changed; the immutable description
+    /// remains fixed. Only works on dynamic notarizations.
+    ///
+    /// ## Parameters
+    ///
+    /// - `metadata`: The new metadata (or `None` to clear)
+    /// - `object_id`: The ID of the notarization to update
+    ///
+    /// ## Example
+    ///
+    /// ```rust,no_run
+    /// # use notarization::NotarizationClient;
+    /// # use iota_interaction::types::base_types::ObjectID;
+    /// # async fn example(client: &NotarizationClient<impl secret_storage::Signer<iota_interaction::IotaKeySignature>>, object_id: ObjectID) -> Result<(), Box<dyn std::error::Error>> {
+    /// client
+    ///     .update_metadata(
+    ///         Some("Reviewed by legal team".to_string()),
+    ///         object_id
+    ///     )
+    ///     .build_and_execute(&client)
+    ///     .await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// Returns a [`TransactionBuilder`]. See [module docs](self) for transaction flow.
     pub fn update_metadata(&self, metadata: Option<String>, object_id: ObjectID) -> TransactionBuilder<UpdateMetadata> {
         TransactionBuilder::new(UpdateMetadata::new(metadata, object_id))
     }
 
-    /// Creates a transaction that transfers a notarization to a new owner
+    /// Transfers ownership of a dynamic notarization.
+    ///
+    /// The notarization must not have active transfer locks. Only works on
+    /// dynamic notarizations.
+    ///
+    /// ## Parameters
+    ///
+    /// - `object_id`: The ID of the notarization to transfer
+    /// - `recipient`: The address of the new owner
+    ///
+    /// ## Example
+    ///
+    /// ```rust,no_run
+    /// # use notarization::NotarizationClient;
+    /// # use iota_interaction::types::base_types::{ObjectID, IotaAddress};
+    /// # async fn example(client: &NotarizationClient<impl secret_storage::Signer<iota_interaction::IotaKeySignature>>, object_id: ObjectID, recipient: IotaAddress) -> Result<(), Box<dyn std::error::Error>> {
+    /// client
+    ///     .transfer_notarization(object_id, recipient)
+    ///     .build_and_execute(&client)
+    ///     .await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// Returns a [`TransactionBuilder`]. See [module docs](self) for transaction flow.
     pub fn transfer_notarization(
         &self,
         object_id: ObjectID,

@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 use super::move_utils;
 use crate::error::Error;
 
+/// Metadata containing time-based access restrictions for a notarization.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct LockMetadata {
     pub update_lock: TimeLock,

@@ -14,6 +14,7 @@ use super::operations::{NotarizationImpl, NotarizationOperations};
 use crate::error::Error;
 use crate::package::notarization_package_id;
 
+/// A transaction that transfers ownership of a dynamic notarization.
 pub struct TransferNotarization {
     recipient: IotaAddress,
     object_id: ObjectID,
@@ -21,6 +22,7 @@ pub struct TransferNotarization {
 }
 
 impl TransferNotarization {
+    /// Creates a new transfer transaction.
     pub fn new(recipient: IotaAddress, object_id: ObjectID) -> Self {
         Self {
             recipient,

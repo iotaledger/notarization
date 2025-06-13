@@ -27,6 +27,7 @@ pub struct ImmutableMetadata {
     pub locking: Option<LockMetadata>,
 }
 
+/// A transaction that updates the metadata of a notarization.
 pub struct UpdateMetadata {
     metadata: Option<String>,
     object_id: ObjectID,
@@ -34,6 +35,7 @@ pub struct UpdateMetadata {
 }
 
 impl UpdateMetadata {
+    /// Creates a new transaction for updating the metadata of a notarization.
     pub fn new(metadata: Option<String>, object_id: ObjectID) -> Self {
         Self {
             metadata,
@@ -42,6 +44,8 @@ impl UpdateMetadata {
         }
     }
 
+    /// Builds the programmable transaction for updating the metadata of a
+    /// notarization.
     async fn make_ptb<C>(&self, client: &C) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
