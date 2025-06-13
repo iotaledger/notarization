@@ -186,14 +186,16 @@ public(package) fun new_dynamic_notarization<D: store + drop + copy>(
     state: State<D>,
     immutable_description: Option<String>,
     updatable_metadata: Option<String>,
-    transfer_lock: Option<TimeLock>,
+    transfer_lock: TimeLock,
     clock: &Clock,
     ctx: &mut TxContext,
 ): Notarization<D> {
-    let locking = option::map!(
-        transfer_lock,
-        |transfer_lock| new_lock_metadata(timelock::none(), timelock::none(), transfer_lock),
-    );
+    let locking = if (timelock::is_none(&transfer_lock)) {
+        timelock::destroy(transfer_lock, clock);
+        option::none()
+    } else {
+        option::some(new_lock_metadata(timelock::none(), timelock::none(), transfer_lock))
+    };
 
     let immutable_metadata = ImmutableMetadata {
         created_at: clock::timestamp_ms(clock),

@@ -49,9 +49,6 @@ impl NotarizationBuilder<Locked> {
     }
 
     pub fn finish(self) -> Result<TransactionBuilder<CreateNotarization<Locked>>, Error> {
-        if self.delete_lock.is_none() {
-            return Err(Error::InvalidArgument("Locked needs delete_at()".to_string()));
-        }
         Ok(TransactionBuilder::new(CreateNotarization::new(self)))
     }
 }

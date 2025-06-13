@@ -53,11 +53,9 @@ impl<M: Clone> CreateNotarization<M> {
 
     /// Indicates if the invariants for `NotarizationMethod::Dynamic` are satisfied:
     ///
-    /// - Dynamic notarization can only have transfer locking or no
-    ///   `immutable_metadata.locking`.
-    ///   If `immutable_metadata.locking` exists, all locks except `transfer_lock`
-    ///   must be `TimeLock::None`
-    ///   and the `transfer_lock` must not be `TimeLock::None`.
+    /// - Dynamic notarization can only have transfer locking or no `immutable_metadata.locking`. If
+    ///   `immutable_metadata.locking` exists, all locks except `transfer_lock` must be `TimeLock::None` and the
+    ///   `transfer_lock` must not be `TimeLock::None`.
     fn are_dynamic_notarization_invariants_ok(locking: &Option<LockMetadata>) -> bool {
         match locking {
             Some(lock_metadata) => {
@@ -126,7 +124,7 @@ impl<M: Clone> CreateNotarization<M> {
                     state,
                     immutable_description,
                     updatable_metadata,
-                    transfer_lock,
+                    transfer_lock.unwrap_or(TimeLock::None),
                 )
             }
             NotarizationMethod::Locked => {
@@ -136,14 +134,10 @@ impl<M: Clone> CreateNotarization<M> {
                     ));
                 }
 
-                let delete_lock = delete_lock.ok_or_else(|| {
-                    Error::InvalidArgument("Delete lock is required for locked notarizations".to_string())
-                })?;
-
                 // Construct the locking metadata for locked notarization
                 let locking = Some(LockMetadata {
                     update_lock: TimeLock::UntilDestroyed,
-                    delete_lock: delete_lock.clone(),
+                    delete_lock: delete_lock.clone().unwrap_or(TimeLock::None),
                     transfer_lock: TimeLock::UntilDestroyed,
                 });
 
@@ -159,7 +153,7 @@ impl<M: Clone> CreateNotarization<M> {
                     state,
                     immutable_description,
                     updatable_metadata,
-                    delete_lock,
+                    delete_lock.unwrap_or(TimeLock::None),
                 )
             }
         }
