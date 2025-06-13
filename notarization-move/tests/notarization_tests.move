@@ -48,7 +48,7 @@ public fun test_create_notarization_with_complex_object() {
         state,
         std::option::some(string::utf8(b"Test Description")),
         std::option::some(string::utf8(b"Test Updateable Metadata")),
-        std::option::none(),
+        timelock::none(),
         &clock,
         ctx,
     );
@@ -153,7 +153,7 @@ public fun test_state_updates_and_versioning() {
         state,
         std::option::some(string::utf8(b"Test Description")),
         std::option::some(string::utf8(b"Test Updateable Metadata")),
-        std::option::none(),
+        timelock::none(),
         &clock,
         ctx,
     );
@@ -316,7 +316,7 @@ public fun test_method_type_checks() {
         state,
         std::option::none(),
         std::option::none(),
-        std::option::none(),
+        timelock::none(),
         &clock,
         ctx,
     );
@@ -363,7 +363,7 @@ public fun test_is_destroy_allowed() {
         state,
         std::option::none(),
         std::option::none(),
-        std::option::none(),
+        timelock::none(),
         &clock,
         ctx,
     );
@@ -408,7 +408,7 @@ public fun test_method_specific_invariants() {
         state,
         std::option::none(),
         std::option::none(),
-        std::option::none(),
+        timelock::none(),
         &clock,
         ctx,
     );

@@ -20,6 +20,7 @@ use super::event::{DynamicNotarizationCreated, Event, LockedNotarizationCreated}
 use super::metadata::ImmutableMetadata;
 use super::operations::{NotarizationImpl, NotarizationOperations};
 use super::state::State;
+use crate::core::timelock::TimeLock;
 use crate::error::Error;
 use crate::package::notarization_package_id;
 
@@ -79,7 +80,7 @@ impl<M: Clone> CreateNotarization<M> {
                     state,
                     immutable_description,
                     updatable_metadata,
-                    transfer_lock,
+                    transfer_lock.unwrap_or(TimeLock::None),
                 )
             }
             NotarizationMethod::Locked => {
@@ -89,16 +90,12 @@ impl<M: Clone> CreateNotarization<M> {
                     ));
                 }
 
-                let delete_lock = delete_lock.ok_or_else(|| {
-                    Error::InvalidArgument("Delete lock is required for locked notarizations".to_string())
-                })?;
-
                 NotarizationImpl::new_locked(
                     package_id,
                     state,
                     immutable_description,
                     updatable_metadata,
-                    delete_lock,
+                    delete_lock.unwrap_or(TimeLock::None),
                 )
             }
         }
