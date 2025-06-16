@@ -6,6 +6,7 @@ use wasm_bindgen::prelude::*;
 use notarization::core::metadata::ImmutableMetadata;
 use notarization::core::state::{State, Data};
 use notarization::core::timelock::{LockMetadata};
+use notarization::core::NotarizationMethod;
 use crate::wasm_time_lock::WasmTimeLock;
 
 #[wasm_bindgen(js_name = Data, inspectable)]
@@ -105,5 +106,31 @@ impl WasmImmutableMetadata {
     #[wasm_bindgen(getter)]
     pub fn locking(&self) -> Option<WasmLockMetadata> {
         self.0.locking.clone().map(|l| l.into())
+    }
+}
+
+#[wasm_bindgen(js_name = NotarizationMethod)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum WasmNotarizationMethod {
+    Dynamic = "Dynamic",
+    Locked = "Locked",
+}
+
+impl From<NotarizationMethod> for WasmNotarizationMethod {
+    fn from(value: NotarizationMethod) -> Self {
+        match value {
+            NotarizationMethod::Dynamic => WasmNotarizationMethod::Dynamic,
+            NotarizationMethod::Locked => WasmNotarizationMethod::Locked,
+        }
+    }
+}
+
+impl From<WasmNotarizationMethod> for NotarizationMethod {
+    fn from(value: WasmNotarizationMethod) -> Self {
+        match value {
+            WasmNotarizationMethod::Dynamic => NotarizationMethod::Dynamic,
+            WasmNotarizationMethod::Locked => NotarizationMethod::Locked,
+            WasmNotarizationMethod::__Invalid => panic!("The NotarizationMethod {:?} is not known", value),
+        }
     }
 }

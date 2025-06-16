@@ -17,7 +17,7 @@ use product_common::transaction::transaction_builder::Transaction;
 use product_common::bindings::core_client::WasmManagedCoreClientReadOnly;
 use crate::wasm_notarization_builder::WasmNotarizationBuilderLocked;
 use crate::wasm_notarization_builder::WasmNotarizationBuilderDynamic;
-use crate::wasm_types::{WasmState};
+use crate::wasm_types::{WasmState, WasmNotarizationMethod};
 use crate::wasm_types::WasmImmutableMetadata;
 
 #[wasm_bindgen(js_name = OnChainNotarization, inspectable)]
@@ -41,9 +41,7 @@ impl WasmOnChainNotarization {
     #[wasm_bindgen(js_name = stateVersionCount, getter)]
     pub fn state_version_count(&self) -> u64 {self.0.state_version_count}
     #[wasm_bindgen(getter)]
-    pub fn method(&self) -> JsValue {
-        serde_wasm_bindgen::to_value(&self.0.method).unwrap()
-    }
+    pub fn method(&self) -> WasmNotarizationMethod {self.0.method.clone().into()}
 }
 
 async fn apply_with_events<M: Clone>(

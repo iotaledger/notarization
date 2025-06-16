@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {TimeLock} from "@iota/notarization-wasm";
-
 import { IotaClient } from "@iota/iota-sdk/client";
 import { getFundedClient, NETWORK_URL } from "./util";
+import { strict as assert } from 'assert';
 
 /** Demonstrate how to create a Dynamic Notarization and publish it. */
 export async function createDynamic(): Promise<void> {
@@ -17,24 +17,28 @@ export async function createDynamic(): Promise<void> {
     // create a new client that offers notarization related functions
     const notarizationClient = await getFundedClient();
 
+    // Calculate an unlock time (24 hours from now) to be used for transferLock
+    let transfer_unlock_at = Math.round(Date.now() / 1000 + 86400); // 24 hours
+
     let utf8Encode = new TextEncoder();
 
     // create a new Dynamic Notarization
-    console.log("Building a dynamic notarization and publish it to the IOTA network");
+    console.log("Building a dynamic notarization with transferLock and publish it to the IOTA network");
     const { output: notarization } = await notarizationClient
         .createDynamic()
         // Control the type of State data by choosing one of the `with...State` functions below.
         // Uncomment or comment the following lines to choose between string or byte State data.
-        //.withStringState("HelloWorld")
-        //.withBytesState(utf8Encode.encode("HelloWorld"), "Data description goes here")
-        .withBytesState(Uint8Array.from([14,255,0,125,64,87,11,114,108,100]), "Data description may be used for version specifiers")
-        .withTransferLock(TimeLock.withUnlockAt(1814399999))
+        //
+        //.withStringState("Live document content", "Version 1.0")
+        //.withBytesState(utf8Encode.encode("Live document content"), "Version 1.0")
+        .withBytesState(Uint8Array.from([14,255,0,125,64,87,11,114,108,100]), "Version 1.0")
+        .withTransferLock(TimeLock.withUnlockAt(transfer_unlock_at))
         .withImmutableDescription("This can not be changed any more")
         .withUpdatableMetadata("This can be updated")
          .finish()
          .buildAndExecute(notarizationClient);
 
-    console.log("\n✅ Dynamic notarization created successfully!");
+    console.log("\n✅ Successfully created a transfer locked Dynamic notarization!");
 
     // check some important properties of the received OnChainNotarization
     console.log("\n----------------------------------------------------");
@@ -49,10 +53,20 @@ export async function createDynamic(): Promise<void> {
     console.log("Updatable metadata: ", notarization.updatableMetadata);
     console.log("State version count: ", notarization.stateVersionCount);
 
-    // This is how the complete OnChainNotarization looks like
+    // This is what the complete OnChainNotarization looks like
     console.log("\n----------------------------------------------------");
     console.log("----- All Notarization Properties      -------------");
     console.log("----------------------------------------------------");
     console.log("Notarization: ", notarization);
 
+    // Verify the notarization method is Dynamic
+    assert(notarization.method === "Dynamic");
+
+    // Check if it has locking metadata and `transferLock` is set to `UnlockAt` using the right argument
+    assert(notarization.immutableMetadata.locking !== undefined);
+    assert(notarization.immutableMetadata.locking.transferLock.type == "UnlockAt");
+    assert(notarization.immutableMetadata.locking.transferLock.args === transfer_unlock_at);
+
+    console.log("\n🔄 The notarization is Dynamic and can be updated at any time");
+    console.log(`🔒 The notarization cannot be transferred or destroyed until the transfer lock ${transfer_unlock_at} expires`);
 }

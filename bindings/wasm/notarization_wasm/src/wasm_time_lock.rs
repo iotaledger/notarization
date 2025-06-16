@@ -7,6 +7,7 @@ use notarization::core::timelock::TimeLock;
 
 
 #[wasm_bindgen(js_name = TimeLockType)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum WasmTimeLockType {
     None = "None",
     UnlockAt = "UnlockAt",
