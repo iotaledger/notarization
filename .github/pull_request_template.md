@@ -10,7 +10,7 @@
 
 <!-- Choose a type of change from the list below -->
 
-- [ ] Bug fix (a non-breaking change which fixes an issue)
+- [] Bug fix (a non-breaking change which fixes an issue)
 - [ ] Enhancement (a non-breaking change which adds functionality)
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] Documentation Fix

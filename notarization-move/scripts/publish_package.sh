@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 script_dir=$(cd "$(dirname $0)" && pwd)
-package_dir=$script_dir/../notarization-move
+package_dir=$script_dir/..
 
 # echo "publishing package from $package_dir"
 RESPONSE=$(iota client publish --with-unpublished-dependencies --silence-warnings --json --gas-budget 500000000 $package_dir)
@@ -14,5 +14,5 @@ RESPONSE=$(iota client publish --with-unpublished-dependencies --silence-warning
     echo $RESPONSE
 }
 
-export PRODUCT_IOTA_PKG_ID=$PACKAGE_ID
-echo "${PRODUCT_IOTA_PKG_ID}"
+export IOTA_NOTARIZATION_PKG_ID=$PACKAGE_ID
+echo "${IOTA_NOTARIZATION_PKG_ID}"

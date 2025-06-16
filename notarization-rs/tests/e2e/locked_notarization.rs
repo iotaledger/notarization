@@ -4,9 +4,9 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use iota_sdk::types::base_types::IotaAddress;
+use notarization::core::NotarizationMethod;
 use notarization::core::state::State;
 use notarization::core::timelock::TimeLock;
-use notarization::core::NotarizationMethod;
 use product_common::core_client::CoreClientReadOnly;
 
 use crate::client::get_funded_test_client;
@@ -33,14 +33,14 @@ async fn create_simple_locked_notarization_works() -> anyhow::Result<()> {
         Some("Test Locked Notarization".to_string())
     );
     assert!(onchain_notarization.immutable_metadata.locking.is_some());
-    assert_eq!(onchain_notarization.updateable_metadata, None);
+    assert_eq!(onchain_notarization.updatable_metadata, None);
     assert_eq!(onchain_notarization.state_version_count, 0);
     assert_eq!(onchain_notarization.method, NotarizationMethod::Locked);
     Ok(())
 }
 
 #[tokio::test]
-async fn create_locked_notarization_with_updateable_metadata() -> anyhow::Result<()> {
+async fn create_locked_notarization_with_updatable_metadata() -> anyhow::Result<()> {
     let test_client = get_funded_test_client().await?;
 
     let now_ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
@@ -53,7 +53,7 @@ async fn create_locked_notarization_with_updateable_metadata() -> anyhow::Result
             Some("state_meta".to_string()),
         ))
         .with_immutable_description("Locked Document".to_string())
-        .with_updateable_metadata("Initial metadata".to_string())
+        .with_updatable_metadata("Initial metadata".to_string())
         .with_delete_at(TimeLock::UnlockAt(unlock_at as u32))
         .finish()?
         .build_and_execute(&test_client)
@@ -61,7 +61,7 @@ async fn create_locked_notarization_with_updateable_metadata() -> anyhow::Result
         .output;
 
     assert_eq!(
-        onchain_notarization.updateable_metadata,
+        onchain_notarization.updatable_metadata,
         Some("Initial metadata".to_string())
     );
     assert_eq!(onchain_notarization.method, NotarizationMethod::Locked);
@@ -85,10 +85,10 @@ async fn create_locked_notarization_with_none_delete_lock() -> anyhow::Result<()
 
     assert_eq!(onchain_notarization.method, NotarizationMethod::Locked);
 
-    let is_delete_allowed = test_client
+    let is_destroy_allowed = test_client
         .is_destroy_allowed(*onchain_notarization.id.object_id())
         .await?;
-    assert!(!is_delete_allowed, "Should be delete allowed with TimeLock::None");
+    assert!(is_destroy_allowed, "destroy should be allowed with TimeLock::None");
 
     Ok(())
 }
@@ -135,7 +135,7 @@ async fn test_update_metadata_locked_notarization_fails() -> anyhow::Result<()> 
     let notarization_id = test_client
         .create_locked_notarization()
         .with_state(State::from_string("test_state".to_string(), None))
-        .with_updateable_metadata("initial_metadata".to_string())
+        .with_updatable_metadata("initial_metadata".to_string())
         .with_delete_at(TimeLock::UnlockAt(unlock_at as u32))
         .finish()?
         .build_and_execute(&test_client)
@@ -224,7 +224,7 @@ async fn test_read_only_methods_locked_notarization() -> anyhow::Result<()> {
     let test_client = get_funded_test_client().await?;
 
     let description = "Locked Test Description".to_string();
-    let updateable_metadata = "Locked Test Metadata".to_string();
+    let updatable_metadata = "Locked Test Metadata".to_string();
     let now_ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
     let unlock_at = now_ts + 86400;
 
@@ -235,7 +235,7 @@ async fn test_read_only_methods_locked_notarization() -> anyhow::Result<()> {
             Some("locked_state_meta".to_string()),
         ))
         .with_immutable_description(description.clone())
-        .with_updateable_metadata(updateable_metadata.clone())
+        .with_updatable_metadata(updatable_metadata.clone())
         .with_delete_at(TimeLock::UnlockAt(unlock_at as u32))
         .finish()?
         .build_and_execute(&test_client)
@@ -246,8 +246,8 @@ async fn test_read_only_methods_locked_notarization() -> anyhow::Result<()> {
     let retrieved_description = test_client.description(*notarization_id.object_id()).await?;
     assert_eq!(retrieved_description, Some(description));
 
-    let retrieved_metadata = test_client.updateable_metadata(*notarization_id.object_id()).await?;
-    assert_eq!(retrieved_metadata, Some(updateable_metadata));
+    let retrieved_metadata = test_client.updatable_metadata(*notarization_id.object_id()).await?;
+    assert_eq!(retrieved_metadata, Some(updatable_metadata));
 
     let state = test_client.state(*notarization_id.object_id()).await?;
     assert_eq!(state.data.as_text()?, "locked_state");
@@ -347,7 +347,7 @@ async fn test_lock_checking_methods_locked_notarization() -> anyhow::Result<()> 
 async fn test_bytes_state_operations_locked_notarization() -> anyhow::Result<()> {
     let test_client = get_funded_test_client().await?;
 
-    let initial_data = vec![1, 2, 3, 4, 5];
+    let initial_data = vec![91, 45, 30, 84, 76];
     let notarization_id = test_client
         .create_locked_notarization()
         .with_state(State::from_bytes(initial_data.clone(), None))
@@ -359,6 +359,7 @@ async fn test_bytes_state_operations_locked_notarization() -> anyhow::Result<()>
         .id;
 
     let state = test_client.state(*notarization_id.object_id()).await?;
+    println!("state: {:?}", state);
     assert_eq!(state.data.as_bytes()?, initial_data);
 
     // Attempting to update state should fail for locked notarization

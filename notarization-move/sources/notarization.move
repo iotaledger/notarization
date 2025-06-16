@@ -38,7 +38,7 @@ public struct Notarization<D: store + drop + copy> has key {
     /// Variant-specific metadata
     immutable_metadata: ImmutableMetadata,
     /// Provides context or additional information for third parties
-    updateable_metadata: Option<String>,
+    updatable_metadata: Option<String>,
     /// Timestamp of the last state change
     last_state_change_at: u64,
     /// Counter for the number of state updates
@@ -185,15 +185,17 @@ public(package) fun new_immutable_metadata(
 public(package) fun new_dynamic_notarization<D: store + drop + copy>(
     state: State<D>,
     immutable_description: Option<String>,
-    updateable_metadata: Option<String>,
-    transfer_lock: Option<TimeLock>,
+    updatable_metadata: Option<String>,
+    transfer_lock: TimeLock,
     clock: &Clock,
     ctx: &mut TxContext,
 ): Notarization<D> {
-    let locking = option::map!(
-        transfer_lock,
-        |transfer_lock| new_lock_metadata(timelock::none(), timelock::none(), transfer_lock),
-    );
+    let locking = if (timelock::is_none(&transfer_lock)) {
+        timelock::destroy(transfer_lock, clock);
+        option::none()
+    } else {
+        option::some(new_lock_metadata(timelock::none(), timelock::none(), transfer_lock))
+    };
 
     let immutable_metadata = ImmutableMetadata {
         created_at: clock::timestamp_ms(clock),
@@ -209,7 +211,7 @@ public(package) fun new_dynamic_notarization<D: store + drop + copy>(
         id: object::new(ctx),
         state,
         immutable_metadata,
-        updateable_metadata,
+        updatable_metadata,
         last_state_change_at: clock::timestamp_ms(clock),
         state_version_count: 0,
         method: new_dynamic(),
@@ -220,7 +222,7 @@ public(package) fun new_dynamic_notarization<D: store + drop + copy>(
 public(package) fun new_locked_notarization<D: store + drop + copy>(
     state: State<D>,
     immutable_description: Option<String>,
-    updateable_metadata: Option<String>,
+    updatable_metadata: Option<String>,
     delete_lock: TimeLock,
     clock: &Clock,
     ctx: &mut TxContext,
@@ -246,7 +248,7 @@ public(package) fun new_locked_notarization<D: store + drop + copy>(
         id: object::new(ctx),
         state,
         immutable_metadata,
-        updateable_metadata,
+        updatable_metadata,
         last_state_change_at: clock::timestamp_ms(clock),
         state_version_count: 0,
         method: new_locked(),
@@ -285,7 +287,7 @@ public fun destroy<D: drop + store + copy>(self: Notarization<D>, clock: &Clock)
             description: _,
             locking,
         },
-        updateable_metadata: _,
+        updatable_metadata: _,
         last_state_change_at: _,
         state_version_count: _,
         method: _,
@@ -321,7 +323,7 @@ public(package) fun transfer_notarization<D: store + drop + copy>(
 }
 
 // ===== Metadata Management Functions =====
-/// Update the updateable metadata of a `Notarization`
+/// Update the updatable metadata of a `Notarization`
 /// This does not affect the state version count
 public fun update_metadata<D: store + drop + copy>(
     self: &mut Notarization<D>,
@@ -330,7 +332,7 @@ public fun update_metadata<D: store + drop + copy>(
 ) {
     assert!(!self.is_update_locked(clock), EUpdateWhileLocked);
 
-    self.updateable_metadata = new_metadata;
+    self.updatable_metadata = new_metadata;
 }
 
 // ===== Getter Functions =====
@@ -354,8 +356,8 @@ public fun description<D: store + drop + copy>(self: &Notarization<D>): Option<S
     self.immutable_metadata.description
 }
 
-public fun updateable_metadata<D: store + drop + copy>(self: &Notarization<D>): Option<String> {
-    self.updateable_metadata
+public fun updatable_metadata<D: store + drop + copy>(self: &Notarization<D>): Option<String> {
+    self.updatable_metadata
 }
 
 public fun notarization_method<D: store + drop + copy>(self: &Notarization<D>): NotarizationMethod {
@@ -514,7 +516,7 @@ public(package) fun destroy_immutable_metadata(
 public(package) fun create_custom_notarization<D: store + drop + copy>(
     state: State<D>,
     immutable_description: Option<String>,
-    updateable_metadata: Option<String>,
+    updatable_metadata: Option<String>,
     lock_metadata: Option<LockMetadata>,
     method: NotarizationMethod,
     clock: &Clock,
@@ -528,7 +530,7 @@ public(package) fun create_custom_notarization<D: store + drop + copy>(
             description: immutable_description,
             locking: lock_metadata,
         },
-        updateable_metadata,
+        updatable_metadata,
         last_state_change_at: clock::timestamp_ms(clock),
         state_version_count: 0,
         method: method,

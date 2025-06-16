@@ -19,10 +19,10 @@ In case of running the examples against an existing network, this network needs 
 
 You'll need one or more of the following environment variables depending on your setup:
 
-| Name                      | Required for local node | Required for testnet | Required for other node |
-| ------------------------- | :---------------------: | :------------------: | :---------------------: |
-| NOTARIZATION_PKG_ID       |            x            |          x           |            x            |
-| API_ENDPOINT              |                         |          x           |            x            |
+| Name                | Required for local node | Required for testnet | Required for other node |
+| ------------------- | :---------------------: | :------------------: | :---------------------: |
+| NOTARIZATION_PKG_ID |            x            |          x           |            x            |
+| API_ENDPOINT        |                         |          x           |            x            |
 
 ## Running Examples
 
@@ -42,16 +42,16 @@ NOTARIZATION_PKG_ID=0x... cargo run --release --example 01_create_locked_notariz
 
 The following basic CRUD (Create, Read, Update, Delete) examples are available:
 
-| Name                                                                                | Information                                                                        |
-| :---------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------- |
-| [01_create_locked_notarization](./01_create_locked_notarization.rs)                 | Demonstrates how to create a locked notarization with delete locks.                |
-| [02_create_dynamic_notarization](./02_create_dynamic_notarization.rs)               | Demonstrates how to create dynamic notarizations with and without transfer locks.  |
-| [03_update_dynamic_notarization](./03_update_dynamic_notarization.rs)               | Demonstrates that dynamic notarizations can be updated                             |
-| [04_destroy_notarization](./04_destroy_notarization.rs)                             | Demonstrates notarization destruction scenarios based on lock types.               |
-| [05_update_state](./05_update_state.rs)                                             | Demonstrates state updates on dynamic notarizations including binary data.         |
-| [06_update_metadata](./06_update_metadata.rs)                                       | Demonstrates metadata updates and their behavior vs state updates.                 |
-| [07_transfer_dynamic_notarization](./07_transfer_dynamic_notarization.rs)           | Demonstrates transfer scenarios for different notarization types and lock states.  |
-| [08_access_read_only_methods](./08_access_read_only_methods.rs)                     | Comprehensive demonstration of all read-only inspection methods.                   |
+| Name                                                                      | Information                                                                       |
+| :------------------------------------------------------------------------ | :-------------------------------------------------------------------------------- |
+| [01_create_locked_notarization](./01_create_locked_notarization.rs)       | Demonstrates how to create a locked notarization with delete locks.               |
+| [02_create_dynamic_notarization](./02_create_dynamic_notarization.rs)     | Demonstrates how to create dynamic notarizations with and without transfer locks. |
+| [03_update_dynamic_notarization](./03_update_dynamic_notarization.rs)     | Demonstrates that dynamic notarizations can be updated                            |
+| [04_destroy_notarization](./04_destroy_notarization.rs)                   | Demonstrates notarization destruction scenarios based on lock types.              |
+| [05_update_state](./05_update_state.rs)                                   | Demonstrates state updates on dynamic notarizations including binary data.        |
+| [06_update_metadata](./06_update_metadata.rs)                             | Demonstrates metadata updates and their behavior vs state updates.                |
+| [07_transfer_dynamic_notarization](./07_transfer_dynamic_notarization.rs) | Demonstrates transfer scenarios for different notarization types and lock states. |
+| [08_access_read_only_methods](./08_access_read_only_methods.rs)           | Comprehensive demonstration of all read-only inspection methods.                  |
 
 ## Notarization Types
 

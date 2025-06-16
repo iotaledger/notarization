@@ -1,8 +1,11 @@
+// Copyright 2020-2025 IOTA Stiftung
+// SPDX-License-Identifier: Apache-2.0
+
 use anyhow::Context;
-use iota_sdk::{IotaClientBuilder, IOTA_LOCAL_NETWORK_URL};
+use iota_sdk::{IOTA_LOCAL_NETWORK_URL, IotaClientBuilder};
 use notarization::client::full_client::NotarizationClient;
 use notarization::client::read_only::NotarizationClientReadOnly;
-use product_common::test_utils::{request_funds, InMemSigner};
+use product_common::test_utils::{InMemSigner, request_funds};
 
 pub async fn get_read_only_client() -> anyhow::Result<NotarizationClientReadOnly> {
     let api_endpoint = std::env::var("API_ENDPOINT").unwrap_or_else(|_| IOTA_LOCAL_NETWORK_URL.to_string());

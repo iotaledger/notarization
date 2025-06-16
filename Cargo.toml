@@ -1,37 +1,32 @@
 [workspace.package]
 authors = ["IOTA Stiftung"]
-edition = "2021"
+edition = "2024"
 homepage = "https://www.iota.org"
 license = "Apache-2.0"
-repository = "https://github.com/iotaledger/notarization.rs"
-rust-version = "1.65"
+repository = "https://github.com/iotaledger/notarization"
+rust-version = "1.85"
 
 [workspace]
 resolver = "2"
-members = ["notarization-rs", "examples"]
+members = ["examples", "notarization-rs"]
 exclude = ["bindings/wasm/notarization_wasm"]
 
 [workspace.dependencies]
 anyhow = "1.0"
-async-trait = "0.1.88"
-cfg-if = "1.0"
-bcs = { version = "0.1.6" }
-fastcrypto = { git = "https://github.com/MystenLabs/fastcrypto", rev = "2f502fd8570fe4e9cff36eea5bbd6fef22002898", package = "fastcrypto" }
-iota_interaction = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.2.1", package = "iota_interaction" }
-iota_interaction_rust = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.2.1", package = "iota_interaction_rust" }
-phf = { version = "0.11.2", features = ["macros"] }
-product_common = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.2.1", package = "product_common" }
-serde = { version = "1.0", default-features = false, features = [
-    "alloc",
-    "derive",
-] }
+async-trait = "0.1"
+bcs = "0.1"
+iota-sdk = { git = "https://github.com/iotaledger/iota.git", package = "iota-sdk", tag = "v0.12.0-rc" }
+iota_interaction = { git = "https://github.com/iotaledger/product-core.git", default-features = false, tag = "v0.2.1", package = "iota_interaction" }
+iota_interaction_rust = { git = "https://github.com/iotaledger/product-core.git", default-features = false, tag = "v0.2.1", package = "iota_interaction_rust" }
+iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", default-features = false, tag = "v0.2.1", package = "iota_interaction_ts" }
+product_common = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.2.1", default-features = false, package = "product_common" }
+serde = { version = "1.0", default-features = false, features = ["alloc", "derive"] }
 serde_json = { version = "1.0", default-features = false }
-strum = { version = "0.27", default-features = false, features = [
-    "std",
-    "derive",
-] }
+strum = { version = "0.27", default-features = false, features = ["std", "derive"] }
 thiserror = { version = "2.0", default-features = false }
-serde-aux = "4.7"
 
-[workspace.lints.clippy]
-result_large_err = "allow"
+secret-storage = { git = "https://github.com/iotaledger/secret-storage.git", tag = "v0.3.0", default-features = false }
+tokio = { version = "1.43", default-features = false, features = ["macros", "sync", "rt", "process"] }
+
+[profile.release.package.iota_interaction_ts]
+opt-level = 's'

@@ -29,8 +29,8 @@ public fun test_create_dynamic_notarization_with_string_data() {
     dynamic_notarization::create(
         state,
         std::option::some(string::utf8(b"Test Description")),
-        std::option::some(string::utf8(b"Test Updateable Metadata")),
-        std::option::none(),
+        std::option::some(string::utf8(b"Test Updatable Metadata")),
+        timelock::none(),
         &clock,
         ctx,
     );
@@ -47,7 +47,7 @@ public fun test_create_dynamic_notarization_with_string_data() {
         0,
     );
     assert!(
-        notarization::updateable_metadata(&notarization) == &std::option::some(string::utf8(b"Test Updateable Metadata")),
+        notarization::updatable_metadata(&notarization) == &std::option::some(string::utf8(b"Test Updatable Metadata")),
         0,
     );
     assert!(notarization::created_at(&notarization) == 1000000, 0);
@@ -83,8 +83,8 @@ public fun test_create_dynamic_notarization_with_vector_data() {
     dynamic_notarization::create(
         state,
         std::option::some(string::utf8(b"Test Description")),
-        std::option::some(string::utf8(b"Test Updateable Metadata")),
-        std::option::none(),
+        std::option::some(string::utf8(b"Test Updatable Metadata")),
+        timelock::none(),
         &clock,
         ctx,
     );
@@ -101,7 +101,7 @@ public fun test_create_dynamic_notarization_with_vector_data() {
         0,
     );
     assert!(
-        notarization::updateable_metadata(&notarization) == &std::option::some(string::utf8(b"Test Updateable Metadata")),
+        notarization::updatable_metadata(&notarization) == &std::option::some(string::utf8(b"Test Updatable Metadata")),
         0,
     );
     assert!(notarization::created_at(&notarization) == 1000000, 0);
@@ -138,8 +138,8 @@ public fun test_create_dynamic_notarization_with_transfer_lock() {
     dynamic_notarization::create(
         state,
         std::option::some(string::utf8(b"Test Description")),
-        std::option::some(string::utf8(b"Test Updateable Metadata")),
-        std::option::some(transfer_lock),
+        std::option::some(string::utf8(b"Test Updatable Metadata")),
+        transfer_lock,
         &clock,
         ctx,
     );
@@ -183,7 +183,7 @@ public fun test_transfer_dynamic_notarization() {
             state,
             std::option::none(),
             std::option::none(),
-            std::option::none(),
+            timelock::none(),
             &clock,
             scenario.ctx(),
         );
@@ -242,7 +242,7 @@ public fun test_transfer_locked_dynamic_notarization() {
             state,
             std::option::none(),
             std::option::none(),
-            std::option::some(transfer_lock),
+            transfer_lock,
             &clock,
             scenario.ctx(),
         );
@@ -285,7 +285,7 @@ public fun test_update_dynamic_notarization() {
         state,
         std::option::none(),
         std::option::none(),
-        std::option::none(),
+        timelock::none(),
         &clock,
         ctx,
     );
@@ -306,14 +306,14 @@ public fun test_update_dynamic_notarization() {
     // Verify the update
     assert!(notarization::version_count(&notarization) == 1, 0);
     assert!(notarization::state(&notarization) == &new_state, 0);
-    // Also update the updateable metadata
+    // Also update the updatable metadata
     notarization::update_metadata(
         &mut notarization,
-        std::option::some(string::utf8(b"New Updateable Metadata")),
+        std::option::some(string::utf8(b"New Updatable Metadata")),
         &clock,
     );
     assert!(
-        notarization::updateable_metadata(&notarization) == &std::option::some(string::utf8(b"New Updateable Metadata")),
+        notarization::updatable_metadata(&notarization) == &std::option::some(string::utf8(b"New Updatable Metadata")),
         0,
     );
 
@@ -344,7 +344,7 @@ public fun test_dynamic_notarization_with_until_destroyed_lock() {
         state,
         std::option::none(),
         std::option::none(),
-        std::option::some(transfer_lock),
+        transfer_lock,
         &clock,
         ctx,
     );
@@ -368,7 +368,7 @@ public fun test_dynamic_notarization_with_until_destroyed_lock() {
     scenario.end();
 }
 
-#[test, expected_failure(abort_code = notarization::EDynamicNotarizationInvariants)]
+#[test]
 public fun test_dynamic_notarization_with_none_lock() {
     let mut scenario = ts::begin(ADMIN_ADDRESS);
     let ctx = scenario.ctx();
@@ -388,7 +388,7 @@ public fun test_dynamic_notarization_with_none_lock() {
         state,
         std::option::none(),
         std::option::none(),
-        std::option::some(transfer_lock),
+        transfer_lock,
         &clock,
         ctx,
     );
@@ -400,6 +400,7 @@ public fun test_dynamic_notarization_with_none_lock() {
 
     // Verify it's transferable (has none transfer lock)
     assert!(dynamic_notarization::is_transferable(&notarization, &clock), 0);
+    assert!(notarization.lock_metadata().is_none(), 0);
 
     // Clean up
     notarization::destroy(notarization, &clock);
