@@ -45,12 +45,12 @@ pub enum Error {
     ObjectLookup(String),
 }
 
-cfg_if::cfg_if! {
-    if #[cfg(target_arch = "wasm32")] {
-        use std::borrow::Cow;
-        use iota_interaction_ts::error::{WasmError, ErrorMessage};
-        use iota_interaction_ts::impl_wasm_error_from;
-        
-        impl_wasm_error_from!(Error);
-    }
-}
+#[cfg(target_arch = "wasm32")]
+use std::borrow::Cow;
+#[cfg(target_arch = "wasm32")]
+use iota_interaction_ts::error::{WasmError, ErrorMessage};
+#[cfg(target_arch = "wasm32")]
+use iota_interaction_ts::impl_wasm_error_from;
+#[cfg(target_arch = "wasm32")]
+impl_wasm_error_from!(Error);
+
