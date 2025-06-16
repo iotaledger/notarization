@@ -34,8 +34,8 @@ impl WasmOnChainNotarization {
     pub fn state(&self) -> WasmState { WasmState(self.0.state.clone()) }
     #[wasm_bindgen(js_name = immutableMetadata, getter)]
     pub fn immutable_metadata(&self) -> WasmImmutableMetadata { WasmImmutableMetadata(self.0.immutable_metadata.clone()) }
-    #[wasm_bindgen(js_name = updateableMetadata, getter)]
-    pub fn updateable_metadata(&self) -> Option<String> {self.0.updateable_metadata.clone()}
+    #[wasm_bindgen(js_name = updatableMetadata, getter)]
+    pub fn updatable_metadata(&self) -> Option<String> {self.0.updatable_metadata.clone()}
     #[wasm_bindgen(js_name = lastStateChangeAt, getter)]
     pub fn last_state_change_at(&self) -> u64 {self.0.last_state_change_at}
     #[wasm_bindgen(js_name = stateVersionCount, getter)]

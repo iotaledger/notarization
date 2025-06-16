@@ -28,7 +28,7 @@ export async function createLocked(): Promise<void> {
         .withBytesState(Uint8Array.from([14,255,0,125,64,87,11,114,108,100]), "Data description may be used for version specifiers")
         .withDeleteAt(TimeLock.withUnlockAt(1814399999))
         .withImmutableDescription("This can not be changed any more")
-        .withUpdateableMetadata("This can be updated")
+        .withUpdatableMetadata("This can be updated")
         .finish()
         .buildAndExecute(notarizationClient);
 
@@ -44,7 +44,7 @@ export async function createLocked(): Promise<void> {
     console.log("State metadata: ", notarization.state.metadata);
     console.log("Immutable description: ", notarization.immutableMetadata.description);
     console.log("Immutable locking metadata: ", notarization.immutableMetadata.locking);
-    console.log("Updateable metadata: ", notarization.updateableMetadata);
+    console.log("Updatable metadata: ", notarization.updatableMetadata);
     console.log("State version count: ", notarization.stateVersionCount);
 
     // This is how the complete OnChainNotarization looks like

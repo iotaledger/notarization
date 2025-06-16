@@ -34,8 +34,8 @@ impl WasmNotarizationBuilderLocked {
     #[wasm_bindgen(js_name = withImmutableDescription)]
     pub fn with_immutable_description(self, description: String) -> Self {self.0.with_immutable_description(description).into()}
 
-    #[wasm_bindgen(js_name = withUpdateableMetadata)]
-    pub fn with_updateable_metadata(self, metadata: String) -> Self {self.0.with_updateable_metadata(metadata).into()}
+    #[wasm_bindgen(js_name = withUpdatableMetadata)]
+    pub fn with_updatable_metadata(self, metadata: String) -> Self {self.0.with_updatable_metadata(metadata).into()}
 
     #[wasm_bindgen()]
     pub fn locked() -> Self {NotarizationBuilder::<Locked>::locked().into()}
@@ -70,8 +70,8 @@ impl WasmNotarizationBuilderDynamic {
     #[wasm_bindgen(js_name = withImmutableDescription)]
     pub fn with_immutable_description(self, description: String) -> Self {self.0.with_immutable_description(description).into()}
 
-    #[wasm_bindgen(js_name = withUpdateableMetadata)]
-    pub fn with_updateable_metadata(self, metadata: String) -> Self {self.0.with_updateable_metadata(metadata).into()}
+    #[wasm_bindgen(js_name = withUpdatableMetadata)]
+    pub fn with_updatable_metadata(self, metadata: String) -> Self {self.0.with_updatable_metadata(metadata).into()}
 
     #[wasm_bindgen()]
     pub fn dynamic() -> Self {NotarizationBuilder::<Dynamic>::dynamic().into()}
