@@ -63,9 +63,9 @@ The following examples are available:
 
 | Name                                         | Information                                                            |
 |:---------------------------------------------|:-----------------------------------------------------------------------|
-| [0_create_locked](src/0_create_locked.ts)    | Demonstrates how to create a a new locked notarization.                |
-| [1_create_dynamic](src/1_create_dynamic.ts)  | Demonstrates how to create a a new dynamic notarization.               |
-| [2_update_dynamic](src/2_update_dynamic.ts)  | Demonstrates how to update a dynamic notarization. |
+| [0_create_locked](src/01_create_locked.ts)   | Demonstrates how to create a a new locked notarization.                |
+| [1_create_dynamic](src/02_create_dynamic.ts) | Demonstrates how to create a a new dynamic notarization.               |
+| [2_update_dynamic](src/03_update_dynamic.ts) | Demonstrates how to update a dynamic notarization. |
 
 <!--
 

@@ -1,8 +1,8 @@
 // Copyright 2020-2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-import { createLocked } from "./0_create_locked";
-import { createDynamic } from "./1_create_dynamic";
+import { createLocked } from "./01_create_locked";
+import { createDynamic } from "./02_create_dynamic";
 
 export async function main(example?: string) {
     // Extract example name.
@@ -12,9 +12,9 @@ export async function main(example?: string) {
     }
 
     switch (argument) {
-        case "0_create_locked":
+        case "01_create_locked":
             return await createLocked();
-        case "1_create_dynamic":
+        case "02_create_dynamic":
             return await createDynamic();
         default:
             throw "Unknown example name: '" + argument + "'";
