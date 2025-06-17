@@ -1,6 +1,14 @@
 // Copyright 2020-2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! # Notarization Metadata
+//!
+//! This module defines the metadata for notarizations.
+//!
+//! ## Overview
+//!
+//! The metadata is used to store the metadata for a notarization.
+
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::IotaTransactionBlockEffects;

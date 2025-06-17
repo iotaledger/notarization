@@ -1,6 +1,14 @@
 // Copyright 2020-2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! # Notarization Operations
+//!
+//! This module defines the operations for notarizations.
+//!
+//! ## Overview
+//!
+//! The operations are used to build transactions for notarizations.
+
 use std::str::FromStr;
 
 use async_trait::async_trait;

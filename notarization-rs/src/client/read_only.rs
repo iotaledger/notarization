@@ -16,7 +16,7 @@ use product_common::network_name::NetworkName;
 use product_common::package_registry::{Env, Metadata};
 use serde::de::DeserializeOwned;
 
-use crate::client_tools::network_id;
+use super::network_id;
 use crate::core::operations::{NotarizationImpl, NotarizationOperations};
 use crate::core::state::{Data, State};
 use crate::core::timelock::LockMetadata;

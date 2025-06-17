@@ -1,6 +1,14 @@
 // Copyright 2020-2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! # Notarization
+//!
+//! This module defines the notarization struct and the operations for notarizations.
+//!
+//! ## Overview
+//!
+//! The notarization is a struct that contains the state, metadata, and operations for a notarization.
+
 use async_trait::async_trait;
 use iota_interaction::rpc_types::{IotaTransactionBlockEffects, IotaTransactionBlockEvents};
 use iota_interaction::types::id::UID;
