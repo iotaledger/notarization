@@ -29,9 +29,9 @@ flavor = "iota"
 [env]
 
 [env.localnet]
-chain-id = "002d6fb7"
-original-published-id = "0x760def1fd86d216536bb3f8809baed9e075a73c428aeb776e4d47ad88e9fc6b4"
-latest-published-id = "0x760def1fd86d216536bb3f8809baed9e075a73c428aeb776e4d47ad88e9fc6b4"
+chain-id = "f7142371"
+original-published-id = "0xbd45b0b6c126b555b34ab512bca91936d2a34594fd99419708b360708a6a585b"
+latest-published-id = "0xbd45b0b6c126b555b34ab512bca91936d2a34594fd99419708b360708a6a585b"
 published-version = "1"
 
 [env.devnet]

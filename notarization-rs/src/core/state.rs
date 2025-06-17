@@ -23,24 +23,21 @@
 //! ### Creating State from Text
 //!
 //! ```rust
-//! use notarization::State;
+//! use notarization::core::state::State;
 //!
 //! let state = State::from_string(
 //!     "Contract Agreement v2.1".to_string(),
-//!     Some("Legal document".to_string())
+//!     Some("Legal document".to_string()),
 //! );
 //! ```
 //!
 //! ### Creating State from Bytes
 //!
 //! ```rust
-//! use notarization::State;
+//! use notarization::core::state::State;
 //!
 //! let pdf_content = vec![0x25, 0x50, 0x44, 0x46]; // PDF header
-//! let state = State::from_bytes(
-//!     pdf_content,
-//!     Some("Signed contract PDF".to_string())
-//! );
+//! let state = State::from_bytes(pdf_content, Some("Signed contract PDF".to_string()));
 //! ```
 
 use std::str::FromStr;
@@ -131,8 +128,8 @@ impl Data {
     /// ## Example
     ///
     /// ```rust
-    /// # use notarization::{State, Data};
-    /// # use notarization::Error;
+    /// # use notarization::core::state::{State, Data};
+    /// # use notarization::error::Error;
     /// let state = State::from_bytes(vec![1, 2, 3], None);
     /// let bytes = state.data.as_bytes()?;
     /// assert_eq!(bytes, vec![1, 2, 3]);
@@ -154,8 +151,8 @@ impl Data {
     /// ## Example
     ///
     /// ```rust
-    /// # use notarization::{State, Data};
-    /// # use notarization::Error;
+    /// # use notarization::core::state::{State, Data};
+    /// # use notarization::error::Error;
     /// let state = State::from_string("Hello".to_string(), None);
     /// let text = state.data.as_text()?;
     /// assert_eq!(text, "Hello");
@@ -192,14 +189,11 @@ impl State {
     /// ## Example
     ///
     /// ```rust
-    /// use notarization::State;
+    /// use notarization::core::state::State;
     ///
     /// // Store a file's content
     /// let file_bytes = vec![0xFF, 0xD8, 0xFF];
-    /// let state = State::from_bytes(
-    ///     file_bytes,
-    ///     Some("Profile photo JPEG".to_string())
-    /// );
+    /// let state = State::from_bytes(file_bytes, Some("Profile photo JPEG".to_string()));
     /// ```
     pub fn from_bytes(data: Vec<u8>, metadata: Option<String>) -> Self {
         Self {
@@ -220,13 +214,13 @@ impl State {
     /// ## Example
     ///
     /// ```rust
-    /// use notarization::State;
+    /// use notarization::core::state::State;
     ///
     /// // Store a JSON configuration
     /// let config = r#"{"version": "1.0", "enabled": true}"#;
     /// let state = State::from_string(
     ///     config.to_string(),
-    ///     Some("Service configuration".to_string())
+    ///     Some("Service configuration".to_string()),
     /// );
     /// ```
     pub fn from_string(data: String, metadata: Option<String>) -> Self {
@@ -297,13 +291,13 @@ fn state_from_string(
 /// ## Example
 ///
 /// ```rust,no_run
-/// # use notarization::{UpdateState, State};
+/// # use notarization::core::state::{UpdateState, State};
 /// # use iota_interaction::types::base_types::ObjectID;
 /// # use std::str::FromStr;
 /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 /// let new_state = State::from_string(
 ///     "Updated content v2".to_string(),
-///     Some("Second revision".to_string())
+///     Some("Second revision".to_string()),
 /// );
 ///
 /// let object_id = ObjectID::from_str("0x123...")?;
