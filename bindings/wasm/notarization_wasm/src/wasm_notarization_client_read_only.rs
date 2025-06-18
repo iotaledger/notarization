@@ -154,7 +154,7 @@ impl WasmNotarizationClientReadOnly {
     Ok(state)
   }
 
-  #[wasm_bindgen]
+  #[wasm_bindgen(js_name = isUpdateLocked)]
   pub async fn is_update_locked(&self, notarized_object_id: WasmObjectID) -> Result<bool> {
     let notarized_object_id = parse_wasm_object_id(&notarized_object_id)?;
     self.0.is_update_locked(notarized_object_id)
@@ -163,7 +163,7 @@ impl WasmNotarizationClientReadOnly {
         .wasm_result()
   }
 
-  #[wasm_bindgen]
+  #[wasm_bindgen(js_name = isDestroyAllowed)]
   pub async fn is_destroy_allowed(&self, notarized_object_id: WasmObjectID) -> Result<bool> {
     let notarized_object_id = parse_wasm_object_id(&notarized_object_id)?;
     self.0.is_destroy_allowed(notarized_object_id)
@@ -172,7 +172,7 @@ impl WasmNotarizationClientReadOnly {
         .wasm_result()
   }
 
-  #[wasm_bindgen]
+  #[wasm_bindgen(js_name = isTransferLocked)]
   pub async fn is_transfer_locked(&self, notarized_object_id: WasmObjectID) -> Result<bool> {
     let notarized_object_id = parse_wasm_object_id(&notarized_object_id)?;
     self.0.is_transfer_locked(notarized_object_id)

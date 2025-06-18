@@ -108,7 +108,7 @@ impl WasmNotarizationClient {
   }
 
   /// Creates a transaction that destroys a notarization object on the ledger
-  #[wasm_bindgen(js_name = destroyNotarization)]
+  #[wasm_bindgen(js_name = destroy)]
   pub fn destroy_notarization(&self, object_id: WasmObjectID) -> Result<WasmTransactionBuilder> {
     let obj_id = parse_wasm_object_id(&object_id)?;
     let tx = self.0.destroy(obj_id).into_inner();
