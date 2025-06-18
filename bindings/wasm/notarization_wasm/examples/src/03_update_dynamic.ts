@@ -1,8 +1,7 @@
 // Copyright 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-import {TimeLock, State} from "@iota/notarization-wasm";
-import { IotaClient } from "@iota/iota-sdk/client";
+import {State} from "@iota/notarization-wasm";
 import { getFundedClient, NETWORK_URL } from "./util";
 import { strict as assert } from 'assert';
 
@@ -10,8 +9,6 @@ import { strict as assert } from 'assert';
 export async function updateDynamic(): Promise<void> {
     console.log("Demonstrating update on dynamic notarization")
 
-    // create new client to connect to IOTA network
-    const iotaClient = new IotaClient({ url: NETWORK_URL });
     // create a new client that offers notarization related functions
     const notarizationClient = await getFundedClient();
 
@@ -28,7 +25,7 @@ export async function updateDynamic(): Promise<void> {
     console.log(`\n✅ Dynamic notarization created with ID: ${notarization.id}`);
 
     // create a NotarizationClientReadOnly instance to read the notarization state and other data
-    let notarizationReadOnly = notarizationClient.readOnly();
+    const notarizationReadOnly = notarizationClient.readOnly();
 
     // fetch the current state directly from the IOTA ledger using the `NotarizationClientReadOnly`
     let currentState = await notarizationReadOnly.state(notarization.id);
@@ -50,7 +47,7 @@ export async function updateDynamic(): Promise<void> {
     currentState = await notarizationReadOnly.state(notarization.id);
     console.log("Updated state:", currentState.data);
     console.log("Updated state metadata:", currentState.metadata);
-    let initialStateVersionCount = await notarizationReadOnly.stateVersionCount(notarization.id);
+    const initialStateVersionCount = await notarizationReadOnly.stateVersionCount(notarization.id);
     console.log("Updated state version count:", initialStateVersionCount);
 
 
@@ -68,7 +65,7 @@ export async function updateDynamic(): Promise<void> {
     console.log("New updatable metadata:", await notarizationReadOnly.updatableMetadata(notarization.id));
 
     // Check that the state version count did not change
-    let currentStateVersionCount = await notarizationReadOnly.stateVersionCount(notarization.id);
+    const currentStateVersionCount = await notarizationReadOnly.stateVersionCount(notarization.id);
     assert.strictEqual(initialStateVersionCount, currentStateVersionCount,
         "State version count should not change after updating updatable metadata");
     console.log("Current state version count is still:", currentStateVersionCount);

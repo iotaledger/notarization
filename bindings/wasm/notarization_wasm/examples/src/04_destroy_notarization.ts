@@ -1,8 +1,7 @@
 // Copyright 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-import {TimeLock, State} from "@iota/notarization-wasm";
-import { IotaClient } from "@iota/iota-sdk/client";
+import {TimeLock} from "@iota/notarization-wasm";
 import { getFundedClient, NETWORK_URL } from "./util";
 import { strict as assert } from 'assert';
 
@@ -27,7 +26,7 @@ export async function destroyNotarization(): Promise<void> {
 
     // Check if destroy is allowed
     // create a NotarizationClientReadOnly instance to read the notarization state and other data
-    let notarizationClientReadOnly = notarizationClient.readOnly();
+    const notarizationClientReadOnly = notarizationClient.readOnly();
     const isDestroyAllowed = await notarizationClientReadOnly.isDestroyAllowed(unlocked.id);
     console.log("🔍 Destroy allowed:", isDestroyAllowed);
 

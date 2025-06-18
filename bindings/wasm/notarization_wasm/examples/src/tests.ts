@@ -5,6 +5,7 @@ import { createLocked } from "./01_create_locked";
 import { createDynamic } from "./02_create_dynamic";
 import { updateDynamic } from "./03_update_dynamic";
 import { destroyNotarization } from "./04_destroy_notarization";
+import { updateState } from "./05_update_state";
 
 import {afterEach} from "mocha";
 
@@ -26,6 +27,9 @@ describe("Test node examples", function() {
     });
     it("Should destroy a Notarization", async () => {
         await destroyNotarization();
+    });
+    it("Should update state", async () => {
+        await updateState();
     });
 });
 

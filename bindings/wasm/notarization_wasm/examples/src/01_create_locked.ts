@@ -2,22 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {TimeLock, NotarizationMethod} from "@iota/notarization-wasm";
-import { IotaClient } from "@iota/iota-sdk/client";
 import { getFundedClient, NETWORK_URL } from "./util";
 import { strict as assert } from 'assert';
 
 /** Demonstrate how to create a Locked Notarization and publish it. */
 export async function createLocked(): Promise<void> {
-    // create new client to connect to IOTA network
-    const iotaClient = new IotaClient({ url: NETWORK_URL });
+    console.log("Creating a simple locked notarization example");
 
     // create a new client that offers notarization related functions
     const notarizationClient = await getFundedClient();
 
     // Calculate an unlock time (24 hours from now) to be used for deleteLock
-    let delete_unlock_at = Math.round(Date.now() / 1000 + 86400); // 24 hours
+    const delete_unlock_at = Math.round(Date.now() / 1000 + 86400); // 24 hours
 
-    let utf8Encode = new TextEncoder();
+    const utf8Encode = new TextEncoder();
 
     // create a new Locked Notarization
     console.log("Building a simple locked notarization and publish it to the IOTA network");

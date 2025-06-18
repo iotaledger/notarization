@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {TimeLock} from "@iota/notarization-wasm";
-import { IotaClient } from "@iota/iota-sdk/client";
 import { getFundedClient, NETWORK_URL } from "./util";
 import { strict as assert } from 'assert';
 
@@ -10,16 +9,13 @@ import { strict as assert } from 'assert';
 export async function createDynamic(): Promise<void> {
     console.log("Creating a simple dynamic notarization example");
 
-    // create new client to connect to IOTA network
-    const iotaClient = new IotaClient({ url: NETWORK_URL });
-
     // create a new client that offers notarization related functions
     const notarizationClient = await getFundedClient();
 
     // Calculate an unlock time (24 hours from now) to be used for transferLock
-    let transfer_unlock_at = Math.round(Date.now() / 1000 + 86400); // 24 hours
+    const transfer_unlock_at = Math.round(Date.now() / 1000 + 86400); // 24 hours
 
-    let utf8Encode = new TextEncoder();
+    const utf8Encode = new TextEncoder();
 
     // create a new Dynamic Notarization
     console.log("Building a dynamic notarization with transferLock and publish it to the IOTA network");

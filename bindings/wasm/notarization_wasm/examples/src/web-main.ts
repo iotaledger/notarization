@@ -4,7 +4,8 @@
 import { createLocked } from "./01_create_locked";
 import { createDynamic } from "./02_create_dynamic";
 import { updateDynamic } from "./03_update_dynamic";
-import {destroyNotarization} from "./04_destroy_notarization";
+import { destroyNotarization } from "./04_destroy_notarization";
+import { updateState } from "./05_update_state";
 
 export async function main(example?: string) {
     // Extract example name.
@@ -22,6 +23,8 @@ export async function main(example?: string) {
             return await updateDynamic();
         case "04_destroy_notarization":
             return await destroyNotarization();
+        case "05_update_state":
+            return await updateState();
         default:
             throw "Unknown example name: '" + argument + "'";
     }
