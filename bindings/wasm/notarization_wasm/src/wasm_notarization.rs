@@ -1,23 +1,28 @@
 // Copyright 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use iota_interaction::rpc_types::IotaTransactionBlockEvents;
-use js_sys::Object;
 use wasm_bindgen::prelude::*;
 
 use notarization::core::builder::Locked;
 use notarization::core::builder::Dynamic;
 use notarization::core::notarization::{CreateNotarization, OnChainNotarization};
+use notarization::core::destroy::DestroyNotarization;
+use notarization::core::metadata::UpdateMetadata;
+use notarization::core::state::UpdateState;
+use notarization::core::transfer::TransferNotarization;
 
 use iota_interaction_ts::core_client::WasmCoreClientReadOnly;
 use iota_interaction_ts::bindings::WasmIotaTransactionBlockEffects;
 use iota_interaction_ts::bindings::WasmIotaTransactionBlockEvents;
-use iota_interaction_ts::error::{Result, WasmResult};
-use product_common::transaction::transaction_builder::Transaction;
-use product_common::bindings::core_client::WasmManagedCoreClientReadOnly;
+use iota_interaction_ts::error::Result;
+use product_common::bindings::WasmObjectID;
+use product_common::bindings::WasmIotaAddress;
+use product_common::bindings::utils::{apply_with_events, build_programmable_transaction,
+                                      parse_wasm_iota_address, parse_wasm_object_id};
+
 use crate::wasm_notarization_builder::WasmNotarizationBuilderLocked;
 use crate::wasm_notarization_builder::WasmNotarizationBuilderDynamic;
-use crate::wasm_types::{WasmState, WasmNotarizationMethod};
+use crate::wasm_types::{WasmState, WasmNotarizationMethod, WasmEmpty};
 use crate::wasm_types::WasmImmutableMetadata;
 
 #[wasm_bindgen(js_name = OnChainNotarization, inspectable)]
@@ -44,21 +49,10 @@ impl WasmOnChainNotarization {
     pub fn method(&self) -> WasmNotarizationMethod {self.0.method.clone().into()}
 }
 
-async fn apply_with_events<M: Clone>(
-    notarization: CreateNotarization<M>,
-    wasm_effects: &WasmIotaTransactionBlockEffects,
-    wasm_events: &WasmIotaTransactionBlockEvents,
-    client: &WasmCoreClientReadOnly,
-) -> Result<WasmOnChainNotarization> {
-    let managed_client = WasmManagedCoreClientReadOnly::from_wasm(client)?;
-    let mut effects = wasm_effects.clone().into();
-    let mut events = wasm_events.clone().into();
-    let apply_result = notarization.apply_with_events(&mut effects, &mut events, &managed_client).await;
-    let rem_wasm_effects = WasmIotaTransactionBlockEffects::from(&effects);
-    Object::assign(wasm_effects, &rem_wasm_effects);
-    let rem_wasm_events = WasmIotaTransactionBlockEvents::from(&events);
-    Object::assign(wasm_events, &rem_wasm_events);
-    apply_result.wasm_result().map(WasmOnChainNotarization::new)
+impl From<OnChainNotarization> for WasmOnChainNotarization {
+    fn from(identity: OnChainNotarization) -> Self {
+        WasmOnChainNotarization::new(identity)
+    }
 }
 
 #[wasm_bindgen(js_name = CreateNotarizationLocked, inspectable)]
@@ -73,13 +67,7 @@ impl WasmCreateNotarizationLocked {
 
     #[wasm_bindgen(js_name = buildProgrammableTransaction)]
     pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
-        let managed_client = WasmManagedCoreClientReadOnly::from_wasm(client)?;
-        let pt = self
-            .0
-            .build_programmable_transaction(&managed_client)
-            .await
-            .wasm_result()?;
-        bcs::to_bytes(&pt).wasm_result()
+        build_programmable_transaction(&self.0, client).await
     }
 
     #[wasm_bindgen]
@@ -114,13 +102,7 @@ impl WasmCreateNotarizationDynamic {
 
     #[wasm_bindgen(js_name = buildProgrammableTransaction)]
     pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
-        let managed_client = WasmManagedCoreClientReadOnly::from_wasm(client)?;
-        let pt = self
-            .0
-            .build_programmable_transaction(&managed_client)
-            .await
-            .wasm_result()?;
-        bcs::to_bytes(&pt).wasm_result()
+        build_programmable_transaction(&self.0, client).await
     }
 
     #[wasm_bindgen]
@@ -143,3 +125,147 @@ impl WasmCreateNotarizationDynamic {
     }
 }
 
+#[wasm_bindgen(js_name = UpdateState, inspectable)]
+pub struct WasmUpdateState(pub(crate) UpdateState);
+
+#[wasm_bindgen(js_class = UpdateState)]
+impl WasmUpdateState {
+    #[wasm_bindgen(constructor)]
+    pub fn new(state: WasmState, object_id: WasmObjectID) -> Result<Self> {
+        let obj_id = parse_wasm_object_id(&object_id)?;
+        Ok(WasmUpdateState(UpdateState::new(state.0, obj_id)))
+    }
+
+    #[wasm_bindgen(js_name = buildProgrammableTransaction)]
+    pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
+        build_programmable_transaction(&self.0, client).await
+    }
+
+    #[wasm_bindgen]
+    pub async fn apply(
+        self,
+        _wasm_effects: &WasmIotaTransactionBlockEffects,
+        _client: &WasmCoreClientReadOnly,
+    ) -> Result<WasmOnChainNotarization> {
+        unimplemented!("Function UpdateState::apply() should never be called.");
+    }
+
+    #[wasm_bindgen(js_name = applyWithEvents)]
+    pub async fn apply_with_events(
+        self,
+        wasm_effects: &WasmIotaTransactionBlockEffects,
+        wasm_events: &WasmIotaTransactionBlockEvents,
+        client: &WasmCoreClientReadOnly,
+    ) -> Result<WasmEmpty> {
+        apply_with_events(self.0, wasm_effects, wasm_events, client).await
+    }
+}
+
+#[wasm_bindgen(js_name = UpdateMetadata, inspectable)]
+pub struct WasmUpdateMetadata(pub(crate) UpdateMetadata);
+
+#[wasm_bindgen(js_class = UpdateMetadata)]
+impl WasmUpdateMetadata {
+    #[wasm_bindgen(constructor)]
+    pub fn new(metadata: Option<String>, object_id: WasmObjectID) -> Result<Self> {
+        let obj_id = parse_wasm_object_id(&object_id)?;
+        Ok(WasmUpdateMetadata(UpdateMetadata::new(metadata, obj_id)))
+    }
+
+    #[wasm_bindgen(js_name = buildProgrammableTransaction)]
+    pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
+        build_programmable_transaction(&self.0, client).await
+    }
+
+    #[wasm_bindgen]
+    pub async fn apply(
+        self,
+        _wasm_effects: &WasmIotaTransactionBlockEffects,
+        _client: &WasmCoreClientReadOnly,
+    ) -> Result<WasmEmpty> {
+        unimplemented!("Function UpdateMetadata::apply() should never be called.");
+    }
+
+    #[wasm_bindgen(js_name = applyWithEvents)]
+    pub async fn apply_with_events(
+        self,
+        wasm_effects: &WasmIotaTransactionBlockEffects,
+        wasm_events: &WasmIotaTransactionBlockEvents,
+        client: &WasmCoreClientReadOnly,
+    ) -> Result<WasmEmpty> {
+        apply_with_events(self.0, wasm_effects, wasm_events, client).await
+    }
+}
+
+#[wasm_bindgen(js_name = DestroyNotarization, inspectable)]
+pub struct WasmDestroyNotarization(pub(crate) DestroyNotarization);
+
+#[wasm_bindgen(js_class = DestroyNotarization)]
+impl WasmDestroyNotarization {
+    #[wasm_bindgen(constructor)]
+    pub fn new(object_id: WasmObjectID) -> Result<Self> {
+        let obj_id = parse_wasm_object_id(&object_id)?;
+        Ok(WasmDestroyNotarization(DestroyNotarization::new(obj_id)))
+    }
+
+    #[wasm_bindgen(js_name = buildProgrammableTransaction)]
+    pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
+        build_programmable_transaction(&self.0, client).await
+    }
+
+    #[wasm_bindgen]
+    pub async fn apply(
+        self,
+        _wasm_effects: &WasmIotaTransactionBlockEffects,
+        _client: &WasmCoreClientReadOnly,
+    ) -> Result<WasmEmpty> {
+        unimplemented!("Function DestroyNotarization::apply() should never be called.");
+    }
+
+    #[wasm_bindgen(js_name = applyWithEvents)]
+    pub async fn apply_with_events(
+        self,
+        wasm_effects: &WasmIotaTransactionBlockEffects,
+        wasm_events: &WasmIotaTransactionBlockEvents,
+        client: &WasmCoreClientReadOnly,
+    ) -> Result<WasmEmpty> {
+        apply_with_events(self.0, wasm_effects, wasm_events, client).await
+    }
+}
+
+#[wasm_bindgen(js_name = TransferNotarization, inspectable)]
+pub struct WasmTransferNotarization(pub(crate) TransferNotarization);
+
+#[wasm_bindgen(js_class = TransferNotarization)]
+impl WasmTransferNotarization {
+    #[wasm_bindgen(constructor)]
+    pub fn new(recipient: WasmIotaAddress, object_id: WasmObjectID) -> Result<Self> {
+        let obj_id = parse_wasm_object_id(&object_id)?;
+        let recipient_address = parse_wasm_iota_address(&recipient)?;
+        Ok(WasmTransferNotarization(TransferNotarization::new(recipient_address, obj_id)))
+    }
+
+    #[wasm_bindgen(js_name = buildProgrammableTransaction)]
+    pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
+        build_programmable_transaction(&self.0, client).await
+    }
+
+    #[wasm_bindgen]
+    pub async fn apply(
+        self,
+        _wasm_effects: &WasmIotaTransactionBlockEffects,
+        _client: &WasmCoreClientReadOnly,
+    ) -> Result<WasmEmpty> {
+        unimplemented!("Function TransferNotarization::apply() should never be called.");
+    }
+
+    #[wasm_bindgen(js_name = applyWithEvents)]
+    pub async fn apply_with_events(
+        self,
+        wasm_effects: &WasmIotaTransactionBlockEffects,
+        wasm_events: &WasmIotaTransactionBlockEvents,
+        client: &WasmCoreClientReadOnly,
+    ) -> Result<WasmEmpty> {
+        apply_with_events(self.0, wasm_effects, wasm_events, client).await
+    }
+}

@@ -12,7 +12,6 @@ export async function createDynamic(): Promise<void> {
 
     // create new client to connect to IOTA network
     const iotaClient = new IotaClient({ url: NETWORK_URL });
-    const network = await iotaClient.getChainIdentifier();
 
     // create a new client that offers notarization related functions
     const notarizationClient = await getFundedClient();

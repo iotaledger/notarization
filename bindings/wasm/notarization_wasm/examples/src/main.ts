@@ -3,6 +3,7 @@
 
 import { createLocked } from "./01_create_locked";
 import { createDynamic } from "./02_create_dynamic";
+import { updateDynamic } from "./03_update_dynamic";
 
 export async function main(example?: string) {
     // Extract example name.
@@ -16,6 +17,8 @@ export async function main(example?: string) {
             return await createLocked();
         case "02_create_dynamic":
             return await createDynamic();
+        case "03_update_dynamic":
+            return await updateDynamic();
         default:
             throw "Unknown example name: '" + argument + "'";
     }

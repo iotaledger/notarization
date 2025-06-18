@@ -61,11 +61,11 @@ IOTA_NOTARIZATION_PKG_ID=0x222741bbdff74b42df48a7b4733185e9b24becb8ccfbafe8eac86
 
 The following examples are available:
 
-| Name                                         | Information                                                            |
-|:---------------------------------------------|:-----------------------------------------------------------------------|
-| [0_create_locked](src/01_create_locked.ts)   | Demonstrates how to create a a new locked notarization.                |
-| [1_create_dynamic](src/02_create_dynamic.ts) | Demonstrates how to create a a new dynamic notarization.               |
-| [2_update_dynamic](src/03_update_dynamic.ts) | Demonstrates how to update a dynamic notarization. |
+| Name                                          | Information                                                            |
+|:----------------------------------------------|:-----------------------------------------------------------------------|
+| [01_create_locked](src/01_create_locked.ts)   | Demonstrates how to create a a new locked notarization.                |
+| [02_create_dynamic](src/02_create_dynamic.ts) | Demonstrates how to create a a new dynamic notarization.               |
+| [03_update_dynamic](src/03_update_dynamic.ts) | Demonstrates how to update a dynamic notarization. |
 
 <!--
 

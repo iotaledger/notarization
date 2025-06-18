@@ -3,11 +3,21 @@
 
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
+use js_sys::Uint8Array;
 use notarization::core::metadata::ImmutableMetadata;
 use notarization::core::state::{State, Data};
 use notarization::core::timelock::{LockMetadata};
 use notarization::core::NotarizationMethod;
 use crate::wasm_time_lock::WasmTimeLock;
+
+#[wasm_bindgen(js_name = Empty, inspectable)]
+pub struct WasmEmpty;
+
+impl From<()> for WasmEmpty {
+    fn from(_: ()) -> WasmEmpty {
+        WasmEmpty
+    }
+}
 
 #[wasm_bindgen(js_name = Data, inspectable)]
 pub struct WasmData(pub(crate) Data);
@@ -62,6 +72,28 @@ impl WasmState {
 
     #[wasm_bindgen(getter)]
     pub fn metadata(&self) -> Option<String> { self.0.metadata.clone() }
+
+    #[wasm_bindgen(js_name = fromString)]
+    pub fn from_string(data: String, metadata: Option<String>) -> Self {
+        WasmState(State::from_string(data, metadata))
+    }
+
+    #[wasm_bindgen(js_name = fromBytes)]
+    pub fn from_bytes(data: Uint8Array, metadata: Option<String>) -> Self {
+        WasmState(State::from_bytes(data.to_vec(), metadata))
+    }
+}
+
+impl From<State> for WasmState {
+    fn from(value: State) -> Self {
+        WasmState(value)
+    }
+}
+
+impl From<WasmState> for State {
+    fn from(value: WasmState) -> Self {
+        value.0
+    }
 }
 
 #[wasm_bindgen(js_name = LockMetadata, getter_with_clone, inspectable)]

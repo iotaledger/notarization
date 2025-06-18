@@ -1,7 +1,12 @@
 // Copyright 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+use wasm_bindgen::prelude::*;
+
 use product_common::bindings::WasmIotaAddress;
+use product_common::bindings::transaction::WasmTransactionBuilder;
+use product_common::bindings::WasmObjectID;
+use product_common::bindings::utils::{into_transaction_builder, parse_wasm_iota_address, parse_wasm_object_id};
 use product_common::core_client::CoreClient;
 use product_common::core_client::CoreClientReadOnly;
 use iota_interaction_ts::bindings::{WasmTransactionSigner, WasmPublicKey, WasmIotaClient};
@@ -12,8 +17,9 @@ use notarization::NotarizationClient;
 use crate::wasm_notarization_client_read_only::WasmNotarizationClientReadOnly;
 use crate::wasm_notarization_builder::WasmNotarizationBuilderDynamic;
 use crate::wasm_notarization_builder::WasmNotarizationBuilderLocked;
-
-use wasm_bindgen::prelude::*;
+use crate::wasm_types::WasmState;
+use crate::wasm_notarization::{WasmUpdateMetadata, WasmUpdateState, WasmDestroyNotarization};
+use crate::wasm_notarization::WasmTransferNotarization;
 
 /// A client to interact with identities on the IOTA chain.
 ///
@@ -83,5 +89,42 @@ impl WasmNotarizationClient {
   #[wasm_bindgen(js_name = createLocked)]
   pub fn create_locked(&self) -> WasmNotarizationBuilderLocked {
     WasmNotarizationBuilderLocked(self.0.create_locked_notarization())
-  }  
+  }
+
+  /// Creates a transaction that updates the state of a notarization
+  #[wasm_bindgen(js_name = updateState)]
+  pub fn update_state(&self, state: WasmState, object_id: WasmObjectID) -> Result<WasmTransactionBuilder> {
+    let obj_id = parse_wasm_object_id(&object_id)?;
+    let tx = self.0.update_state(state.0, obj_id).into_inner();
+    Ok(into_transaction_builder(WasmUpdateState(tx)))
+  }
+
+  /// Creates a transaction that updates the metadata of a notarization
+  #[wasm_bindgen(js_name = updateMetadata)]
+  pub fn update_metadata(&self, metadata: Option<String>, object_id: WasmObjectID) -> Result<WasmTransactionBuilder> {
+    let obj_id = parse_wasm_object_id(&object_id)?;
+    let tx = self.0.update_metadata(metadata, obj_id).into_inner();
+    Ok(into_transaction_builder(WasmUpdateMetadata(tx)))
+  }
+
+  /// Creates a transaction that destroys a notarization object on the ledger
+  #[wasm_bindgen(js_name = destroyNotarization)]
+  pub fn destroy_notarization(&self, object_id: WasmObjectID) -> Result<WasmTransactionBuilder> {
+    let obj_id = parse_wasm_object_id(&object_id)?;
+    let tx = self.0.destroy(obj_id).into_inner();
+    Ok(into_transaction_builder(WasmDestroyNotarization(tx)))
+  }
+
+  /// Creates a transaction that transfers a notarization object to a new owner
+  #[wasm_bindgen(js_name = transferNotarization)]
+  pub fn transfer_notarization(
+    &self,
+    object_id: WasmObjectID,
+    recipient: WasmIotaAddress,
+  ) -> Result<WasmTransactionBuilder> {
+    let obj_id = parse_wasm_object_id(&object_id)?;
+    let recipient_address = parse_wasm_iota_address(&recipient)?;
+    let tx = self.0.transfer_notarization(obj_id, recipient_address).into_inner();
+    Ok(into_transaction_builder(WasmTransferNotarization(tx)))
+  }
 }
