@@ -8,6 +8,7 @@ import { destroyNotarization } from "./04_destroy_notarization";
 import { updateState } from "./05_update_state";
 import { updateMetadata } from "./06_update_metadata";
 import { transferNotarization } from "./07_transfer_notarization";
+import { accessReadOnlyMethods } from "./08_access_read_only_methods";
 
 import {afterEach} from "mocha";
 
@@ -38,6 +39,9 @@ describe("Test node examples", function() {
     });
     it("Should transfer Notarization objects", async () => {
         await transferNotarization();
+    });
+    it("Should access ReadOnlyMethods", async () => {
+        await accessReadOnlyMethods();
     });
 });
 

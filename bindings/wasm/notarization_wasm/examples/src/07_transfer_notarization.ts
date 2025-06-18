@@ -1,4 +1,7 @@
-import {TimeLock, State} from "@iota/notarization-wasm";
+// Copyright 2025 IOTA Stiftung
+// SPDX-License-Identifier: Apache-2.0
+
+import { TimeLock } from "@iota/notarization-wasm";
 import { getFundedClient } from "./util";
 import { strict as assert } from 'assert';
 import { Ed25519Keypair } from "@iota/iota-sdk/keypairs/ed25519";

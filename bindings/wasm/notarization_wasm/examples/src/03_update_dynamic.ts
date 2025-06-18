@@ -1,8 +1,8 @@
 // Copyright 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-import {State} from "@iota/notarization-wasm";
-import { getFundedClient, NETWORK_URL } from "./util";
+import { State } from "@iota/notarization-wasm";
+import { getFundedClient } from "./util";
 import { strict as assert } from 'assert';
 
 /** Demonstrate how to create a Dynamic Notarization, publish it and update its state. */

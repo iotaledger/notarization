@@ -8,6 +8,7 @@ import { destroyNotarization } from "./04_destroy_notarization";
 import { updateState } from "./05_update_state";
 import { updateMetadata } from "./06_update_metadata";
 import { transferNotarization } from "./07_transfer_notarization";
+import { accessReadOnlyMethods } from "./08_access_read_only_methods";
 
 export async function main(example?: string) {
     // Extract example name.
@@ -31,6 +32,8 @@ export async function main(example?: string) {
             return await updateMetadata();
         case "07_transfer_notarization":
             return await transferNotarization();
+        case "08_access_read_only_methods":
+            return await accessReadOnlyMethods();
         default:
             throw "Unknown example name: '" + argument + "'";
     }
