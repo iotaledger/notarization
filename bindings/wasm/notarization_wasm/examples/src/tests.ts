@@ -7,6 +7,7 @@ import { updateDynamic } from "./03_update_dynamic";
 import { destroyNotarization } from "./04_destroy_notarization";
 import { updateState } from "./05_update_state";
 import { updateMetadata } from "./06_update_metadata";
+import { transferNotarization } from "./07_transfer_notarization";
 
 import {afterEach} from "mocha";
 
@@ -34,6 +35,9 @@ describe("Test node examples", function() {
     });
     it("Should update metadata", async () => {
         await updateMetadata();
+    });
+    it("Should transfer Notarization objects", async () => {
+        await transferNotarization();
     });
 });
 

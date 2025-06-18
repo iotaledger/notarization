@@ -7,6 +7,7 @@ import { updateDynamic } from "./03_update_dynamic";
 import { destroyNotarization } from "./04_destroy_notarization";
 import { updateState } from "./05_update_state";
 import { updateMetadata } from "./06_update_metadata";
+import { transferNotarization } from "./07_transfer_notarization";
 
 export async function main(example?: string) {
     // Extract example name.
@@ -28,6 +29,8 @@ export async function main(example?: string) {
             return await updateState();
         case "06_update_metadata":
             return await updateMetadata();
+        case "07_transfer_notarization":
+            return await transferNotarization();
         default:
             throw "Unknown example name: '" + argument + "'";
     }

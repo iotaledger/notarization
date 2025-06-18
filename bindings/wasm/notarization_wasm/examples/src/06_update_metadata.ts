@@ -1,4 +1,3 @@
-import {State} from "@iota/notarization-wasm";
 import { getFundedClient } from "./util";
 import { strict as assert } from 'assert';
 
