@@ -6,6 +6,7 @@ import { createDynamic } from "./02_create_dynamic";
 import { updateDynamic } from "./03_update_dynamic";
 import { destroyNotarization } from "./04_destroy_notarization";
 import { updateState } from "./05_update_state";
+import { updateMetadata } from "./06_update_metadata";
 
 export async function main(example?: string) {
     // Extract example name.
@@ -25,6 +26,8 @@ export async function main(example?: string) {
             return await destroyNotarization();
         case "05_update_state":
             return await updateState();
+        case "06_update_metadata":
+            return await updateMetadata();
         default:
             throw "Unknown example name: '" + argument + "'";
     }

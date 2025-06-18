@@ -6,6 +6,7 @@ import { createDynamic } from "./02_create_dynamic";
 import { updateDynamic } from "./03_update_dynamic";
 import { destroyNotarization } from "./04_destroy_notarization";
 import { updateState } from "./05_update_state";
+import { updateMetadata } from "./06_update_metadata";
 
 import {afterEach} from "mocha";
 
@@ -30,6 +31,9 @@ describe("Test node examples", function() {
     });
     it("Should update state", async () => {
         await updateState();
+    });
+    it("Should update metadata", async () => {
+        await updateMetadata();
     });
 });
 

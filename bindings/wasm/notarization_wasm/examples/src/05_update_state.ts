@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {State} from "@iota/notarization-wasm";
-import { getFundedClient, NETWORK_URL } from "./util";
+import { getFundedClient } from "./util";
 import { strict as assert } from 'assert';
 
 /** Demonstrate how to update the state of a Notarization. */
