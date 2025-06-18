@@ -12,19 +12,18 @@ use tokio::sync::OnceCell;
 
 use super::operations::{NotarizationImpl, NotarizationOperations};
 use crate::error::Error;
-use crate::package::notarization_package_id;
 
 pub struct TransferNotarization {
     recipient: IotaAddress,
-    object_id: ObjectID,
+    notarization_id: ObjectID,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl TransferNotarization {
-    pub fn new(recipient: IotaAddress, object_id: ObjectID) -> Self {
+    pub fn new(recipient: IotaAddress, notarization_id: ObjectID) -> Self {
         Self {
             recipient,
-            object_id,
+            notarization_id,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -33,9 +32,7 @@ impl TransferNotarization {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        let package_id = notarization_package_id(client).await?;
-
-        NotarizationImpl::transfer_notarization(package_id, self.object_id, self.recipient, client).await
+        NotarizationImpl::transfer_notarization(self.notarization_id, self.recipient, client).await
     }
 }
 
