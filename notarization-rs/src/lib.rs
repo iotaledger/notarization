@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub mod client;
-pub mod client_tools;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod core;
 pub mod error;

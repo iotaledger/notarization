@@ -121,7 +121,7 @@ impl NotarizationBuilder<Locked> {
     /// // Can be destroyed after January 1, 2025
     /// let builder = NotarizationBuilder::locked().with_delete_at(TimeLock::UnlockAt(1735689600));
     /// ```
-    pub fn with_delete_at(mut self, lock: TimeLock) -> Self {
+    pub fn with_delete_lock(mut self, lock: TimeLock) -> Self {
         self.delete_lock = Some(lock);
         self
     }
@@ -139,7 +139,7 @@ impl NotarizationBuilder<Locked> {
     /// # use notarization::core::types::{TimeLock, State};
     /// let transaction = NotarizationBuilder::locked()
     ///     .with_string_state("Document content", None)
-    ///     .with_delete_at(TimeLock::UnlockAt(1735689600))
+    ///     .with_delete_lock(TimeLock::UnlockAt(1735689600))
     ///     .finish()?;
     /// # Ok::<(), notarization::Error>(())
     /// ```

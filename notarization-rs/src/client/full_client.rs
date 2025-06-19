@@ -133,6 +133,18 @@ where
     /// ## Errors
     ///
     /// Returns an error if the signer's public key cannot be retrieved.
+    ///
+    /// ## Example
+    ///
+    /// ```rust,ignore
+    /// # use notarization::client::full_client::{NotarizationClient, NotarizationClientReadOnly};
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let read_client = NotarizationClientReadOnly::new(adapter, package_id)?;
+    /// let signer = get_signer()?; // Your signer implementation
+    /// let client = NotarizationClient::new(read_client, signer).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn new(client: NotarizationClientReadOnly, signer: S) -> Result<Self, Error> {
         let public_key = signer
             .public_key()

@@ -1,6 +1,14 @@
 // Copyright 2020-2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! # Notarization Operations
+//!
+//! This module defines the operations for notarizations.
+//!
+//! ## Overview
+//!
+//! The operations are used to build transactions for notarizations.
+
 use std::str::FromStr;
 
 use async_trait::async_trait;
@@ -41,7 +49,6 @@ impl NotarizationImpl {
     /// * Method name is invalid
     async fn build_transaction<C, F>(
         client: &C,
-        package_id: ObjectID,
         object_id: ObjectID,
         method: impl AsRef<str>,
         additional_args: F,
@@ -73,7 +80,13 @@ impl NotarizationImpl {
             .map_err(|e| Error::InvalidArgument(format!("Invalid method name '{}': {}", method.as_ref(), e)))?;
 
         // Build the move call
-        ptb.programmable_move_call(package_id, ident_str!("notarization").into(), function, tag, args);
+        ptb.programmable_move_call(
+            client.package_id(),
+            ident_str!("notarization").into(),
+            function,
+            tag,
+            args,
+        );
 
         Ok(ptb.finish())
     }
@@ -151,16 +164,15 @@ pub(crate) trait NotarizationOperations {
     /// Build a transaction that updates the state of a notarization
     async fn update_state<C>(
         client: &C,
-        package_id: ObjectID,
         object_id: ObjectID,
         new_state: State,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        NotarizationImpl::build_transaction(client, package_id, object_id, "update_state", |ptb| {
+        NotarizationImpl::build_transaction(client, object_id, "update_state", |ptb| {
             Ok(vec![
-                new_state.into_ptb(ptb, package_id)?,
+                new_state.into_ptb(ptb, client.package_id())?,
                 move_utils::get_clock_ref(ptb),
             ])
         })
@@ -168,11 +180,11 @@ pub(crate) trait NotarizationOperations {
     }
 
     /// Build a transaction that destroys a notarization
-    async fn destroy<C>(client: &C, package_id: ObjectID, object_id: ObjectID) -> Result<ProgrammableTransaction, Error>
+    async fn destroy<C>(client: &C, object_id: ObjectID) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        NotarizationImpl::build_transaction(client, package_id, object_id, "destroy", |ptb| {
+        NotarizationImpl::build_transaction(client, object_id, "destroy", |ptb| {
             Ok(vec![move_utils::get_clock_ref(ptb)])
         })
         .await
@@ -181,14 +193,13 @@ pub(crate) trait NotarizationOperations {
     /// Build a transaction that updates the metadata of a notarization
     async fn update_metadata<C>(
         client: &C,
-        package_id: ObjectID,
         object_id: ObjectID,
         new_metadata: Option<String>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        NotarizationImpl::build_transaction(client, package_id, object_id, "update_metadata", |ptb| {
+        NotarizationImpl::build_transaction(client, object_id, "update_metadata", |ptb| {
             Ok(vec![
                 move_utils::ptb_pure(ptb, "new_metadata", new_metadata)?,
                 move_utils::get_clock_ref(ptb),
@@ -198,143 +209,102 @@ pub(crate) trait NotarizationOperations {
     }
 
     /// Build a transaction that returns the notarization method
-    async fn notarization_method<C>(
-        package_id: ObjectID,
-        object_id: ObjectID,
-        client: &C,
-    ) -> Result<ProgrammableTransaction, Error>
+    async fn notarization_method<C>(object_id: ObjectID, client: &C) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        NotarizationImpl::build_transaction(client, package_id, object_id, "notarization_method", |_| Ok(vec![])).await
+        NotarizationImpl::build_transaction(client, object_id, "notarization_method", |_| Ok(vec![])).await
     }
 
     /// Build a transaction that checks if the notarization is locked for update
-    async fn is_update_locked<C>(
-        package_id: ObjectID,
-        object_id: ObjectID,
-        client: &C,
-    ) -> Result<ProgrammableTransaction, Error>
+    async fn is_update_locked<C>(object_id: ObjectID, client: &C) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        NotarizationImpl::build_transaction(client, package_id, object_id, "is_update_locked", |ptb| {
+        NotarizationImpl::build_transaction(client, object_id, "is_update_locked", |ptb| {
             Ok(vec![move_utils::get_clock_ref(ptb)])
         })
         .await
     }
 
     /// Build a transaction that checks if the notarization is allowed to be destroyed
-    async fn is_destroy_allowed<C>(
-        package_id: ObjectID,
-        object_id: ObjectID,
-        client: &C,
-    ) -> Result<ProgrammableTransaction, Error>
+    async fn is_destroy_allowed<C>(object_id: ObjectID, client: &C) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        NotarizationImpl::build_transaction(client, package_id, object_id, "is_destroy_allowed", |ptb| {
+        NotarizationImpl::build_transaction(client, object_id, "is_destroy_allowed", |ptb| {
             Ok(vec![move_utils::get_clock_ref(ptb)])
         })
         .await
     }
 
     /// Build a transaction that checks if the notarization is locked for transfer
-    async fn is_transfer_locked<C>(
-        package_id: ObjectID,
-        object_id: ObjectID,
-        client: &C,
-    ) -> Result<ProgrammableTransaction, Error>
+    async fn is_transfer_locked<C>(object_id: ObjectID, client: &C) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        NotarizationImpl::build_transaction(client, package_id, object_id, "is_transfer_locked", |ptb| {
+        NotarizationImpl::build_transaction(client, object_id, "is_transfer_locked", |ptb| {
             Ok(vec![move_utils::get_clock_ref(ptb)])
         })
         .await
     }
 
     /// Last change timestamp
-    async fn last_change_ts<C>(
-        package_id: ObjectID,
-        object_id: ObjectID,
-        client: &C,
-    ) -> Result<ProgrammableTransaction, Error>
+    async fn last_change_ts<C>(object_id: ObjectID, client: &C) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        NotarizationImpl::build_transaction(client, package_id, object_id, "last_change", |_| Ok(vec![])).await
+        NotarizationImpl::build_transaction(client, object_id, "last_change", |_| Ok(vec![])).await
     }
 
     /// Version count
-    async fn version_count<C>(
-        package_id: ObjectID,
-        object_id: ObjectID,
-        client: &C,
-    ) -> Result<ProgrammableTransaction, Error>
+    async fn version_count<C>(object_id: ObjectID, client: &C) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        NotarizationImpl::build_transaction(client, package_id, object_id, "version_count", |_| Ok(vec![])).await
+        NotarizationImpl::build_transaction(client, object_id, "version_count", |_| Ok(vec![])).await
     }
 
     /// Created at timestamp
-    async fn created_at<C>(
-        package_id: ObjectID,
-        object_id: ObjectID,
-        client: &C,
-    ) -> Result<ProgrammableTransaction, Error>
+    async fn created_at<C>(object_id: ObjectID, client: &C) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        NotarizationImpl::build_transaction(client, package_id, object_id, "created_at", |_| Ok(vec![])).await
+        NotarizationImpl::build_transaction(client, object_id, "created_at", |_| Ok(vec![])).await
     }
 
     /// Description
-    async fn description<C>(
-        package_id: ObjectID,
-        object_id: ObjectID,
-        client: &C,
-    ) -> Result<ProgrammableTransaction, Error>
+    async fn description<C>(object_id: ObjectID, client: &C) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        NotarizationImpl::build_transaction(client, package_id, object_id, "description", |_| Ok(vec![])).await
+        NotarizationImpl::build_transaction(client, object_id, "description", |_| Ok(vec![])).await
     }
 
     /// Updatable metadata
-    async fn updatable_metadata<C>(
-        package_id: ObjectID,
-        object_id: ObjectID,
-        client: &C,
-    ) -> Result<ProgrammableTransaction, Error>
+    async fn updatable_metadata<C>(object_id: ObjectID, client: &C) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        NotarizationImpl::build_transaction(client, package_id, object_id, "updatable_metadata", |_| Ok(vec![])).await
+        NotarizationImpl::build_transaction(client, object_id, "updatable_metadata", |_| Ok(vec![])).await
     }
 
     /// Lock metadata
-    async fn lock_metadata<C>(
-        package_id: ObjectID,
-        object_id: ObjectID,
-        client: &C,
-    ) -> Result<ProgrammableTransaction, Error>
+    async fn lock_metadata<C>(object_id: ObjectID, client: &C) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        NotarizationImpl::build_transaction(client, package_id, object_id, "lock_metadata", |_| Ok(vec![])).await
+        NotarizationImpl::build_transaction(client, object_id, "lock_metadata", |_| Ok(vec![])).await
     }
 
-    async fn state<C>(package_id: ObjectID, object_id: ObjectID, client: &C) -> Result<ProgrammableTransaction, Error>
+    async fn state<C>(object_id: ObjectID, client: &C) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        NotarizationImpl::build_transaction(client, package_id, object_id, "state", |_| Ok(vec![])).await
+        NotarizationImpl::build_transaction(client, object_id, "state", |_| Ok(vec![])).await
     }
 
     async fn transfer_notarization<C>(
-        package_id: ObjectID,
         object_id: ObjectID,
         recipient: IotaAddress,
         client: &C,
@@ -356,7 +326,7 @@ pub(crate) trait NotarizationOperations {
         let clock = move_utils::get_clock_ref(&mut ptb);
 
         ptb.programmable_move_call(
-            package_id,
+            client.package_id(),
             ident_str!("dynamic_notarization").into(),
             ident_str!("transfer").into(),
             tag,

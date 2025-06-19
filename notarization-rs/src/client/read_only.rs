@@ -16,7 +16,7 @@ use product_common::network_name::NetworkName;
 use product_common::package_registry::{Env, Metadata};
 use serde::de::DeserializeOwned;
 
-use crate::client_tools::network_id;
+use super::network_id;
 use crate::core::operations::{NotarizationImpl, NotarizationOperations};
 use crate::core::types::{Data, LockMetadata, State};
 use crate::core::{NotarizationMethod, move_utils};
@@ -174,7 +174,7 @@ impl NotarizationClientReadOnly {
     /// # Returns
     /// A `Result` containing the timestamp as a `u64` or an [`Error`].
     pub async fn last_state_change_ts(&self, notarized_object_id: ObjectID) -> Result<u64, Error> {
-        let tx = NotarizationImpl::last_change_ts(self.notarization_pkg_id, notarized_object_id, self).await?;
+        let tx = NotarizationImpl::last_change_ts(notarized_object_id, self).await?;
 
         self.execute_read_only_transaction(tx).await
     }
@@ -190,7 +190,7 @@ impl NotarizationClientReadOnly {
     /// # Returns
     /// A `Result` containing the timestamp as a `u64` or an [`Error`].
     pub async fn created_at_ts(&self, notarized_object_id: ObjectID) -> Result<u64, Error> {
-        let tx = NotarizationImpl::created_at(self.notarization_pkg_id, notarized_object_id, self).await?;
+        let tx = NotarizationImpl::created_at(notarized_object_id, self).await?;
 
         self.execute_read_only_transaction(tx).await
     }
@@ -206,7 +206,7 @@ impl NotarizationClientReadOnly {
     /// # Returns
     /// A `Result` containing the version count as a `u64` or an [`Error`].
     pub async fn state_version_count(&self, notarized_object_id: ObjectID) -> Result<u64, Error> {
-        let tx = NotarizationImpl::version_count(self.notarization_pkg_id, notarized_object_id, self).await?;
+        let tx = NotarizationImpl::version_count(notarized_object_id, self).await?;
 
         self.execute_read_only_transaction(tx).await
     }
@@ -222,7 +222,7 @@ impl NotarizationClientReadOnly {
     /// # Returns
     /// A `Result` containing an `Option<String>` or an [`Error`]. `None` if no description is set.
     pub async fn description(&self, notarized_object_id: ObjectID) -> Result<Option<String>, Error> {
-        let tx = NotarizationImpl::description(self.notarization_pkg_id, notarized_object_id, self).await?;
+        let tx = NotarizationImpl::description(notarized_object_id, self).await?;
 
         self.execute_read_only_transaction(tx).await
     }
@@ -238,7 +238,7 @@ impl NotarizationClientReadOnly {
     /// # Returns
     /// A `Result` containing an `Option<String>` or an [`Error`]. `None` if no updatable metadata is set.
     pub async fn updatable_metadata(&self, notarized_object_id: ObjectID) -> Result<Option<String>, Error> {
-        let tx = NotarizationImpl::updatable_metadata(self.notarization_pkg_id, notarized_object_id, self).await?;
+        let tx = NotarizationImpl::updatable_metadata(notarized_object_id, self).await?;
 
         self.execute_read_only_transaction(tx).await
     }
@@ -254,7 +254,7 @@ impl NotarizationClientReadOnly {
     /// # Returns
     /// A `Result` containing the [`NotarizationMethod`] or an [`Error`].
     pub async fn notarization_method(&self, notarized_object_id: ObjectID) -> Result<NotarizationMethod, Error> {
-        let tx = NotarizationImpl::notarization_method(self.notarization_pkg_id, notarized_object_id, self).await?;
+        let tx = NotarizationImpl::notarization_method(notarized_object_id, self).await?;
         self.execute_read_only_transaction(tx).await
     }
 
@@ -269,7 +269,7 @@ impl NotarizationClientReadOnly {
     /// # Returns
     /// A `Result` containing an `Option<LockMetadata>` or an [`Error`]. `None` if no locks are set.
     pub async fn lock_metadata(&self, notarized_object_id: ObjectID) -> Result<Option<LockMetadata>, Error> {
-        let tx = NotarizationImpl::lock_metadata(self.notarization_pkg_id, notarized_object_id, self).await?;
+        let tx = NotarizationImpl::lock_metadata(notarized_object_id, self).await?;
 
         self.execute_read_only_transaction(tx).await
     }
@@ -293,7 +293,7 @@ impl NotarizationClientReadOnly {
         let type_tag = move_utils::get_type_tag(self, &notarized_object_id).await?;
         let type_str = type_tag.to_string();
 
-        let tx = NotarizationImpl::state(self.notarization_pkg_id, notarized_object_id, self).await?;
+        let tx = NotarizationImpl::state(notarized_object_id, self).await?;
 
         if type_str == "vector<u8>" {
             let state: State<Vec<u8>> = self.execute_read_only_transaction(tx).await?;
@@ -322,7 +322,7 @@ impl NotarizationClientReadOnly {
     /// # Returns
     /// A `Result` containing the [`State<T>`] or an [`Error`].
     pub async fn state_as<T: DeserializeOwned>(&self, notarized_object_id: ObjectID) -> Result<State<T>, Error> {
-        let tx = NotarizationImpl::state(self.notarization_pkg_id, notarized_object_id, self).await?;
+        let tx = NotarizationImpl::state(notarized_object_id, self).await?;
 
         self.execute_read_only_transaction(tx).await
     }
@@ -336,7 +336,7 @@ impl NotarizationClientReadOnly {
     /// # Returns
     /// A `Result` containing `true` if the object is update-locked, `false` otherwise, or an [`Error`].
     pub async fn is_update_locked(&self, notarized_object_id: ObjectID) -> Result<bool, Error> {
-        let tx = NotarizationImpl::is_update_locked(self.notarization_pkg_id, notarized_object_id, self).await?;
+        let tx = NotarizationImpl::is_update_locked(notarized_object_id, self).await?;
 
         self.execute_read_only_transaction(tx).await
     }
@@ -350,7 +350,7 @@ impl NotarizationClientReadOnly {
     /// # Returns
     /// A `Result` containing `true` if the object is destroy-allowed, `false` otherwise, or an [`Error`].
     pub async fn is_destroy_allowed(&self, notarized_object_id: ObjectID) -> Result<bool, Error> {
-        let tx = NotarizationImpl::is_destroy_allowed(self.notarization_pkg_id, notarized_object_id, self).await?;
+        let tx = NotarizationImpl::is_destroy_allowed(notarized_object_id, self).await?;
 
         self.execute_read_only_transaction(tx).await
     }
@@ -364,7 +364,7 @@ impl NotarizationClientReadOnly {
     /// # Returns
     /// A `Result` containing `true` if the object is transfer-locked, `false` otherwise, or an [`Error`].
     pub async fn is_transfer_locked(&self, notarized_object_id: ObjectID) -> Result<bool, Error> {
-        let tx = NotarizationImpl::is_transfer_locked(self.notarization_pkg_id, notarized_object_id, self).await?;
+        let tx = NotarizationImpl::is_transfer_locked(notarized_object_id, self).await?;
 
         self.execute_read_only_transaction(tx).await
     }

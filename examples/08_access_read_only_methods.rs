@@ -141,7 +141,7 @@ async fn main() -> Result<()> {
         ))
         .with_immutable_description("Locked test document".to_string())
         .with_updatable_metadata("Locked document metadata".to_string())
-        .with_delete_at(TimeLock::UnlockAt(unlock_at as u32))
+        .with_delete_lock(TimeLock::UnlockAt(unlock_at as u32))
         .finish()?
         .build_and_execute(&notarization_client)
         .await?

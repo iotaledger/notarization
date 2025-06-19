@@ -13,7 +13,6 @@ use tokio::sync::OnceCell;
 use super::super::operations::{NotarizationImpl, NotarizationOperations};
 use super::super::types::State;
 use crate::error::Error;
-use crate::package::notarization_package_id;
 
 /// A transaction that updates the state of an existing notarization.
 ///
@@ -63,10 +62,9 @@ impl UpdateState {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        let package_id = notarization_package_id(client).await?;
         let new_state = self.state.clone();
 
-        NotarizationImpl::update_state(client, package_id, self.object_id, new_state).await
+        NotarizationImpl::update_state(client, self.object_id, new_state).await
     }
 }
 
