@@ -1,8 +1,8 @@
 // Copyright 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+import { strict as assert } from "assert";
 import { getFundedClient } from "./util";
-import { strict as assert } from 'assert';
 
 /** Demonstrate how to update the metadata of a Notarization. */
 export async function updateMetadata(): Promise<void> {
@@ -47,7 +47,7 @@ export async function updateMetadata(): Promise<void> {
         "Updated metadata - Phase 2",
         "Updated metadata - Phase 3",
         undefined, // Clear metadata, you can set it to null alternatively, but this will break the assertion below
-        "Final metadata"
+        "Final metadata",
     ];
 
     for (let i = 0; i < metadataUpdates.length; i++) {
@@ -114,7 +114,7 @@ export async function updateMetadata(): Promise<void> {
 
     console.log("\n📊 Final State:");
     console.log("Final updatable metadata:", finalUpdatableMetadata);
-    
+
     const finalVersionCount = await notarizationClientReadOnly.stateVersionCount(notarization.id);
     console.log("State version count:", finalVersionCount);
 

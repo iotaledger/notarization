@@ -9,6 +9,7 @@ The examples are written in TypeScript and can be run with Node.js.
 ### Prerequisites
 
 Examples can be run against
+
 - a local IOTA node
 - or an existing network, e.g. the IOTA testnet
 
@@ -26,7 +27,7 @@ The examples require you to have the node you want to use in the iota clients "e
 Summarizing the last point, you'll need one or more of the following environment variables:
 
 | Name                     | Required for local node | Required for testnet | Required for other node |       Comment        |
-|--------------------------|:-----------------------:|:--------------------:|:-----------------------:|:--------------------:|
+| ------------------------ | :---------------------: | :------------------: | :---------------------: | :------------------: |
 | IOTA_NOTARIZATION_PKG_ID |            x            |                      |            x            |                      |
 | NETWORK_URL              |                         |          x           |            x            |                      |
 | NETWORK_NAME_FAUCET      |                         |          x           |            x            | see assumption above |
@@ -61,11 +62,11 @@ IOTA_NOTARIZATION_PKG_ID=0x222741bbdff74b42df48a7b4733185e9b24becb8ccfbafe8eac86
 
 The following examples are available:
 
-| Name                                          | Information                                                            |
-|:----------------------------------------------|:-----------------------------------------------------------------------|
-| [01_create_locked](src/01_create_locked.ts)   | Demonstrates how to create a a new locked notarization.                |
-| [02_create_dynamic](src/02_create_dynamic.ts) | Demonstrates how to create a a new dynamic notarization.               |
-| [03_update_dynamic](src/03_update_dynamic.ts) | Demonstrates how to update a dynamic notarization. |
+| Name                                          | Information                                              |
+| :-------------------------------------------- | :------------------------------------------------------- |
+| [01_create_locked](src/01_create_locked.ts)   | Demonstrates how to create a a new locked notarization.  |
+| [02_create_dynamic](src/02_create_dynamic.ts) | Demonstrates how to create a a new dynamic notarization. |
+| [03_update_dynamic](src/03_update_dynamic.ts) | Demonstrates how to update a dynamic notarization.       |
 
 <!--
 

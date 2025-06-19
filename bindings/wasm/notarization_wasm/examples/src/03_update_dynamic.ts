@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { State } from "@iota/notarization-wasm";
+import { strict as assert } from "assert";
 import { getFundedClient } from "./util";
-import { strict as assert } from 'assert';
 
 /** Demonstrate how to create a Dynamic Notarization, publish it and update its state. */
 export async function updateDynamic(): Promise<void> {
-    console.log("Demonstrating update on dynamic notarization")
+    console.log("Demonstrating update on dynamic notarization");
 
     // create a new client that offers notarization related functions
     const notarizationClient = await getFundedClient();
@@ -18,7 +18,9 @@ export async function updateDynamic(): Promise<void> {
         .createDynamic()
         .withStringState("Initial live document content", "Version 1.0")
         .withImmutableDescription("All rights reserved to ACME Corp. No warranty provided.")
-        .withUpdatableMetadata("For further information regarding the current document version please contact info@example.com.")
+        .withUpdatableMetadata(
+            "For further information regarding the current document version please contact info@example.com.",
+        )
         .finish()
         .buildAndExecute(notarizationClient);
 
@@ -50,7 +52,6 @@ export async function updateDynamic(): Promise<void> {
     const initialStateVersionCount = await notarizationReadOnly.stateVersionCount(notarization.id);
     console.log("Updated state version count:", initialStateVersionCount);
 
-
     // update the updatable metadata on the the IOTA ledger using the `NotarizationClient`
     console.log("\n\🔄 Updating updatable metadata on dynamic notarization...");
     console.log("Initial updatable metadata:", await notarizationReadOnly.updatableMetadata(notarization.id));
@@ -66,12 +67,17 @@ export async function updateDynamic(): Promise<void> {
 
     // Check that the state version count did not change
     const currentStateVersionCount = await notarizationReadOnly.stateVersionCount(notarization.id);
-    assert.strictEqual(initialStateVersionCount, currentStateVersionCount,
-        "State version count should not change after updating updatable metadata");
+    assert.strictEqual(
+        initialStateVersionCount,
+        currentStateVersionCount,
+        "State version count should not change after updating updatable metadata",
+    );
     console.log("Current state version count is still:", currentStateVersionCount);
 
     // Summarize the dynamic notarization behaviour
-    console.log("\n🔄 Dynamic notarizations are mutable - state-data, state-metadata and updatable metadata can be changed");
+    console.log(
+        "\n🔄 Dynamic notarizations are mutable - state-data, state-metadata and updatable metadata can be changed",
+    );
     console.log("🔄 Updatable metadata can only be changed for dynamic notarizations");
     console.log("🔒 Updating the updatable metadata doesn't effect the stateVersionCount");
 }

@@ -1,10 +1,10 @@
 // Copyright 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-import { TimeLock } from "@iota/notarization-wasm";
-import { getFundedClient } from "./util";
-import { strict as assert } from 'assert';
 import { Ed25519Keypair } from "@iota/iota-sdk/keypairs/ed25519";
+import { TimeLock } from "@iota/notarization-wasm";
+import { strict as assert } from "assert";
+import { getFundedClient } from "./util";
 
 /** Demonstrate how to transfer a dynamic Notarization and transferring a locked Notarization will fail. */
 export async function transferNotarization(): Promise<void> {
@@ -138,7 +138,7 @@ export async function transferNotarization(): Promise<void> {
     const statuses = [
         { name: "Unlocked", id: unlocked.id },
         { name: "Transfer-locked", id: transferLocked.id },
-        { name: "Locked", id: locked.id }
+        { name: "Locked", id: locked.id },
     ];
 
     for (const { name, id } of statuses) {

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { TimeLock } from "@iota/notarization-wasm";
+import { strict as assert } from "assert";
 import { getFundedClient } from "./util";
-import { strict as assert } from 'assert';
 
 /** Demonstrate how to create a Dynamic Notarization and publish it. */
 export async function createDynamic(): Promise<void> {
@@ -24,14 +24,14 @@ export async function createDynamic(): Promise<void> {
         // Control the type of State data by choosing one of the `with...State` functions below.
         // Uncomment or comment the following lines to choose between string or byte State data.
         //
-        //.withStringState("Live document content", "Version 1.0")
-        //.withBytesState(utf8Encode.encode("Live document content"), "Version 1.0")
-        .withBytesState(Uint8Array.from([14,255,0,125,64,87,11,114,108,100]), "Version 1.0")
+        // .withStringState("Live document content", "Version 1.0")
+        // .withBytesState(utf8Encode.encode("Live document content"), "Version 1.0")
+        .withBytesState(Uint8Array.from([14, 255, 0, 125, 64, 87, 11, 114, 108, 100]), "Version 1.0")
         .withTransferLock(TimeLock.withUnlockAt(transfer_unlock_at))
         .withImmutableDescription("This can not be changed any more")
         .withUpdatableMetadata("This can be updated")
-         .finish()
-         .buildAndExecute(notarizationClient);
+        .finish()
+        .buildAndExecute(notarizationClient);
 
     console.log("\n✅ Successfully created a transfer locked Dynamic notarization!");
 
@@ -41,7 +41,9 @@ export async function createDynamic(): Promise<void> {
     console.log("----------------------------------------------------");
     console.log("Notarization ID: ", notarization.id);
     console.log("Notarization Method: ", notarization.method);
-    console.log(`State data as string: "${notarization.state.data.toString()}" or as bytes: [${notarization.state.data.toBytes()}]` );
+    console.log(
+        `State data as string: "${notarization.state.data.toString()}" or as bytes: [${notarization.state.data.toBytes()}]`,
+    );
     console.log("State metadata: ", notarization.state.metadata);
     console.log("Immutable description: ", notarization.immutableMetadata.description);
     console.log("Immutable locking metadata: ", notarization.immutableMetadata.locking);
@@ -63,5 +65,7 @@ export async function createDynamic(): Promise<void> {
     assert(notarization.immutableMetadata.locking.transferLock.args === transfer_unlock_at);
 
     console.log("\n🔄 The notarization is Dynamic and can be updated at any time");
-    console.log(`🔒 The notarization cannot be transferred or destroyed until the transfer lock ${transfer_unlock_at} expires`);
+    console.log(
+        `🔒 The notarization cannot be transferred or destroyed until the transfer lock ${transfer_unlock_at} expires`,
+    );
 }

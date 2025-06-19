@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { TimeLock } from "@iota/notarization-wasm";
+import { strict as assert } from "assert";
 import { getFundedClient } from "./util";
-import { strict as assert } from 'assert';
 
 /** Demonstrate how to destroy a Notarization. */
 export async function destroyNotarization(): Promise<void> {
@@ -38,7 +38,7 @@ export async function destroyNotarization(): Promise<void> {
         console.log("✅ Successfully destroyed unlocked dynamic notarization");
     } catch (e) {
         console.log("❌ Failed to destroy:", e);
-        assert.fail("❌ Unexpected: Destruction failed")
+        assert.fail("❌ Unexpected: Destruction failed");
     }
 
     // Scenario 2: Try to destroy a transfer-locked dynamic notarization (should fail)
@@ -65,7 +65,7 @@ export async function destroyNotarization(): Promise<void> {
         await notarizationClient
             .destroy(transferLocked.id)
             .buildAndExecute(notarizationClient);
-        assert.fail("❌ Unexpected: Destruction succeeded (should have failed)")
+        assert.fail("❌ Unexpected: Destruction succeeded (should have failed)");
     } catch (e) {
         console.log("✅ Expected: Destruction failed -", e);
     }
@@ -91,7 +91,7 @@ export async function destroyNotarization(): Promise<void> {
         await notarizationClient
             .destroy(deleteLocked.id)
             .buildAndExecute(notarizationClient);
-        assert.fail("❌ Unexpected: Destruction succeeded (should have failed)")
+        assert.fail("❌ Unexpected: Destruction succeeded (should have failed)");
     } catch (e) {
         console.log("✅ Expected: Destruction failed -", e);
     }
@@ -120,7 +120,7 @@ export async function destroyNotarization(): Promise<void> {
         console.log("✅ Successfully destroyed locked notarization with no delete lock");
     } catch (e) {
         console.log("❌ Failed to destroy:", e);
-        assert.fail("❌ Unexpected: Destruction failed")
+        assert.fail("❌ Unexpected: Destruction failed");
     }
 
     console.log("\n📋 Summary:");

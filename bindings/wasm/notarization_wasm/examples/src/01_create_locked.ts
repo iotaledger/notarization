@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { TimeLock } from "@iota/notarization-wasm";
+import { strict as assert } from "assert";
 import { getFundedClient } from "./util";
-import { strict as assert } from 'assert';
 
 /** Demonstrate how to create a Locked Notarization and publish it. */
 export async function createLocked(): Promise<void> {
@@ -24,9 +24,12 @@ export async function createLocked(): Promise<void> {
         // Control the type of State data by choosing one of the `with...State` functions below.
         // Uncomment or comment the following lines to choose between string or byte State data.
         //
-        //.withStringState("Important document content", "Document metadata e.g., version specifier")
-        //.withBytesState(utf8Encode.encode("Important document content"), "Document metadata e.g., version specifier")
-        .withBytesState(Uint8Array.from([14,255,0,125,64,87,11,114,108,100]), "Document metadata e.g., version specifier")
+        // .withStringState("Important document content", "Document metadata e.g., version specifier")
+        // .withBytesState(utf8Encode.encode("Important document content"), "Document metadata e.g., version specifier")
+        .withBytesState(
+            Uint8Array.from([14, 255, 0, 125, 64, 87, 11, 114, 108, 100]),
+            "Document metadata e.g., version specifier",
+        )
         .withDeleteAt(TimeLock.withUnlockAt(delete_unlock_at))
         .withImmutableDescription("This can not be changed any more")
         .withUpdatableMetadata("This can be updated")
@@ -41,7 +44,9 @@ export async function createLocked(): Promise<void> {
     console.log("----------------------------------------------------");
     console.log("Notarization ID: ", notarization.id);
     console.log("Notarization Method: ", notarization.method);
-    console.log(`State data as string: "${notarization.state.data.toString()}" or as bytes: [${notarization.state.data.toBytes()}]` );
+    console.log(
+        `State data as string: "${notarization.state.data.toString()}" or as bytes: [${notarization.state.data.toBytes()}]`,
+    );
     console.log("State metadata: ", notarization.state.metadata);
     console.log("Immutable description: ", notarization.immutableMetadata.description);
     console.log("Immutable locking metadata: ", notarization.immutableMetadata.locking);

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { State } from "@iota/notarization-wasm";
+import { strict as assert } from "assert";
 import { getFundedClient } from "./util";
-import { strict as assert } from 'assert';
 
 /** Demonstrate how to update the state of a Notarization. */
 export async function updateState(): Promise<void> {
@@ -44,12 +44,12 @@ export async function updateState(): Promise<void> {
         // Create new state with updated content and metadata
         const newContent = `Updated document version ${i + 1}`;
         const newMetadata = `Version ${i + 1}.0 - Update ${i}`;
-        
+
         // Update the state
         await notarizationClient
             .updateState(
-                State.fromString(newContent, newMetadata), 
-                notarization.id
+                State.fromString(newContent, newMetadata),
+                notarization.id,
             )
             .buildAndExecute(notarizationClient);
 

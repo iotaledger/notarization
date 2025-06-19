@@ -5,7 +5,7 @@
   "toml": {},
   "typescript": {
     "indentWidth": 4,
-    "arrayExpression.preferHanging": true
+    "arrayExpression.preferHanging": "always"
   },
   "yaml": {},
   "includes": [

@@ -10,15 +10,15 @@ import { updateMetadata } from "./06_update_metadata";
 import { transferNotarization } from "./07_transfer_notarization";
 import { accessReadOnlyMethods } from "./08_access_read_only_methods";
 
-import {afterEach} from "mocha";
+import { afterEach } from "mocha";
 
 // Only verifies that no uncaught exceptions are thrown, including syntax errors etc.
 describe("Test node examples", function() {
     afterEach(
         () => {
             console.log("\n----------------------------------------------------\n");
-        }
-    )
+        },
+    );
     it("Should create Locked Notarization", async () => {
         await createLocked();
     });
@@ -44,4 +44,3 @@ describe("Test node examples", function() {
         await accessReadOnlyMethods();
     });
 });
-

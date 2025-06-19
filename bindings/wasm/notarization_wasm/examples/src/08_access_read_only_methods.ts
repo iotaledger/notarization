@@ -1,9 +1,9 @@
 // Copyright 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-import { TimeLock, State } from "@iota/notarization-wasm";
+import { State, TimeLock } from "@iota/notarization-wasm";
+import { strict as assert } from "assert";
 import { getFundedClient } from "./util";
-import { strict as assert } from 'assert';
 
 /** Demonstrates read-only methods for notarization inspection. */
 export async function accessReadOnlyMethods(): Promise<void> {
@@ -94,7 +94,7 @@ export async function accessReadOnlyMethods(): Promise<void> {
 
     const newState = State.fromString(
         "Updated document content",
-        "Updated state metadata"
+        "Updated state metadata",
     );
 
     await notarizationClient
@@ -113,9 +113,15 @@ export async function accessReadOnlyMethods(): Promise<void> {
     console.log("🔢 New version count:", updatedVersionCount);
     assert(updatedVersionCount === 1n, "versionCount must be 1n after first state update");
     console.log("🕐 Updated last change timestamp:", updatedLastChange);
-    assert(createdAt < updatedLastChange, "createdAt timestamp must lower lastStateChange timestamp after first state update");
+    assert(
+        createdAt < updatedLastChange,
+        "createdAt timestamp must lower lastStateChange timestamp after first state update",
+    );
     console.log("📄 Updated state content:", updatedState.data.toString());
-    assert(updatedState.data.toString() !== currentState.data.toString(), "Intial State data must differ from current State data after first state update");
+    assert(
+        updatedState.data.toString() !== currentState.data.toString(),
+        "Intial State data must differ from current State data after first state update",
+    );
 
     // Create a locked notarization for comparison
     console.log("\n🔒 Creating a locked notarization for comparison...");
@@ -165,10 +171,20 @@ export async function accessReadOnlyMethods(): Promise<void> {
     console.log("│ Property            │ Dynamic     │ Locked      │");
     console.log("├─────────────────────┼─────────────┼─────────────┤");
     console.log(`│ Method              │ ${String(method).padEnd(11)} │ ${String(lockedMethod).padEnd(11)} │`);
-    console.log(`│ Transfer Locked     │ ${String(isTransferLocked).padEnd(11)} │ ${String(lockedTransferLocked).padEnd(11)} │`);
-    console.log(`│ Update Locked       │ ${String(isUpdateLocked).padEnd(11)} │ ${String(lockedUpdateLocked).padEnd(11)} │`);
-    console.log(`│ Destroy Allowed     │ ${String(isDestroyAllowed).padEnd(11)} │ ${String(lockedDestroyAllowed).padEnd(11)} │`);
-    console.log(`│ Has Lock Metadata   │ ${String(lockMetadata !== undefined).padEnd(11)} │ ${String(lockedLockMetadata !== undefined).padEnd(11)} │`);
+    console.log(
+        `│ Transfer Locked     │ ${String(isTransferLocked).padEnd(11)} │ ${String(lockedTransferLocked).padEnd(11)} │`,
+    );
+    console.log(
+        `│ Update Locked       │ ${String(isUpdateLocked).padEnd(11)} │ ${String(lockedUpdateLocked).padEnd(11)} │`,
+    );
+    console.log(
+        `│ Destroy Allowed     │ ${String(isDestroyAllowed).padEnd(11)} │ ${String(lockedDestroyAllowed).padEnd(11)} │`,
+    );
+    console.log(
+        `│ Has Lock Metadata   │ ${String(lockMetadata !== undefined).padEnd(11)} │ ${
+            String(lockedLockMetadata !== undefined).padEnd(11)
+        } │`,
+    );
     console.log("└─────────────────────┴─────────────┴─────────────┘");
 
     console.log("\n🎯 Key Points about Read-only Methods:");
