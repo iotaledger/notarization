@@ -1,6 +1,14 @@
 // Copyright 2020-2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! # Notarization Operations
+//!
+//! This module defines the operations for notarizations.
+//!
+//! ## Overview
+//!
+//! The operations are used to build transactions for notarizations.
+
 use std::str::FromStr;
 
 use async_trait::async_trait;
@@ -16,9 +24,9 @@ use crate::core::state::State;
 use crate::core::timelock::TimeLock;
 use crate::error::Error;
 
+/// Internal implementation of notarization operations.
 #[derive(Debug, Clone)]
-/// A unified notarization type that can be either dynamic or locked
-pub struct NotarizationImpl;
+pub(crate) struct NotarizationImpl;
 
 impl NotarizationImpl {
     /// Helper to create a new builder and run a closure that injects the
@@ -91,7 +99,7 @@ impl NotarizationImpl {
 /// a single transaction, or command, in a programmable transaction block
 #[cfg_attr(not(feature = "send-sync"), async_trait(?Send))]
 #[cfg_attr(feature = "send-sync", async_trait)]
-pub trait NotarizationOperations {
+pub(crate) trait NotarizationOperations {
     /// Build a transaction that creates a new locked notarization
     fn new_locked(
         package_id: ObjectID,

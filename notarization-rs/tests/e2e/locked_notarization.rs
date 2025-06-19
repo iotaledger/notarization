@@ -22,7 +22,7 @@ async fn create_simple_locked_notarization_works() -> anyhow::Result<()> {
         .create_locked_notarization()
         .with_state(State::from_string("test".to_string(), None))
         .with_immutable_description("Test Locked Notarization".to_string())
-        .with_delete_at(TimeLock::UnlockAt(unlock_at as u32))
+        .with_delete_lock(TimeLock::UnlockAt(unlock_at as u32))
         .finish()?
         .build_and_execute(&test_client)
         .await?
@@ -54,7 +54,7 @@ async fn create_locked_notarization_with_updatable_metadata() -> anyhow::Result<
         ))
         .with_immutable_description("Locked Document".to_string())
         .with_updatable_metadata("Initial metadata".to_string())
-        .with_delete_at(TimeLock::UnlockAt(unlock_at as u32))
+        .with_delete_lock(TimeLock::UnlockAt(unlock_at as u32))
         .finish()?
         .build_and_execute(&test_client)
         .await?
@@ -77,7 +77,7 @@ async fn create_locked_notarization_with_none_delete_lock() -> anyhow::Result<()
         .create_locked_notarization()
         .with_state(State::from_string("test".to_string(), None))
         .with_immutable_description("Never Locked Document".to_string())
-        .with_delete_at(TimeLock::None)
+        .with_delete_lock(TimeLock::None)
         .finish()?
         .build_and_execute(&test_client)
         .await?
@@ -103,7 +103,7 @@ async fn test_update_state_locked_notarization_fails() -> anyhow::Result<()> {
     let notarization_id = test_client
         .create_locked_notarization()
         .with_state(State::from_string("initial_state".to_string(), None))
-        .with_delete_at(TimeLock::UnlockAt(unlock_at as u32))
+        .with_delete_lock(TimeLock::UnlockAt(unlock_at as u32))
         .finish()?
         .build_and_execute(&test_client)
         .await?
@@ -136,7 +136,7 @@ async fn test_update_metadata_locked_notarization_fails() -> anyhow::Result<()> 
         .create_locked_notarization()
         .with_state(State::from_string("test_state".to_string(), None))
         .with_updatable_metadata("initial_metadata".to_string())
-        .with_delete_at(TimeLock::UnlockAt(unlock_at as u32))
+        .with_delete_lock(TimeLock::UnlockAt(unlock_at as u32))
         .finish()?
         .build_and_execute(&test_client)
         .await?
@@ -168,7 +168,7 @@ async fn test_destroy_locked_notarization_before_unlock_fails() -> anyhow::Resul
     let notarization_id = test_client
         .create_locked_notarization()
         .with_state(State::from_string("test_state".to_string(), None))
-        .with_delete_at(TimeLock::UnlockAt(unlock_at as u32))
+        .with_delete_lock(TimeLock::UnlockAt(unlock_at as u32))
         .finish()?
         .build_and_execute(&test_client)
         .await?
@@ -195,7 +195,7 @@ async fn test_destroy_locked_notarization_with_none_lock_succeeds() -> anyhow::R
     let notarization_id = test_client
         .create_locked_notarization()
         .with_state(State::from_string("test_state".to_string(), None))
-        .with_delete_at(TimeLock::None)
+        .with_delete_lock(TimeLock::None)
         .finish()?
         .build_and_execute(&test_client)
         .await?
@@ -236,7 +236,7 @@ async fn test_read_only_methods_locked_notarization() -> anyhow::Result<()> {
         ))
         .with_immutable_description(description.clone())
         .with_updatable_metadata(updatable_metadata.clone())
-        .with_delete_at(TimeLock::UnlockAt(unlock_at as u32))
+        .with_delete_lock(TimeLock::UnlockAt(unlock_at as u32))
         .finish()?
         .build_and_execute(&test_client)
         .await?
@@ -279,7 +279,7 @@ async fn test_lock_checking_methods_locked_notarization() -> anyhow::Result<()> 
     let locked_notarization_id = test_client
         .create_locked_notarization()
         .with_state(State::from_string("test_state".to_string(), None))
-        .with_delete_at(TimeLock::UnlockAt(unlock_at as u32))
+        .with_delete_lock(TimeLock::UnlockAt(unlock_at as u32))
         .finish()?
         .build_and_execute(&test_client)
         .await?
@@ -290,7 +290,7 @@ async fn test_lock_checking_methods_locked_notarization() -> anyhow::Result<()> 
     let unlocked_notarization_id = test_client
         .create_locked_notarization()
         .with_state(State::from_string("test_state".to_string(), None))
-        .with_delete_at(TimeLock::None)
+        .with_delete_lock(TimeLock::None)
         .finish()?
         .build_and_execute(&test_client)
         .await?
@@ -351,7 +351,7 @@ async fn test_bytes_state_operations_locked_notarization() -> anyhow::Result<()>
     let notarization_id = test_client
         .create_locked_notarization()
         .with_state(State::from_bytes(initial_data.clone(), None))
-        .with_delete_at(TimeLock::None)
+        .with_delete_lock(TimeLock::None)
         .finish()?
         .build_and_execute(&test_client)
         .await?
@@ -386,7 +386,7 @@ async fn test_locked_notarization_transfer_fails() -> anyhow::Result<()> {
     let notarization_id = test_client
         .create_locked_notarization()
         .with_state(State::from_string("test_state".to_string(), None))
-        .with_delete_at(TimeLock::None)
+        .with_delete_lock(TimeLock::None)
         .finish()?
         .build_and_execute(&test_client)
         .await?
@@ -418,7 +418,7 @@ async fn test_locked_notarization_different_delete_lock_times() -> anyhow::Resul
     let short_lock_id = test_client
         .create_locked_notarization()
         .with_state(State::from_string("short_lock".to_string(), None))
-        .with_delete_at(TimeLock::UnlockAt(short_unlock as u32))
+        .with_delete_lock(TimeLock::UnlockAt(short_unlock as u32))
         .finish()?
         .build_and_execute(&test_client)
         .await?
@@ -429,7 +429,7 @@ async fn test_locked_notarization_different_delete_lock_times() -> anyhow::Resul
     let long_lock_id = test_client
         .create_locked_notarization()
         .with_state(State::from_string("long_lock".to_string(), None))
-        .with_delete_at(TimeLock::UnlockAt(long_unlock as u32))
+        .with_delete_lock(TimeLock::UnlockAt(long_unlock as u32))
         .finish()?
         .build_and_execute(&test_client)
         .await?

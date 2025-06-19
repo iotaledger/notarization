@@ -1,6 +1,14 @@
 // Copyright 2020-2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! # Notarization Metadata
+//!
+//! This module defines the metadata for notarizations.
+//!
+//! ## Overview
+//!
+//! The metadata is used to store the metadata for a notarization.
+
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::IotaTransactionBlockEffects;
@@ -26,6 +34,7 @@ pub struct ImmutableMetadata {
     pub locking: Option<LockMetadata>,
 }
 
+/// A transaction that updates the metadata of a notarization.
 pub struct UpdateMetadata {
     metadata: Option<String>,
     /// The ID of the notarization to update
@@ -34,6 +43,7 @@ pub struct UpdateMetadata {
 }
 
 impl UpdateMetadata {
+    /// Creates a new transaction for updating the metadata of a notarization.
     pub fn new(metadata: Option<String>, notarization_id: ObjectID) -> Self {
         Self {
             metadata,
@@ -42,6 +52,8 @@ impl UpdateMetadata {
         }
     }
 
+    /// Builds the programmable transaction for updating the metadata of a
+    /// notarization.
     async fn make_ptb<C>(&self, client: &C) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,

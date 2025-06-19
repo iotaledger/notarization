@@ -13,6 +13,7 @@ use tokio::sync::OnceCell;
 use super::operations::{NotarizationImpl, NotarizationOperations};
 use crate::error::Error;
 
+/// A transaction that transfers ownership of a dynamic notarization.
 pub struct TransferNotarization {
     recipient: IotaAddress,
     notarization_id: ObjectID,
@@ -20,6 +21,7 @@ pub struct TransferNotarization {
 }
 
 impl TransferNotarization {
+    /// Creates a new transfer transaction.
     pub fn new(recipient: IotaAddress, notarization_id: ObjectID) -> Self {
         Self {
             recipient,

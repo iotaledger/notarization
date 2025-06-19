@@ -108,7 +108,7 @@ async fn main() -> Result<()> {
         .create_locked_notarization()
         .with_state(State::from_string("Locked document content".to_string(), None))
         .with_immutable_description("Locked document".to_string())
-        .with_delete_at(TimeLock::None)
+        .with_delete_lock(TimeLock::None)
         .finish()?
         .build_and_execute(&notarization_client)
         .await?

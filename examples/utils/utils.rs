@@ -3,8 +3,7 @@
 
 use anyhow::Context;
 use iota_sdk::{IOTA_LOCAL_NETWORK_URL, IotaClientBuilder};
-use notarization::client::full_client::NotarizationClient;
-use notarization::client::read_only::NotarizationClientReadOnly;
+use notarization::client::{NotarizationClient, NotarizationClientReadOnly};
 use product_common::test_utils::{InMemSigner, request_funds};
 
 pub async fn get_read_only_client() -> anyhow::Result<NotarizationClientReadOnly> {

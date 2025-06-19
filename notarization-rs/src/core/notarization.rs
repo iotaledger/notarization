@@ -1,6 +1,14 @@
 // Copyright 2020-2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! # Notarization
+//!
+//! This module defines the notarization struct and the operations for notarizations.
+//!
+//! ## Overview
+//!
+//! The notarization is a struct that contains the state, metadata, and operations for a notarization.
+
 use async_trait::async_trait;
 use iota_interaction::rpc_types::{IotaTransactionBlockEffects, IotaTransactionBlockEvents};
 use iota_interaction::types::id::UID;
@@ -24,18 +32,26 @@ use super::timelock::{LockMetadata, TimeLock};
 use crate::error::Error;
 use crate::package::notarization_package_id;
 
-/// A notarization that is stored on the chain.
+/// A notarization record stored on the blockchain.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct OnChainNotarization {
+    /// The unique identifier of the notarization.
     pub id: UID,
+    /// The state of the notarization.
     pub state: State,
+    /// The immutable metadata of the notarization.
     pub immutable_metadata: ImmutableMetadata,
+    /// The updatable metadata of the notarization.
     pub updatable_metadata: Option<String>,
+    /// The timestamp of the last state change.
     pub last_state_change_at: u64,
+    /// The number of state changes.
     pub state_version_count: u64,
+    /// The method of the notarization.
     pub method: NotarizationMethod,
 }
 
+/// A transaction that creates a new notarization.
 #[derive(Debug, Clone)]
 pub struct CreateNotarization<M> {
     builder: NotarizationBuilder<M>,

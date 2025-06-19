@@ -20,6 +20,7 @@ pub struct DestroyNotarization {
 }
 
 impl DestroyNotarization {
+    /// Creates a new destroy transaction.
     pub fn new(notarization_id: ObjectID) -> Self {
         Self {
             notarization_id,
