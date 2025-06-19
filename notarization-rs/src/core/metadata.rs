@@ -22,7 +22,6 @@ use tokio::sync::OnceCell;
 use super::operations::{NotarizationImpl, NotarizationOperations};
 use super::timelock::LockMetadata;
 use crate::error::Error;
-use crate::package::notarization_package_id;
 
 /// The immutable metadata of a notarization.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -38,16 +37,17 @@ pub struct ImmutableMetadata {
 /// A transaction that updates the metadata of a notarization.
 pub struct UpdateMetadata {
     metadata: Option<String>,
-    object_id: ObjectID,
+    /// The ID of the notarization to update
+    notarization_id: ObjectID,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl UpdateMetadata {
     /// Creates a new transaction for updating the metadata of a notarization.
-    pub fn new(metadata: Option<String>, object_id: ObjectID) -> Self {
+    pub fn new(metadata: Option<String>, notarization_id: ObjectID) -> Self {
         Self {
             metadata,
-            object_id,
+            notarization_id,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -58,9 +58,7 @@ impl UpdateMetadata {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        let package_id = notarization_package_id(client).await?;
-
-        NotarizationImpl::update_metadata(client, package_id, self.object_id, self.metadata.clone()).await
+        NotarizationImpl::update_metadata(client, self.notarization_id, self.metadata.clone()).await
     }
 }
 

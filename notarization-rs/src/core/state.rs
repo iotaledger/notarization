@@ -57,7 +57,6 @@ use tokio::sync::OnceCell;
 use super::move_utils;
 use super::operations::{NotarizationImpl, NotarizationOperations};
 use crate::error::Error;
-use crate::package::notarization_package_id;
 
 /// Represents the state of a notarization.
 ///
@@ -307,7 +306,8 @@ fn state_from_string(
 /// ```
 pub struct UpdateState {
     state: State,
-    object_id: ObjectID,
+    /// The ID of the notarization to update
+    notarization_id: ObjectID,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
@@ -318,10 +318,10 @@ impl UpdateState {
     ///
     /// - `state`: The new state to set
     /// - `object_id`: The ID of the notarization to update
-    pub fn new(state: State, object_id: ObjectID) -> Self {
+    pub fn new(state: State, notarization_id: ObjectID) -> Self {
         Self {
             state,
-            object_id,
+            notarization_id,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -330,10 +330,9 @@ impl UpdateState {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        let package_id = notarization_package_id(client).await?;
         let new_state = self.state.clone();
 
-        NotarizationImpl::update_state(client, package_id, self.object_id, new_state).await
+        NotarizationImpl::update_state(client, self.notarization_id, new_state).await
     }
 }
 
