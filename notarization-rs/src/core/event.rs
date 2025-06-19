@@ -3,7 +3,9 @@
 
 use iota_interaction::types::base_types::ObjectID;
 use serde::{Deserialize, Serialize};
-/// An event that can be emitted by the ITH.
+/// An event emitted by notarization operations.
+///
+/// Generic wrapper for different event data types.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Event<D> {
     #[serde(flatten)]

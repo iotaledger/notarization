@@ -12,18 +12,18 @@ use tokio::sync::OnceCell;
 
 use super::operations::{NotarizationImpl, NotarizationOperations};
 use crate::error::Error;
-use crate::package::notarization_package_id;
 
 /// A transaction that destroys a notarization
 pub struct DestroyNotarization {
-    notarized_object_id: ObjectID,
+    notarization_id: ObjectID,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl DestroyNotarization {
-    pub fn new(object_id: ObjectID) -> Self {
+    /// Creates a new destroy transaction.
+    pub fn new(notarization_id: ObjectID) -> Self {
         Self {
-            notarized_object_id: object_id,
+            notarization_id,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -32,9 +32,7 @@ impl DestroyNotarization {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        let package_id = notarization_package_id(client).await?;
-
-        NotarizationImpl::destroy(client, package_id, self.notarized_object_id).await
+        NotarizationImpl::destroy(client, self.notarization_id).await
     }
 }
 

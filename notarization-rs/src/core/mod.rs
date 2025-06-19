@@ -1,6 +1,11 @@
 // Copyright 2020-2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! Core notarization functionality and types.
+//!
+//! This module contains the fundamental building blocks for creating and managing
+//! notarizations, including builders, state management, and transaction operations.
+
 use serde::{Deserialize, Serialize};
 
 pub mod builder;

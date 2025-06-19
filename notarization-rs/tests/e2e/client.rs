@@ -8,8 +8,7 @@ use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::crypto::PublicKey;
 use iota_interaction::{IOTA_LOCAL_NETWORK_URL, IotaClientBuilder, KeytoolSigner};
 use iota_interaction_rust::IotaClientAdapter;
-use notarization::client::full_client::NotarizationClient;
-use notarization::client::read_only::NotarizationClientReadOnly;
+use notarization::client::{NotarizationClient, NotarizationClientReadOnly};
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use product_common::network_name::NetworkName;
 use product_common::test_utils::{

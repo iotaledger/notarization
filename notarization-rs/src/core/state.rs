@@ -1,6 +1,45 @@
 // Copyright 2020-2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! # Notarization State
+//!
+//! This module defines the state structure for notarizations, representing the actual data
+//! being attested on the blockchain.
+//!
+//! ## Overview
+//!
+//! The state consists of two components:
+//! - **Data**: The primary content being notarized (bytes or text)
+//! - **Metadata**: Optional descriptive information about the data
+//!
+//! ## Data Types
+//!
+//! The module supports two data formats:
+//! - **Bytes**: Raw binary data for files, images, or serialized objects
+//! - **Text**: UTF-8 encoded strings for documents or structured data
+//!
+//! ## Examples
+//!
+//! ### Creating State from Text
+//!
+//! ```rust
+//! use notarization::core::state::State;
+//!
+//! let state = State::from_string(
+//!     "Contract Agreement v2.1".to_string(),
+//!     Some("Legal document".to_string()),
+//! );
+//! ```
+//!
+//! ### Creating State from Bytes
+//!
+//! ```rust
+//! use notarization::core::state::State;
+//!
+//! let pdf_content = vec![0x25, 0x50, 0x44, 0x46]; // PDF header
+//! let state = State::from_bytes(pdf_content, Some("Signed contract PDF".to_string()));
+//! ```
+
 use std::str::FromStr;
 
 use async_trait::async_trait;
@@ -18,19 +57,31 @@ use tokio::sync::OnceCell;
 use super::move_utils;
 use super::operations::{NotarizationImpl, NotarizationOperations};
 use crate::error::Error;
-use crate::package::notarization_package_id;
 
-/// The state of the `Notarization` that can be updated
+/// Represents the state of a notarization.
+///
+/// State encapsulates the data being notarized along with optional metadata.
+/// It serves as the primary content container for both locked and dynamic
+/// notarizations.
+///
+/// ## Type Parameter
+///
+/// - `T`: The data type, defaults to [`Data`] which can be either bytes or text
 #[derive(Debug, Clone, Deserialize, PartialEq, Serialize)]
 pub struct State<T = Data> {
+    /// The actual data being notarized
     pub data: T,
+    /// Optional metadata describing the data
     #[serde(default)]
     pub metadata: Option<String>,
 }
 
+/// Represents the different types of data that can be notarized.
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub enum Data {
+    /// Raw binary data (e.g., files, images, serialized objects)
     Bytes(Vec<u8>),
+    /// UTF-8 text data (e.g., documents, JSON, configuration)
     Text(String),
 }
 
@@ -56,6 +107,9 @@ impl<'de> Deserialize<'de> for Data {
 }
 
 impl Data {
+    /// Returns the Move type tag for this data type.
+    ///
+    /// Used internally for blockchain transaction construction.
     pub(crate) fn tag(&self) -> TypeTag {
         match self {
             Data::Bytes(_) => TypeTag::Vector(Box::new(TypeTag::U8)),
@@ -64,6 +118,22 @@ impl Data {
         }
     }
 
+    /// Extracts the data as bytes.
+    ///
+    /// ## Errors
+    ///
+    /// Returns an error if the data is text rather than bytes.
+    ///
+    /// ## Example
+    ///
+    /// ```rust
+    /// # use notarization::core::state::{State, Data};
+    /// # use notarization::error::Error;
+    /// let state = State::from_bytes(vec![1, 2, 3], None);
+    /// let bytes = state.data.as_bytes()?;
+    /// assert_eq!(bytes, vec![1, 2, 3]);
+    /// # Ok::<(), Error>(())
+    /// ```
     pub fn as_bytes(self) -> Result<Vec<u8>, Error> {
         match self {
             Data::Bytes(data) => Ok(data),
@@ -71,6 +141,22 @@ impl Data {
         }
     }
 
+    /// Extracts the data as text.
+    ///
+    /// ## Errors
+    ///
+    /// Returns an error if the data is bytes rather than text.
+    ///
+    /// ## Example
+    ///
+    /// ```rust
+    /// # use notarization::core::state::{State, Data};
+    /// # use notarization::error::Error;
+    /// let state = State::from_string("Hello".to_string(), None);
+    /// let text = state.data.as_text()?;
+    /// assert_eq!(text, "Hello");
+    /// # Ok::<(), Error>(())
+    /// ```
     pub fn as_text(self) -> Result<String, Error> {
         match self {
             Data::Bytes(_) => Err(Error::GenericError("Data is not a string".to_string())),
@@ -80,14 +166,34 @@ impl Data {
 }
 
 impl State {
+    /// Returns a reference to the data.
     pub fn data(&self) -> &Data {
         &self.data
     }
 
+    /// Returns a reference to the metadata.
     pub fn metadata(&self) -> &Option<String> {
         &self.metadata
     }
 
+    /// Creates a new state from raw bytes.
+    ///
+    /// Use this for binary data like files, images, or serialized content.
+    ///
+    /// ## Parameters
+    ///
+    /// - `data`: The raw bytes to store
+    /// - `metadata`: Optional description of the bytes
+    ///
+    /// ## Example
+    ///
+    /// ```rust
+    /// use notarization::core::state::State;
+    ///
+    /// // Store a file's content
+    /// let file_bytes = vec![0xFF, 0xD8, 0xFF];
+    /// let state = State::from_bytes(file_bytes, Some("Profile photo JPEG".to_string()));
+    /// ```
     pub fn from_bytes(data: Vec<u8>, metadata: Option<String>) -> Self {
         Self {
             data: Data::Bytes(data),
@@ -95,6 +201,27 @@ impl State {
         }
     }
 
+    /// Creates a new state from a string.
+    ///
+    /// Use this for text data like documents, JSON, or configuration.
+    ///
+    /// ## Parameters
+    ///
+    /// - `data`: The text content to store
+    /// - `metadata`: Optional description of the text
+    ///
+    /// ## Example
+    ///
+    /// ```rust
+    /// use notarization::core::state::State;
+    ///
+    /// // Store a JSON configuration
+    /// let config = r#"{"version": "1.0", "enabled": true}"#;
+    /// let state = State::from_string(
+    ///     config.to_string(),
+    ///     Some("Service configuration".to_string()),
+    /// );
+    /// ```
     pub fn from_string(data: String, metadata: Option<String>) -> Self {
         Self {
             data: Data::Text(data),
@@ -117,7 +244,8 @@ impl State {
     }
 }
 
-pub(crate) fn state_from_bytes(
+/// Helper function to create a new state from bytes.
+fn state_from_bytes(
     ptb: &mut ProgrammableTransactionBuilder,
     data: Vec<u8>,
     metadata: Option<String>,
@@ -135,7 +263,8 @@ pub(crate) fn state_from_bytes(
     ))
 }
 
-pub(crate) fn state_from_string(
+/// Helper function to create a new state from bytes.
+fn state_from_string(
     ptb: &mut ProgrammableTransactionBuilder,
     data: String,
     metadata: Option<String>,
@@ -153,18 +282,46 @@ pub(crate) fn state_from_string(
     ))
 }
 
-/// A transaction that updates the state of a notarization
+/// A transaction that updates the state of an existing notarization.
+///
+/// This transaction can only be used with dynamic notarizations, as locked
+/// notarizations are immutable after creation.
+///
+/// ## Example
+///
+/// ```rust,no_run
+/// # use notarization::core::state::{UpdateState, State};
+/// # use iota_interaction::types::base_types::ObjectID;
+/// # use std::str::FromStr;
+/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+/// let new_state = State::from_string(
+///     "Updated content v2".to_string(),
+///     Some("Second revision".to_string()),
+/// );
+///
+/// let object_id = ObjectID::from_str("0x123...")?;
+/// let update_tx = UpdateState::new(new_state, object_id);
+/// # Ok(())
+/// # }
+/// ```
 pub struct UpdateState {
     state: State,
-    object_id: ObjectID,
+    /// The ID of the notarization to update
+    notarization_id: ObjectID,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl UpdateState {
-    pub fn new(state: State, object_id: ObjectID) -> Self {
+    /// Creates a new state update transaction.
+    ///
+    /// ## Parameters
+    ///
+    /// - `state`: The new state to set
+    /// - `object_id`: The ID of the notarization to update
+    pub fn new(state: State, notarization_id: ObjectID) -> Self {
         Self {
             state,
-            object_id,
+            notarization_id,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -173,10 +330,9 @@ impl UpdateState {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        let package_id = notarization_package_id(client).await?;
         let new_state = self.state.clone();
 
-        NotarizationImpl::update_state(client, package_id, self.object_id, new_state).await
+        NotarizationImpl::update_state(client, self.notarization_id, new_state).await
     }
 }
 

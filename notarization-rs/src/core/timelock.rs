@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 use super::move_utils;
 use crate::error::Error;
 
+/// Metadata containing time-based access restrictions for a notarization.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct LockMetadata {
     pub update_lock: TimeLock,
@@ -25,7 +26,9 @@ pub struct LockMetadata {
 /// notarizations.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum TimeLock {
+    /// A lock that is unlocked at a specific time.
     UnlockAt(u32),
+    /// A lock that is unlocked when the notarization is destroyed.
     UntilDestroyed,
     None,
 }
@@ -47,6 +50,7 @@ impl TimeLock {
 
         Ok(TimeLock::UnlockAt(unlock_time))
     }
+
     /// Creates a new `Argument` from the `TimeLock`.
     ///
     /// To be used when creating a new `Notarization` object on the ledger.
@@ -59,6 +63,7 @@ impl TimeLock {
     }
 }
 
+/// Creates a new `Argument` for the `unlock_at` function.
 pub(super) fn new_unlock_at(ptb: &mut Ptb, unlock_time: u32, package_id: ObjectID) -> Result<Argument, Error> {
     let clock = move_utils::get_clock_ref(ptb);
     let unlock_time = move_utils::ptb_pure(ptb, "unlock_time", unlock_time)?;
@@ -72,6 +77,7 @@ pub(super) fn new_unlock_at(ptb: &mut Ptb, unlock_time: u32, package_id: ObjectI
     ))
 }
 
+/// Creates a new `Argument` for the `until_destroyed` function.
 pub(super) fn new_until_destroyed(ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
     Ok(ptb.programmable_move_call(
         package_id,
@@ -82,6 +88,7 @@ pub(super) fn new_until_destroyed(ptb: &mut Ptb, package_id: ObjectID) -> Result
     ))
 }
 
+/// Creates a new `Argument` for the `none` function.
 pub(super) fn new_none(ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
     Ok(ptb.programmable_move_call(
         package_id,
