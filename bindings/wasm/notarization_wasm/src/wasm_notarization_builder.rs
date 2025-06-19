@@ -40,8 +40,8 @@ impl WasmNotarizationBuilderLocked {
     #[wasm_bindgen()]
     pub fn locked() -> Self {NotarizationBuilder::<Locked>::locked().into()}
 
-    #[wasm_bindgen(js_name = withDeleteAt)]
-    pub fn with_delete_at(self, lock: WasmTimeLock) -> Self {self.0.with_delete_at(lock.0).into()}
+    #[wasm_bindgen(js_name = withDeleteLock)]
+    pub fn with_delete_lock(self, lock: WasmTimeLock) -> Self {self.0.with_delete_lock(lock.0).into()}
 
     #[wasm_bindgen()]
     pub fn finish(self) -> Result<WasmTransactionBuilder> {

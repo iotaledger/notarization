@@ -30,7 +30,7 @@ export async function createLocked(): Promise<void> {
             Uint8Array.from([14, 255, 0, 125, 64, 87, 11, 114, 108, 100]),
             "Document metadata e.g., version specifier",
         )
-        .withDeleteAt(TimeLock.withUnlockAt(delete_unlock_at))
+        .withDeleteLock(TimeLock.withUnlockAt(delete_unlock_at))
         .withImmutableDescription("This can not be changed any more")
         .withUpdatableMetadata("This can be updated")
         .finish()

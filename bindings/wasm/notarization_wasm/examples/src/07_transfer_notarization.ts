@@ -88,7 +88,7 @@ export async function transferNotarization(): Promise<void> {
         .createLocked()
         .withStringState("Locked document content", undefined)
         .withImmutableDescription("Locked document")
-        .withDeleteAt(TimeLock.withNone())
+        .withDeleteLock(TimeLock.withNone())
         .finish()
         .buildAndExecute(notarizationClient);
 

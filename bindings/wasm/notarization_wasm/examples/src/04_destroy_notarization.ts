@@ -77,7 +77,7 @@ export async function destroyNotarization(): Promise<void> {
         .createLocked()
         .withStringState("Delete-locked content", undefined)
         .withImmutableDescription("Delete-locked document")
-        .withDeleteAt(TimeLock.withUnlockAt(unlockAt))
+        .withDeleteLock(TimeLock.withUnlockAt(unlockAt))
         .finish()
         .buildAndExecute(notarizationClient);
 
@@ -103,7 +103,7 @@ export async function destroyNotarization(): Promise<void> {
         .createLocked()
         .withStringState("No delete lock content", undefined)
         .withImmutableDescription("No delete lock document")
-        .withDeleteAt(TimeLock.withNone())
+        .withDeleteLock(TimeLock.withNone())
         .finish()
         .buildAndExecute(notarizationClient);
 

@@ -175,7 +175,7 @@ impl<S> NotarizationClient<S> {
     ///     .create_locked_notarization()
     ///     .with_string_state("Contract v1.0", Some("PDF hash"))
     ///     .with_immutable_description("Employment Agreement")
-    ///     .with_delete_at(TimeLock::UnlockAt(1735689600))
+    ///     .with_delete_lock(TimeLock::UnlockAt(1735689600))
     ///     .finish()?
     ///     .build_and_execute(&client)
     ///     .await?;

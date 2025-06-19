@@ -134,7 +134,7 @@ export async function accessReadOnlyMethods(): Promise<void> {
         .withStringState("Locked document content", "Locked state metadata")
         .withImmutableDescription("Locked test document")
         .withUpdatableMetadata("Locked document metadata")
-        .withDeleteAt(TimeLock.withUnlockAt(unlockAt))
+        .withDeleteLock(TimeLock.withUnlockAt(unlockAt))
         .finish()
         .buildAndExecute(notarizationClient);
 
