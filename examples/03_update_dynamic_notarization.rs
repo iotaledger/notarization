@@ -3,7 +3,7 @@
 
 use anyhow::Result;
 use examples::get_funded_client;
-use notarization::core::state::State;
+use notarization::core::types::State;
 
 #[tokio::main]
 async fn main() -> Result<()> {

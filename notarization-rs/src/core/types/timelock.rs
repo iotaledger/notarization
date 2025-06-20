@@ -11,7 +11,7 @@ use iota_interaction::types::transaction::Argument;
 use iota_interaction::{MoveType, ident_str};
 use serde::{Deserialize, Serialize};
 
-use super::move_utils;
+use super::super::move_utils;
 use crate::error::Error;
 
 /// Metadata containing time-based access restrictions for a notarization.
@@ -54,7 +54,7 @@ impl TimeLock {
     /// Creates a new `Argument` from the `TimeLock`.
     ///
     /// To be used when creating a new `Notarization` object on the ledger.
-    pub(super) fn to_ptb(&self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
+    pub(in crate::core) fn to_ptb(&self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
         match self {
             TimeLock::UnlockAt(unlock_time) => new_unlock_at(ptb, *unlock_time, package_id),
             TimeLock::UntilDestroyed => new_until_destroyed(ptb, package_id),

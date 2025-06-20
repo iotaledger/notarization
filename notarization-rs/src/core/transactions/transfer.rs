@@ -4,25 +4,27 @@
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::IotaTransactionBlockEffects;
-use iota_interaction::types::base_types::ObjectID;
+use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::transaction::ProgrammableTransaction;
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;
 
-use super::operations::{NotarizationImpl, NotarizationOperations};
+use super::super::operations::{NotarizationImpl, NotarizationOperations};
 use crate::error::Error;
 
-/// A transaction that destroys a notarization
-pub struct DestroyNotarization {
+/// A transaction that transfers ownership of a dynamic notarization.
+pub struct TransferNotarization {
+    recipient: IotaAddress,
     notarization_id: ObjectID,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
-impl DestroyNotarization {
-    /// Creates a new destroy transaction.
-    pub fn new(notarization_id: ObjectID) -> Self {
+impl TransferNotarization {
+    /// Creates a new transfer transaction.
+    pub fn new(recipient: IotaAddress, notarization_id: ObjectID) -> Self {
         Self {
+            recipient,
             notarization_id,
             cached_ptb: OnceCell::new(),
         }
@@ -32,13 +34,13 @@ impl DestroyNotarization {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        NotarizationImpl::destroy(client, self.notarization_id).await
+        NotarizationImpl::transfer_notarization(self.notarization_id, self.recipient, client).await
     }
 }
 
 #[cfg_attr(not(feature = "send-sync"), async_trait(?Send))]
 #[cfg_attr(feature = "send-sync", async_trait)]
-impl Transaction for DestroyNotarization {
+impl Transaction for TransferNotarization {
     type Error = Error;
 
     type Output = ();
