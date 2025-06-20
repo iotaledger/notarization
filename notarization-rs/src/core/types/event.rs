@@ -14,12 +14,12 @@ pub struct Event<D> {
 
 /// An event that is emitted when a new dynamic notarization is created.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct DynamicNotarizationCreated {
+pub(crate) struct DynamicNotarizationCreated {
     pub notarization_id: ObjectID,
 }
 
-/// An event that is emitted when a new dynamic notarization is updated.
+/// An event that is emitted when a new locked notarization is created.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct LockedNotarizationCreated {
+pub(crate) struct LockedNotarizationCreated {
     pub notarization_id: ObjectID,
 }

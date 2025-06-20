@@ -15,7 +15,8 @@
 //! All transaction methods return a [`TransactionBuilder`] that follows this pattern:
 //!
 //! ```rust,ignore
-//! # use notarization::client::full_client::{NotarizationClient, State};
+//! # use notarization::client::full_client::NotarizationClient;
+//! # use notarization::core::types::State;
 //! # use iota_interaction::types::base_types::ObjectID;
 //! # async fn example(client: &NotarizationClient<impl secret_storage::Signer<iota_interaction::IotaKeySignature>>) -> Result<(), Box<dyn std::error::Error>> {
 //! # let object_id = ObjectID::ZERO;
@@ -46,10 +47,9 @@
 //! ## Example: Complete Notarization Workflow
 //!
 //! ```rust,ignore
-//! # use notarization::client::full_client::NotarizationClient;
 //! # use notarization::core::builder::NotarizationBuilder;
-//! # use notarization::core::state::State;
-//! # use notarization::core::timelock::TimeLock;
+//! # use notarization::core::types::{State, TimeLock};
+//! # use notarization::client::full_client::NotarizationClient;
 //! # async fn example(client: &NotarizationClient<impl secret_storage::Signer<iota_interaction::IotaKeySignature>>) -> Result<(), Box<dyn std::error::Error>> {
 //! // 1. Create a dynamic notarization
 //! let create_result = client
@@ -89,10 +89,8 @@ use secret_storage::Signer;
 
 use super::read_only::NotarizationClientReadOnly;
 use crate::core::builder::{Dynamic, Locked, NotarizationBuilder};
-use crate::core::destroy::DestroyNotarization;
-use crate::core::metadata::UpdateMetadata;
-use crate::core::state::{State, UpdateState};
-use crate::core::transfer::TransferNotarization;
+use crate::core::transactions::{DestroyNotarization, TransferNotarization, UpdateMetadata, UpdateState};
+use crate::core::types::State;
 use crate::error::Error;
 use crate::iota_interaction_adapter::IotaClientAdapter;
 
@@ -168,8 +166,7 @@ impl<S> NotarizationClient<S> {
     ///
     /// ```rust,ignore
     /// # use notarization::client::full_client::NotarizationClient;
-    /// # use notarization::core::builder::NotarizationBuilder;
-    /// # use notarization::core::timelock::TimeLock;
+    /// # use notarization::core::types::TimeLock;
     /// # async fn example(client: &NotarizationClient<impl secret_storage::Signer<iota_interaction::IotaKeySignature>>) -> Result<(), Box<dyn std::error::Error>> {
     /// let result = client
     ///     .create_locked_notarization()
@@ -194,8 +191,7 @@ impl<S> NotarizationClient<S> {
     ///
     /// ```rust,ignore
     /// # use notarization::client::full_client::NotarizationClient;
-    /// # use notarization::core::builder::NotarizationBuilder;
-    /// # use notarization::core::timelock::TimeLock;
+    /// # use notarization::core::types::TimeLock;
     /// # async fn example(client: &NotarizationClient<impl secret_storage::Signer<iota_interaction::IotaKeySignature>>) -> Result<(), Box<dyn std::error::Error>> {
     /// let result = client
     ///     .create_dynamic_notarization()
@@ -233,8 +229,7 @@ where
     ///
     /// ```rust,ignore
     /// # use notarization::client::full_client::NotarizationClient;
-    /// # use notarization::core::builder::NotarizationBuilder;
-    /// # use notarization::core::state::State;
+    /// # use notarization::core::types::State;
     /// # use iota_interaction::types::base_types::ObjectID;
     /// # async fn example(client: &NotarizationClient<impl secret_storage::Signer<iota_interaction::IotaKeySignature>>, object_id: ObjectID) -> Result<(), Box<dyn std::error::Error>> {
     /// client
@@ -264,9 +259,7 @@ where
     /// ## Example
     ///
     /// ```rust,ignore
-    /// # use notarization::client::full_client::{NotarizationClient, State};
-    /// # use notarization::core::builder::NotarizationBuilder;
-    /// # use notarization::core::timelock::TimeLock;
+    /// # use notarization::client::full_client::NotarizationClient;
     /// # use iota_interaction::types::base_types::ObjectID;
     /// # async fn example(client: &NotarizationClient<impl secret_storage::Signer<iota_interaction::IotaKeySignature>>, object_id: ObjectID) -> Result<(), Box<dyn std::error::Error>> {
     /// client
@@ -295,9 +288,7 @@ where
     /// ## Example
     ///
     /// ```rust,ignore
-    /// # use notarization::client::full_client::{NotarizationClient, State};
-    /// # use notarization::core::builder::NotarizationBuilder;
-    /// # use notarization::core::timelock::TimeLock;
+    /// # use notarization::NotarizationClient;
     /// # use iota_interaction::types::base_types::ObjectID;
     /// # async fn example(client: &NotarizationClient<impl secret_storage::Signer<iota_interaction::IotaKeySignature>>, object_id: ObjectID) -> Result<(), Box<dyn std::error::Error>> {
     /// client
@@ -329,10 +320,7 @@ where
     /// ## Example
     ///
     /// ```rust,ignore
-    /// # use notarization::client::full_client::{NotarizationClient};
-    /// # use notarization::core::builder::NotarizationBuilder;
-    /// # use notarization::core::timelock::TimeLock;
-    /// # use notarization::core::state::State;
+    /// # use notarization::client::full_client::NotarizationClient;
     /// # use iota_interaction::types::base_types::{ObjectID, IotaAddress};
     /// # async fn example(client: &NotarizationClient<impl secret_storage::Signer<iota_interaction::IotaKeySignature>>, object_id: ObjectID, recipient: IotaAddress) -> Result<(), Box<dyn std::error::Error>> {
     /// client

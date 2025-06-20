@@ -18,8 +18,7 @@ use serde::de::DeserializeOwned;
 
 use super::network_id;
 use crate::core::operations::{NotarizationImpl, NotarizationOperations};
-use crate::core::state::{Data, State};
-use crate::core::timelock::LockMetadata;
+use crate::core::types::{Data, LockMetadata, State};
 use crate::core::{NotarizationMethod, move_utils};
 use crate::error::Error;
 use crate::iota_interaction_adapter::IotaClientAdapter;

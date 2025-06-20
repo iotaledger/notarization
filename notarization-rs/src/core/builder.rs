@@ -18,11 +18,12 @@
 //! ### Creating a Locked Notarization
 //!
 //! ```rust,ignore
-//! use notarization::{NotarizationBuilder, State, TimeLock};
+//! use notarization::core::builder::NotarizationBuilder;
+//! use notarization::core::types::{State, TimeLock};
 //!
 //! let builder = NotarizationBuilder::locked()
-//!     .with_string_state("Legal Document v1.0", Some("PDF hash: abc123"))
-//!     .with_immutable_description("Employment Contract")
+//!     .with_string_state("Legal Document v1.0".to_string(), Some("PDF hash: abc123".to_string()))
+//!     .with_immutable_description("Employment Contract".to_string())
 //!     .with_delete_at(TimeLock::UnlockAt(1735689600)) // Unix timestamp
 //!     .finish()?;
 //! ```
@@ -30,11 +31,12 @@
 //! ### Creating a Dynamic Notarization
 //!
 //! ```rust,ignore
-//! use notarization::{NotarizationBuilder, State, TimeLock};
+//! use notarization::core::builder::NotarizationBuilder;
+//! use notarization::core::types::{State, TimeLock};
 //!
 //! let builder = NotarizationBuilder::dynamic()
-//!     .with_string_state("Status: Active", None)
-//!     .with_immutable_description("Service Status Monitor")
+//!     .with_string_state("Status: Active".to_string(), None)
+//!     .with_immutable_description("Service Status Monitor".to_string())
 //!     .with_transfer_lock(TimeLock::None) // Can be transferred freely
 //!     .finish();
 //! ```
@@ -44,9 +46,8 @@ use std::marker::PhantomData;
 use product_common::transaction::transaction_builder::TransactionBuilder;
 
 use super::NotarizationMethod;
-use super::notarization::CreateNotarization;
-use crate::core::state::State;
-use crate::core::timelock::TimeLock;
+use super::transactions::CreateNotarization;
+use super::types::{State, TimeLock};
 use crate::error::Error;
 
 /// Marker type for locked notarizations.
@@ -88,9 +89,10 @@ impl NotarizationBuilder<Locked> {
     /// ## Example
     ///
     /// ```rust,ignore
-    /// use notarization::{NotarizationBuilder, TimeLock};
+    /// use notarization::core::builder::NotarizationBuilder;
+    /// use notarization::core::types::TimeLock;
     ///
-    /// let builder = NotarizationBuilder::locked().with_delete_lock(TimeLock::UnlockAt(1735689600));
+    /// let builder = NotarizationBuilder::locked().with_delete_at(TimeLock::UnlockAt(1735689600));
     /// ```
     pub fn locked() -> Self {
         Self {
@@ -113,10 +115,11 @@ impl NotarizationBuilder<Locked> {
     /// ## Example
     ///
     /// ```rust,ignore
-    /// use notarization::core::builder::{NotarizationBuilder, TimeLock};
+    /// use notarization::core::builder::NotarizationBuilder;
+    /// use notarization::core::types::TimeLock;
     ///
     /// // Can be destroyed after January 1, 2025
-    /// let builder = NotarizationBuilder::locked().with_delete_lock(TimeLock::UnlockAt(1735689600));
+    /// let builder = NotarizationBuilder::locked().with_delete_at(TimeLock::UnlockAt(1735689600));
     /// ```
     pub fn with_delete_lock(mut self, lock: TimeLock) -> Self {
         self.delete_lock = Some(lock);
@@ -132,7 +135,8 @@ impl NotarizationBuilder<Locked> {
     /// ## Example
     ///
     /// ```rust,ignore
-    /// # use notarization::core::builder::{NotarizationBuilder, TimeLock, State};
+    /// # use notarization::core::builder::NotarizationBuilder;
+    /// # use notarization::core::types::{TimeLock, State};
     /// let transaction = NotarizationBuilder::locked()
     ///     .with_string_state("Document content", None)
     ///     .with_delete_lock(TimeLock::UnlockAt(1735689600))
@@ -184,7 +188,8 @@ impl NotarizationBuilder<Dynamic> {
     /// ## Example
     ///
     /// ```rust,ignore
-    /// use notarization::core::builder::{NotarizationBuilder, TimeLock};
+    /// use notarization::core::builder::NotarizationBuilder;
+    /// use notarization::core::types::TimeLock;
     ///
     /// // Lock transfers for 30 days
     /// let builder = NotarizationBuilder::dynamic().with_transfer_lock(TimeLock::UnlockAt(1735689600));
@@ -202,7 +207,8 @@ impl NotarizationBuilder<Dynamic> {
     /// ## Example
     ///
     /// ```rust,ignore
-    /// # use notarization::core::builder::{NotarizationBuilder, State};
+    /// # use notarization::core::builder::NotarizationBuilder;
+    /// # use notarization::core::types::State;
     /// let transaction = NotarizationBuilder::dynamic()
     ///     .with_string_state("Dynamic content", None)
     ///     .with_immutable_description("Status Monitor")
@@ -223,7 +229,8 @@ impl<M> NotarizationBuilder<M> {
     /// ## Example
     ///
     /// ```rust,ignore
-    /// use notarization::core::builder::{NotarizationBuilder, State};
+    /// use notarization::core::builder::NotarizationBuilder;
+    /// use notarization::core::types::State;
     ///
     /// let builder = NotarizationBuilder::locked()
     ///     .with_state(State::from_string("Document content", Some("v1.0")));

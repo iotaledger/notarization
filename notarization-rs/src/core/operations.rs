@@ -20,8 +20,7 @@ use iota_interaction::{OptionalSync, ident_str};
 use product_common::core_client::CoreClientReadOnly;
 
 use super::move_utils;
-use crate::core::state::State;
-use crate::core::timelock::TimeLock;
+use super::types::{State, TimeLock};
 use crate::error::Error;
 
 /// Internal implementation of notarization operations.

@@ -10,8 +10,9 @@
 //! The notarization is a struct that contains the state, metadata, and operations for a notarization.
 
 use async_trait::async_trait;
-use iota_interaction::rpc_types::{IotaData as _, IotaObjectDataOptions};
-use iota_interaction::rpc_types::{IotaTransactionBlockEffects, IotaTransactionBlockEvents};
+use iota_interaction::rpc_types::{
+    IotaData as _, IotaObjectDataOptions, IotaTransactionBlockEffects, IotaTransactionBlockEvents,
+};
 use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::types::id::UID;
 use iota_interaction::types::transaction::ProgrammableTransaction;
@@ -19,16 +20,14 @@ use iota_interaction::{IotaClientTrait, OptionalSend, OptionalSync};
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
 use tokio::sync::OnceCell;
 
-use super::NotarizationMethod;
-use super::builder::NotarizationBuilder;
-use super::event::{DynamicNotarizationCreated, Event, LockedNotarizationCreated};
-use super::metadata::ImmutableMetadata;
-use super::operations::{NotarizationImpl, NotarizationOperations};
-use super::state::State;
-use super::timelock::{LockMetadata, TimeLock};
+use super::super::NotarizationMethod;
+use super::super::builder::NotarizationBuilder;
+use super::super::operations::{NotarizationImpl, NotarizationOperations};
+use super::super::types::{
+    DynamicNotarizationCreated, Event, LockMetadata, LockedNotarizationCreated, OnChainNotarization, TimeLock,
+};
 use crate::error::Error;
 use crate::package::notarization_package_id;
 
