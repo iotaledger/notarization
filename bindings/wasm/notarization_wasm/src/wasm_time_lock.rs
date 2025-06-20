@@ -3,7 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
-use notarization::core::timelock::TimeLock;
+use notarization::core::types::TimeLock;
 
 
 #[wasm_bindgen(js_name = TimeLockType)]

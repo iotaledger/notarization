@@ -5,12 +5,9 @@ use wasm_bindgen::prelude::*;
 
 use notarization::core::builder::Locked;
 use notarization::core::builder::Dynamic;
-use notarization::core::notarization::{CreateNotarization, OnChainNotarization};
-use notarization::core::destroy::DestroyNotarization;
-use notarization::core::metadata::UpdateMetadata;
-use notarization::core::state::UpdateState;
-use notarization::core::transfer::TransferNotarization;
-
+use notarization::core::transactions::{CreateNotarization, DestroyNotarization,
+                                       UpdateMetadata, UpdateState, TransferNotarization};
+use notarization::core::types::OnChainNotarization;
 use iota_interaction_ts::core_client::WasmCoreClientReadOnly;
 use iota_interaction_ts::bindings::WasmIotaTransactionBlockEffects;
 use iota_interaction_ts::bindings::WasmIotaTransactionBlockEvents;

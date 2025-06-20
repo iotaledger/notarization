@@ -14,7 +14,6 @@ use iota_interaction::rpc_types::{
     IotaData as _, IotaObjectDataOptions, IotaTransactionBlockEffects, IotaTransactionBlockEvents,
 };
 use iota_interaction::types::base_types::ObjectID;
-use iota_interaction::types::id::UID;
 use iota_interaction::types::transaction::ProgrammableTransaction;
 use iota_interaction::{IotaClientTrait, OptionalSend, OptionalSync};
 use product_common::core_client::CoreClientReadOnly;
@@ -30,25 +29,6 @@ use super::super::types::{
 };
 use crate::error::Error;
 use crate::package::notarization_package_id;
-
-/// A notarization record stored on the blockchain.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct OnChainNotarization {
-    /// The unique identifier of the notarization.
-    pub id: UID,
-    /// The state of the notarization.
-    pub state: State,
-    /// The immutable metadata of the notarization.
-    pub immutable_metadata: ImmutableMetadata,
-    /// The updatable metadata of the notarization.
-    pub updatable_metadata: Option<String>,
-    /// The timestamp of the last state change.
-    pub last_state_change_at: u64,
-    /// The number of state changes.
-    pub state_version_count: u64,
-    /// The method of the notarization.
-    pub method: NotarizationMethod,
-}
 
 /// A transaction that creates a new notarization.
 #[derive(Debug, Clone)]

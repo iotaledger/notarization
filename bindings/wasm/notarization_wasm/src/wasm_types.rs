@@ -4,9 +4,7 @@
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 use js_sys::Uint8Array;
-use notarization::core::metadata::ImmutableMetadata;
-use notarization::core::state::{State, Data};
-use notarization::core::timelock::{LockMetadata};
+use notarization::core::types::{State, Data, ImmutableMetadata, LockMetadata};
 use notarization::core::NotarizationMethod;
 use crate::wasm_time_lock::WasmTimeLock;
 
