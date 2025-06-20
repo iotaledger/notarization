@@ -21,8 +21,8 @@ async-trait = { version = "0.1", default-features = false }
 bcs = "0.1.6"
 console_error_panic_hook = { version = "0.1" }
 fastcrypto = { git = "https://github.com/MystenLabs/fastcrypto", rev = "2f502fd8570fe4e9cff36eea5bbd6fef22002898", package = "fastcrypto" }
-iota_interaction = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.2.1", package = "iota_interaction", default-features = false }
-iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.2.1", package = "iota_interaction_ts" }
+iota_interaction = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/iota-v1-2-3-and-resources-for-wasm", package = "iota_interaction", default-features = false }
+iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/iota-v1-2-3-and-resources-for-wasm", package = "iota_interaction_ts" }
 js-sys = { version = "0.3.61" }
 prefix-hex = { version = "0.7", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
@@ -37,7 +37,7 @@ wasm-bindgen-futures = { version = "0.4", default-features = false }
 
 [dependencies.product_common]
 git = "https://github.com/iotaledger/product-core.git"
-tag = "v0.2.1"
+branch = "feat/iota-v1-2-3-and-resources-for-wasm"
 package = "product_common"
 features = ["core-client", "transaction", "bindings", "binding-utils"]
 
@@ -67,14 +67,3 @@ empty_docs = "allow"
 # required for current wasm_bindgen version
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(wasm_bindgen_unstable_test_coverage)'] }
 
-# Uncomment the following patch if you need to use a local `product-core` repository for development purposes.
-# --------------------------------------------------------------------------
-# IMPORTANT:
-# * Remember to comment out the patch before committing your changes.
-# * Remember also to comment out the patch in the root workspace Cargo.toml file
-# --------------------------------------------------------------------------
-[patch."https://github.com/iotaledger/product-core.git"]
-iota_interaction = { version = "0.2.1", path = "../../../../product-core/iota_interaction" }
-# iota_interaction_rust = { version = "0.2.1", path = "../../../../product-core/iota_interaction_rust" }
-iota_interaction_ts = { version = "0.2.1", path = "../../../../product-core/bindings/wasm/iota_interaction_ts" }
-product_common = { version = "0.2.1", path = "../../../../product-core/product_common" }
