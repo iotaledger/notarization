@@ -46,10 +46,11 @@ pub enum Error {
 }
 
 #[cfg(target_arch = "wasm32")]
+use std::borrow::Cow;
+
+#[cfg(target_arch = "wasm32")]
 use iota_interaction_ts::error::{ErrorMessage, WasmError};
 #[cfg(target_arch = "wasm32")]
 use iota_interaction_ts::impl_wasm_error_from;
-#[cfg(target_arch = "wasm32")]
-use std::borrow::Cow;
 #[cfg(target_arch = "wasm32")]
 impl_wasm_error_from!(Error);

@@ -4,7 +4,7 @@
 use iota_interaction::types::id::UID;
 use serde::{Deserialize, Serialize};
 
-use super::super::NotarizationMethod;
+use super::NotarizationMethod;
 use super::metadata::ImmutableMetadata;
 use super::state::State;
 

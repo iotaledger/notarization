@@ -3,11 +3,11 @@
 
 //! Transaction operations for notarizations.
 
-pub mod create;
-pub mod destroy;
-pub mod transfer;
-pub mod update_metadata;
-pub mod update_state;
+mod create;
+mod destroy;
+mod transfer;
+mod update_metadata;
+mod update_state;
 
 pub use create::*;
 pub use destroy::*;

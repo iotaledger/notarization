@@ -1,10 +1,9 @@
 // Copyright 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+use notarization::core::types::TimeLock;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
-use notarization::core::types::TimeLock;
-
 
 #[wasm_bindgen(js_name = TimeLockType)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -24,7 +23,7 @@ impl WasmTimeLock {
     pub fn with_unlock_at(time: u32) -> Self {
         Self(TimeLock::UnlockAt(time))
     }
-    
+
     #[wasm_bindgen(js_name = withUntilDestroyed)]
     pub fn with_until_destroyed() -> Self {
         Self(TimeLock::UntilDestroyed)

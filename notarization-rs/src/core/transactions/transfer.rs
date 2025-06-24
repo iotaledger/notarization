@@ -1,6 +1,16 @@
 // Copyright 2020-2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! # Transfer Notarization
+//!
+//! This module defines the transfer notarization transaction.
+//!
+//! ## Overview
+//!
+//! The transfer notarization transaction is used to transfer ownership of a dynamic notarization to a new address.
+//!
+//! Note that this transaction is only available for dynamic notarizations.
+
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::IotaTransactionBlockEffects;

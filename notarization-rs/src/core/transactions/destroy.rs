@@ -1,6 +1,14 @@
 // Copyright 2020-2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! # Destroy Notarization
+//!
+//! This module defines the destroy notarization transaction.
+//!
+//! ## Overview
+//!
+//! The destroy notarization transaction is used to destroy a notarization.
+
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::IotaTransactionBlockEffects;
