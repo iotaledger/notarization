@@ -11,7 +11,7 @@ use notarization::core::types::OnChainNotarization;
 use iota_interaction_ts::core_client::WasmCoreClientReadOnly;
 use iota_interaction_ts::bindings::WasmIotaTransactionBlockEffects;
 use iota_interaction_ts::bindings::WasmIotaTransactionBlockEvents;
-use iota_interaction_ts::error::Result;
+use iota_interaction_ts::wasm_error::Result;
 use product_common::bindings::WasmObjectID;
 use product_common::bindings::WasmIotaAddress;
 use product_common::bindings::utils::{apply_with_events, build_programmable_transaction,
@@ -67,15 +67,6 @@ impl WasmCreateNotarizationLocked {
         build_programmable_transaction(&self.0, client).await
     }
 
-    #[wasm_bindgen]
-    pub async fn apply(
-        self,
-        _wasm_effects: &WasmIotaTransactionBlockEffects,
-        _client: &WasmCoreClientReadOnly,
-    ) -> Result<WasmOnChainNotarization> {
-        unimplemented!("Function CreateNotarizationLocked::apply() should never be called.");
-    }
-
     #[wasm_bindgen(js_name = applyWithEvents)]
     pub async fn apply_with_events(
         self,
@@ -100,15 +91,6 @@ impl WasmCreateNotarizationDynamic {
     #[wasm_bindgen(js_name = buildProgrammableTransaction)]
     pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
         build_programmable_transaction(&self.0, client).await
-    }
-
-    #[wasm_bindgen]
-    pub async fn apply(
-        self,
-        _wasm_effects: &WasmIotaTransactionBlockEffects,
-        _client: &WasmCoreClientReadOnly,
-    ) -> Result<WasmOnChainNotarization> {
-        unimplemented!("Function CreateNotarizationDynamic::apply() should never be called.");
     }
 
     #[wasm_bindgen(js_name = applyWithEvents)]
@@ -138,15 +120,6 @@ impl WasmUpdateState {
         build_programmable_transaction(&self.0, client).await
     }
 
-    #[wasm_bindgen]
-    pub async fn apply(
-        self,
-        _wasm_effects: &WasmIotaTransactionBlockEffects,
-        _client: &WasmCoreClientReadOnly,
-    ) -> Result<WasmOnChainNotarization> {
-        unimplemented!("Function UpdateState::apply() should never be called.");
-    }
-
     #[wasm_bindgen(js_name = applyWithEvents)]
     pub async fn apply_with_events(
         self,
@@ -172,15 +145,6 @@ impl WasmUpdateMetadata {
     #[wasm_bindgen(js_name = buildProgrammableTransaction)]
     pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
         build_programmable_transaction(&self.0, client).await
-    }
-
-    #[wasm_bindgen]
-    pub async fn apply(
-        self,
-        _wasm_effects: &WasmIotaTransactionBlockEffects,
-        _client: &WasmCoreClientReadOnly,
-    ) -> Result<WasmEmpty> {
-        unimplemented!("Function UpdateMetadata::apply() should never be called.");
     }
 
     #[wasm_bindgen(js_name = applyWithEvents)]
@@ -210,15 +174,6 @@ impl WasmDestroyNotarization {
         build_programmable_transaction(&self.0, client).await
     }
 
-    #[wasm_bindgen]
-    pub async fn apply(
-        self,
-        _wasm_effects: &WasmIotaTransactionBlockEffects,
-        _client: &WasmCoreClientReadOnly,
-    ) -> Result<WasmEmpty> {
-        unimplemented!("Function DestroyNotarization::apply() should never be called.");
-    }
-
     #[wasm_bindgen(js_name = applyWithEvents)]
     pub async fn apply_with_events(
         self,
@@ -245,15 +200,6 @@ impl WasmTransferNotarization {
     #[wasm_bindgen(js_name = buildProgrammableTransaction)]
     pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
         build_programmable_transaction(&self.0, client).await
-    }
-
-    #[wasm_bindgen]
-    pub async fn apply(
-        self,
-        _wasm_effects: &WasmIotaTransactionBlockEffects,
-        _client: &WasmCoreClientReadOnly,
-    ) -> Result<WasmEmpty> {
-        unimplemented!("Function TransferNotarization::apply() should never be called.");
     }
 
     #[wasm_bindgen(js_name = applyWithEvents)]
