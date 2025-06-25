@@ -4,7 +4,7 @@
 use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;
 
-use iota_interaction_ts::error::Result;
+use iota_interaction_ts::wasm_error::Result;
 use product_common::bindings::transaction::WasmTransactionBuilder;
 
 use notarization::core::builder::{Locked, Dynamic, NotarizationBuilder};

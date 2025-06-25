@@ -10,7 +10,7 @@ use product_common::bindings::utils::{into_transaction_builder, parse_wasm_iota_
 use product_common::core_client::CoreClient;
 use product_common::core_client::CoreClientReadOnly;
 use iota_interaction_ts::bindings::{WasmTransactionSigner, WasmPublicKey, WasmIotaClient};
-use iota_interaction_ts::error::{Result, WasmResult};
+use iota_interaction_ts::wasm_error::{Result, WasmResult};
 
 use notarization::NotarizationClient;
 

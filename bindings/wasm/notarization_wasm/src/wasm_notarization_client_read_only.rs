@@ -7,7 +7,7 @@ use wasm_bindgen::prelude::*;
 
 use notarization::NotarizationClientReadOnly;
 use iota_interaction_ts::bindings::WasmIotaClient;
-use iota_interaction_ts::error::{Result, WasmResult, wasm_error};
+use iota_interaction_ts::wasm_error::{Result, WasmResult, wasm_error};
 use iota_interaction::types::base_types::ObjectID;
 use product_common::bindings::WasmObjectID;
 use product_common::bindings::utils::parse_wasm_object_id;
