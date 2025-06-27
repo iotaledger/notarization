@@ -1,26 +1,22 @@
 // Copyright 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+use iota_interaction_ts::bindings::{WasmIotaTransactionBlockEffects, WasmIotaTransactionBlockEvents};
+use iota_interaction_ts::core_client::WasmCoreClientReadOnly;
+use iota_interaction_ts::wasm_error::Result;
+use notarization::core::builder::{Dynamic, Locked};
+use notarization::core::transactions::{
+    CreateNotarization, DestroyNotarization, TransferNotarization, UpdateMetadata, UpdateState,
+};
+use notarization::core::types::OnChainNotarization;
+use product_common::bindings::utils::{
+    apply_with_events, build_programmable_transaction, parse_wasm_iota_address, parse_wasm_object_id,
+};
+use product_common::bindings::{WasmIotaAddress, WasmObjectID};
 use wasm_bindgen::prelude::*;
 
-use notarization::core::builder::Locked;
-use notarization::core::builder::Dynamic;
-use notarization::core::transactions::{CreateNotarization, DestroyNotarization,
-                                       UpdateMetadata, UpdateState, TransferNotarization};
-use notarization::core::types::OnChainNotarization;
-use iota_interaction_ts::core_client::WasmCoreClientReadOnly;
-use iota_interaction_ts::bindings::WasmIotaTransactionBlockEffects;
-use iota_interaction_ts::bindings::WasmIotaTransactionBlockEvents;
-use iota_interaction_ts::wasm_error::Result;
-use product_common::bindings::WasmObjectID;
-use product_common::bindings::WasmIotaAddress;
-use product_common::bindings::utils::{apply_with_events, build_programmable_transaction,
-                                      parse_wasm_iota_address, parse_wasm_object_id};
-
-use crate::wasm_notarization_builder::WasmNotarizationBuilderLocked;
-use crate::wasm_notarization_builder::WasmNotarizationBuilderDynamic;
-use crate::wasm_types::{WasmState, WasmNotarizationMethod, WasmEmpty};
-use crate::wasm_types::WasmImmutableMetadata;
+use crate::wasm_notarization_builder::{WasmNotarizationBuilderDynamic, WasmNotarizationBuilderLocked};
+use crate::wasm_types::{WasmEmpty, WasmImmutableMetadata, WasmNotarizationMethod, WasmState};
 
 #[wasm_bindgen(js_name = OnChainNotarization, inspectable)]
 #[derive(Clone)]
@@ -28,22 +24,38 @@ pub struct WasmOnChainNotarization(pub(crate) OnChainNotarization);
 
 #[wasm_bindgen(js_class = OnChainNotarization)]
 impl WasmOnChainNotarization {
-    pub(crate) fn new(identity: OnChainNotarization) -> Self {Self(identity)}
+    pub(crate) fn new(identity: OnChainNotarization) -> Self {
+        Self(identity)
+    }
 
     #[wasm_bindgen(getter)]
-    pub fn id(&self) -> String { self.0.id.id.bytes.to_hex() }
+    pub fn id(&self) -> String {
+        self.0.id.id.bytes.to_hex()
+    }
     #[wasm_bindgen(getter)]
-    pub fn state(&self) -> WasmState { WasmState(self.0.state.clone()) }
+    pub fn state(&self) -> WasmState {
+        WasmState(self.0.state.clone())
+    }
     #[wasm_bindgen(js_name = immutableMetadata, getter)]
-    pub fn immutable_metadata(&self) -> WasmImmutableMetadata { WasmImmutableMetadata(self.0.immutable_metadata.clone()) }
+    pub fn immutable_metadata(&self) -> WasmImmutableMetadata {
+        WasmImmutableMetadata(self.0.immutable_metadata.clone())
+    }
     #[wasm_bindgen(js_name = updatableMetadata, getter)]
-    pub fn updatable_metadata(&self) -> Option<String> {self.0.updatable_metadata.clone()}
+    pub fn updatable_metadata(&self) -> Option<String> {
+        self.0.updatable_metadata.clone()
+    }
     #[wasm_bindgen(js_name = lastStateChangeAt, getter)]
-    pub fn last_state_change_at(&self) -> u64 {self.0.last_state_change_at}
+    pub fn last_state_change_at(&self) -> u64 {
+        self.0.last_state_change_at
+    }
     #[wasm_bindgen(js_name = stateVersionCount, getter)]
-    pub fn state_version_count(&self) -> u64 {self.0.state_version_count}
+    pub fn state_version_count(&self) -> u64 {
+        self.0.state_version_count
+    }
     #[wasm_bindgen(getter)]
-    pub fn method(&self) -> WasmNotarizationMethod {self.0.method.clone().into()}
+    pub fn method(&self) -> WasmNotarizationMethod {
+        self.0.method.clone().into()
+    }
 }
 
 impl From<OnChainNotarization> for WasmOnChainNotarization {
@@ -194,7 +206,10 @@ impl WasmTransferNotarization {
     pub fn new(recipient: WasmIotaAddress, object_id: WasmObjectID) -> Result<Self> {
         let obj_id = parse_wasm_object_id(&object_id)?;
         let recipient_address = parse_wasm_iota_address(&recipient)?;
-        Ok(WasmTransferNotarization(TransferNotarization::new(recipient_address, obj_id)))
+        Ok(WasmTransferNotarization(TransferNotarization::new(
+            recipient_address,
+            obj_id,
+        )))
     }
 
     #[wasm_bindgen(js_name = buildProgrammableTransaction)]

@@ -1,11 +1,12 @@
 // Copyright 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+use js_sys::Uint8Array;
+use notarization::core::types::{Data, ImmutableMetadata, LockMetadata, State};
+use notarization::core::NotarizationMethod;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
-use js_sys::Uint8Array;
-use notarization::core::types::{State, Data, ImmutableMetadata, LockMetadata};
-use notarization::core::NotarizationMethod;
+
 use crate::wasm_time_lock::WasmTimeLock;
 
 #[wasm_bindgen(js_name = Empty, inspectable)]
@@ -22,7 +23,6 @@ pub struct WasmData(pub(crate) Data);
 
 #[wasm_bindgen(js_class = Data)]
 impl WasmData {
-    
     #[wasm_bindgen(getter)]
     pub fn value(&self) -> JsValue {
         match &self.0 {
@@ -30,7 +30,7 @@ impl WasmData {
             Data::Text(text) => JsValue::from(text),
         }
     }
-    
+
     #[wasm_bindgen(js_name = toString)]
     pub fn to_string(&self) -> String {
         match &self.0 {
@@ -66,10 +66,14 @@ pub struct WasmState(pub(crate) State);
 #[wasm_bindgen(js_class = State)]
 impl WasmState {
     #[wasm_bindgen(getter)]
-    pub fn data(&self) -> WasmData { self.0.data.clone().into() }
+    pub fn data(&self) -> WasmData {
+        self.0.data.clone().into()
+    }
 
     #[wasm_bindgen(getter)]
-    pub fn metadata(&self) -> Option<String> { self.0.metadata.clone() }
+    pub fn metadata(&self) -> Option<String> {
+        self.0.metadata.clone()
+    }
 
     #[wasm_bindgen(js_name = fromString)]
     pub fn from_string(data: String, metadata: Option<String>) -> Self {
@@ -128,10 +132,14 @@ pub struct WasmImmutableMetadata(pub(crate) ImmutableMetadata);
 impl WasmImmutableMetadata {
     /// Timestamp when the `Notarization` was created
     #[wasm_bindgen(js_name = createdAt, getter)]
-    pub fn created_at(&self) -> u64 { self.0.created_at }
+    pub fn created_at(&self) -> u64 {
+        self.0.created_at
+    }
     /// Description of the `Notarization`
     #[wasm_bindgen(getter)]
-    pub fn description(&self) -> Option<String> { self.0.description.clone() }
+    pub fn description(&self) -> Option<String> {
+        self.0.description.clone()
+    }
     /// Optional lock metadata for `Notarization`
     #[wasm_bindgen(getter)]
     pub fn locking(&self) -> Option<WasmLockMetadata> {

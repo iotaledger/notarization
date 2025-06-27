@@ -1,17 +1,14 @@
 // Copyright 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+use iota_interaction_ts::wasm_error::Result;
 use js_sys::Uint8Array;
+use notarization::core::builder::{Dynamic, Locked, NotarizationBuilder};
+use product_common::bindings::transaction::WasmTransactionBuilder;
 use wasm_bindgen::prelude::*;
 
-use iota_interaction_ts::wasm_error::Result;
-use product_common::bindings::transaction::WasmTransactionBuilder;
-
-use notarization::core::builder::{Locked, Dynamic, NotarizationBuilder};
-
+use crate::wasm_notarization::{WasmCreateNotarizationDynamic, WasmCreateNotarizationLocked};
 use crate::wasm_time_lock::WasmTimeLock;
-use crate::wasm_notarization::WasmCreateNotarizationLocked;
-use crate::wasm_notarization::WasmCreateNotarizationDynamic;
 
 #[wasm_bindgen(js_name = NotarizationBuilderLocked, inspectable)]
 pub struct WasmNotarizationBuilderLocked(pub(crate) NotarizationBuilder<Locked>);
@@ -24,24 +21,35 @@ impl Into<WasmNotarizationBuilderLocked> for NotarizationBuilder<Locked> {
 
 #[wasm_bindgen(js_class = NotarizationBuilderLocked)]
 impl WasmNotarizationBuilderLocked {
-    
     #[wasm_bindgen(js_name = withBytesState)]
-    pub fn with_bytes_state(self, data: Uint8Array, metadata: Option<String>) -> Self {self.0.with_bytes_state(data.to_vec(), metadata).into()}
+    pub fn with_bytes_state(self, data: Uint8Array, metadata: Option<String>) -> Self {
+        self.0.with_bytes_state(data.to_vec(), metadata).into()
+    }
 
     #[wasm_bindgen(js_name = withStringState)]
-    pub fn with_string_state(self, data: String, metadata: Option<String>) -> Self {self.0.with_string_state(data, metadata).into()}
+    pub fn with_string_state(self, data: String, metadata: Option<String>) -> Self {
+        self.0.with_string_state(data, metadata).into()
+    }
 
     #[wasm_bindgen(js_name = withImmutableDescription)]
-    pub fn with_immutable_description(self, description: String) -> Self {self.0.with_immutable_description(description).into()}
+    pub fn with_immutable_description(self, description: String) -> Self {
+        self.0.with_immutable_description(description).into()
+    }
 
     #[wasm_bindgen(js_name = withUpdatableMetadata)]
-    pub fn with_updatable_metadata(self, metadata: String) -> Self {self.0.with_updatable_metadata(metadata).into()}
+    pub fn with_updatable_metadata(self, metadata: String) -> Self {
+        self.0.with_updatable_metadata(metadata).into()
+    }
 
     #[wasm_bindgen()]
-    pub fn locked() -> Self {NotarizationBuilder::<Locked>::locked().into()}
+    pub fn locked() -> Self {
+        NotarizationBuilder::<Locked>::locked().into()
+    }
 
     #[wasm_bindgen(js_name = withDeleteLock)]
-    pub fn with_delete_lock(self, lock: WasmTimeLock) -> Self {self.0.with_delete_lock(lock.0).into()}
+    pub fn with_delete_lock(self, lock: WasmTimeLock) -> Self {
+        self.0.with_delete_lock(lock.0).into()
+    }
 
     #[wasm_bindgen()]
     pub fn finish(self) -> Result<WasmTransactionBuilder> {
@@ -62,22 +70,34 @@ impl Into<WasmNotarizationBuilderDynamic> for NotarizationBuilder<Dynamic> {
 #[wasm_bindgen(js_class = NotarizationBuilderDynamic)]
 impl WasmNotarizationBuilderDynamic {
     #[wasm_bindgen(js_name = withBytesState)]
-    pub fn with_bytes_state(self, data: Uint8Array, metadata: Option<String>) -> Self {self.0.with_bytes_state(data.to_vec(), metadata).into()}
+    pub fn with_bytes_state(self, data: Uint8Array, metadata: Option<String>) -> Self {
+        self.0.with_bytes_state(data.to_vec(), metadata).into()
+    }
 
     #[wasm_bindgen(js_name = withStringState)]
-    pub fn with_string_state(self, data: String, metadata: Option<String>) -> Self {self.0.with_string_state(data, metadata).into()}
+    pub fn with_string_state(self, data: String, metadata: Option<String>) -> Self {
+        self.0.with_string_state(data, metadata).into()
+    }
 
     #[wasm_bindgen(js_name = withImmutableDescription)]
-    pub fn with_immutable_description(self, description: String) -> Self {self.0.with_immutable_description(description).into()}
+    pub fn with_immutable_description(self, description: String) -> Self {
+        self.0.with_immutable_description(description).into()
+    }
 
     #[wasm_bindgen(js_name = withUpdatableMetadata)]
-    pub fn with_updatable_metadata(self, metadata: String) -> Self {self.0.with_updatable_metadata(metadata).into()}
+    pub fn with_updatable_metadata(self, metadata: String) -> Self {
+        self.0.with_updatable_metadata(metadata).into()
+    }
 
     #[wasm_bindgen()]
-    pub fn dynamic() -> Self {NotarizationBuilder::<Dynamic>::dynamic().into()}
+    pub fn dynamic() -> Self {
+        NotarizationBuilder::<Dynamic>::dynamic().into()
+    }
 
     #[wasm_bindgen(js_name = withTransferLock)]
-    pub fn with_transfer_lock(self, lock: WasmTimeLock) -> Self {self.0.with_transfer_lock(lock.0).into()}
+    pub fn with_transfer_lock(self, lock: WasmTimeLock) -> Self {
+        self.0.with_transfer_lock(lock.0).into()
+    }
 
     #[wasm_bindgen()]
     pub fn finish(self) -> Result<WasmTransactionBuilder> {
