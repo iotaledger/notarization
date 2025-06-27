@@ -66,13 +66,13 @@ impl NotarizationImpl {
 
             vec![
                 ptb.obj(ObjectArg::ImmOrOwnedObject(notarization))
-                    .map_err(|e| Error::InvalidArgument(format!("Failed to create object argument: {}", e)))?,
+                    .map_err(|e| Error::InvalidArgument(format!("Failed to create object argument: {e}")))?,
             ]
         };
         // Add additional arguments
         args.extend(
             additional_args(&mut ptb)
-                .map_err(|e| Error::InvalidArgument(format!("Failed to add additional arguments: {}", e)))?,
+                .map_err(|e| Error::InvalidArgument(format!("Failed to add additional arguments: {e}")))?,
         );
 
         // Create method identifier
@@ -316,12 +316,12 @@ pub(crate) trait NotarizationOperations {
         let tag = vec![move_utils::get_type_tag(client, &object_id).await?];
         let recipient = ptb
             .pure(recipient)
-            .map_err(|e| Error::InvalidArgument(format!("Failed to create recipient argument: {}", e)))?;
+            .map_err(|e| Error::InvalidArgument(format!("Failed to create recipient argument: {e}")))?;
 
         let notarization = move_utils::get_object_ref_by_id(client, &object_id).await?;
         let notarization = ptb
             .obj(ObjectArg::ImmOrOwnedObject(notarization))
-            .map_err(|e| Error::InvalidArgument(format!("Failed to create notarization argument: {}", e)))?;
+            .map_err(|e| Error::InvalidArgument(format!("Failed to create notarization argument: {e}")))?;
 
         let clock = move_utils::get_clock_ref(&mut ptb);
 

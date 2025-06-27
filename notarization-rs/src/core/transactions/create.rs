@@ -187,13 +187,13 @@ impl<M: Clone + OptionalSend + OptionalSync> Transaction for CreateNotarization<
         let notarization_id = match method {
             NotarizationMethod::Dynamic => {
                 let event: Event<DynamicNotarizationCreated> = serde_json::from_value(data.parsed_json.clone())
-                    .map_err(|e| Error::TransactionUnexpectedResponse(format!("failed to parse event: {}", e)))?;
+                    .map_err(|e| Error::TransactionUnexpectedResponse(format!("failed to parse event: {e}")))?;
 
                 event.data.notarization_id
             }
             NotarizationMethod::Locked => {
                 let event: Event<LockedNotarizationCreated> = serde_json::from_value(data.parsed_json.clone())
-                    .map_err(|e| Error::TransactionUnexpectedResponse(format!("failed to parse event: {}", e)))?;
+                    .map_err(|e| Error::TransactionUnexpectedResponse(format!("failed to parse event: {e}")))?;
 
                 event.data.notarization_id
             }
