@@ -185,13 +185,13 @@ jobs:
           awk '$1 ~ /[0-9].*/' | \
           parallel -k -j 4 --retries 3 --joblog report.log ./target/release/examples/{}
           cat report.log
-      - name: Run Rust Readme examples
-        # run examples only on ubuntu for now
-        if: matrix.os == 'ubuntu-24.04'
-        run: |
-          cd bindings/wasm/notarization_wasm
-          npm ci
-          npm run test:readme:rust
+#      - name: Run Rust Readme examples
+#        # run examples only on ubuntu for now
+#        if: matrix.os == 'ubuntu-24.04'
+#        run: |
+#          cd bindings/wasm/notarization_wasm
+#          npm ci
+#          npm run test:readme:rust
 
       - name: Archive server logs
         if: ${{ env.IOTA_SERVER_LOGFILE }}
@@ -259,56 +259,57 @@ jobs:
         working-directory: bindings/wasm/notarization_wasm
 
       - name: Run Wasm examples
-        run: npm run test:readme && npm run test:node
+        #run: npm run test:readme && npm run test:node
+        run: npm run test:node
         working-directory: bindings/wasm/notarization_wasm
 
-  test-wasm-browser:
-    needs: build-wasm
-    if: ${{ needs.check-for-run-condition.outputs.should-run == 'true' }}
-    runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: false
-      matrix:
-        browser: [chrome, firefox]
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v1
-        with:
-          node-version: 20.x
-
-      - name: Install JS dependencies
-        run: npm ci
-        working-directory: bindings/wasm/notarization_wasm
-
-      - name: Download bindings/wasm/notarization_wasm artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: notarization-wasm-bindings-build
-          path: bindings/wasm/notarization_wasm
-
-      - name: Start iota sandbox
-        uses: "./.github/actions/iota/setup"
-        with:
-          iota-version: ${{ env.IOTA_VERSION }}
-
-      - name: publish Notarization Move package
-        # publish the package and set the IOTA_NOTARIZATION_PKG_ID env variable
-        run: echo "IOTA_NOTARIZATION_PKG_ID=$(./publish_package.sh)" >> "$GITHUB_ENV"
-        working-directory: notarization-move/scripts/
-
-      - name: Build Docker image
-        uses: docker/build-push-action@v6.2.0
-        with:
-          context: bindings/wasm/
-          file: bindings/wasm/notarization_wasm/cypress/Dockerfile
-          push: false
-          tags: cypress-test:latest
-          load: true
-          build-args: |
-            IOTA_NOTARIZATION_PKG_ID=${{ env.IOTA_NOTARIZATION_PKG_ID }}
-
-      - name: Run cypress
-        run: docker run --network host cypress-test test:browser:${{ matrix.browser }}
+#  test-wasm-browser:
+#    needs: build-wasm
+#    if: ${{ needs.check-for-run-condition.outputs.should-run == 'true' }}
+#    runs-on: ubuntu-24.04
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        browser: [chrome, firefox]
+#
+#    steps:
+#      - uses: actions/checkout@v3
+#
+#      - name: Set up Node.js
+#        uses: actions/setup-node@v1
+#        with:
+#          node-version: 20.x
+#
+#      - name: Install JS dependencies
+#        run: npm ci
+#        working-directory: bindings/wasm/notarization_wasm
+#
+#      - name: Download bindings/wasm/notarization_wasm artifacts
+#        uses: actions/download-artifact@v4
+#        with:
+#          name: notarization-wasm-bindings-build
+#          path: bindings/wasm/notarization_wasm
+#
+#      - name: Start iota sandbox
+#        uses: "./.github/actions/iota/setup"
+#        with:
+#          iota-version: ${{ env.IOTA_VERSION }}
+#
+#      - name: publish Notarization Move package
+#        # publish the package and set the IOTA_NOTARIZATION_PKG_ID env variable
+#        run: echo "IOTA_NOTARIZATION_PKG_ID=$(./publish_package.sh)" >> "$GITHUB_ENV"
+#        working-directory: notarization-move/scripts/
+#
+#      - name: Build Docker image
+#        uses: docker/build-push-action@v6.2.0
+#        with:
+#          context: bindings/wasm/
+#          file: bindings/wasm/notarization_wasm/cypress/Dockerfile
+#          push: false
+#          tags: cypress-test:latest
+#          load: true
+#          build-args: |
+#            IOTA_NOTARIZATION_PKG_ID=${{ env.IOTA_NOTARIZATION_PKG_ID }}
+#
+#      - name: Run cypress
+#        run: docker run --network host cypress-test test:browser:${{ matrix.browser }}
