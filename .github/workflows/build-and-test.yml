@@ -209,7 +209,7 @@ jobs:
   build-wasm:
     needs: check-for-run-condition
     if: ${{ needs.check-for-run-condition.outputs.should-run == 'true' }}
-    uses: './.github/workflows/shared-build-wasm.yml'
+    uses: "./.github/workflows/shared-build-wasm.yml"
     with:
       run-unit-tests: false
       output-artifact-name: notarization-wasm-bindings-build
@@ -244,7 +244,7 @@ jobs:
           path: bindings/wasm/notarization
 
       - name: Start iota sandbox
-        uses: './.github/actions/iota/setup'
+        uses: "./.github/actions/iota/setup"
         with:
           iota-version: ${{ env.IOTA_VERSION }}
 
@@ -290,7 +290,7 @@ jobs:
           path: bindings/wasm/notarization
 
       - name: Start iota sandbox
-        uses: './.github/actions/iota/setup'
+        uses: "./.github/actions/iota/setup"
         with:
           iota-version: ${{ env.IOTA_VERSION }}
 
