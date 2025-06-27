@@ -21,7 +21,7 @@ on:
       - "**.lock"
       - "bindings/**"
       - "!bindings/**.md"
-      - "bindings/wasm/notarization/README.md" # the Readme contain txm tests
+      - "bindings/wasm/notarization_wasm/README.md" # the Readme contain txm tests
 
   schedule:
     # * is a special character in YAML so you have to quote this string
@@ -189,7 +189,7 @@ jobs:
         # run examples only on ubuntu for now
         if: matrix.os == 'ubuntu-24.04'
         run: |
-          cd bindings/wasm/notarization
+          cd bindings/wasm/notarization_wasm
           npm ci
           npm run test:readme:rust
 
@@ -235,13 +235,13 @@ jobs:
 
       - name: Install JS dependencies
         run: npm ci
-        working-directory: bindings/wasm/notarization
+        working-directory: bindings/wasm/notarization_wasm
 
-      - name: Download bindings/wasm/notarization artifacts
+      - name: Download bindings/wasm/notarization_wasm artifacts
         uses: actions/download-artifact@v4
         with:
           name: notarization-wasm-bindings-build
-          path: bindings/wasm/notarization
+          path: bindings/wasm/notarization_wasm
 
       - name: Start iota sandbox
         uses: "./.github/actions/iota/setup"
@@ -256,11 +256,11 @@ jobs:
 
       - name: Install JS dependencies
         run: npm ci
-        working-directory: bindings/wasm/notarization
+        working-directory: bindings/wasm/notarization_wasm
 
       - name: Run Wasm examples
         run: npm run test:readme && npm run test:node
-        working-directory: bindings/wasm/notarization
+        working-directory: bindings/wasm/notarization_wasm
 
   test-wasm-browser:
     needs: build-wasm
@@ -281,13 +281,13 @@ jobs:
 
       - name: Install JS dependencies
         run: npm ci
-        working-directory: bindings/wasm/notarization
+        working-directory: bindings/wasm/notarization_wasm
 
-      - name: Download bindings/wasm/notarization artifacts
+      - name: Download bindings/wasm/notarization_wasm artifacts
         uses: actions/download-artifact@v4
         with:
           name: notarization-wasm-bindings-build
-          path: bindings/wasm/notarization
+          path: bindings/wasm/notarization_wasm
 
       - name: Start iota sandbox
         uses: "./.github/actions/iota/setup"
@@ -303,7 +303,7 @@ jobs:
         uses: docker/build-push-action@v6.2.0
         with:
           context: bindings/wasm/
-          file: bindings/wasm/notarization/cypress/Dockerfile
+          file: bindings/wasm/notarization_wasm/cypress/Dockerfile
           push: false
           tags: cypress-test:latest
           load: true
