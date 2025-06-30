@@ -39,7 +39,7 @@ function replace(tsconfig, dist, artifact, mode) {
                 value = path.relative(absoluteFilePath, absoluteIncludePath).replace(/\\/g, "/");
             }
 
-            if(key.endsWith('*')) {
+            if (key.endsWith("*")) {
                 console.log(`\t dropping '*' from ${key}`);
                 key = key.slice(0, -1);
             }
