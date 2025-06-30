@@ -185,15 +185,9 @@ async fn main() -> Result<()> {
         format!("{:?}", method),
         format!("{:?}", locked_method)
     );
-    println!(
-        "│ Transfer Locked     │ {is_transfer_locked:11} │ {locked_transfer_locked:11} │"
-    );
-    println!(
-        "│ Update Locked       │ {is_update_locked:11} │ {locked_update_locked:11} │"
-    );
-    println!(
-        "│ Destroy Allowed     │ {is_destroy_allowed:11} │ {locked_destroy_allowed:11} │"
-    );
+    println!("│ Transfer Locked     │ {is_transfer_locked:11} │ {locked_transfer_locked:11} │");
+    println!("│ Update Locked       │ {is_update_locked:11} │ {locked_update_locked:11} │");
+    println!("│ Destroy Allowed     │ {is_destroy_allowed:11} │ {locked_destroy_allowed:11} │");
     println!(
         "│ Has Lock Metadata   │ {:11} │ {:11} │",
         lock_metadata.is_some(),

@@ -38,9 +38,7 @@ async fn main() -> Result<()> {
         .output
         .id;
 
-    println!(
-        "✅ Created unlocked dynamic notarization: {unlocked_notarization_id:?}"
-    );
+    println!("✅ Created unlocked dynamic notarization: {unlocked_notarization_id:?}");
 
     // Check transfer lock status
     let is_transfer_locked = notarization_client
@@ -77,9 +75,7 @@ async fn main() -> Result<()> {
         .output
         .id;
 
-    println!(
-        "✅ Created transfer-locked dynamic notarization: {transfer_locked_id:?}"
-    );
+    println!("✅ Created transfer-locked dynamic notarization: {transfer_locked_id:?}");
 
     let is_transfer_locked = notarization_client
         .is_transfer_locked(*transfer_locked_id.object_id())
@@ -147,9 +143,7 @@ async fn main() -> Result<()> {
         .await?;
 
     println!("Unlocked notarization lock metadata: {unlocked_lock_metadata:?}");
-    println!(
-        "Transfer-locked notarization lock metadata: {transfer_locked_lock_metadata:?}"
-    );
+    println!("Transfer-locked notarization lock metadata: {transfer_locked_lock_metadata:?}");
     println!("Locked notarization lock metadata: {locked_lock_metadata:?}");
 
     println!("\n📋 Transfer Rules Summary:");

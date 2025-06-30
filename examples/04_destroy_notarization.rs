@@ -64,9 +64,7 @@ async fn main() -> Result<()> {
         .output
         .id;
 
-    println!(
-        "✅ Created transfer-locked dynamic notarization: {transfer_locked_id:?}"
-    );
+    println!("✅ Created transfer-locked dynamic notarization: {transfer_locked_id:?}");
 
     let is_destroy_allowed = notarization_client
         .is_destroy_allowed(*transfer_locked_id.object_id())
@@ -132,9 +130,7 @@ async fn main() -> Result<()> {
         .output
         .id;
 
-    println!(
-        "✅ Created locked notarization with no delete lock: {no_delete_lock_id:?}"
-    );
+    println!("✅ Created locked notarization with no delete lock: {no_delete_lock_id:?}");
 
     let is_destroy_allowed = notarization_client
         .is_destroy_allowed(*no_delete_lock_id.object_id())
