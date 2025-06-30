@@ -1,16 +1,13 @@
 // Copyright 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+use iota_interaction_ts::wasm_error::Result;
 use js_sys::Uint8Array;
+use notarization::core::builder::{Dynamic, Locked, NotarizationBuilder};
+use product_common::bindings::transaction::WasmTransactionBuilder;
 use wasm_bindgen::prelude::*;
 
-use iota_interaction_ts::error::Result;
-use product_common::bindings::transaction::WasmTransactionBuilder;
-
-use notarization::core::builder::{Dynamic, Locked, NotarizationBuilder};
-
-use crate::wasm_notarization::WasmCreateNotarizationDynamic;
-use crate::wasm_notarization::WasmCreateNotarizationLocked;
+use crate::wasm_notarization::{WasmCreateNotarizationDynamic, WasmCreateNotarizationLocked};
 use crate::wasm_time_lock::WasmTimeLock;
 
 #[wasm_bindgen(js_name = NotarizationBuilderLocked, inspectable)]

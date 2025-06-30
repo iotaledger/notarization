@@ -46,8 +46,8 @@ jobs:
       - name: core fmt check
         run: cargo +nightly fmt --all -- --check
 
-      - name: wasm fmt check notarization
-        run: cargo +nightly fmt --manifest-path ./bindings/wasm/notarization/Cargo.toml --all -- --check
+      - name: wasm fmt check notarization_wasm
+        run: cargo +nightly fmt --manifest-path ./bindings/wasm/notarization_wasm/Cargo.toml --all -- --check
 
       - name: fmt check with dprint
         run: dprint check

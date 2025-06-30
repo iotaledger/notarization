@@ -1,10 +1,11 @@
 /target
 /Cargo.lock
 /.history
-**/build
 
 .vscode
 *.code-workspace
 
 .idea
 .DS_Store
+/notarization-move/build/*
+/bindings/wasm/notarization_wasm/docs/*

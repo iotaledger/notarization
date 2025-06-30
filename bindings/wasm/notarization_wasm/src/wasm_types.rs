@@ -1,11 +1,13 @@
 // Copyright 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::wasm_time_lock::WasmTimeLock;
 use js_sys::Uint8Array;
-use notarization::core::types::{Data, ImmutableMetadata, LockMetadata, NotarizationMethod, State};
+use notarization::core::types::{Data, ImmutableMetadata, LockMetadata, State};
+use notarization::core::NotarizationMethod;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
+
+use crate::wasm_time_lock::WasmTimeLock;
 
 #[wasm_bindgen(js_name = Empty, inspectable)]
 pub struct WasmEmpty;

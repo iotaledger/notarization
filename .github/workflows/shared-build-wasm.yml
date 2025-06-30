@@ -71,16 +71,16 @@ jobs:
 
       - name: Install JS dependencies
         run: npm ci
-        working-directory: bindings/wasm/notarization
+        working-directory: bindings/wasm/notarization_wasm
 
       - name: Build WASM bindings
         run: npm run build
-        working-directory: bindings/wasm/notarization
+        working-directory: bindings/wasm/notarization_wasm
 
       - name: Run Node unit tests
         if: ${{ inputs.run-unit-tests }}
         run: npm run test:unit:node
-        working-directory: bindings/wasm/notarization
+        working-directory: bindings/wasm/notarization_wasm
 
       - name: Stop sccache
         uses: "./.github/actions/rust/sccache/stop"
@@ -92,9 +92,9 @@ jobs:
         with:
           name: ${{ inputs.output-artifact-name }}
           path: |
-            bindings/wasm/notarization/node
-            bindings/wasm/notarization/web
-            bindings/wasm/notarization/examples/dist
-            bindings/wasm/notarization/docs
+            bindings/wasm/notarization_wasm/node
+            bindings/wasm/notarization_wasm/web
+            bindings/wasm/notarization_wasm/examples/dist
+            bindings/wasm/notarization_wasm/docs
           if-no-files-found: error
           retention-days: 1

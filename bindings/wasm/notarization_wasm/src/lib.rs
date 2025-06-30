@@ -13,18 +13,18 @@ extern crate serde;
 
 use wasm_bindgen::prelude::*;
 
-pub(crate) mod wasm_notarization_client_read_only;
-pub(crate) mod wasm_notarization_client;
-pub(crate) mod wasm_notarization_builder;
-pub(crate) mod wasm_types;
-pub(crate) mod wasm_time_lock;
 mod wasm_notarization;
+pub(crate) mod wasm_notarization_builder;
+pub(crate) mod wasm_notarization_client;
+pub(crate) mod wasm_notarization_client_read_only;
+pub(crate) mod wasm_time_lock;
+pub(crate) mod wasm_types;
 
 /// Initializes the console error panic hook for better error messages
 #[wasm_bindgen(start)]
 pub fn start() -> Result<(), JsValue> {
-  console_error_panic_hook::set_once();
-  Ok(())
+    console_error_panic_hook::set_once();
+    Ok(())
 }
 
 // This section should be used as the central place for imports from `./lib`

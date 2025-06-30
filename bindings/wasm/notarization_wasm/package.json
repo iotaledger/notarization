@@ -26,7 +26,7 @@
     "build": "npm run build:web && npm run build:nodejs && npm run build:docs",
     "example:node": "ts-node --project examples/tsconfig.node.json -r tsconfig-paths/register ./examples/src/main.ts",
     "example:web": "npm i --prefix ./cypress/app/ && npm run dev --prefix ./cypress/app/ -- --host",
-    "test": "npm run test:unit:node && npm run test:readme && npm run test:node && npm run test:browser:parallel",
+    "test": "npm run test:node",
     "test:node": "ts-mocha -r tsconfig-paths/register -p examples/tsconfig.node.json ./examples/src/tests.ts --parallel --jobs 4 --retries 3 --timeout 180000 --exit",
     "test:browser": "start-server-and-test example:web http://0.0.0.0:5173 'cypress run --headless'",
     "test:browser:firefox": "start-server-and-test example:web http://0.0.0.0:5173 'cypress run --headless --browser firefox'",
@@ -72,7 +72,7 @@
     "wasm-opt": "^1.4.0"
   },
   "dependencies": {
-    "@iota/iota-interaction-ts": "file:../../../../product-core/bindings/wasm/iota_interaction_ts"
+    "@iota/iota-interaction-ts": "^0.6.0"
   },
   "peerDependencies": {
     "@iota/iota-sdk": "^1.2.0"

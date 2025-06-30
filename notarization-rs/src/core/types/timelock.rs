@@ -115,6 +115,6 @@ pub(super) fn new_none(ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, 
 
 impl MoveType for TimeLock {
     fn move_type(package: ObjectID) -> TypeTag {
-        TypeTag::from_str(format!("{}::timelock::TimeLock", package).as_str()).expect("failed to create type tag")
+        TypeTag::from_str(format!("{package}::timelock::TimeLock").as_str()).expect("failed to create type tag")
     }
 }
