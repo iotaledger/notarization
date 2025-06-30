@@ -1,0 +1,48 @@
+[package]
+name = "examples"
+version = "0.1.0-alpha"
+authors = ["IOTA Stiftung"]
+edition = "2024"
+publish = false
+
+[dependencies]
+anyhow.workspace = true
+iota-sdk = { workspace = true }
+notarization = { path = "../notarization-rs" }
+product_common = { workspace = true, features = ["core-client", "transaction", "test-utils"] }
+tokio = { workspace = true }
+
+[lib]
+path = "utils/utils.rs"
+
+[[example]]
+path = "01_create_locked_notarization.rs"
+name = "01_create_locked_notarization"
+
+[[example]]
+path = "02_create_dynamic_notarization.rs"
+name = "02_create_dynamic_notarization"
+
+[[example]]
+path = "03_update_dynamic_notarization.rs"
+name = "03_update_dynamic_notarization"
+
+[[example]]
+path = "04_destroy_notarization.rs"
+name = "04_destroy_notarization"
+
+[[example]]
+path = "05_update_state.rs"
+name = "05_update_state"
+
+[[example]]
+path = "06_update_metadata.rs"
+name = "06_update_metadata"
+
+[[example]]
+path = "07_transfer_dynamic_notarization.rs"
+name = "07_transfer_dynamic_notarization"
+
+[[example]]
+path = "08_access_read_only_methods.rs"
+name = "08_access_read_only_methods"

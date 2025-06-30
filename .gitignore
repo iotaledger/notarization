@@ -1,0 +1,10 @@
+/target
+/Cargo.lock
+/.history
+**/build
+
+.vscode
+*.code-workspace
+
+.idea
+.DS_Store
