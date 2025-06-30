@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use js_sys::Uint8Array;
-use notarization::core::types::{NotarizationMethod, Data, ImmutableMetadata, LockMetadata, State};
+use notarization::core::types::{Data, ImmutableMetadata, LockMetadata, NotarizationMethod, State};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
