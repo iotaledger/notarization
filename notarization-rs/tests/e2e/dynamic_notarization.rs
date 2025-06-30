@@ -378,7 +378,7 @@ async fn test_multiple_state_updates() -> anyhow::Result<()> {
         .id;
 
     for i in 1..=3 {
-        let new_state = State::from_string(format!("state_v{}", i), Some(format!("metadata_{}", i)));
+        let new_state = State::from_string(format!("state_v{i}"), Some(format!("metadata_{i}")));
 
         test_client
             .update_state(new_state, *notarization_id.object_id())
@@ -389,8 +389,8 @@ async fn test_multiple_state_updates() -> anyhow::Result<()> {
         assert_eq!(version_count, i as u64);
 
         let state = test_client.state(*notarization_id.object_id()).await?;
-        assert_eq!(state.data.as_text()?, format!("state_v{}", i));
-        assert_eq!(state.metadata, Some(format!("metadata_{}", i)));
+        assert_eq!(state.data.as_text()?, format!("state_v{i}"));
+        assert_eq!(state.metadata, Some(format!("metadata_{i}")));
     }
 
     Ok(())

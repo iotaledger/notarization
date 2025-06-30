@@ -357,7 +357,7 @@ async fn test_bytes_state_operations_locked_notarization() -> anyhow::Result<()>
         .id;
 
     let state = test_client.state(*notarization_id.object_id()).await?;
-    println!("state: {:?}", state);
+    println!("state: {state:?}");
     assert_eq!(state.data.as_bytes()?, initial_data);
 
     // Attempting to update state should fail for locked notarization

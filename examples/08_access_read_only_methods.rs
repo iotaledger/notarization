@@ -33,7 +33,7 @@ async fn main() -> Result<()> {
         .output
         .id;
 
-    println!("✅ Created dynamic notarization: {:?}", dynamic_notarization_id);
+    println!("✅ Created dynamic notarization: {dynamic_notarization_id:?}");
 
     // Demonstrate all read-only methods for dynamic notarization
     println!("\n📖 Read-only Methods for Dynamic Notarization:");
@@ -42,13 +42,13 @@ async fn main() -> Result<()> {
     let retrieved_description = notarization_client
         .description(*dynamic_notarization_id.object_id())
         .await?;
-    println!("📝 Description: {:?}", retrieved_description);
+    println!("📝 Description: {retrieved_description:?}");
 
     // 2. Get updateable metadata
     let retrieved_metadata = notarization_client
         .updatable_metadata(*dynamic_notarization_id.object_id())
         .await?;
-    println!("📋 Updatable metadata: {:?}", retrieved_metadata);
+    println!("📋 Updatable metadata: {retrieved_metadata:?}");
 
     // 3. Get current state
     let current_state = notarization_client.state(*dynamic_notarization_id.object_id()).await?;
@@ -59,25 +59,25 @@ async fn main() -> Result<()> {
     let created_at = notarization_client
         .created_at_ts(*dynamic_notarization_id.object_id())
         .await?;
-    println!("🕐 Created at timestamp: {}", created_at);
+    println!("🕐 Created at timestamp: {created_at}");
 
     // 5. Get last state change timestamp
     let last_state_change = notarization_client
         .last_state_change_ts(*dynamic_notarization_id.object_id())
         .await?;
-    println!("🕐 Last state change timestamp: {}", last_state_change);
+    println!("🕐 Last state change timestamp: {last_state_change}");
 
     // 6. Get state version count
     let version_count = notarization_client
         .state_version_count(*dynamic_notarization_id.object_id())
         .await?;
-    println!("🔢 State version count: {}", version_count);
+    println!("🔢 State version count: {version_count}");
 
     // 7. Get notarization method
     let method = notarization_client
         .notarization_method(*dynamic_notarization_id.object_id())
         .await?;
-    println!("⚙️ Notarization method: {:?}", method);
+    println!("⚙️ Notarization method: {method:?}");
 
     // 8. Check lock statuses
     let is_transfer_locked = notarization_client
@@ -89,15 +89,15 @@ async fn main() -> Result<()> {
     let is_destroy_allowed = notarization_client
         .is_destroy_allowed(*dynamic_notarization_id.object_id())
         .await?;
-    println!("🔒 Transfer locked: {}", is_transfer_locked);
-    println!("🔒 Update locked: {}", is_update_locked);
-    println!("🗑️ Destroy allowed: {}", is_destroy_allowed);
+    println!("🔒 Transfer locked: {is_transfer_locked}");
+    println!("🔒 Update locked: {is_update_locked}");
+    println!("🗑️ Destroy allowed: {is_destroy_allowed}");
 
     // 9. Get lock metadata
     let lock_metadata = notarization_client
         .lock_metadata(*dynamic_notarization_id.object_id())
         .await?;
-    println!("🔐 Lock metadata: {:?}", lock_metadata);
+    println!("🔐 Lock metadata: {lock_metadata:?}");
 
     // Update the state to demonstrate version tracking
     println!("\n🔄 Updating state to demonstrate version tracking...");
@@ -123,8 +123,8 @@ async fn main() -> Result<()> {
         .await?;
     let updated_state = notarization_client.state(*dynamic_notarization_id.object_id()).await?;
 
-    println!("🔢 New version count: {}", updated_version_count);
-    println!("🕐 Updated last change timestamp: {}", updated_last_change);
+    println!("🔢 New version count: {updated_version_count}");
+    println!("🕐 Updated last change timestamp: {updated_last_change}");
     println!("📄 Updated state content: {}", updated_state.data.as_text()?);
 
     // Create a locked notarization for comparison
@@ -148,7 +148,7 @@ async fn main() -> Result<()> {
         .output
         .id;
 
-    println!("✅ Created locked notarization: {:?}", locked_notarization_id);
+    println!("✅ Created locked notarization: {locked_notarization_id:?}");
 
     // Demonstrate read-only methods for locked notarization
     println!("\n📖 Read-only Methods for Locked Notarization:");
@@ -169,10 +169,10 @@ async fn main() -> Result<()> {
         .lock_metadata(*locked_notarization_id.object_id())
         .await?;
 
-    println!("⚙️ Method: {:?}", locked_method);
-    println!("🔒 Transfer locked: {}", locked_transfer_locked);
-    println!("🔒 Update locked: {}", locked_update_locked);
-    println!("🗑️ Destroy allowed: {}", locked_destroy_allowed);
+    println!("⚙️ Method: {locked_method:?}");
+    println!("🔒 Transfer locked: {locked_transfer_locked}");
+    println!("🔒 Update locked: {locked_update_locked}");
+    println!("🗑️ Destroy allowed: {locked_destroy_allowed}");
     println!("🔐 Lock metadata present: {}", locked_lock_metadata.is_some());
 
     // Compare methods between dynamic and locked
@@ -186,16 +186,13 @@ async fn main() -> Result<()> {
         format!("{:?}", locked_method)
     );
     println!(
-        "│ Transfer Locked     │ {:11} │ {:11} │",
-        is_transfer_locked, locked_transfer_locked
+        "│ Transfer Locked     │ {is_transfer_locked:11} │ {locked_transfer_locked:11} │"
     );
     println!(
-        "│ Update Locked       │ {:11} │ {:11} │",
-        is_update_locked, locked_update_locked
+        "│ Update Locked       │ {is_update_locked:11} │ {locked_update_locked:11} │"
     );
     println!(
-        "│ Destroy Allowed     │ {:11} │ {:11} │",
-        is_destroy_allowed, locked_destroy_allowed
+        "│ Destroy Allowed     │ {is_destroy_allowed:11} │ {locked_destroy_allowed:11} │"
     );
     println!(
         "│ Has Lock Metadata   │ {:11} │ {:11} │",

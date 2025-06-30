@@ -64,7 +64,7 @@ async fn main() -> Result<()> {
 
     println!("\n📊 Notarization Status:");
     println!("Simple notarization - Method: {:?}", simple_notarization.method);
-    println!("Transfer-locked notarization - Transfer locked: {}", is_transfer_locked);
+    println!("Transfer-locked notarization - Transfer locked: {is_transfer_locked}");
     println!("\n🔄 Dynamic notarizations can be updated and transferred (unless transfer-locked)");
     println!("📝 State and metadata can be modified over time");
 

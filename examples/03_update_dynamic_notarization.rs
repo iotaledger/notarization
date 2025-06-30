@@ -28,7 +28,7 @@ async fn main() -> Result<()> {
         .output
         .id;
 
-    println!("✅ Dynamic notarization created with ID: {:?}", dynamic_notarization_id);
+    println!("✅ Dynamic notarization created with ID: {dynamic_notarization_id:?}");
 
     let current_state = notarization_client.state(*dynamic_notarization_id.object_id()).await?;
     println!("Initial state: {}", current_state.data.as_text()?);
@@ -44,7 +44,7 @@ async fn main() -> Result<()> {
 
     match state_update_result {
         Ok(_) => println!("✅ State update succeeded"),
-        Err(e) => println!("❌ State update failed - {}", e),
+        Err(e) => println!("❌ State update failed - {e}"),
     }
 
     println!("\n📝 Updating metadata on dynamic notarization...");
@@ -57,7 +57,7 @@ async fn main() -> Result<()> {
 
     match metadata_update_result {
         Ok(_) => println!("✅ Metadata update succeeded"),
-        Err(e) => println!("❌ Metadata update failed - {}", e),
+        Err(e) => println!("❌ Metadata update failed - {e}"),
     }
 
     let current_state = notarization_client.state(*dynamic_notarization_id.object_id()).await?;
