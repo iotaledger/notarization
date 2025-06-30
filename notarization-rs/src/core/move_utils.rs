@@ -36,7 +36,7 @@ where
 }
 
 /// Get the type tag of an object
-pub async fn get_type_tag<C>(client: &C, object_id: &ObjectID) -> Result<TypeTag, Error>
+pub(crate) async fn get_type_tag<C>(client: &C, object_id: &ObjectID) -> Result<TypeTag, Error>
 where
     C: CoreClientReadOnly + OptionalSync,
 {

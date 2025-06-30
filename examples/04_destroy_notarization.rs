@@ -27,14 +27,14 @@ async fn main() -> Result<()> {
         .output
         .id;
 
-    println!("✅ Created unlocked dynamic notarization: {:?}", unlocked_dynamic_id);
+    println!("✅ Created unlocked dynamic notarization: {unlocked_dynamic_id:?}");
 
     // Check if destroy is allowed
     let is_destroy_allowed = notarization_client
         .is_destroy_allowed(*unlocked_dynamic_id.object_id())
         .await?;
 
-    println!("🔍 Destroy allowed: {}", is_destroy_allowed);
+    println!("🔍 Destroy allowed: {is_destroy_allowed}");
 
     // Destroy the unlocked notarization
     let destroy_result = notarization_client
@@ -44,7 +44,7 @@ async fn main() -> Result<()> {
 
     match destroy_result {
         Ok(_) => println!("✅ Successfully destroyed unlocked dynamic notarization"),
-        Err(e) => println!("❌ Failed to destroy: {}", e),
+        Err(e) => println!("❌ Failed to destroy: {e}"),
     }
 
     // Scenario 2: Try to destroy a transfer-locked dynamic notarization (should fail)
@@ -64,16 +64,13 @@ async fn main() -> Result<()> {
         .output
         .id;
 
-    println!(
-        "✅ Created transfer-locked dynamic notarization: {:?}",
-        transfer_locked_id
-    );
+    println!("✅ Created transfer-locked dynamic notarization: {transfer_locked_id:?}");
 
     let is_destroy_allowed = notarization_client
         .is_destroy_allowed(*transfer_locked_id.object_id())
         .await?;
 
-    println!("🔍 Destroy allowed: {}", is_destroy_allowed);
+    println!("🔍 Destroy allowed: {is_destroy_allowed}");
 
     // Try to destroy the transfer-locked notarization
     let destroy_result = notarization_client
@@ -83,7 +80,7 @@ async fn main() -> Result<()> {
 
     match destroy_result {
         Ok(_) => println!("❌ Unexpected: Destruction succeeded (should have failed)"),
-        Err(e) => println!("✅ Expected: Destruction failed - {}", e),
+        Err(e) => println!("✅ Expected: Destruction failed - {e}"),
     }
 
     // Scenario 3: Create and try to destroy a time-locked locked notarization (should fail)
@@ -100,13 +97,13 @@ async fn main() -> Result<()> {
         .output
         .id;
 
-    println!("✅ Created delete-locked locked notarization: {:?}", delete_locked_id);
+    println!("✅ Created delete-locked locked notarization: {delete_locked_id:?}");
 
     let is_destroy_allowed = notarization_client
         .is_destroy_allowed(*delete_locked_id.object_id())
         .await?;
 
-    println!("🔍 Destroy allowed: {}", is_destroy_allowed);
+    println!("🔍 Destroy allowed: {is_destroy_allowed}");
 
     // Try to destroy the delete-locked notarization
     let destroy_result = notarization_client
@@ -116,7 +113,7 @@ async fn main() -> Result<()> {
 
     match destroy_result {
         Ok(_) => println!("❌ Unexpected: Destruction succeeded (should have failed)"),
-        Err(e) => println!("✅ Expected: Destruction failed - {}", e),
+        Err(e) => println!("✅ Expected: Destruction failed - {e}"),
     }
 
     // Scenario 4: Create and destroy a locked notarization with no delete lock (should succeed)
@@ -133,16 +130,13 @@ async fn main() -> Result<()> {
         .output
         .id;
 
-    println!(
-        "✅ Created locked notarization with no delete lock: {:?}",
-        no_delete_lock_id
-    );
+    println!("✅ Created locked notarization with no delete lock: {no_delete_lock_id:?}");
 
     let is_destroy_allowed = notarization_client
         .is_destroy_allowed(*no_delete_lock_id.object_id())
         .await?;
 
-    println!("🔍 Destroy allowed: {}", is_destroy_allowed);
+    println!("🔍 Destroy allowed: {is_destroy_allowed}");
 
     // Destroy the notarization with no delete lock
     let destroy_result = notarization_client
@@ -152,7 +146,7 @@ async fn main() -> Result<()> {
 
     match destroy_result {
         Ok(_) => println!("✅ Successfully destroyed locked notarization with no delete lock"),
-        Err(e) => println!("❌ Failed to destroy: {}", e),
+        Err(e) => println!("❌ Failed to destroy: {e}"),
     }
 
     println!("\n📋 Summary:");

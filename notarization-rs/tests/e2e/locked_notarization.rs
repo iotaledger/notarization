@@ -4,8 +4,7 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use iota_sdk::types::base_types::IotaAddress;
-use notarization::core::NotarizationMethod;
-use notarization::core::types::{State, TimeLock};
+use notarization::core::types::{NotarizationMethod, State, TimeLock};
 use product_common::core_client::CoreClientReadOnly;
 
 use crate::client::get_funded_test_client;
@@ -358,7 +357,7 @@ async fn test_bytes_state_operations_locked_notarization() -> anyhow::Result<()>
         .id;
 
     let state = test_client.state(*notarization_id.object_id()).await?;
-    println!("state: {:?}", state);
+    println!("state: {state:?}");
     assert_eq!(state.data.as_bytes()?, initial_data);
 
     // Attempting to update state should fail for locked notarization

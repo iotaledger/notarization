@@ -185,13 +185,13 @@ jobs:
           awk '$1 ~ /[0-9].*/' | \
           parallel -k -j 4 --retries 3 --joblog report.log ./target/release/examples/{}
           cat report.log
-#      - name: Run Rust Readme examples
-#        # run examples only on ubuntu for now
-#        if: matrix.os == 'ubuntu-24.04'
-#        run: |
-#          cd bindings/wasm/notarization_wasm
-#          npm ci
-#          npm run test:readme:rust
+      #      - name: Run Rust Readme examples
+      #        # run examples only on ubuntu for now
+      #        if: matrix.os == 'ubuntu-24.04'
+      #        run: |
+      #          cd bindings/wasm/notarization_wasm
+      #          npm ci
+      #          npm run test:readme:rust
 
       - name: Archive server logs
         if: ${{ env.IOTA_SERVER_LOGFILE }}

@@ -19,8 +19,8 @@ async fn main() -> Result<()> {
     let bob = IotaAddress::random_for_testing_only();
 
     println!("Transfer recipients:");
-    println!("Alice: {}", alice);
-    println!("Bob: {}", bob);
+    println!("Alice: {alice}");
+    println!("Bob: {bob}");
 
     // Scenario 1: Transfer an unlocked dynamic notarization (should succeed)
     println!("\n📝 Scenario 1: Creating and transferring an unlocked dynamic notarization...");
@@ -38,17 +38,14 @@ async fn main() -> Result<()> {
         .output
         .id;
 
-    println!(
-        "✅ Created unlocked dynamic notarization: {:?}",
-        unlocked_notarization_id
-    );
+    println!("✅ Created unlocked dynamic notarization: {unlocked_notarization_id:?}");
 
     // Check transfer lock status
     let is_transfer_locked = notarization_client
         .is_transfer_locked(*unlocked_notarization_id.object_id())
         .await?;
 
-    println!("🔍 Transfer locked: {}", is_transfer_locked);
+    println!("🔍 Transfer locked: {is_transfer_locked}");
 
     // Transfer the unlocked notarization to Alice
     let transfer_result = notarization_client
@@ -58,7 +55,7 @@ async fn main() -> Result<()> {
 
     match transfer_result {
         Ok(_) => println!("✅ Successfully transferred unlocked notarization to Alice"),
-        Err(e) => println!("❌ Failed to transfer: {}", e),
+        Err(e) => println!("❌ Failed to transfer: {e}"),
     }
 
     // Scenario 2: Try to transfer a transfer-locked dynamic notarization (should fail)
@@ -78,16 +75,13 @@ async fn main() -> Result<()> {
         .output
         .id;
 
-    println!(
-        "✅ Created transfer-locked dynamic notarization: {:?}",
-        transfer_locked_id
-    );
+    println!("✅ Created transfer-locked dynamic notarization: {transfer_locked_id:?}");
 
     let is_transfer_locked = notarization_client
         .is_transfer_locked(*transfer_locked_id.object_id())
         .await?;
 
-    println!("🔍 Transfer locked: {}", is_transfer_locked);
+    println!("🔍 Transfer locked: {is_transfer_locked}");
 
     // Try to transfer the locked notarization
     let transfer_result = notarization_client
@@ -97,7 +91,7 @@ async fn main() -> Result<()> {
 
     match transfer_result {
         Ok(_) => println!("❌ Unexpected: Transfer succeeded (should have failed)"),
-        Err(e) => println!("✅ Expected: Transfer failed - {}", e),
+        Err(e) => println!("✅ Expected: Transfer failed - {e}"),
     }
 
     // Scenario 3: Try to transfer a locked notarization (should always fail)
@@ -114,13 +108,13 @@ async fn main() -> Result<()> {
         .output
         .id;
 
-    println!("✅ Created locked notarization: {:?}", locked_notarization_id);
+    println!("✅ Created locked notarization: {locked_notarization_id:?}");
 
     let is_transfer_locked = notarization_client
         .is_transfer_locked(*locked_notarization_id.object_id())
         .await?;
 
-    println!("🔍 Transfer locked: {}", is_transfer_locked);
+    println!("🔍 Transfer locked: {is_transfer_locked}");
 
     // Try to transfer the locked notarization
     let transfer_result = notarization_client
@@ -130,7 +124,7 @@ async fn main() -> Result<()> {
 
     match transfer_result {
         Ok(_) => println!("❌ Unexpected: Transfer succeeded (should have failed)"),
-        Err(e) => println!("✅ Expected: Transfer failed - {}", e),
+        Err(e) => println!("✅ Expected: Transfer failed - {e}"),
     }
 
     // Show lock metadata for different scenarios
@@ -148,12 +142,9 @@ async fn main() -> Result<()> {
         .lock_metadata(*locked_notarization_id.object_id())
         .await?;
 
-    println!("Unlocked notarization lock metadata: {:?}", unlocked_lock_metadata);
-    println!(
-        "Transfer-locked notarization lock metadata: {:?}",
-        transfer_locked_lock_metadata
-    );
-    println!("Locked notarization lock metadata: {:?}", locked_lock_metadata);
+    println!("Unlocked notarization lock metadata: {unlocked_lock_metadata:?}");
+    println!("Transfer-locked notarization lock metadata: {transfer_locked_lock_metadata:?}");
+    println!("Locked notarization lock metadata: {locked_lock_metadata:?}");
 
     println!("\n📋 Transfer Rules Summary:");
     println!("✅ Unlocked dynamic notarizations can be transferred freely");
@@ -173,7 +164,7 @@ async fn main() -> Result<()> {
 
     for (name, id) in statuses {
         let is_locked = notarization_client.is_transfer_locked(*id.object_id()).await?;
-        println!("{}: Transfer locked = {}", name, is_locked);
+        println!("{name}: Transfer locked = {is_locked}");
     }
 
     Ok(())

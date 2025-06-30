@@ -21,9 +21,9 @@ use product_common::package_registry::{Env, Metadata};
 use serde::de::DeserializeOwned;
 
 use super::network_id;
+use crate::core::move_utils;
 use crate::core::operations::{NotarizationImpl, NotarizationOperations};
-use crate::core::types::{Data, LockMetadata, State};
-use crate::core::{NotarizationMethod, move_utils};
+use crate::core::types::{Data, LockMetadata, NotarizationMethod, State};
 use crate::error::Error;
 use crate::iota_interaction_adapter::IotaClientAdapter;
 use crate::package;

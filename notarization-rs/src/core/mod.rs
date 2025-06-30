@@ -6,17 +6,8 @@
 //! This module contains the fundamental building blocks for creating and managing
 //! notarizations, including builders, state management, and transaction operations.
 
-use serde::{Deserialize, Serialize};
-
 pub mod builder;
-pub mod move_utils;
-pub mod operations;
+pub(crate) mod move_utils;
+pub(crate) mod operations;
 pub mod transactions;
 pub mod types;
-
-/// Indicates the used Notarization method.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub enum NotarizationMethod {
-    Dynamic,
-    Locked,
-}

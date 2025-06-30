@@ -28,7 +28,7 @@ async fn main() -> Result<()> {
         .output
         .id;
 
-    println!("✅ Created dynamic notarization: {:?}", notarization_id);
+    println!("✅ Created dynamic notarization: {notarization_id:?}");
 
     // Show initial metadata
     let initial_updatable_metadata = notarization_client
@@ -42,9 +42,9 @@ async fn main() -> Result<()> {
         .await?;
 
     println!("\n📄 Initial Metadata:");
-    println!("Immutable description: {:?}", initial_description);
-    println!("Updatable metadata: {:?}", initial_updatable_metadata);
-    println!("State version count: {}", initial_version_count);
+    println!("Immutable description: {initial_description:?}");
+    println!("Updatable metadata: {initial_updatable_metadata:?}");
+    println!("State version count: {initial_version_count}");
 
     // Update metadata multiple times
     println!("\n🔄 Performing metadata updates...");
@@ -77,8 +77,8 @@ async fn main() -> Result<()> {
             .state_version_count(*notarization_id.object_id())
             .await?;
 
-        println!("Updated metadata: {:?}", current_metadata);
-        println!("Version count (should remain unchanged): {}", version_count);
+        println!("Updated metadata: {current_metadata:?}");
+        println!("Version count (should remain unchanged): {version_count}");
 
         // Verify that state version count doesn't change with metadata updates
         assert_eq!(version_count, initial_version_count);
@@ -92,7 +92,7 @@ async fn main() -> Result<()> {
 
     let final_description = notarization_client.description(*notarization_id.object_id()).await?;
 
-    println!("Final description: {:?}", final_description);
+    println!("Final description: {final_description:?}");
     assert_eq!(final_description, initial_description);
 
     // Show that state content is unaffected by metadata updates
@@ -111,8 +111,8 @@ async fn main() -> Result<()> {
         .await?;
 
     println!("\n⏰ Timestamps:");
-    println!("Created at: {}", created_at);
-    println!("Last state change: {}", last_state_change);
+    println!("Created at: {created_at}");
+    println!("Last state change: {last_state_change}");
 
     // Final metadata state
     let final_updatable_metadata = notarization_client
@@ -120,7 +120,7 @@ async fn main() -> Result<()> {
         .await?;
 
     println!("\n📊 Final State:");
-    println!("Final updatable metadata: {:?}", final_updatable_metadata);
+    println!("Final updatable metadata: {final_updatable_metadata:?}");
     println!(
         "State version count: {}",
         notarization_client

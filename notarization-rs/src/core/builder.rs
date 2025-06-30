@@ -45,9 +45,8 @@ use std::marker::PhantomData;
 
 use product_common::transaction::transaction_builder::TransactionBuilder;
 
-use super::NotarizationMethod;
 use super::transactions::CreateNotarization;
-use super::types::{State, TimeLock};
+use super::types::{NotarizationMethod, State, TimeLock};
 use crate::error::Error;
 
 /// Marker type for locked notarizations.

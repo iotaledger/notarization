@@ -21,11 +21,11 @@ use product_common::transaction::transaction_builder::Transaction;
 use serde::de::DeserializeOwned;
 use tokio::sync::OnceCell;
 
-use super::super::NotarizationMethod;
 use super::super::builder::NotarizationBuilder;
 use super::super::operations::{NotarizationImpl, NotarizationOperations};
 use super::super::types::{
-    DynamicNotarizationCreated, Event, LockMetadata, LockedNotarizationCreated, OnChainNotarization, TimeLock,
+    DynamicNotarizationCreated, Event, LockMetadata, LockedNotarizationCreated, NotarizationMethod,
+    OnChainNotarization, TimeLock,
 };
 use crate::error::Error;
 use crate::package::notarization_package_id;
