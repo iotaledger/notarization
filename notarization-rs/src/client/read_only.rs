@@ -8,18 +8,22 @@
 
 use std::ops::Deref;
 
+#[cfg(not(target_arch = "wasm32"))]
+use iota_interaction::IotaClient;
+use iota_interaction::IotaClientTrait;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::transaction::{ProgrammableTransaction, TransactionKind};
-use iota_interaction::{IotaClient, IotaClientTrait};
+#[cfg(target_arch = "wasm32")]
+use iota_interaction_ts::bindings::WasmIotaClient;
 use product_common::core_client::CoreClientReadOnly;
 use product_common::network_name::NetworkName;
 use product_common::package_registry::{Env, Metadata};
 use serde::de::DeserializeOwned;
 
 use super::network_id;
+use crate::core::move_utils;
 use crate::core::operations::{NotarizationImpl, NotarizationOperations};
-use crate::core::types::{Data, LockMetadata, State};
-use crate::core::{NotarizationMethod, move_utils};
+use crate::core::types::{Data, LockMetadata, NotarizationMethod, State};
 use crate::error::Error;
 use crate::iota_interaction_adapter::IotaClientAdapter;
 use crate::package;

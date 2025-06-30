@@ -5,7 +5,7 @@
   "toml": {},
   "typescript": {
     "indentWidth": 4,
-    "arrayExpression.preferHanging": true
+    "arrayExpression.preferHanging": "always"
   },
   "yaml": {},
   "includes": [
@@ -14,7 +14,7 @@
   "excludes": [
     "**/*-lock.json",
     "**/{node_modules, target}",
-    "bindings/wasm/notarization/{node,web}/**/*.{js,ts}"
+    "bindings/wasm/notarization_wasm/{node,web}/**/*.{js,ts}"
   ],
   "plugins": [
     "https://plugins.dprint.dev/markdown-0.18.0.wasm",

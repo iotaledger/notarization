@@ -1,6 +1,16 @@
 // Copyright 2020-2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! # Update State
+//!
+//! This module defines the update state transaction.
+//!
+//! ## Overview
+//!
+//! The update state transaction is used to update the state of a notarization.
+//!
+//! Note that this transaction is only available for dynamic notarizations.
+
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::IotaTransactionBlockEffects;

@@ -5,8 +5,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
 use examples::get_funded_client;
-use notarization::core::NotarizationMethod;
-use notarization::core::types::{State, TimeLock};
+use notarization::core::types::{NotarizationMethod, State, TimeLock};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -19,7 +18,7 @@ async fn main() -> Result<()> {
     let now_ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
     let unlock_at = now_ts + 86400; // 24 hours
 
-    println!("Creating locked notarization with delete lock until: {}", unlock_at);
+    println!("Creating locked notarization with delete lock until: {unlock_at}");
 
     // Create a locked notarization with state and delete lock
     let locked_notarization = notarization_client

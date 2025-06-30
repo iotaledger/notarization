@@ -13,8 +13,8 @@ use product_common::network_name::NetworkName;
 use crate::error::Error;
 use crate::iota_interaction_adapter::IotaClientAdapter;
 
-mod full_client;
-mod read_only;
+pub mod full_client;
+pub mod read_only;
 
 pub use full_client::*;
 pub use read_only::*;

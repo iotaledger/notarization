@@ -21,11 +21,11 @@ use product_common::transaction::transaction_builder::Transaction;
 use serde::de::DeserializeOwned;
 use tokio::sync::OnceCell;
 
-use super::super::NotarizationMethod;
 use super::super::builder::NotarizationBuilder;
 use super::super::operations::{NotarizationImpl, NotarizationOperations};
 use super::super::types::{
-    DynamicNotarizationCreated, Event, LockMetadata, LockedNotarizationCreated, OnChainNotarization, TimeLock,
+    DynamicNotarizationCreated, Event, LockMetadata, LockedNotarizationCreated, NotarizationMethod,
+    OnChainNotarization, TimeLock,
 };
 use crate::error::Error;
 use crate::package::notarization_package_id;
@@ -179,7 +179,6 @@ impl<M: Clone + OptionalSend + OptionalSync> Transaction for CreateNotarization<
         C: CoreClientReadOnly + OptionalSync,
     {
         let method = self.builder.method.clone();
-
         let data = events
             .data
             .first()
@@ -188,13 +187,13 @@ impl<M: Clone + OptionalSend + OptionalSync> Transaction for CreateNotarization<
         let notarization_id = match method {
             NotarizationMethod::Dynamic => {
                 let event: Event<DynamicNotarizationCreated> = serde_json::from_value(data.parsed_json.clone())
-                    .map_err(|e| Error::TransactionUnexpectedResponse(format!("failed to parse event: {}", e)))?;
+                    .map_err(|e| Error::TransactionUnexpectedResponse(format!("failed to parse event: {e}")))?;
 
                 event.data.notarization_id
             }
             NotarizationMethod::Locked => {
                 let event: Event<LockedNotarizationCreated> = serde_json::from_value(data.parsed_json.clone())
-                    .map_err(|e| Error::TransactionUnexpectedResponse(format!("failed to parse event: {}", e)))?;
+                    .map_err(|e| Error::TransactionUnexpectedResponse(format!("failed to parse event: {e}")))?;
 
                 event.data.notarization_id
             }

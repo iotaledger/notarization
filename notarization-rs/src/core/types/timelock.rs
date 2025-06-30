@@ -1,6 +1,20 @@
 // Copyright 2020-2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! # TimeLock
+//!
+//! This module defines the time-based locks for notarizations.
+//!
+//! ## Overview
+//!
+//! The time-based locks are used to restrict the access to a notarization.
+//!
+//! ## Types
+//!
+//! - `UnlockAt`: The lock is unlocked at a specific time.
+//! - `UntilDestroyed`: The lock is unlocked when the notarization is destroyed.
+//! - `None`: The lock is not applied.
+
 use std::str::FromStr;
 use std::time::SystemTime;
 
@@ -101,6 +115,6 @@ pub(super) fn new_none(ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, 
 
 impl MoveType for TimeLock {
     fn move_type(package: ObjectID) -> TypeTag {
-        TypeTag::from_str(format!("{}::timelock::TimeLock", package).as_str()).expect("failed to create type tag")
+        TypeTag::from_str(format!("{package}::timelock::TimeLock").as_str()).expect("failed to create type tag")
     }
 }

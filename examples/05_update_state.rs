@@ -27,7 +27,7 @@ async fn main() -> Result<()> {
         .output
         .id;
 
-    println!("✅ Created dynamic notarization: {:?}", notarization_id);
+    println!("✅ Created dynamic notarization: {notarization_id:?}");
 
     // Show initial state
     let initial_state = notarization_client.state(*notarization_id.object_id()).await?;
@@ -39,13 +39,13 @@ async fn main() -> Result<()> {
     println!("\n📄 Initial State:");
     println!("Content: {}", initial_state.data.as_text()?);
     println!("Metadata: {:?}", initial_state.metadata);
-    println!("Version count: {}", initial_version_count);
+    println!("Version count: {initial_version_count}");
 
     // Perform multiple state updates
     println!("\n🔄 Performing state updates...");
 
     for i in 1..=3 {
-        println!("\n--- Update {} ---", i);
+        println!("\n--- Update {i} ---");
 
         let new_state = State::from_string(
             format!("Updated document version {}", i + 1),
@@ -58,7 +58,7 @@ async fn main() -> Result<()> {
             .build_and_execute(&notarization_client)
             .await?;
 
-        println!("✅ State update {} completed", i);
+        println!("✅ State update {i} completed");
 
         // Verify the update
         let current_state = notarization_client.state(*notarization_id.object_id()).await?;
@@ -69,7 +69,7 @@ async fn main() -> Result<()> {
 
         println!("Updated content: {}", current_state.data.as_text()?);
         println!("Updated metadata: {:?}", current_state.metadata);
-        println!("New version count: {}", version_count);
+        println!("New version count: {version_count}");
 
         // Verify version count incremented
         assert_eq!(version_count, i as u64);
@@ -83,7 +83,7 @@ async fn main() -> Result<()> {
     let final_state = notarization_client.state(*notarization_id.object_id()).await?;
 
     println!("\n📊 Final Statistics:");
-    println!("Total updates performed: {}", final_version_count);
+    println!("Total updates performed: {final_version_count}");
     println!("Final metadata: {:?}", final_state.metadata);
 
     // Get last state change timestamp
@@ -91,7 +91,7 @@ async fn main() -> Result<()> {
         .last_state_change_ts(*notarization_id.object_id())
         .await?;
 
-    println!("Last state change timestamp: {}", last_change);
+    println!("Last state change timestamp: {last_change}");
 
     println!("\n🎯 Key Points:");
     println!("✓ Dynamic notarizations support state updates");

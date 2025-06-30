@@ -44,3 +44,8 @@ pub enum Error {
     #[error("Failed to get object with options: {0}")]
     ObjectLookup(String),
 }
+
+#[cfg(target_arch = "wasm32")]
+use product_common::impl_wasm_error_from;
+#[cfg(target_arch = "wasm32")]
+impl_wasm_error_from!(Error);

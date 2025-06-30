@@ -82,7 +82,6 @@ use std::ops::Deref;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::crypto::PublicKey;
 use iota_interaction::{IotaKeySignature, OptionalSync};
-use iota_interaction_rust::IotaClientAdapter;
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use product_common::network_name::NetworkName;
 use product_common::transaction::transaction_builder::TransactionBuilder;
@@ -93,6 +92,7 @@ use crate::core::builder::{Dynamic, Locked, NotarizationBuilder};
 use crate::core::transactions::{DestroyNotarization, TransferNotarization, UpdateMetadata, UpdateState};
 use crate::core::types::State;
 use crate::error::Error;
+use crate::iota_interaction_adapter::IotaClientAdapter;
 
 /// A client for creating and managing notarizations on the IOTA blockchain.
 ///
@@ -172,7 +172,7 @@ impl<S> NotarizationClient<S> {
     ///     .create_locked_notarization()
     ///     .with_string_state("Contract v1.0", Some("PDF hash"))
     ///     .with_immutable_description("Employment Agreement")
-    ///     .with_delete_at(TimeLock::UnlockAt(1735689600))
+    ///     .with_delete_lock(TimeLock::UnlockAt(1735689600))
     ///     .finish()?
     ///     .build_and_execute(&client)
     ///     .await?;

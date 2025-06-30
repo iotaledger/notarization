@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub mod client;
-#[cfg(not(target_arch = "wasm32"))]
 pub mod core;
 pub mod error;
 pub(crate) mod iota_interaction_adapter;
-pub mod package;
+pub(crate) mod package;
+
+pub use client::full_client::NotarizationClient;
+pub use client::read_only::NotarizationClientReadOnly;

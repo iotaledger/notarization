@@ -38,5 +38,5 @@ jobs:
           dry-run: ${{ github.event.inputs.dry-run }}
           input-artifact-name: notarization-wasm-bindings-build
           npm-token: ${{ secrets.NPM_NOTARIZATION_TOKEN }}
-          working-directory: ./bindings/wasm/notarization
+          working-directory: ./bindings/wasm/notarization_wasm
           tag: ${{ github.event.inputs.tag }}

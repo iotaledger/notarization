@@ -36,7 +36,7 @@ where
 }
 
 /// Get the type tag of an object
-pub async fn get_type_tag<C>(client: &C, object_id: &ObjectID) -> Result<TypeTag, Error>
+pub(crate) async fn get_type_tag<C>(client: &C, object_id: &ObjectID) -> Result<TypeTag, Error>
 where
     C: CoreClientReadOnly + OptionalSync,
 {
@@ -49,7 +49,7 @@ where
 
     let object_data = object_response
         .data
-        .ok_or_else(|| Error::FailedToParseTag(format!("Object {} not found", object_id)))?;
+        .ok_or_else(|| Error::FailedToParseTag(format!("Object {object_id} not found")))?;
 
     let full_type_str = object_data
         .object_type()
@@ -59,7 +59,7 @@ where
     let type_param_str = parse_type(&full_type_str)?;
 
     let tag = TypeTag::from_str(&type_param_str)
-        .map_err(|e| Error::FailedToParseTag(format!("Failed to parse tag '{}': {}", type_param_str, e)))?;
+        .map_err(|e| Error::FailedToParseTag(format!("Failed to parse tag '{type_param_str}': {e}")))?;
 
     Ok(tag)
 }
@@ -78,8 +78,7 @@ pub(crate) fn parse_type(full_type: &str) -> Result<String, Error> {
         Ok(full_type[start + 1..end].to_string())
     } else {
         Err(Error::FailedToParseTag(format!(
-            "Could not parse type parameter from {}",
-            full_type
+            "Could not parse type parameter from {full_type}"
         )))
     }
 }
