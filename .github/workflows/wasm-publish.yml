@@ -26,6 +26,7 @@ jobs:
   release-wasm:
     runs-on: ubuntu-latest
     needs: [build-wasm]
+    environment: release
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -36,6 +37,6 @@ jobs:
         with:
           dry-run: ${{ github.event.inputs.dry-run }}
           input-artifact-name: notarization-wasm-bindings-build
-          npm-token: ${{ secrets.NPM_TOKEN }}
+          npm-token: ${{ secrets.NPM_NOTARIZATION_TOKEN }}
           working-directory: ./bindings/wasm/notarization
           tag: ${{ github.event.inputs.tag }}
