@@ -18,9 +18,9 @@ use crate::wasm_time_lock::WasmTimeLock;
 pub struct WasmNotarizationBuilderLocked(pub(crate) NotarizationBuilder<Locked>);
 
 /// Converts a `NotarizationBuilder<Locked>` into a `WasmNotarizationBuilderLocked`.
-impl Into<WasmNotarizationBuilderLocked> for NotarizationBuilder<Locked> {
-    fn into(self) -> WasmNotarizationBuilderLocked {
-        WasmNotarizationBuilderLocked(self)
+impl From<NotarizationBuilder<Locked>> for WasmNotarizationBuilderLocked {
+    fn from(val: NotarizationBuilder<Locked>) -> Self {
+        WasmNotarizationBuilderLocked(val)
     }
 }
 
@@ -82,7 +82,7 @@ impl WasmNotarizationBuilderLocked {
 
     /// Finalizes the notarization builder and returns a transaction builder
     /// that can be used to build and execute the final transaction on the ledger.
-    /// 
+    ///
     /// # Returns
     /// A `TransactionBuilder` to build and execute the transaction.
     #[wasm_bindgen()]
@@ -98,9 +98,9 @@ impl WasmNotarizationBuilderLocked {
 #[wasm_bindgen(js_name = NotarizationBuilderDynamic)]
 pub struct WasmNotarizationBuilderDynamic(pub(crate) NotarizationBuilder<Dynamic>);
 
-impl Into<WasmNotarizationBuilderDynamic> for NotarizationBuilder<Dynamic> {
-    fn into(self) -> WasmNotarizationBuilderDynamic {
-        WasmNotarizationBuilderDynamic(self)
+impl From<NotarizationBuilder<Dynamic>> for WasmNotarizationBuilderDynamic {
+    fn from(val: NotarizationBuilder<Dynamic>) -> Self {
+        WasmNotarizationBuilderDynamic(val)
     }
 }
 
@@ -162,7 +162,7 @@ impl WasmNotarizationBuilderDynamic {
 
     /// Finalizes the notarization builder and returns a transaction builder
     /// that can be used to build and execute the final transaction on the ledger.
-    /// 
+    ///
     /// # Returns
     /// A `TransactionBuilder` to build and execute the transaction.
     #[wasm_bindgen()]

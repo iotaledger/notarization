@@ -42,7 +42,7 @@ impl WasmData {
     #[wasm_bindgen(js_name = toString)]
     pub fn to_string(&self) -> String {
         match &self.0 {
-            Data::Bytes(bytes) => String::from_utf8_lossy(&bytes).to_string(),
+            Data::Bytes(bytes) => String::from_utf8_lossy(bytes).to_string(),
             Data::Text(text) => text.to_string(),
         }
     }
@@ -234,7 +234,7 @@ impl From<WasmNotarizationMethod> for NotarizationMethod {
         match value {
             WasmNotarizationMethod::Dynamic => NotarizationMethod::Dynamic,
             WasmNotarizationMethod::Locked => NotarizationMethod::Locked,
-            WasmNotarizationMethod::__Invalid => panic!("The NotarizationMethod {:?} is not known", value),
+            WasmNotarizationMethod::__Invalid => panic!("The NotarizationMethod {value:?} is not known"),
         }
     }
 }

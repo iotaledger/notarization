@@ -192,7 +192,7 @@ impl WasmCreateNotarizationDynamic {
     /// This method is called automatically by Transaction::build_programmable_transaction()
     /// and Transaction::apply() methods after the transaction has been successfully submitted
     /// to process the results from the ledger.
-    /// 
+    ///
     /// # Arguments
     /// * `effects` - The transaction block effects to apply.
     /// * `events` - The transaction block events to apply.
