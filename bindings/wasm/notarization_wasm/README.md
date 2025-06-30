@@ -1,4 +1,4 @@
-# IOTA Notarization WASM
+# IOTA Notarization
 
 <!--
 ## [Notarization Documentation Pages](https://docs.iota.org/iota-notarization)
