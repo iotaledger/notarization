@@ -1,5 +1,5 @@
 {
-  "name": "@iota/notarization-wasm API documentation",
+  "name": "@iota/notarization API documentation",
   "extends": [
     "../typedoc.json"
   ],

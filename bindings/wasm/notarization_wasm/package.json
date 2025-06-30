@@ -1,5 +1,5 @@
 {
-  "name": "@iota/notarization-wasm",
+  "name": "@iota/notarization",
   "author": "IOTA Foundation <info@iota.org>",
   "description": "WASM bindings for IOTA Notarization - A Data Notarization Framework providing multiple notarization methods. To be used in JavaScript/TypeScript",
   "homepage": "https://www.iota.org",

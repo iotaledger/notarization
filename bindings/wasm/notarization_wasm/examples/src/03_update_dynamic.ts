@@ -1,7 +1,7 @@
 // Copyright 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-import { State } from "@iota/notarization-wasm";
+import { State } from "@iota/notarization";
 import { strict as assert } from "assert";
 import { getFundedClient } from "./util";
 

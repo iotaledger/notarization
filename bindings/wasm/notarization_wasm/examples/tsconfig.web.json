@@ -10,7 +10,7 @@
     "esModuleInterop": true,
     "moduleResolution": "node",
     "paths": {
-      "@iota/notarization-wasm/node": [
+      "@iota/notarization/node": [
         "../web"
       ]
     }

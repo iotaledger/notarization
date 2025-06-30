@@ -5,7 +5,7 @@ import { Ed25519KeypairSigner } from "@iota/iota-interaction-ts/test_utils";
 import { IotaClient } from "@iota/iota-sdk/client";
 import { getFaucetHost, requestIotaFromFaucetV0 } from "@iota/iota-sdk/faucet";
 import { Ed25519Keypair } from "@iota/iota-sdk/keypairs/ed25519";
-import { NotarizationClient, NotarizationClientReadOnly } from "@iota/notarization-wasm";
+import { NotarizationClient, NotarizationClientReadOnly } from "@iota/notarization";
 
 export const IOTA_NOTARIZATION_PKG_ID = globalThis?.process?.env?.IOTA_NOTARIZATION_PKG_ID || "";
 export const NETWORK_NAME_FAUCET = globalThis?.process?.env?.NETWORK_NAME_FAUCET || "localnet";

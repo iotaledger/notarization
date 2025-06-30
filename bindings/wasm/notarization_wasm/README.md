@@ -21,7 +21,7 @@ npm install @iota/iota-sdk
 You can install the latest alpha version of the library by running the following command:
 
 ```bash npm2yarn
-npm install @iota/notarization-wasm@alpha
+npm install @iota/notarization@alpha
 ```
 
 ## Build the Library
