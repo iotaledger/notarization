@@ -11,7 +11,7 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "paths": {
-      "@iota/notarization-wasm": [
+      "@iota/notarization": [
         "../node"
       ],
       "@iota/iota-interaction-ts/*": [
