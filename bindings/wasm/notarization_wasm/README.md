@@ -1,13 +1,11 @@
 # IOTA Notarization
 
 <!--
-## [Notarization Documentation Pages](https://docs.iota.org/iota-notarization)
+## [Notarization Documentation Pages](https://docs.iota.org/developer/iota-notarization)
 
-## [Getting started with the IOTA Notarization WASM Library.](https://docs.iota.org/iota-notarization/getting-started/wasm)
+## [Getting started with the IOTA Notarization WASM Library.](https://docs.iota.org/developer/iota-notarization/getting-started/wasm)
 
-## [API Reference](https://docs.iota.org/references/iota-notarization/wasm/api_ref)
-
-## [Examples](https://github.com/iotaledger/notarization.rs/blob/wasm-v1.6.0-alpha/bindings/wasm/notarization_wasm/examples/README.md)
+## [Examples](https://github.com/iotaledger/notarization/tree/v0.1/bindings/wasm/notarization_wasm/examples)
 -->
 
 ## Install the Library
@@ -35,7 +33,7 @@ to [rustup.rs](https://rustup.rs) for the installation.
 - [Rust](https://www.rust-lang.org/) (>= 1.65)
 - [Cargo](https://doc.rust-lang.org/cargo/) (>= 1.65)
 - for running example: a local network node with the IOTA notarization package deployed as being described
-  [here](https://docs.iota.org/iota-identity/getting-started/local-network-setup) for IOTA Identity
+  [here](https://docs.iota.org/developer/iota-notarization/getting-started/local-network-setup)
 
 ### 1. Install `wasm-bindgen-cli`
 
