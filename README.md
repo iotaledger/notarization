@@ -34,14 +34,14 @@ IOTA Notarization is composed of two primary components:
   - [Rust API Reference](https://iotaledger.github.io/notarization/notarization/index.html): Package documentation (cargo docs).
 <!--  - [Wasm API Reference](https://docs.iota.org/references/iota-notarization/wasm/api_ref): Wasm Package documentation. -->
 - Examples:
-  - [Rust Examples](./examples/README.md): Practical code snippets to get you started with the library in Rust.
-  - [Wasm Examples](./bindings/wasm/notarization_wasm/examples/README.md): Practical code snippets to get you started with the library in TypeScript/JavaScript.
+  - [Rust Examples](https://github.com/iotaledger/notarization/tree/main/examples/README.md): Practical code snippets to get you started with the library in Rust.
+  - [Wasm Examples](https://github.com/iotaledger/notarization/tree/main/bindings/wasm/notarization_wasm/examples/README.md): Practical code snippets to get you started with the library in TypeScript/JavaScript.
 
 ## Bindings
 
 [Foreign Function Interface (FFI)](https://en.wikipedia.org/wiki/Foreign_function_interface) Bindings of this [Rust](https://www.rust-lang.org/) library to other programming languages:
 
-- [Web Assembly](./bindings/wasm/notarization_wasm) (JavaScript/TypeScript)
+- [Web Assembly](https://github.com/iotaledger/notarization/tree/main/bindings/wasm/notarization_wasm) (JavaScript/TypeScript)
 
 ## Contributing
 
