@@ -44,14 +44,14 @@ The following basic CRUD (Create, Read, Update, Delete) examples are available:
 
 | Name                                                                      | Information                                                                       |
 | :------------------------------------------------------------------------ | :-------------------------------------------------------------------------------- |
-| [01_create_locked_notarization](https://github.com/iotaledger/notarization/tree/main/01_create_locked_notarization.rs)       | Demonstrates how to create a locked notarization with delete locks.               |
-| [02_create_dynamic_notarization](https://github.com/iotaledger/notarization/tree/main/02_create_dynamic_notarization.rs)     | Demonstrates how to create dynamic notarizations with and without transfer locks. |
-| [03_update_dynamic_notarization](https://github.com/iotaledger/notarization/tree/main/03_update_dynamic_notarization.rs)     | Demonstrates that dynamic notarizations can be updated                            |
-| [04_destroy_notarization](https://github.com/iotaledger/notarization/tree/main/04_destroy_notarization.rs)                   | Demonstrates notarization destruction scenarios based on lock types.              |
-| [05_update_state](https://github.com/iotaledger/notarization/tree/main/05_update_state.rs)                                   | Demonstrates state updates on dynamic notarizations including binary data.        |
-| [06_update_metadata](https://github.com/iotaledger/notarization/tree/main/06_update_metadata.rs)                             | Demonstrates metadata updates and their behavior vs state updates.                |
-| [07_transfer_dynamic_notarization](https://github.com/iotaledger/notarization/tree/main/07_transfer_dynamic_notarization.rs) | Demonstrates transfer scenarios for different notarization types and lock states. |
-| [08_access_read_only_methods](https://github.com/iotaledger/notarization/tree/main/08_access_read_only_methods.rs)           | Comprehensive demonstration of all read-only inspection methods.                  |
+| [01_create_locked_notarization](https://github.com/iotaledger/notarization/tree/main/examples/01_create_locked_notarization.rs)       | Demonstrates how to create a locked notarization with delete locks.               |
+| [02_create_dynamic_notarization](https://github.com/iotaledger/notarization/tree/main/examples/02_create_dynamic_notarization.rs)     | Demonstrates how to create dynamic notarizations with and without transfer locks. |
+| [03_update_dynamic_notarization](https://github.com/iotaledger/notarization/tree/main/examples/03_update_dynamic_notarization.rs)     | Demonstrates that dynamic notarizations can be updated                            |
+| [04_destroy_notarization](https://github.com/iotaledger/notarization/tree/main/examples/04_destroy_notarization.rs)                   | Demonstrates notarization destruction scenarios based on lock types.              |
+| [05_update_state](https://github.com/iotaledger/notarization/tree/main/examples/05_update_state.rs)                                   | Demonstrates state updates on dynamic notarizations including binary data.        |
+| [06_update_metadata](https://github.com/iotaledger/notarization/tree/main/examples/06_update_metadata.rs)                             | Demonstrates metadata updates and their behavior vs state updates.                |
+| [07_transfer_dynamic_notarization](https://github.com/iotaledger/notarization/tree/main/examples/07_transfer_dynamic_notarization.rs) | Demonstrates transfer scenarios for different notarization types and lock states. |
+| [08_access_read_only_methods](https://github.com/iotaledger/notarization/tree/main/examples/08_access_read_only_methods.rs)           | Comprehensive demonstration of all read-only inspection methods.                  |
 
 ## Notarization Types
 
