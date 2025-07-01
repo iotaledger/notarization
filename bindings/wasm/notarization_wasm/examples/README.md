@@ -62,16 +62,16 @@ IOTA_NOTARIZATION_PKG_ID=0x222741bbdff74b42df48a7b4733185e9b24becb8ccfbafe8eac86
 
 The following examples are available:
 
-| Name                                                    | Information                                                                                           |
-| :------------------------------------------------------ | :---------------------------------------------------------------------------------------------------- |
-| [01_create_locked](src/01_create_locked.ts)             | Demonstrates how to create a a new locked notarization.                                               |
-| [02_create_dynamic](src/02_create_dynamic.ts)           | Demonstrates how to create a a new dynamic notarization.                                              |
-| [03_update_dynamic](src/03_update_dynamic.ts)           | Demonstrates how to update a dynamic notarization.                                                    |
-| [04_destroy_notarization](src/03_update_dynamic.ts)     | Demonstrates how to destroy a Notarization.                                                           |
-| [05_update_state](src/03_update_dynamic.ts)             | Demonstrates how to update the state of a Notarization.                                               |
-| [06_update_metadata](src/03_update_dynamic.ts)          | Demonstrates how to update the metadata of a Notarization.                                            |
-| [07_transfer_notarization](src/03_update_dynamic.ts)    | Demonstrates how to transfer a dynamic Notarization and transferring a locked Notarization will fail. |
-| [08_access_read_only_methods](src/03_update_dynamic.ts) | Demonstrates read-only methods for notarization inspection.                                           |
+| Name                                                              | Information                                                                                           |
+| :---------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------- |
+| [01_create_locked](src/01_create_locked.ts)                       | Demonstrates how to create a a new locked notarization.                                               |
+| [02_create_dynamic](src/02_create_dynamic.ts)                     | Demonstrates how to create a a new dynamic notarization.                                              |
+| [03_update_dynamic](src/03_update_dynamic.ts)                     | Demonstrates how to update a dynamic notarization.                                                    |
+| [04_destroy_notarization](src/04_destroy_notarization.ts)         | Demonstrates how to destroy a Notarization.                                                           |
+| [05_update_state](src/05_update_state.ts)                         | Demonstrates how to update the state of a Notarization.                                               |
+| [06_update_metadata](src/06_update_metadata.ts)                   | Demonstrates how to update the metadata of a Notarization.                                            |
+| [07_transfer_notarization](src/07_transfer_notarization.ts)       | Demonstrates how to transfer a dynamic Notarization and transferring a locked Notarization will fail. |
+| [08_access_read_only_methods](src/08_access_read_only_methods.ts) | Demonstrates read-only methods for notarization inspection.                                           |
 
 <!--
 
