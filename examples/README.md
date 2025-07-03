@@ -21,7 +21,7 @@ You'll need one or more of the following environment variables depending on your
 
 | Name                | Required for local node | Required for testnet | Required for other node |
 | ------------------- | :---------------------: | :------------------: | :---------------------: |
-| NOTARIZATION_PKG_ID |            x            |          x           |            x            |
+| IOTA_NOTARIZATION_PKG_ID |            x            |          x           |            x            |
 | API_ENDPOINT        |                         |          x           |            x            |
 
 ## Running Examples
@@ -29,13 +29,13 @@ You'll need one or more of the following environment variables depending on your
 Run an example using the following command (environment variables depend on your setup):
 
 ```bash
-NOTARIZATION_PKG_ID=0x... cargo run --example <example-name>
+IOTA_NOTARIZATION_PKG_ID=0x... cargo run --example <example-name>
 ```
 
 For instance, to run the `01_create_locked_notarization` example:
 
 ```bash
-NOTARIZATION_PKG_ID=0x... cargo run --release --example 01_create_locked_notarization
+IOTA_NOTARIZATION_PKG_ID=0x... cargo run --release --example 01_create_locked_notarization
 ```
 
 ## Basic Examples
