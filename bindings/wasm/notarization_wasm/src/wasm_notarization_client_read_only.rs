@@ -12,7 +12,9 @@ use product_common::bindings::utils::parse_wasm_object_id;
 use product_common::bindings::WasmObjectID;
 use product_common::core_client::CoreClientReadOnly;
 use wasm_bindgen::prelude::*;
-
+use notarization::core::types::OnChainNotarization;
+use notarization::error::Error;
+use crate::wasm_notarization::WasmOnChainNotarization;
 use crate::wasm_types::{WasmLockMetadata, WasmNotarizationMethod, WasmState};
 
 /// A client to interact with Notarization objects on the IOTA ledger.
@@ -111,6 +113,26 @@ impl WasmNotarizationClientReadOnly {
     pub fn chain_id(&self) -> String {
         self.0.chain_id().to_string()
     }
+
+    /// Retrieves the [`OnChainNotarization`] of a notarized object.
+    ///
+    /// This method returns the on-chain notarization object for the given object ID.
+    ///
+    /// # Arguments
+    ///
+    /// * `notarized_object_id`: The [`ObjectID`] of the notarized object.
+    ///
+    /// # Returns
+    /// A `Result` containing the [`OnChainNotarization`] or an [`Error`].
+    #[wasm_bindgen(js_name = getNotarizationById)]
+    pub async fn get_notarization_by_id(&self, notarized_object_id: WasmObjectID) -> Result<WasmOnChainNotarization> {
+       let notarized_object_id = parse_wasm_object_id(&notarized_object_id)?;
+        self.0
+            .get_notarization_by_id(notarized_object_id).await.map_err(wasm_error)
+            .wasm_result()
+            .map(Into::into)
+    }
+
 
     /// Retrieves the timestamp of the last state change for a notarization.
     ///
