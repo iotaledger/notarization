@@ -168,7 +168,7 @@ impl NotarizationClientReadOnly {
         Self::new_internal(client, network).await
     }
 
-    /// Retrieves the `on_chain_notarization` of a notarized object.
+    /// Retrieves the [`OnChainNotarization`] of a notarized object.
     ///
     /// This method returns the on-chain notarization object for the given object ID.
     ///
@@ -178,7 +178,7 @@ impl NotarizationClientReadOnly {
     ///
     /// # Returns
     /// A `Result` containing the [`OnChainNotarization`] or an [`Error`].
-    pub async fn on_chain_notarization(&self, notarized_object_id: ObjectID) -> Result<OnChainNotarization, Error> {
+    pub async fn get_notarization_by_id(&self, notarized_object_id: ObjectID) -> Result<OnChainNotarization, Error> {
         let notarization_object = get_object_ref_by_id_with_bcs(self, &notarized_object_id).await?;
 
         Ok(notarization_object)
