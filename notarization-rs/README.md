@@ -4,6 +4,8 @@ The Notarization Rust library provides a `NotarizationBuilder` that can be used 
 the IOTA ledger or to use an already existing Notarization object. The NotarizationBuilder returns a Notarization struct
 instance, which is mapped to the Notarization object on the ledger and can be used to interact with the object.
 
+You can find the full IOTA Notarization documentation [here](https://docs.iota.org/developer/iota-notarization).
+
 Following Notarization methods are currently provided:
 
 - Dynamic Notarization
@@ -11,8 +13,6 @@ Following Notarization methods are currently provided:
 
 These Notarization methods are implemented using a single Notarization Move object, stored on the IOTA Ledger.
 The Method specific behavior is achieved via configuration of this object.
-
-**TODO: Link to full docs of config parameters**
 
 To minimize the need for config settings, the Notarization methods reduce the number of available configuration
 parameters while using method specific fixed settings for several parameters, resulting in the typical method
