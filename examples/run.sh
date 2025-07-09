@@ -2,11 +2,11 @@
 
 # Script to run all notarization examples
 # Usage: ./run.sh
-# Make sure to set NOTARIZATION_PKG_ID environment variable
+# Make sure to set IOTA_NOTARIZATION_PKG_ID environment variable
 
 if [ -z "$IOTA_NOTARIZATION_PKG_ID" ]; then
-    echo "Error: NOTARIZATION_PKG_ID environment variable is not set"
-    echo "Usage: NOTARIZATION_PKG_ID=0x... ./run.sh"
+    echo "Error: IOTA_NOTARIZATION_PKG_ID environment variable is not set"
+    echo "Usage: IOTA_NOTARIZATION_PKG_ID=0x... ./run.sh"
     exit 1
 fi
 
