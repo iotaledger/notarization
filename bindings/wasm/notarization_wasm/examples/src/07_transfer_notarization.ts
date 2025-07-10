@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Ed25519Keypair } from "@iota/iota-sdk/keypairs/ed25519";
-import { TimeLock } from "@iota/notarization";
+import { TimeLock } from "@iota/notarization/node";
 import { strict as assert } from "assert";
 import { getFundedClient } from "./util";
 
