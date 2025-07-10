@@ -89,6 +89,11 @@ export async function accessReadOnlyMethods(): Promise<void> {
     console.log("🔐 Lock metadata:", lockMetadata);
     assert(lockMetadata === undefined, "Per default a dynamic Notarization has no lock metadata");
 
+    // 10. Get the whole OnChainNotarization at once and pretty print it
+    const onChainNotarization = await notarizationClientReadOnly
+        .getNotarizationById(dynamicNotarization.id);
+    console.log("📦 Complete dynamic OnChainNotarization:", onChainNotarization);
+
     // Update the state to demonstrate version tracking
     console.log("\n🔄 Updating state to demonstrate version tracking...");
 
@@ -153,7 +158,8 @@ export async function accessReadOnlyMethods(): Promise<void> {
         .isDestroyAllowed(lockedNotarization.id);
     const lockedLockMetadata = await notarizationClientReadOnly
         .lockMetadata(lockedNotarization.id);
-
+    const lockedOnChainNotarization = await notarizationClientReadOnly
+        .getNotarizationById(lockedNotarization.id);
     console.log("⚙️ Method:", lockedMethod);
     assert(lockedMethod === "Locked", "method of a locked Notarization must be 'Locked'");
     console.log("🔒 Transfer locked:", lockedTransferLocked);
@@ -164,6 +170,7 @@ export async function accessReadOnlyMethods(): Promise<void> {
     assert(!lockedDestroyAllowed, "Destroying a delete-locked locked Notarization must be forbidden");
     console.log("🔐 Lock metadata present:", lockedLockMetadata !== undefined);
     assert(lockedLockMetadata !== undefined, "A locked Notarization must have lock metadata");
+    console.log("📦 Complete locked OnChainNotarization:", lockedOnChainNotarization);
 
     // Compare methods between dynamic and locked
     console.log("\n📊 Comparison Summary:");

@@ -99,6 +99,12 @@ async fn main() -> Result<()> {
         .await?;
     println!("🔐 Lock metadata: {lock_metadata:?}");
 
+    // 10. Get the whole OnChainNotarization at once and pretty print it
+    let on_chain_notarization = notarization_client
+        .get_notarization_by_id(*dynamic_notarization_id.object_id())
+        .await?;
+    println!("📦 Complete dynamic OnChainNotarization:\n{on_chain_notarization:#?}");
+
     // Update the state to demonstrate version tracking
     println!("\n🔄 Updating state to demonstrate version tracking...");
 
@@ -168,12 +174,16 @@ async fn main() -> Result<()> {
     let locked_lock_metadata = notarization_client
         .lock_metadata(*locked_notarization_id.object_id())
         .await?;
+    let whole_locked_notarization = notarization_client
+        .get_notarization_by_id(*locked_notarization_id.object_id())
+        .await?;
 
     println!("⚙️ Method: {locked_method:?}");
     println!("🔒 Transfer locked: {locked_transfer_locked}");
     println!("🔒 Update locked: {locked_update_locked}");
     println!("🗑️ Destroy allowed: {locked_destroy_allowed}");
     println!("🔐 Lock metadata present: {}", locked_lock_metadata.is_some());
+    println!("📦 Complete locked OnChainNotarization:\n{whole_locked_notarization:#?}");
 
     // Compare methods between dynamic and locked
     println!("\n📊 Comparison Summary:");
