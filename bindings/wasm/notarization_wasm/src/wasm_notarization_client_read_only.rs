@@ -119,11 +119,10 @@ impl WasmNotarizationClientReadOnly {
     /// This method returns the on-chain notarization object for the given object ID.
     ///
     /// # Arguments
-    ///
-    /// * `notarized_object_id`: The [`ObjectID`] of the notarized object.
+    /// * `notarized_object_id` - The ID of the notarization object.
     ///
     /// # Returns
-    /// A `Result` containing the [`OnChainNotarization`] or an [`Error`].
+    /// The [`OnChainNotarization`] object for the given object ID.
     #[wasm_bindgen(js_name = getNotarizationById)]
     pub async fn get_notarization_by_id(&self, notarized_object_id: WasmObjectID) -> Result<WasmOnChainNotarization> {
        let notarized_object_id = parse_wasm_object_id(&notarized_object_id)?;
