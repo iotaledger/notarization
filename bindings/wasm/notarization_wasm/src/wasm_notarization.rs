@@ -31,9 +31,9 @@ impl WasmOnChainNotarization {
     // Creates a new `OnChainNotarization` instance.
     //
     // # Arguments
-    // * `identity` - The `OnChainNotarization` object to wrap.
-    pub(crate) fn new(identity: OnChainNotarization) -> Self {
-        Self(identity)
+    // * `notarization` - The `OnChainNotarization` object to wrap.
+    pub(crate) fn new(notarization: OnChainNotarization) -> Self {
+        Self(notarization)
     }
 
     /// Retrieves the ID of the notarization.
@@ -103,8 +103,8 @@ impl WasmOnChainNotarization {
 
 // Converts an `OnChainNotarization` into a `WasmOnChainNotarization`.
 impl From<OnChainNotarization> for WasmOnChainNotarization {
-    fn from(identity: OnChainNotarization) -> Self {
-        WasmOnChainNotarization::new(identity)
+    fn from(notarization: OnChainNotarization) -> Self {
+        WasmOnChainNotarization::new(notarization)
     }
 }
 

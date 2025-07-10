@@ -19,31 +19,31 @@ In case of running the examples against an existing network, this network needs 
 
 You'll need one or more of the following environment variables depending on your setup:
 
-| Name                | Required for local node | Required for testnet | Required for other node |
-| ------------------- | :---------------------: | :------------------: | :---------------------: |
-| NOTARIZATION_PKG_ID |            x            |          x           |            x            |
-| API_ENDPOINT        |                         |          x           |            x            |
+| Name                     | Required for local node | Required for testnet | Required for other node |
+| ------------------------ | :---------------------: | :------------------: | :---------------------: |
+| IOTA_NOTARIZATION_PKG_ID |            x            |          x           |            x            |
+| API_ENDPOINT             |                         |          x           |            x            |
 
 ## Running Examples
 
 Run an example using the following command (environment variables depend on your setup):
 
 ```bash
-NOTARIZATION_PKG_ID=0x... cargo run --example <example-name>
+IOTA_NOTARIZATION_PKG_ID=0x... cargo run --example <example-name>
 ```
 
 For instance, to run the `01_create_locked_notarization` example:
 
 ```bash
-NOTARIZATION_PKG_ID=0x... cargo run --release --example 01_create_locked_notarization
+IOTA_NOTARIZATION_PKG_ID=0x... cargo run --release --example 01_create_locked_notarization
 ```
 
 ## Basic Examples
 
 The following basic CRUD (Create, Read, Update, Delete) examples are available:
 
-| Name                                                                      | Information                                                                       |
-| :------------------------------------------------------------------------ | :-------------------------------------------------------------------------------- |
+| Name                                                                                                                                  | Information                                                                       |
+| :------------------------------------------------------------------------------------------------------------------------------------ | :-------------------------------------------------------------------------------- |
 | [01_create_locked_notarization](https://github.com/iotaledger/notarization/tree/main/examples/01_create_locked_notarization.rs)       | Demonstrates how to create a locked notarization with delete locks.               |
 | [02_create_dynamic_notarization](https://github.com/iotaledger/notarization/tree/main/examples/02_create_dynamic_notarization.rs)     | Demonstrates how to create dynamic notarizations with and without transfer locks. |
 | [03_update_dynamic_notarization](https://github.com/iotaledger/notarization/tree/main/examples/03_update_dynamic_notarization.rs)     | Demonstrates that dynamic notarizations can be updated                            |

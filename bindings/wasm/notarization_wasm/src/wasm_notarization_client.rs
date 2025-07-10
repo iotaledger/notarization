@@ -17,7 +17,7 @@ use crate::wasm_notarization_builder::{WasmNotarizationBuilderDynamic, WasmNotar
 use crate::wasm_notarization_client_read_only::WasmNotarizationClientReadOnly;
 use crate::wasm_types::WasmState;
 
-/// A client to interact with identities on the IOTA chain.
+/// A client to interact with Notarization objects on the IOTA ledger.
 ///
 /// This client is used for read and write operations. For read-only capabilities,
 /// you can use {@link NotarizationClientReadOnly}, which does not require an account or signing capabilities.

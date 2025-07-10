@@ -3,7 +3,7 @@
 <p align="center">
   <a href="https://iota.stackexchange.com/" style="text-decoration:none;"><img src="https://img.shields.io/badge/StackExchange-9cf.svg?logo=stackexchange" alt="StackExchange"></a>
   <a href="https://discord.gg/iota-builders" style="text-decoration:none;"><img src="https://img.shields.io/badge/Discord-9cf.svg?logo=discord" alt="Discord"></a>
-  <img src="https://deps.rs/repo/github/iotaledger/notarization/status.svg" alt="Dependencies">  
+  <img src="https://deps.rs/repo/github/iotaledger/notarization/status.svg" alt="Dependencies">
   <a href="https://github.com/iotaledger/notarization/blob/develop/LICENSE" style="text-decoration:none;"><img src="https://img.shields.io/github/license/iotaledger/notarization.svg" alt="Apache 2.0 license"></a>
 </p>
 
@@ -32,7 +32,9 @@ IOTA Notarization is composed of two primary components:
 - [Notarization Documentation Pages](https://docs.iota.org/developer/iota-notarization): Supplementing documentation with context around notarization and simple examples on library usage.
 - API References:
   - [Rust API Reference](https://iotaledger.github.io/notarization/notarization/index.html): Package documentation (cargo docs).
+
 <!--  - [Wasm API Reference](https://docs.iota.org/references/iota-notarization/wasm/api_ref): Wasm Package documentation. -->
+
 - Examples:
   - [Rust Examples](https://github.com/iotaledger/notarization/tree/main/examples/README.md): Practical code snippets to get you started with the library in Rust.
   - [Wasm Examples](https://github.com/iotaledger/notarization/tree/main/bindings/wasm/notarization_wasm/examples/README.md): Practical code snippets to get you started with the library in TypeScript/JavaScript.
