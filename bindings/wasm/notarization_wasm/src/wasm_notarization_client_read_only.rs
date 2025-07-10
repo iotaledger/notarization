@@ -12,8 +12,7 @@ use product_common::bindings::utils::parse_wasm_object_id;
 use product_common::bindings::WasmObjectID;
 use product_common::core_client::CoreClientReadOnly;
 use wasm_bindgen::prelude::*;
-use notarization::core::types::OnChainNotarization;
-use notarization::error::Error;
+
 use crate::wasm_notarization::WasmOnChainNotarization;
 use crate::wasm_types::{WasmLockMetadata, WasmNotarizationMethod, WasmState};
 
@@ -125,13 +124,14 @@ impl WasmNotarizationClientReadOnly {
     /// The [`OnChainNotarization`] object for the given object ID.
     #[wasm_bindgen(js_name = getNotarizationById)]
     pub async fn get_notarization_by_id(&self, notarized_object_id: WasmObjectID) -> Result<WasmOnChainNotarization> {
-       let notarized_object_id = parse_wasm_object_id(&notarized_object_id)?;
+        let notarized_object_id = parse_wasm_object_id(&notarized_object_id)?;
         self.0
-            .get_notarization_by_id(notarized_object_id).await.map_err(wasm_error)
+            .get_notarization_by_id(notarized_object_id)
+            .await
+            .map_err(wasm_error)
             .wasm_result()
             .map(Into::into)
     }
-
 
     /// Retrieves the timestamp of the last state change for a notarization.
     ///
