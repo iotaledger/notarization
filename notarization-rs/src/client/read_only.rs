@@ -23,7 +23,8 @@ use serde::de::DeserializeOwned;
 use super::network_id;
 use crate::core::move_utils;
 use crate::core::operations::{NotarizationImpl, NotarizationOperations};
-use crate::core::types::{Data, LockMetadata, NotarizationMethod, State};
+use crate::core::transactions::get_object_ref_by_id_with_bcs;
+use crate::core::types::{Data, LockMetadata, NotarizationMethod, OnChainNotarization, State};
 use crate::error::Error;
 use crate::iota_interaction_adapter::IotaClientAdapter;
 use crate::package;
@@ -165,6 +166,22 @@ impl NotarizationClientReadOnly {
         }
 
         Self::new_internal(client, network).await
+    }
+
+    /// Retrieves the [`OnChainNotarization`] of a notarized object.
+    ///
+    /// This method returns the on-chain notarization object for the given object ID.
+    ///
+    /// # Arguments
+    ///
+    /// * `notarized_object_id`: The [`ObjectID`] of the notarized object.
+    ///
+    /// # Returns
+    /// A `Result` containing the [`OnChainNotarization`] or an [`Error`].
+    pub async fn get_notarization_by_id(&self, notarized_object_id: ObjectID) -> Result<OnChainNotarization, Error> {
+        let notarization_object = get_object_ref_by_id_with_bcs(self, &notarized_object_id).await?;
+
+        Ok(notarization_object)
     }
 
     /// Retrieves the `last_state_change_at` timestamp of a notarized object.
