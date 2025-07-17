@@ -13,5 +13,5 @@ pub use client::read_only::NotarizationClientReadOnly;
 /// HTTP utilities to implement the trait [HttpClient](product_common::http_client::HttpClient).
 #[cfg(feature = "gas-station")]
 pub mod http_client {
-  pub use product_common::http_client::*;
+    pub use product_common::http_client::*;
 }
