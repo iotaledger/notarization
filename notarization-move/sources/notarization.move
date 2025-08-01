@@ -31,7 +31,7 @@ const ELockedNotarizationInvariants: u64 = 5;
 
 // ===== Core Type =====
 /// A unified notarization type that can be either dynamic or locked
-public struct Notarization<D: store + drop + copy> has key {
+public struct Notarization<D: store + drop + copy> has key, store {
     id: UID,
     /// The state of the `Notarization` that can be updated
     state: State<D>,
@@ -72,6 +72,18 @@ public struct LockMetadata has store {
     transfer_lock: TimeLock,
 }
 
+public fun update_lock(self: &LockMetadata): &TimeLock {
+    &self.update_lock
+}
+
+public fun delete_lock(self: &LockMetadata): &TimeLock {
+    &self.delete_lock
+}
+
+public fun transfer_lock(self: &LockMetadata): &TimeLock {
+    &self.transfer_lock
+}
+
 // ===== Notarization State =====
 /// Represents the state of a Notarization that can be updated
 /// Contains arbitrary data and metadata that can be updated by the owner
@@ -80,6 +92,14 @@ public struct State<D: store + drop + copy> has copy, drop, store {
     data: D,
     /// Mutable metadata that can be updated together with the state data
     metadata: Option<String>,
+}
+
+public fun data<D: store + drop + copy>(self: &State<D>): &D {
+    &self.data
+}
+
+public fun metadata<D: store + drop + copy>(self: &State<D>): &Option<String> {
+    &self.metadata
 }
 
 // ===== Event Types =====
