@@ -85,7 +85,7 @@ impl WasmNotarizationBuilderLocked {
     ///
     /// # Returns
     /// A `TransactionBuilder` to build and execute the transaction.
-    #[wasm_bindgen()]
+    #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<CreateNotarizationLocked>")]
     pub fn finish(self) -> Result<WasmTransactionBuilder> {
         let js_value: JsValue = WasmCreateNotarizationLocked::new(self).into();
         Ok(WasmTransactionBuilder::new(js_value.unchecked_into()))
@@ -165,7 +165,7 @@ impl WasmNotarizationBuilderDynamic {
     ///
     /// # Returns
     /// A `TransactionBuilder` to build and execute the transaction.
-    #[wasm_bindgen()]
+    #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<CreateNotarizationDynamic>")]
     pub fn finish(self) -> Result<WasmTransactionBuilder> {
         let js_value: JsValue = WasmCreateNotarizationDynamic::new(self).into();
         Ok(WasmTransactionBuilder::new(js_value.unchecked_into()))
