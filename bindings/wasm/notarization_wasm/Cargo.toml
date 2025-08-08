@@ -1,6 +1,6 @@
 [package]
 name = "notarization_wasm"
-version = "0.1.1-alpha"
+version = "0.1.2-alpha"
 authors = ["IOTA Stiftung"]
 edition = "2021"
 homepage = "https://www.iota.org"
@@ -39,12 +39,12 @@ wasm-bindgen-futures = { version = "0.4", default-features = false }
 git = "https://github.com/iotaledger/product-core.git"
 branch = "feat/full-package-history"
 package = "product_common"
-features = ["core-client", "transaction", "bindings", "binding-utils"]
+features = ["core-client", "transaction", "bindings", "binding-utils", "gas-station", "default-http-client"]
 
 [dependencies.notarization]
 path = "../../../notarization-rs"
 default-features = false
-features = []
+features = ["gas-station", "default-http-client"]
 
 [target.'cfg(all(target_arch = "wasm32", not(target_os = "wasi")))'.dependencies]
 getrandom = { version = "0.3", default-features = false, features = ["wasm_js"] }
