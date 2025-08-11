@@ -17,7 +17,7 @@ use iota_interaction::types::transaction::{ProgrammableTransaction, TransactionK
 use iota_interaction_ts::bindings::WasmIotaClient;
 use product_common::core_client::CoreClientReadOnly;
 use product_common::network_name::NetworkName;
-use product_common::package_registry::{Env, Metadata};
+use product_common::package_registry::{Env};
 use serde::de::DeserializeOwned;
 
 use super::network_id;
@@ -162,7 +162,7 @@ impl NotarizationClientReadOnly {
         // Use the passed pkg_id to add a new env or override the information of an existing one.
         {
             let mut registry = package::notarization_package_registry_mut().await;
-            registry.insert_env(Env::new(network.as_ref()), Metadata::from_package_id(package_id));
+            registry.insert_env(Env::new(network.as_ref()), vec![package_id]);
         }
 
         Self::new_internal(client, network).await
