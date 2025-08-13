@@ -4,8 +4,9 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
+use product_common::transaction::TransactionOutput;
 use examples::get_funded_client;
-use notarization::core::types::{NotarizationMethod, State, TimeLock};
+use notarization::core::types::{NotarizationMethod, OnChainNotarization, State, TimeLock};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -16,8 +17,12 @@ async fn main() -> Result<()> {
 
     println!("Creating a simple dynamic notarization without locks...");
 
-    // Create a simple dynamic notarization
-    let simple_notarization = notarization_client
+    // Create a simple dynamic notarization - we will not only store the returned OffchainNotarization,
+    // but also the response containing the transaction details.
+    let TransactionOutput::<OnChainNotarization> {
+        output: simple_notarization,
+        response
+    } = notarization_client
         .create_dynamic_notarization()
         .with_state(State::from_string(
             "Live document content".to_string(),
@@ -27,11 +32,14 @@ async fn main() -> Result<()> {
         .with_updatable_metadata("Initial metadata".to_string())
         .finish()
         .build_and_execute(&notarization_client)
-        .await?
-        .output;
+        .await?;
 
     println!("✅ Simple dynamic notarization created!");
     println!("ID: {:?}", simple_notarization.id);
+    
+    // Print the response details
+    println!("Response TX digest: {:?}", response.digest);
+    println!("Response timestamp [ms]: {:?}", response.timestamp_ms);
 
     // Calculate unlock time for transfer lock example
     let now_ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
