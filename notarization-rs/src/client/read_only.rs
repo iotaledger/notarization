@@ -329,7 +329,7 @@ impl NotarizationClientReadOnly {
                 metadata: state.metadata,
             })
         } else {
-            return Err(Error::InvalidArgument(format!("Unsupported state type: {type_str}")));
+            Err(Error::InvalidArgument(format!("Unsupported state type: {type_str}")))
         }
     }
 
