@@ -41,7 +41,8 @@ async fn main() -> Result<()> {
 
     println!(
         "✅ Locked notarization created successfully with TX digest \"{}\" at timestamp [ms]: {}!",
-        response.digest, response.timestamp_ms.unwrap_or_else(|| 0)
+        response.digest,
+        response.timestamp_ms.unwrap_or(0)
     );
     println!("Notarization ID: {:?}", locked_notarization.id);
     println!("Method: {:?}", locked_notarization.method);

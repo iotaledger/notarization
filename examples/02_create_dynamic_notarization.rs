@@ -21,7 +21,7 @@ async fn main() -> Result<()> {
     // OnChainNotarization later on, but also the response containing the transaction details.
     let TransactionOutput::<OnChainNotarization> {
         output: simple_notarization,
-        response
+        response,
     } = notarization_client
         .create_dynamic_notarization()
         .with_state(State::from_string(
@@ -36,7 +36,8 @@ async fn main() -> Result<()> {
 
     println!(
         "✅ Simple dynamic notarization created successfully with TX digest \"{}\" at timestamp [ms]: {}!",
-        response.digest, response.timestamp_ms.unwrap_or_else(|| 0)
+        response.digest,
+        response.timestamp_ms.unwrap_or(0)
     );
     println!("ID: {:?}", simple_notarization.id);
 
