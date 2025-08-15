@@ -19,7 +19,9 @@ export async function createDynamic(): Promise<void> {
 
     // create a new Dynamic Notarization
     console.log("Building a dynamic notarization with transferLock and publish it to the IOTA network");
-    const { output: notarization } = await notarizationClient
+    // Create a dynamic notarization with transferLock - we will not only access the returned OnChainNotarization
+    // later on, but also the returned IotaTransactionBlockResponse containing the transaction details.
+    const { output: notarization, response: response } = await notarizationClient
         .createDynamic()
         // Control the type of State data by choosing one of the `with...State` functions below.
         // Uncomment or comment the following lines to choose between string or byte State data.
@@ -33,7 +35,7 @@ export async function createDynamic(): Promise<void> {
         .finish()
         .buildAndExecute(notarizationClient);
 
-    console.log("\n✅ Successfully created a transfer locked Dynamic notarization!");
+    console.log(`✅ Transfer locked Dynamic notarization created successfully with TX digest ${response.digest}!`);
 
     // check some important properties of the received OnChainNotarization
     console.log("\n----------------------------------------------------");
