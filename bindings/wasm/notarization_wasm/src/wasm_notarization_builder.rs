@@ -50,19 +50,25 @@ impl WasmNotarizationBuilderLocked {
     /// Adds an immutable description to the notarization.
     ///
     /// # Arguments
-    /// * `description` - A string describing the notarization.
+    /// * `description` - A string describing the notarization, or null to skip.
     #[wasm_bindgen(js_name = withImmutableDescription)]
-    pub fn with_immutable_description(self, description: String) -> Self {
-        self.0.with_immutable_description(description).into()
+    pub fn with_immutable_description(self, description: Option<String>) -> Self {
+        match description {
+            Some(desc) => self.0.with_immutable_description(desc).into(),
+            None => self,
+        }
     }
 
     /// Adds updatable metadata to the notarization.
     ///
     /// # Arguments
-    /// * `metadata` - A string representing the metadata.
+    /// * `metadata` - A string representing the metadata, or null to skip.
     #[wasm_bindgen(js_name = withUpdatableMetadata)]
-    pub fn with_updatable_metadata(self, metadata: String) -> Self {
-        self.0.with_updatable_metadata(metadata).into()
+    pub fn with_updatable_metadata(self, metadata: Option<String>) -> Self {
+        match metadata {
+            Some(meta) => self.0.with_updatable_metadata(meta).into(),
+            None => self,
+        }
     }
 
     /// Creates a new locked notarization builder.
@@ -130,19 +136,25 @@ impl WasmNotarizationBuilderDynamic {
     /// Adds an immutable description to the notarization.
     ///
     /// # Arguments
-    /// * `description` - A string describing the notarization.
+    /// * `description` - A string describing the notarization, or null to skip.
     #[wasm_bindgen(js_name = withImmutableDescription)]
-    pub fn with_immutable_description(self, description: String) -> Self {
-        self.0.with_immutable_description(description).into()
+    pub fn with_immutable_description(self, description: Option<String>) -> Self {
+        match description {
+            Some(desc) => self.0.with_immutable_description(desc).into(),
+            None => self,
+        }
     }
 
     /// Adds updatable metadata to the notarization.
     ///
     /// # Arguments
-    /// * `metadata` - A string representing the metadata.
+    /// * `metadata` - A string representing the metadata, or null to skip.
     #[wasm_bindgen(js_name = withUpdatableMetadata)]
-    pub fn with_updatable_metadata(self, metadata: String) -> Self {
-        self.0.with_updatable_metadata(metadata).into()
+    pub fn with_updatable_metadata(self, metadata: Option<String>) -> Self {
+        match metadata {
+            Some(meta) => self.0.with_updatable_metadata(meta).into(),
+            None => self,
+        }
     }
 
     /// Creates a new dynamic notarization builder.
