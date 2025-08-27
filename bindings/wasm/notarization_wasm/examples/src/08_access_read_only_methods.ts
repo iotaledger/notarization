@@ -192,6 +192,11 @@ export async function accessReadOnlyMethods(): Promise<void> {
             String(lockedLockMetadata !== undefined).padEnd(11)
         } │`,
     );
+    console.log(
+        `│ Owner               │ ${String(onChainNotarization.owner).padEnd(11)} │ ${
+            String(lockedOnChainNotarization.owner).padEnd(11)
+        } │`,
+    );
     console.log("└─────────────────────┴─────────────┴─────────────┘");
 
     console.log("\n🎯 Key Points about Read-only Methods:");

@@ -49,6 +49,7 @@ async fn main() -> Result<()> {
     println!("Description: {:?}", locked_notarization.immutable_metadata.description);
     println!("Updatable metadata: {:?}", locked_notarization.updatable_metadata);
     println!("State version count: {}", locked_notarization.state_version_count);
+    println!("Owner: {:?}", locked_notarization.owner);
 
     // Verify the notarization method is locked
     assert_eq!(locked_notarization.method, NotarizationMethod::Locked);
