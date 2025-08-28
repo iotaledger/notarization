@@ -26,7 +26,7 @@ pub struct OnChainNotarization {
     pub state_version_count: u64,
     /// The method of the notarization.
     pub method: NotarizationMethod,
-    #[serde(skip)]
     /// The owner of the notarization.
+    #[serde(skip)]
     pub owner: IotaAddress,
 }
