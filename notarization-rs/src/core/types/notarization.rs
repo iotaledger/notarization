@@ -15,10 +15,16 @@ pub struct OnChainNotarization {
     /// The unique identifier of the notarization.
     pub id: UID,
     /// The state of the notarization.
+    ///
+    /// Dynamic notarizations can be updated anytime after creation
+    /// Locked notarizations are immutable after creation
     pub state: State,
     /// The immutable metadata of the notarization.
     pub immutable_metadata: ImmutableMetadata,
     /// The updatable metadata of the notarization.
+    ///
+    /// Dynamic notarizations can be updated anytime after creation
+    /// Locked notarizations are immutable after creation
     pub updatable_metadata: Option<String>,
     /// The timestamp of the last state change.
     pub last_state_change_at: u64,

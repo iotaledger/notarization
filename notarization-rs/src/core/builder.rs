@@ -69,6 +69,9 @@ pub struct NotarizationBuilder<M> {
     /// A permanent description set at creation
     pub immutable_description: Option<String>,
     /// Metadata that can be updated
+    ///
+    /// Dynamic notarizations can be updated anytime after creation
+    /// Locked notarizations are immutable after creation
     pub updatable_metadata: Option<String>,
     /// Time restriction for deletion (Locked only)
     pub delete_lock: Option<TimeLock>,
