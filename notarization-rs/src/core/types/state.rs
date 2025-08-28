@@ -66,6 +66,9 @@ pub struct State<T = Data> {
     /// The actual data being notarized
     pub data: T,
     /// Optional metadata describing the data
+    ///
+    /// Dynamic notarizations can be updated together with state data
+    /// Locked notarizations are immutable after creation
     #[serde(default)]
     pub metadata: Option<String>,
 }
