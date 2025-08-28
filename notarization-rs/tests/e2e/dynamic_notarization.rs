@@ -5,7 +5,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use iota_sdk::types::base_types::IotaAddress;
 use notarization::core::types::{NotarizationMethod, State, TimeLock};
-use product_common::core_client::CoreClientReadOnly;
+use product_common::core_client::{CoreClient, CoreClientReadOnly};
 
 use crate::client::get_funded_test_client;
 
@@ -30,6 +30,7 @@ async fn create_simple_dynamic_notarization_works() -> anyhow::Result<()> {
     assert_eq!(onchain_notarization.updatable_metadata, None);
     assert_eq!(onchain_notarization.state_version_count, 0);
     assert_eq!(onchain_notarization.method, NotarizationMethod::Dynamic);
+    assert_eq!(onchain_notarization.owner, test_client.sender_address());
     Ok(())
 }
 

@@ -203,6 +203,10 @@ async fn main() -> Result<()> {
         lock_metadata.is_some(),
         locked_lock_metadata.is_some()
     );
+    println!(
+        "│ Owner               │ {:11} │ {:11} │",
+        on_chain_notarization.owner, whole_locked_notarization.owner
+    );
     println!("└─────────────────────┴─────────────┴─────────────┘");
 
     println!("\n🎯 Key Points about Read-only Methods:");
