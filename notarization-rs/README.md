@@ -50,11 +50,12 @@ setter functions (The used terms can be found in the [glossary below](#glossary)
 - Initial State consisting of `Stored Data` and `State Metadata` that will be used to define the first version of the
   Notarization state.
 - Optional `Immutable Description`
-- Optional `Updateable Metadata`
+- Optional `Updatable Metadata` (dynamic: always updatable; locked: immutable)
 - An optional boolean indicator if the Notarization shall be transferable
 
-After the Notarization has been created, it can be updated using the `Notarization::update_state()` function and can be
+After a **dynamic** Notarization has been created, it can be updated using the `Notarization::update_state()` function and can be
 destroyed using `Notarization::destroy()`.
+**Locked** notarizations are immutable after creation.
 
 #### Creating a new Dynamic Notarization on the Ledger
 
@@ -192,8 +193,8 @@ As the `Latest State` of a _Locked Notarization_ can not be updated the lifecycl
   abject has been created.
 - `Creation Timestamp`: Indicates when the `Ledger Object` was initially created.
 - `Immutable Metadata`: Consists of the `Immutable Description` and `Creation Timestamp`.
-- `Updateable Metadata`: An arbitrary informational String that can be updated at any time by the `Prover` independently
-  from the `Latest State`. Can be used to provide additional useful information that are subject to change from time to
+- `Updatable Metadata`: An arbitrary informational String that can be updated at any time by the `Prover` independently
+  from the `Latest State` (dynamic notarizations only; locked notarizations are immutable). Can be used to provide additional useful information that are subject to change from time to
   time.
 - `State Version Count`: Numerical value incremented with each update of the `Latest State`.
 - `Last State Change Time`: Indicates when the `Latest State` has been updated the last time.
