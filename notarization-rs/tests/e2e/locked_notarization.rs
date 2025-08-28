@@ -34,6 +34,7 @@ async fn create_simple_locked_notarization_works() -> anyhow::Result<()> {
     assert_eq!(onchain_notarization.updatable_metadata, None);
     assert_eq!(onchain_notarization.state_version_count, 0);
     assert_eq!(onchain_notarization.method, NotarizationMethod::Locked);
+    assert_eq!(onchain_notarization.owner, test_client.sender_address());
     Ok(())
 }
 
