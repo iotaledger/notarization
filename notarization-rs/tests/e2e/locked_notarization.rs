@@ -5,7 +5,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use iota_sdk::types::base_types::IotaAddress;
 use notarization::core::types::{NotarizationMethod, State, TimeLock};
-use product_common::core_client::CoreClientReadOnly;
+use product_common::core_client::{CoreClient, CoreClientReadOnly};
 
 use crate::client::get_funded_test_client;
 
@@ -34,6 +34,7 @@ async fn create_simple_locked_notarization_works() -> anyhow::Result<()> {
     assert_eq!(onchain_notarization.updatable_metadata, None);
     assert_eq!(onchain_notarization.state_version_count, 0);
     assert_eq!(onchain_notarization.method, NotarizationMethod::Locked);
+    assert_eq!(onchain_notarization.owner, test_client.sender_address());
     Ok(())
 }
 
@@ -444,6 +445,28 @@ async fn test_locked_notarization_different_delete_lock_times() -> anyhow::Resul
 
     assert!(short_lock_metadata.is_some());
     assert!(long_lock_metadata.is_some());
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_notarization_owner() -> anyhow::Result<()> {
+    let test_client = get_funded_test_client().await?;
+
+    let initial_owner = test_client.sender_address();
+
+    let notarization_id = test_client
+        .create_locked_notarization()
+        .with_state(State::from_string("test_state".to_string(), None))
+        .with_delete_lock(TimeLock::None)
+        .finish()?
+        .build_and_execute(&test_client)
+        .await?
+        .output
+        .id;
+
+    let notarization = test_client.get_notarization_by_id(*notarization_id.object_id()).await?;
+    assert_eq!(notarization.owner, initial_owner);
 
     Ok(())
 }
