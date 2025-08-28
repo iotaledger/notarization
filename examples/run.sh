@@ -23,6 +23,8 @@ examples=(
     "06_update_metadata"
     "07_transfer_dynamic_notarization"
     "08_access_read_only_methods"
+    "legal_contract"
+    "iot_weather_station"
 )
 
 for example in "${examples[@]}"; do

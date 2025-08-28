@@ -73,6 +73,15 @@ The following examples are available:
 | [07_transfer_notarization](https://github.com/iotaledger/notarization/tree/main/bindings/wasm/notarization_wasm/examples/src/07_transfer_notarization.ts)       | Demonstrates how to transfer a dynamic Notarization and transferring a locked Notarization will fail. |
 | [08_access_read_only_methods](https://github.com/iotaledger/notarization/tree/main/bindings/wasm/notarization_wasm/examples/src/08_access_read_only_methods.ts) | Demonstrates read-only methods for notarization inspection.                                           |
 
+## Real-World Examples
+
+The following examples demonstrate practical use cases with proper field usage:
+
+| Name                                                                                                                                                       | Information                                                                        |
+| :--------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------- |
+| [iot_weather_station](https://github.com/iotaledger/notarization/tree/main/bindings/wasm/notarization_wasm/examples/src/real-world/iot_weather_station.ts) | IoT weather station using dynamic notarization for continuous sensor data updates. |
+| [legal_contract](https://github.com/iotaledger/notarization/tree/main/bindings/wasm/notarization_wasm/examples/src/real-world/legal_contract.ts)           | Legal contract using locked notarization for immutable document hash attestation.  |
+
 <!--
 
 ## Browser

@@ -53,6 +53,15 @@ The following basic CRUD (Create, Read, Update, Delete) examples are available:
 | [07_transfer_dynamic_notarization](https://github.com/iotaledger/notarization/tree/main/examples/07_transfer_dynamic_notarization.rs) | Demonstrates transfer scenarios for different notarization types and lock states. |
 | [08_access_read_only_methods](https://github.com/iotaledger/notarization/tree/main/examples/08_access_read_only_methods.rs)           | Comprehensive demonstration of all read-only inspection methods.                  |
 
+## Real-World Examples
+
+The following examples demonstrate practical use cases with proper field usage:
+
+| Name                                                                                                                   | Information                                                                        |
+| :--------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------- |
+| [iot_weather_station](https://github.com/iotaledger/notarization/tree/main/examples/real-world/iot_weather_station.rs) | IoT weather station using dynamic notarization for continuous sensor data updates. |
+| [legal_contract](https://github.com/iotaledger/notarization/tree/main/examples/real-world/legal_contract.rs)           | Legal contract using locked notarization for immutable document hash attestation.  |
+
 ## Notarization Types
 
 ### Dynamic Notarizations
