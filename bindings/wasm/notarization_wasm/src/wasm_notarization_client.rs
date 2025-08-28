@@ -169,7 +169,11 @@ impl WasmNotarizationClient {
     /// # Returns
     /// A `TransactionBuilder` to build and execute the transaction.
     #[wasm_bindgen(js_name = updateMetadata)]
-    pub fn update_metadata(&self, metadata: Option<String>, notarization_id: WasmObjectID) -> Result<WasmTransactionBuilder> {
+    pub fn update_metadata(
+        &self,
+        metadata: Option<String>,
+        notarization_id: WasmObjectID,
+    ) -> Result<WasmTransactionBuilder> {
         let notarization_id = parse_wasm_object_id(&notarization_id)?;
         let tx = self.0.update_metadata(metadata, notarization_id).into_inner();
         Ok(into_transaction_builder(WasmUpdateMetadata(tx)))
@@ -205,7 +209,10 @@ impl WasmNotarizationClient {
     ) -> Result<WasmTransactionBuilder> {
         let notarization_id = parse_wasm_object_id(&notarization_id)?;
         let recipient_address = parse_wasm_iota_address(&recipient)?;
-        let tx = self.0.transfer_notarization(notarization_id, recipient_address).into_inner();
+        let tx = self
+            .0
+            .transfer_notarization(notarization_id, recipient_address)
+            .into_inner();
         Ok(into_transaction_builder(WasmTransferNotarization(tx)))
     }
 }
