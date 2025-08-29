@@ -77,6 +77,14 @@ impl From<WasmData> for Data {
 /// State encapsulates the data being notarized along with optional metadata.
 /// It serves as the primary content container for both locked and dynamic
 /// notarizations.
+///
+/// The notarization `State` can be updated by the owner depending on the used `NotarizationMethod`:
+/// - Dynamic: `data` and `metadata` of the `State` can be updated anytime after creation
+/// - Locked: The `State` is immutable after notarization creation
+///
+/// `State` `data` and `metadata` can only be updated at once, using method `NotarizationClient::updateState()`
+/// which will increase the `stateVersionCount` and update the `lastStateChangeAt`
+/// timestamp of the notarization even if only the `metadata` are altered.
 #[wasm_bindgen(js_name = State, inspectable)]
 pub struct WasmState(pub(crate) State);
 
