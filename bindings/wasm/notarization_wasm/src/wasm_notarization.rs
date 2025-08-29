@@ -1,6 +1,8 @@
 // Copyright 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+use std::str::FromStr;
+
 use iota_interaction_ts::bindings::{WasmIotaTransactionBlockEffects, WasmIotaTransactionBlockEvents};
 use iota_interaction_ts::core_client::WasmCoreClientReadOnly;
 use iota_interaction_ts::wasm_error::Result;
@@ -98,6 +100,16 @@ impl WasmOnChainNotarization {
     #[wasm_bindgen(getter)]
     pub fn method(&self) -> WasmNotarizationMethod {
         self.0.method.clone().into()
+    }
+
+    /// Retrieves the owner address of the notarization.
+    ///
+    /// # Returns
+    /// An `IotaAddress` object representing the owner address.
+    #[wasm_bindgen(getter)]
+    pub fn owner(&self) -> WasmIotaAddress {
+        WasmIotaAddress::from_str(&self.0.owner.to_string())
+            .expect("Invalid address stored on-chain, this should never happen")
     }
 }
 

@@ -1,6 +1,7 @@
 // Copyright 2020-2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::id::UID;
 use serde::{Deserialize, Serialize};
 
@@ -25,4 +26,7 @@ pub struct OnChainNotarization {
     pub state_version_count: u64,
     /// The method of the notarization.
     pub method: NotarizationMethod,
+    /// The owner of the notarization.
+    #[serde(skip)]
+    pub owner: IotaAddress,
 }
