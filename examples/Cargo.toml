@@ -41,12 +41,12 @@ name = "08_access_read_only_methods"
 path = "08_access_read_only_methods.rs"
 
 [[example]]
-name = "legal_contract"
-path = "real-world/legal_contract.rs"
+name = "01_iot_weather_station"
+path = "real-world/01_iot_weather_station.rs"
 
 [[example]]
-name = "iot_weather_station"
-path = "real-world/iot_weather_station.rs"
+name = "02_legal_contract"
+path = "real-world/02_legal_contract.rs"
 
 [dependencies]
 anyhow.workspace = true

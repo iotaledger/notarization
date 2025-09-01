@@ -18,7 +18,7 @@
  * a clear separation of concerns between different types of data.
  */
 
-import { State, TimeLock } from "@iota/notarization/node";
+import { OnChainNotarization, State, TimeLock } from "@iota/notarization/node";
 import { strict as assert } from "assert";
 import { getFundedClient } from "../util";
 
@@ -158,7 +158,7 @@ export async function iotWeatherStation(): Promise<void> {
 }
 
 /** Helper function to display weather data in a structured format */
-function displayWeatherData(title: string, notarization: any): void {
+function displayWeatherData(title: string, notarization: OnChainNotarization): void {
     console.log(`📋 ${title}`);
     console.log("─────────────────");
 
@@ -186,7 +186,7 @@ function displayWeatherData(title: string, notarization: any): void {
 
         console.log(
             `🔢 Version: ${notarization.stateVersionCount} | 🕐 Updated: ${
-                formatTimestamp(Math.floor(notarization.lastStateChangeAt / 1000))
+                formatTimestamp(Math.floor(Number(notarization.lastStateChangeAt) / 1000))
             }`,
         );
     } catch (error) {

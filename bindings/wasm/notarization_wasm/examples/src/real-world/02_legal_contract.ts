@@ -18,7 +18,7 @@
  * including the "updatable_metadata" field name which is historical.
  */
 
-import { State, TimeLock } from "@iota/notarization/node";
+import { OnChainNotarization, State, TimeLock } from "@iota/notarization/node";
 import { createHash } from "crypto";
 import { getFundedClient } from "../util";
 
@@ -194,7 +194,7 @@ Date: January 28, 2025
 }
 
 /** Helper function to display contract details in a structured format */
-function displayContractDetails(notarization: any): void {
+function displayContractDetails(notarization: OnChainNotarization): void {
     console.log("\n📋 Contract Notarization Details");
     console.log("─────────────────────────────────");
 
@@ -223,7 +223,9 @@ function displayContractDetails(notarization: any): void {
             console.log(`📁 Administrative: ${notarization.updatableMetadata}`);
         }
 
-        console.log(`🕐 Created: ${formatTimestamp(Math.floor(notarization.immutableMetadata.createdAt / 1000))}`);
+        console.log(
+            `🕐 Created: ${formatTimestamp(Math.floor(Number(notarization.immutableMetadata.createdAt) / 1000))}`,
+        );
         console.log(`🔢 Version: ${notarization.stateVersionCount} (will never change for locked notarizations)`);
 
         // Display lock information
