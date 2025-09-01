@@ -49,7 +49,7 @@ impl WasmOnChainNotarization {
 
     /// Retrieves the current `state` of the notarization.
     ///
-    /// The `state` of a notarization contains the notarized data and meatadata associated with
+    /// The `state` of a notarization contains the notarized data and metadata associated with
     /// the current version of the `state`.
     ///
     /// `state` can be updated depending on the used `NotarizationMethod`:
@@ -104,7 +104,7 @@ impl WasmOnChainNotarization {
     ///
     /// # Returns
     /// A `number` value representing the timestamp,
-    /// the time in seconds since the Unix epoch.
+    /// the time in milliseconds since UNIX epoch.
     #[wasm_bindgen(js_name = lastStateChangeAt, getter)]
     pub fn last_state_change_at(&self) -> u64 {
         self.0.last_state_change_at

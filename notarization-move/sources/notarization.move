@@ -365,6 +365,8 @@ public(package) fun transfer_notarization<D: store + drop + copy>(
 /// - does not affect the state version count or the `last_state_change_at` timestamp
 /// - will fail if the `Notarization` uses `NotarizationMethod::Locked` or is update-locked
 ///   (`Notarization::is_update_locked()` is true) by other means
+/// - Only the `updatable_metadata` can be changed; the `immutable_metadata::description`
+///   remains fixed
 public fun update_metadata<D: store + drop + copy>(
     self: &mut Notarization<D>,
     new_metadata: Option<String>,
