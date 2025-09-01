@@ -1,6 +1,6 @@
 [package]
 name = "notarization_wasm"
-version = "0.1.3-alpha"
+version = "0.1.4-alpha"
 authors = ["IOTA Stiftung"]
 edition = "2021"
 homepage = "https://www.iota.org"
