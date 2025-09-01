@@ -38,8 +38,7 @@ async fn main() -> Result<()> {
     let initial_reading = json!({
         "temperature_celsius": 16.2,
         "humidity_percent": 65.0,
-        "pressure_hpa": 1013.25,
-        "timestamp": now
+        "pressure_hpa": 1013.25
     });
 
     let initial_metadata = format!(
@@ -94,8 +93,7 @@ async fn main() -> Result<()> {
         let new_reading = json!({
             "temperature_celsius": temp,
             "humidity_percent": humidity,
-            "pressure_hpa": pressure,
-            "timestamp": timestamp
+            "pressure_hpa": pressure
         });
 
         let new_metadata = format!(
