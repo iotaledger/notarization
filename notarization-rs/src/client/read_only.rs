@@ -251,7 +251,10 @@ impl NotarizationClientReadOnly {
 
     /// Retrieves the `updatable_metadata` of a notarization object by its `object_id`.
     ///
-    /// This metadata is an optional string that can be updated after creation.
+    /// This metadata is an optional string.
+    ///
+    /// Dynamic notarizations can be updated anytime after creation
+    /// Locked notarizations are immutable after creation
     ///
     /// # Arguments
     ///

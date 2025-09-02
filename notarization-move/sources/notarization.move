@@ -33,11 +33,17 @@ const ELockedNotarizationInvariants: u64 = 5;
 /// A unified notarization type that can be either dynamic or locked
 public struct Notarization<D: store + drop + copy> has key {
     id: UID,
-    /// The state of the `Notarization` that can be updated
+    /// The state of the `Notarization`
+    ///
+    /// Dynamic notarizations can be updated anytime after creation
+    /// Locked notarizations are immutable after creation
     state: State<D>,
     /// Variant-specific metadata
     immutable_metadata: ImmutableMetadata,
     /// Provides context or additional information for third parties
+    ///
+    /// Dynamic notarizations can be updated anytime after creation
+    /// Locked notarizations are immutable after creation
     updatable_metadata: Option<String>,
     /// Timestamp of the last state change
     last_state_change_at: u64,
@@ -78,7 +84,10 @@ public struct LockMetadata has store {
 public struct State<D: store + drop + copy> has copy, drop, store {
     /// The data being notarized
     data: D,
-    /// Mutable metadata that can be updated together with the state data
+    /// State-associated metadata
+    ///
+    /// Dynamic notarizations can be updated together with the state data
+    /// Locked notarizations are immutable after creation
     metadata: Option<String>,
 }
 
