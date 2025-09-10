@@ -1,4 +1,4 @@
-![banner](https://github.com/iotaledger/notarization/raw/HEAD/.github/notarization.svg)
+![banner](https://github.com/iotaledger/notarization/raw/HEAD/.github/banner_notarization.png)
 
 ## IOTA Notarization Examples
 
