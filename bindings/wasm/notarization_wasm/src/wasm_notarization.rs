@@ -69,8 +69,7 @@ impl WasmOnChainNotarization {
     ///
     /// NOTE:
     /// - provides immutable information, assertions and guaranties for third parties
-    /// - `immutableMetadata` are automatically created at creation time
-    ///    and cannot be updated thereafter
+    /// - `immutableMetadata` are automatically created at creation time and cannot be updated thereafter
     ///
     /// # Returns
     /// An `ImmutableMetadata` object containing the metadata.

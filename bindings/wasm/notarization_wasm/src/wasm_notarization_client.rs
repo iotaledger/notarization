@@ -175,8 +175,7 @@ impl WasmNotarizationClient {
     /// NOTE:
     /// - does not affect the `stateVersionCount` or the `lastStateChangeAt` timestamp
     /// - will fail if the notarization uses the `NotarizationMethod::Locked`
-    /// - Only the `updatableMetadata` can be changed; the `immutableMetadata::description`
-    ///   remains fixed
+    /// - Only the `updatableMetadata` can be changed; the `immutableMetadata::description` remains fixed
     /// # Arguments
     /// * `metadata` - The new metadata to update (optional).
     /// * `notarization_id` - The ID of the notarization object.
