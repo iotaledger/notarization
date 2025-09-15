@@ -217,14 +217,20 @@ where
 {
     /// Updates the state of a notarization.
     ///
-    /// This increments the version counter and updates the last modified timestamp.
+    /// **Important**: The `state` can only  be updated depending on the used `NotarizationMethod`:
+    /// - Dynamic: Can be updated anytime after notarization creation
+    /// - Locked: Immutable after notarization creation
     ///
-    /// **Important**: Only works on dynamic notarizations. Locked notarizations
-    /// are immutable after creation.
+    /// Using this function will:
+    /// - set the `state` to the `new_state`
+    /// - increase the `state_version_count` by 1
+    /// - set the `last_state_change_at` timestamp to the current clock timestamp in milliseconds
+    /// - emits a `NotarizationUpdated` Move event in case of success
+    /// - fail if the notarization uses `NotarizationMethod::Locked`
     ///
     /// ## Parameters
     ///
-    /// - `state`: The new state to set
+    /// - `new_state`: The new state to set
     /// - `notarization_id`: The ID of the notarization to update
     ///
     /// ## Example
@@ -246,8 +252,8 @@ where
     /// ```
     ///
     /// Returns a [`TransactionBuilder`]. See [module docs](self) for transaction flow.
-    pub fn update_state(&self, state: State, notarization_id: ObjectID) -> TransactionBuilder<UpdateState> {
-        TransactionBuilder::new(UpdateState::new(state, notarization_id))
+    pub fn update_state(&self, new_state: State, notarization_id: ObjectID) -> TransactionBuilder<UpdateState> {
+        TransactionBuilder::new(UpdateState::new(new_state, notarization_id))
     }
 
     /// Destroys a notarization permanently.
@@ -279,11 +285,16 @@ where
 
     /// Updates the metadata of a notarization.
     ///
-    /// Only the updatable metadata can be changed; the immutable description
-    /// remains fixed.
+    /// **Important**: The `updatable_metadata` can only be updated depending on the used
+    /// `NotarizationMethod`:
+    /// - Dynamic: Can be updated anytime after notarization creation
+    /// - Locked: Immutable after notarization creation
     ///
-    /// **Important**: Only works on dynamic notarizations. Locked notarizations
-    /// are immutable after creation.
+    /// NOTE:
+    /// - does not affect the `state_version_count` or the `last_state_change_at` timestamp
+    /// - will fail if the notarization uses the `NotarizationMethod::Locked`
+    /// - Only the `updatable_metadata` can be changed; the `immutable_metadata::description`
+    ///   remains fixed
     ///
     /// ## Parameters
     ///
