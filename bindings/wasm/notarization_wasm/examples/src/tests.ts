@@ -9,6 +9,8 @@ import { updateState } from "./05_update_state";
 import { updateMetadata } from "./06_update_metadata";
 import { transferNotarization } from "./07_transfer_notarization";
 import { accessReadOnlyMethods } from "./08_access_read_only_methods";
+import { iotWeatherStation } from "./real-world/01_iot_weather_station";
+import { legalContract } from "./real-world/02_legal_contract";
 
 import { afterEach } from "mocha";
 
@@ -42,5 +44,11 @@ describe("Test node examples", function() {
     });
     it("Should access ReadOnlyMethods", async () => {
         await accessReadOnlyMethods();
+    });
+    it("Should run iotWeatherStation example", async () => {
+        await iotWeatherStation();
+    });
+    it("Should run legalContract example", async () => {
+        await legalContract();
     });
 });

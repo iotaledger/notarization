@@ -1,48 +1,59 @@
 [package]
 name = "examples"
-version = "0.1.3-alpha"
+version = "0.1.4-alpha"
 authors = ["IOTA Stiftung"]
 edition = "2024"
 publish = false
-
-[dependencies]
-anyhow.workspace = true
-iota-sdk = { workspace = true }
-notarization = { path = "../notarization-rs" }
-product_common = { workspace = true, features = ["core-client", "transaction", "test-utils"] }
-tokio = { workspace = true }
 
 [lib]
 path = "utils/utils.rs"
 
 [[example]]
-path = "01_create_locked_notarization.rs"
 name = "01_create_locked_notarization"
+path = "01_create_locked_notarization.rs"
 
 [[example]]
-path = "02_create_dynamic_notarization.rs"
 name = "02_create_dynamic_notarization"
+path = "02_create_dynamic_notarization.rs"
 
 [[example]]
-path = "03_update_dynamic_notarization.rs"
 name = "03_update_dynamic_notarization"
+path = "03_update_dynamic_notarization.rs"
 
 [[example]]
-path = "04_destroy_notarization.rs"
 name = "04_destroy_notarization"
+path = "04_destroy_notarization.rs"
 
 [[example]]
-path = "05_update_state.rs"
 name = "05_update_state"
+path = "05_update_state.rs"
 
 [[example]]
-path = "06_update_metadata.rs"
 name = "06_update_metadata"
+path = "06_update_metadata.rs"
 
 [[example]]
-path = "07_transfer_dynamic_notarization.rs"
 name = "07_transfer_dynamic_notarization"
+path = "07_transfer_dynamic_notarization.rs"
 
 [[example]]
-path = "08_access_read_only_methods.rs"
 name = "08_access_read_only_methods"
+path = "08_access_read_only_methods.rs"
+
+[[example]]
+name = "01_iot_weather_station"
+path = "real-world/01_iot_weather_station.rs"
+
+[[example]]
+name = "02_legal_contract"
+path = "real-world/02_legal_contract.rs"
+
+[dependencies]
+anyhow.workspace = true
+chrono = { workspace = true }
+iota-sdk = { workspace = true }
+notarization = { path = "../notarization-rs" }
+product_common = { workspace = true, features = ["core-client", "test-utils", "transaction"] }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+tokio = { workspace = true }

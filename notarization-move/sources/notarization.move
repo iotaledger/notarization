@@ -92,6 +92,19 @@ public struct LockMetadata has store {
     transfer_lock: TimeLock,
 }
 
+// ===== Getter Functions =====
+public fun update_lock(self: &LockMetadata): &TimeLock {
+    &self.update_lock
+}
+
+public fun delete_lock(self: &LockMetadata): &TimeLock {
+    &self.delete_lock
+}
+
+public fun transfer_lock(self: &LockMetadata): &TimeLock {
+    &self.transfer_lock
+}
+
 // ===== Notarization State =====
 /// Represents the state of a `Notarization` containing the notarized `data` and its `metadata`
 ///
@@ -109,6 +122,14 @@ public struct State<D: store + drop + copy> has copy, drop, store {
     metadata: Option<String>,
 }
 
+// ===== Getter Functions =====
+public fun data<D: store + drop + copy>(self: &State<D>): &D {
+    &self.data
+}
+
+public fun metadata<D: store + drop + copy>(self: &State<D>): &Option<String> {
+    &self.metadata
+}
 
 // ===== Event Types =====
 /// Event emitted when the `state` of a `Notarization` is updated
