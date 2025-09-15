@@ -47,7 +47,16 @@ impl WasmOnChainNotarization {
         self.0.id.id.bytes.to_hex()
     }
 
-    /// Retrieves the current state of the notarization.
+    /// Retrieves the current `state` of the notarization.
+    ///
+    /// The `state` of a notarization contains the notarized data and metadata associated with
+    /// the current version of the `state`.
+    ///
+    /// `state` can be updated depending on the used `NotarizationMethod`:
+    /// - Dynamic: Can be updated anytime after notarization creation
+    /// - Locked: Immutable after notarization creation
+    ///
+    /// Use `NotarizationClient::updateState()` for `state` updates.
     ///
     /// # Returns
     /// A `State` object representing the notarization state.
@@ -58,14 +67,30 @@ impl WasmOnChainNotarization {
 
     /// Retrieves the immutable metadata of the notarization.
     ///
+    /// NOTE:
+    /// - provides immutable information, assertions and guaranties for third parties
+    /// - `immutableMetadata` are automatically created at creation time and cannot be updated thereafter
+    ///
     /// # Returns
-    /// A `ImmutableMetadata` object containing the metadata.
+    /// An `ImmutableMetadata` object containing the metadata.
     #[wasm_bindgen(js_name = immutableMetadata, getter)]
     pub fn immutable_metadata(&self) -> WasmImmutableMetadata {
         WasmImmutableMetadata(self.0.immutable_metadata.clone())
     }
 
     /// Retrieves the updatable metadata of the notarization.
+    ///
+    /// Provides context or additional information for third parties
+    ///
+    /// `updatableMetadata` can be updated depending on the used `NotarizationMethod`:
+    /// - Dynamic: Can be updated anytime after notarization creation
+    /// - Locked: Immutable after notarization creation
+    ///
+    /// NOTE:
+    /// - `updatableMetadata` can be updated independently of `state`
+    /// - Updating `updatableMetadata` does not increase the `stateVersionCount`
+    /// - Updating `updatableMetadata` does not change the `lastStateChangeAt` timestamp
+    /// - Use `NotarizationClient::updateMetadata()` for `updatableMetadata` updates.
     ///
     /// # Returns
     /// An optional string containing the metadata.
@@ -78,7 +103,7 @@ impl WasmOnChainNotarization {
     ///
     /// # Returns
     /// A `number` value representing the timestamp,
-    /// the time in seconds since the Unix epoch.
+    /// the time in milliseconds since UNIX epoch.
     #[wasm_bindgen(js_name = lastStateChangeAt, getter)]
     pub fn last_state_change_at(&self) -> u64 {
         self.0.last_state_change_at
