@@ -29,8 +29,7 @@ pub struct OnChainNotarization {
     ///
     /// NOTE:
     /// - provides immutable information, assertions and guaranties for third parties
-    /// - `immutable_metadata` are automatically created at creation time
-    ///    and cannot be updated thereafter 
+    /// - `immutable_metadata` are automatically created at creation time and cannot be updated thereafter
     pub immutable_metadata: ImmutableMetadata,
     /// The updatable metadata of the notarization.
     ///

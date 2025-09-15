@@ -293,8 +293,7 @@ where
     /// NOTE:
     /// - does not affect the `state_version_count` or the `last_state_change_at` timestamp
     /// - will fail if the notarization uses the `NotarizationMethod::Locked`
-    /// - Only the `updatable_metadata` can be changed; the `immutable_metadata::description`
-    ///   remains fixed
+    /// - Only the `updatable_metadata` can be changed; the `immutable_metadata::description` remains fixed
     ///
     /// ## Parameters
     ///
