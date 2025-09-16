@@ -53,7 +53,7 @@ public fun create<D: store + drop + copy>(
     transfer_lock: TimeLock,
     clock: &Clock,
     ctx: &mut TxContext,
-) {
+): object::ID {
     // Use the core module to create and transfer the notarization
     let notarization = new(
         state,
@@ -68,6 +68,8 @@ public fun create<D: store + drop + copy>(
     event::emit(DynamicNotarizationCreated { notarization_id: id });
 
     notarization::transfer_notarization(notarization, tx_context::sender(ctx));
+
+    id
 }
 
 /// Transfer a dynamic notarization to a new owner
