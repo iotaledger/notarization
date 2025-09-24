@@ -55,3 +55,22 @@ pub struct OnChainNotarization {
     #[serde(skip)]
     pub owner: IotaAddress,
 }
+
+#[cfg(feature = "irl")]
+mod irl_integration {
+    use iota_caip::iota::IotaResourceLocator;
+    use product_common::network_name::NetworkName;
+
+    use super::OnChainNotarization;
+
+    impl OnChainNotarization {
+        /// Returns an IOTA Resource Locator (IRL) to the data stored within this notarization.
+        ///
+        /// The returned IRL will be in the form: `iota:<network alias or genesis digest>/<notarization id>/state/data`.
+        pub fn to_iota_resource_locator(&self, network: &NetworkName) -> IotaResourceLocator {
+            format!("iota:{network}/{}/state/data", self.id.object_id())
+                .parse()
+                .expect("valid IRL")
+        }
+    }
+}
