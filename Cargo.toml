@@ -15,11 +15,11 @@ exclude = ["bindings/wasm/notarization_wasm"]
 anyhow = "1.0"
 async-trait = "0.1"
 bcs = "0.1"
-iota-sdk = { git = "https://github.com/iotaledger/iota.git", package = "iota-sdk", tag = "v1.7.0-rc" }
-iota_interaction = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/iota-v1-7-0-rc-upstream-merge", default-features = false, package = "iota_interaction" }
-iota_interaction_rust = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/iota-v1-7-0-rc-upstream-merge", default-features = false, package = "iota_interaction_rust" }
-iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/iota-v1-7-0-rc-upstream-merge", default-features = false, package = "iota_interaction_ts" }
-product_common = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/iota-v1-7-0-rc-upstream-merge", default-features = false, package = "product_common" }
+iota-sdk = { git = "https://github.com/iotaledger/iota.git", package = "iota-sdk", tag = "v1.7.0" }
+iota_interaction = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.3", default-features = false, package = "iota_interaction" }
+iota_interaction_rust = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.3", default-features = false, package = "iota_interaction_rust" }
+iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.3", default-features = false, package = "iota_interaction_ts" }
+product_common = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.3", default-features = false, package = "product_common" }
 serde = { version = "1.0", default-features = false, features = ["alloc", "derive"] }
 serde_json = { version = "1.0", default-features = false }
 strum = { version = "0.27", default-features = false, features = ["std", "derive"] }
