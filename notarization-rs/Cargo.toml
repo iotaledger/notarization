@@ -16,12 +16,17 @@ anyhow.workspace = true
 async-trait.workspace = true
 bcs.workspace = true
 iota_interaction = { workspace = true, default-features = false }
-product_common = { workspace = true, default-features = false, features = ["transaction"] }
+product_common = { workspace = true, default-features = false, features = [
+  "transaction",
+] }
 secret-storage = { workspace = true, default-features = false }
 serde.workspace = true
 serde_json.workspace = true
 strum.workspace = true
 thiserror.workspace = true
+iota-caip = { git = "https://github.com/iotaledger/iota-caip.git", default-features = false, features = [
+  "iota",
+], optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 iota_interaction_rust = { workspace = true, default-features = false }
@@ -50,3 +55,5 @@ send-sync-storage = ["secret-storage/send-sync-storage"]
 gas-station = ["product_common/gas-station"]
 # Uses a default HTTP Client instead of a user-provided one.
 default-http-client = ["product_common/default-http-client"]
+# Enables the interaction with IOTA Resource Locators.
+irl = ["dep:iota-caip"]

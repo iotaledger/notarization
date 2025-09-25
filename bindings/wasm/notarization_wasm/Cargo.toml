@@ -44,7 +44,7 @@ features = ["core-client", "transaction", "bindings", "binding-utils", "gas-stat
 [dependencies.notarization]
 path = "../../../notarization-rs"
 default-features = false
-features = ["gas-station", "default-http-client"]
+features = ["gas-station", "default-http-client", "irl"]
 
 [target.'cfg(all(target_arch = "wasm32", not(target_os = "wasi")))'.dependencies]
 getrandom = { version = "0.3", default-features = false, features = ["wasm_js"] }

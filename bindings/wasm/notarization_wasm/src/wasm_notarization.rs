@@ -15,6 +15,7 @@ use product_common::bindings::utils::{
     apply_with_events, build_programmable_transaction, parse_wasm_iota_address, parse_wasm_object_id,
 };
 use product_common::bindings::{WasmIotaAddress, WasmObjectID};
+use product_common::network_name::NetworkName;
 use wasm_bindgen::prelude::*;
 
 use crate::wasm_notarization_builder::{WasmNotarizationBuilderDynamic, WasmNotarizationBuilderLocked};
@@ -135,6 +136,20 @@ impl WasmOnChainNotarization {
     pub fn owner(&self) -> WasmIotaAddress {
         WasmIotaAddress::from_str(&self.0.owner.to_string())
             .expect("Invalid address stored on-chain, this should never happen")
+    }
+
+    /// Returns an IOTA Resource Locator (IRL) to the data stored within
+    /// this notarization object.
+    /// 
+    /// The returned IRL will be in the form:
+    /// `iota:<network alias or genesis digest>/<notarization ID>/state/data`.
+    /// # Errors
+    /// Throws an error if the given `network` string is not a valid IOTA
+    /// network identifier.
+    #[wasm_bindgen(js_name = toIotaResourceLocator)]
+    pub fn to_iota_resource_locator(&self, network: &str) -> Result<String, JsError> {
+        let network = NetworkName::try_from(network)?;
+        Ok(self.0.to_iota_resource_locator(&network).to_string())
     }
 }
 
