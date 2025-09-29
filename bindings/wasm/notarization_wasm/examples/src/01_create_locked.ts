@@ -19,7 +19,9 @@ export async function createLocked(): Promise<void> {
 
     // create a new Locked Notarization
     console.log("Building a simple locked notarization and publish it to the IOTA network");
-    const { output: notarization } = await notarizationClient
+    // Create a locked notarization with state and delete lock - we will not only access the returned OnChainNotarization
+    // later on, but also the returned IotaTransactionBlockResponse containing the transaction details.
+    const { output: notarization, response: response } = await notarizationClient
         .createLocked()
         // Control the type of State data by choosing one of the `with...State` functions below.
         // Uncomment or comment the following lines to choose between string or byte State data.
@@ -36,7 +38,7 @@ export async function createLocked(): Promise<void> {
         .finish()
         .buildAndExecute(notarizationClient);
 
-    console.log("\n✅ Locked notarization created successfully!");
+    console.log(`✅ Locked notarization created successfully with TX digest ${response.digest}!`);
 
     // check some important properties of the received OnChainNotarization
     console.log("\n----------------------------------------------------");
@@ -52,7 +54,7 @@ export async function createLocked(): Promise<void> {
     console.log("Immutable locking metadata: ", notarization.immutableMetadata.locking);
     console.log("Updatable metadata: ", notarization.updatableMetadata);
     console.log("State version count: ", notarization.stateVersionCount);
-
+    console.log("Owner: ", notarization.owner);
     // This is what the complete OnChainNotarization looks like
     console.log("\n----------------------------------------------------");
     console.log("----- All Notarization Properties      -------------");

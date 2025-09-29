@@ -13,12 +13,12 @@ use async_trait::async_trait;
 use iota_interaction::rpc_types::{
     IotaData as _, IotaObjectDataOptions, IotaTransactionBlockEffects, IotaTransactionBlockEvents,
 };
-use iota_interaction::types::base_types::ObjectID;
+use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::object::Owner;
 use iota_interaction::types::transaction::ProgrammableTransaction;
 use iota_interaction::{IotaClientTrait, OptionalSend, OptionalSync};
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
-use serde::de::DeserializeOwned;
 use tokio::sync::OnceCell;
 
 use super::super::builder::NotarizationBuilder;
@@ -199,9 +199,11 @@ impl<M: Clone + OptionalSend + OptionalSync> Transaction for CreateNotarization<
             }
         };
 
-        let notarization = get_object_ref_by_id_with_bcs::<OnChainNotarization>(client, &notarization_id)
+        let (mut notarization, owner) = get_notarization_with_owner(client, &notarization_id)
             .await
             .map_err(|e| Error::ObjectLookup(e.to_string()))?;
+
+        notarization.owner = owner;
 
         Ok(notarization)
     }
@@ -214,18 +216,21 @@ impl<M: Clone + OptionalSend + OptionalSync> Transaction for CreateNotarization<
     }
 }
 
-pub(crate) async fn get_object_ref_by_id_with_bcs<T: DeserializeOwned>(
+/// A helper function to get the notarization with the owner.
+pub(crate) async fn get_notarization_with_owner(
     client: &impl CoreClientReadOnly,
     object_id: &ObjectID,
-) -> Result<T, Error> {
-    let notarization = client
+) -> Result<(OnChainNotarization, IotaAddress), Error> {
+    let data = client
         .client_adapter()
         .read_api()
-        .get_object_with_options(*object_id, IotaObjectDataOptions::bcs_lossless())
+        .get_object_with_options(*object_id, IotaObjectDataOptions::bcs_lossless().with_owner())
         .await
         .map_err(|err| Error::ObjectLookup(err.to_string()))?
         .data
-        .ok_or_else(|| Error::ObjectLookup("missing data in response".to_string()))?
+        .ok_or_else(|| Error::ObjectLookup("missing data in response".to_string()))?;
+
+    let notarization = data
         .bcs
         .ok_or_else(|| Error::ObjectLookup("missing object content in data".to_string()))?
         .try_into_move()
@@ -233,7 +238,19 @@ pub(crate) async fn get_object_ref_by_id_with_bcs<T: DeserializeOwned>(
         .deserialize()
         .map_err(|err| Error::ObjectLookup(err.to_string()))?;
 
-    Ok(notarization)
+    let owner = data
+        .owner
+        .ok_or_else(|| Error::ObjectLookup("missing owner in data".to_string()))?;
+
+    let address = match owner {
+        Owner::AddressOwner(address) => address,
+        Owner::ObjectOwner(address) => address,
+        Owner::Shared { .. } | Owner::Immutable => {
+            unreachable!("object is not owned by an address");
+        }
+    };
+
+    Ok((notarization, address))
 }
 
 #[cfg(test)]

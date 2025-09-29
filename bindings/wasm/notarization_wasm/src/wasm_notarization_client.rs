@@ -57,7 +57,7 @@ impl WasmNotarizationClient {
     /// Retrieves the sender's address.
     ///
     /// # Returns
-    /// The sender's address as a `IotaAddress`.
+    /// The sender's address as an `IotaAddress`.
     #[wasm_bindgen(js_name = senderAddress)]
     pub fn sender_address(&self) -> WasmIotaAddress {
         self.0.sender_address().to_string()
@@ -121,7 +121,7 @@ impl WasmNotarizationClient {
         WasmNotarizationClientReadOnly((*self.0).clone())
     }
 
-    /// Creates a dynamic notarization builder
+    /// Creates a notarization builder which can be used to create a dynamic notarization.
     ///
     /// # Returns
     /// A `NotarizationBuilderDynamic` instance.
@@ -130,7 +130,7 @@ impl WasmNotarizationClient {
         WasmNotarizationBuilderDynamic(self.0.create_dynamic_notarization())
     }
 
-    /// Creates a locked notarization builder.
+    /// Creates a notarization builder which can be used to create a locked notarization.
     ///
     /// # Returns
     /// A `NotarizationBuilderLocked` instance.
@@ -139,54 +139,78 @@ impl WasmNotarizationClient {
         WasmNotarizationBuilderLocked(self.0.create_locked_notarization())
     }
 
-    /// Creates a transaction to update the state of a dynamic notarization.
+    /// Creates a transaction to update the `state` of a notarization.
+    ///
+    /// **Important**: The `state` can only  be updated depending on the used `NotarizationMethod`:
+    /// - Dynamic: Can be updated anytime after notarization creation
+    /// - Locked: Immutable after notarization creation
+    ///
+    /// Using this function will:
+    /// - set the `state` to the `new_state`
+    /// - increase the `stateVersionCount` by 1
+    /// - set the `lastStateChangeAt` timestamp to the current clock  timestamp in milliseconds
+    /// - emits a `NotarizationUpdated` Move event in case of success
+    /// - fail if the notarization uses `NotarizationMethod` `Locked`
     ///
     /// # Arguments
-    /// * `state` - The new state to update.
-    /// * `object_id` - The ID of the dynamic notarization object.
+    /// * `new_state` - The new state to replace the current one.
+    /// * `notarization_id` - The ID of the notarization object.
     ///
     /// # Returns
     /// A `TransactionBuilder` to build and execute the transaction.
     #[wasm_bindgen(js_name = updateState)]
-    pub fn update_state(&self, state: WasmState, object_id: WasmObjectID) -> Result<WasmTransactionBuilder> {
-        let obj_id = parse_wasm_object_id(&object_id)?;
-        let tx = self.0.update_state(state.0, obj_id).into_inner();
+    pub fn update_state(&self, new_state: WasmState, notarization_id: WasmObjectID) -> Result<WasmTransactionBuilder> {
+        let notarization_id = parse_wasm_object_id(&notarization_id)?;
+        let tx = self.0.update_state(new_state.0, notarization_id).into_inner();
         Ok(into_transaction_builder(WasmUpdateState(tx)))
     }
 
     /// Creates a transaction to update the metadata of a notarization.
     ///
+    /// **Important**: The `updatableMetadata` can only be updated depending on the used
+    /// `NotarizationMethod`:
+    /// - Dynamic: Can be updated anytime after notarization creation
+    /// - Locked: Immutable after notarization creation
+    ///
+    /// NOTE:
+    /// - does not affect the `stateVersionCount` or the `lastStateChangeAt` timestamp
+    /// - will fail if the notarization uses the `NotarizationMethod::Locked`
+    /// - Only the `updatableMetadata` can be changed; the `immutableMetadata::description` remains fixed
     /// # Arguments
     /// * `metadata` - The new metadata to update (optional).
-    /// * `object_id` - The ID of the notarization object.
+    /// * `notarization_id` - The ID of the notarization object.
     ///
     /// # Returns
     /// A `TransactionBuilder` to build and execute the transaction.
     #[wasm_bindgen(js_name = updateMetadata)]
-    pub fn update_metadata(&self, metadata: Option<String>, object_id: WasmObjectID) -> Result<WasmTransactionBuilder> {
-        let obj_id = parse_wasm_object_id(&object_id)?;
-        let tx = self.0.update_metadata(metadata, obj_id).into_inner();
+    pub fn update_metadata(
+        &self,
+        metadata: Option<String>,
+        notarization_id: WasmObjectID,
+    ) -> Result<WasmTransactionBuilder> {
+        let notarization_id = parse_wasm_object_id(&notarization_id)?;
+        let tx = self.0.update_metadata(metadata, notarization_id).into_inner();
         Ok(into_transaction_builder(WasmUpdateMetadata(tx)))
     }
 
     /// Creates a transaction to destroy a notarization object on the ledger.
     ///
     /// # Arguments
-    /// * `object_id` - The ID of the notarization object to destroy.
+    /// * `notarization_id` - The ID of the notarization object to destroy.
     ///
     /// # Returns
     /// A `TransactionBuilder` to build and execute the transaction.
     #[wasm_bindgen(js_name = destroy)]
-    pub fn destroy_notarization(&self, object_id: WasmObjectID) -> Result<WasmTransactionBuilder> {
-        let obj_id = parse_wasm_object_id(&object_id)?;
-        let tx = self.0.destroy(obj_id).into_inner();
+    pub fn destroy_notarization(&self, notarization_id: WasmObjectID) -> Result<WasmTransactionBuilder> {
+        let notarization_id = parse_wasm_object_id(&notarization_id)?;
+        let tx = self.0.destroy(notarization_id).into_inner();
         Ok(into_transaction_builder(WasmDestroyNotarization(tx)))
     }
 
     /// Creates a transaction to transfer a notarization object to a new owner.
     ///
     /// # Arguments
-    /// * `object_id` - The ID of the notarization object to transfer.
+    /// * `notarization_id` - The ID of the notarization object to transfer.
     /// * `recipient` - The recipient's IOTA address.
     ///
     /// # Returns
@@ -194,12 +218,15 @@ impl WasmNotarizationClient {
     #[wasm_bindgen(js_name = transferNotarization)]
     pub fn transfer_notarization(
         &self,
-        object_id: WasmObjectID,
+        notarization_id: WasmObjectID,
         recipient: WasmIotaAddress,
     ) -> Result<WasmTransactionBuilder> {
-        let obj_id = parse_wasm_object_id(&object_id)?;
+        let notarization_id = parse_wasm_object_id(&notarization_id)?;
         let recipient_address = parse_wasm_iota_address(&recipient)?;
-        let tx = self.0.transfer_notarization(obj_id, recipient_address).into_inner();
+        let tx = self
+            .0
+            .transfer_notarization(notarization_id, recipient_address)
+            .into_inner();
         Ok(into_transaction_builder(WasmTransferNotarization(tx)))
     }
 }

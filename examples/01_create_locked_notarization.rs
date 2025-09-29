@@ -5,7 +5,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
 use examples::get_funded_client;
-use notarization::core::types::{NotarizationMethod, State, TimeLock};
+use notarization::core::types::{NotarizationMethod, OnChainNotarization, State, TimeLock};
+use product_common::transaction::TransactionOutput;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -20,8 +21,12 @@ async fn main() -> Result<()> {
 
     println!("Creating locked notarization with delete lock until: {unlock_at}");
 
-    // Create a locked notarization with state and delete lock
-    let locked_notarization = notarization_client
+    // Create a locked notarization with state and delete lock - we will not only access the returned
+    // OnChainNotarization later on, but also the response containing the transaction details.
+    let TransactionOutput::<OnChainNotarization> {
+        output: locked_notarization,
+        response,
+    } = notarization_client
         .create_locked_notarization()
         .with_state(State::from_string(
             "Important document content".to_string(),
@@ -32,15 +37,19 @@ async fn main() -> Result<()> {
         .with_delete_lock(TimeLock::UnlockAt(unlock_at as u32))
         .finish()?
         .build_and_execute(&notarization_client)
-        .await?
-        .output;
+        .await?;
 
-    println!("✅ Locked notarization created successfully!");
+    println!(
+        "✅ Locked notarization created successfully with TX digest \"{}\" at timestamp [ms]: {}!",
+        response.digest,
+        response.timestamp_ms.unwrap_or(0)
+    );
     println!("Notarization ID: {:?}", locked_notarization.id);
     println!("Method: {:?}", locked_notarization.method);
     println!("Description: {:?}", locked_notarization.immutable_metadata.description);
     println!("Updatable metadata: {:?}", locked_notarization.updatable_metadata);
     println!("State version count: {}", locked_notarization.state_version_count);
+    println!("Owner: {:?}", locked_notarization.owner);
 
     // Verify the notarization method is locked
     assert_eq!(locked_notarization.method, NotarizationMethod::Locked);

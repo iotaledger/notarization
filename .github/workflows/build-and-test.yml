@@ -102,6 +102,10 @@ jobs:
         }}
 
     steps:
+      - name: git configure long path
+        if: matrix.os == 'windows-latest'
+        run: git config --global core.longpaths true
+
       - uses: actions/checkout@v3
 
       - name: Ensure, OpenSSL is available in Windows
@@ -262,7 +266,6 @@ jobs:
         #run: npm run test:readme && npm run test:node
         run: npm run test:node
         working-directory: bindings/wasm/notarization_wasm
-
 #  test-wasm-browser:
 #    needs: build-wasm
 #    if: ${{ needs.check-for-run-condition.outputs.should-run == 'true' }}

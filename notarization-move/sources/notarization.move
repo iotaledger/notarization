@@ -33,17 +33,37 @@ const ELockedNotarizationInvariants: u64 = 5;
 /// A unified notarization type that can be either dynamic or locked
 public struct Notarization<D: store + drop + copy> has key {
     id: UID,
-    /// The state of the `Notarization` that can be updated
+    /// The state of the `Notarization` containing the notarized data
+    ///
+    /// `state` can be updated depending on the `NotarizationMethod`:
+    /// - Dynamic: Can be updated anytime after creation
+    /// - Locked: Immutable after creation
+    ///
+    /// Use `Notarization::update_state()` for `state` updates.
     state: State<D>,
-    /// Variant-specific metadata
+    /// Immutable metadata, defined at creation time
+    ///
+    /// Provides immutable information, assertions and guaranties for third parties.
+    /// `immutable_metadata` are automatically created at creation time
+    /// and cannot be updated thereafter.
     immutable_metadata: ImmutableMetadata,
     /// Provides context or additional information for third parties
+    ///
+    /// `updatable_metadata` can be updated depending on the `NotarizationMethod`:
+    /// - Dynamic: Can be updated anytime after creation
+    /// - Locked: Immutable after creation
+    ///
+    /// NOTE:
+    /// - `updatable_metadata` can be updated independently of `state`
+    /// - Updating `updatable_metadata` does not increase the `state_version_count`
+    /// - Updating `updatable_metadata` does not change the `last_state_change_at` timestamp
+    /// - Use `Notarization::update_metadata()` for `updatable_metadata` updates.
     updatable_metadata: Option<String>,
-    /// Timestamp of the last state change
+    /// Timestamp of the last `state` change (milliseconds since UNIX epoch)
     last_state_change_at: u64,
-    /// Counter for the number of state updates
+    /// Counter for the number of `state` updates
     state_version_count: u64,
-    /// Notarization Method
+    /// Notarization Method defining the overall behavior of the `Notarization`
     method: NotarizationMethod,
 }
 
@@ -72,18 +92,47 @@ public struct LockMetadata has store {
     transfer_lock: TimeLock,
 }
 
+// ===== Getter Functions =====
+public fun update_lock(self: &LockMetadata): &TimeLock {
+    &self.update_lock
+}
+
+public fun delete_lock(self: &LockMetadata): &TimeLock {
+    &self.delete_lock
+}
+
+public fun transfer_lock(self: &LockMetadata): &TimeLock {
+    &self.transfer_lock
+}
+
 // ===== Notarization State =====
-/// Represents the state of a Notarization that can be updated
-/// Contains arbitrary data and metadata that can be updated by the owner
+/// Represents the state of a `Notarization` containing the notarized `data` and its `metadata`
+///
+/// The `Notarization` `State` can be updated by the owner depending on the used `NotarizationMethod`:
+/// - Dynamic: `data` and `metadata` of the `State` can be updated anytime after creation
+/// - Locked: The `State` is immutable after `Notarization` creation
+///
+/// `State` `data` and `metadata` can only be updated at once, using method `Notarization::update_state()`
+/// which will increase the `Notarization` `state_version_count` and update the `last_state_change_at`
+/// timestamp even if only the `metadata` are altered.
 public struct State<D: store + drop + copy> has copy, drop, store {
     /// The data being notarized
     data: D,
-    /// Mutable metadata that can be updated together with the state data
+    /// State-associated metadata
     metadata: Option<String>,
 }
 
+// ===== Getter Functions =====
+public fun data<D: store + drop + copy>(self: &State<D>): &D {
+    &self.data
+}
+
+public fun metadata<D: store + drop + copy>(self: &State<D>): &Option<String> {
+    &self.metadata
+}
+
 // ===== Event Types =====
-/// Event emitted when the state of a `Notarization` is updated
+/// Event emitted when the `state` of a `Notarization` is updated
 public struct NotarizationUpdated<D: store + drop + copy> has copy, drop {
     /// ID of the `Notarization` object that was updated
     notarization_id: ID,
@@ -143,14 +192,14 @@ public fun new_lock_metadata(
     };
 
     // In the current implementation the combination of locks in LockMetadata
-    // is restricted by the method specific lock invariants which are guaranteed
+    // is restricted by the notarization-method specific lock invariants which are guaranteed
     // by function `assert_method_specific_invariants()` and the constructor functions
     // `new_locked_notarization()` and `new_dynamic_notarization()`.
     //
     // According to these invariants we don't need to handle the edge cases where
     // delete_lock.is_none() and other locks are `TimeLock::UnlockAt`.
     //
-    // These edge cases must be handled here, once new Notarization methods wil
+    // These edge cases must be handled here, once new notarization-methods will
     // be added in future versions of iota_notarization, having different invariants.
     //
     // To avoid malicious or at least very surprising behavior
@@ -257,6 +306,14 @@ public(package) fun new_locked_notarization<D: store + drop + copy>(
 
 // ===== State Management Functions =====
 /// Update the state of a `Notarization`
+///
+/// Using this function will:
+/// - set the `state` to the `new_state`
+/// - increase the `state_version_count` by 1
+/// - set the `last_state_change_at` timestamp to the current `clock::timestamp_ms`
+/// - emit a `NotarizationUpdated` event in case of success
+/// - fail if the `Notarization` uses `NotarizationMethod::Locked` or is update-locked
+///   (`Notarization::is_update_locked()` is true) by other means
 public fun update_state<D: store + drop + copy>(
     self: &mut Notarization<D>,
     new_state: State<D>,
@@ -324,7 +381,13 @@ public(package) fun transfer_notarization<D: store + drop + copy>(
 
 // ===== Metadata Management Functions =====
 /// Update the updatable metadata of a `Notarization`
-/// This does not affect the state version count
+///
+/// NOTE:
+/// - does not affect the state version count or the `last_state_change_at` timestamp
+/// - will fail if the `Notarization` uses `NotarizationMethod::Locked` or is update-locked
+///   (`Notarization::is_update_locked()` is true) by other means
+/// - Only the `updatable_metadata` can be changed; the `immutable_metadata::description`
+///   remains fixed
 public fun update_metadata<D: store + drop + copy>(
     self: &mut Notarization<D>,
     new_metadata: Option<String>,
