@@ -10,11 +10,13 @@ use notarization::core::builder::{Dynamic, Locked};
 use notarization::core::transactions::{
     CreateNotarization, DestroyNotarization, TransferNotarization, UpdateMetadata, UpdateState,
 };
+use notarization::core::types::irl_integration::NotarizationResourceBuilder;
 use notarization::core::types::OnChainNotarization;
 use product_common::bindings::utils::{
     apply_with_events, build_programmable_transaction, parse_wasm_iota_address, parse_wasm_object_id,
 };
 use product_common::bindings::{WasmIotaAddress, WasmObjectID};
+use product_common::network_name::NetworkName;
 use wasm_bindgen::prelude::*;
 
 use crate::wasm_notarization_builder::{WasmNotarizationBuilderDynamic, WasmNotarizationBuilderLocked};
@@ -136,12 +138,66 @@ impl WasmOnChainNotarization {
         WasmIotaAddress::from_str(&self.0.owner.to_string())
             .expect("Invalid address stored on-chain, this should never happen")
     }
+
+    /// Returns an IOTA Resource Locator (IRL) to the data stored within
+    /// this notarization object.
+    ///
+    /// The returned IRL will be in the form:
+    /// `iota:<network alias or genesis digest>/<notarization ID>/state/data`.
+    /// # Errors
+    /// Throws an error if the given `network` string is not a valid IOTA
+    /// network identifier.
+    #[wasm_bindgen(js_name = iotaResourceLocatorBuilder)]
+    pub fn iota_resource_locator_builder(
+        &self,
+        network: &str,
+    ) -> std::result::Result<WasmNotarizationResourceBuilder, JsError> {
+        let network_name = NetworkName::from_str(network)?;
+        Ok(WasmNotarizationResourceBuilder(
+            self.0.iota_resource_locator_builder(&network_name),
+        ))
+    }
 }
 
 // Converts an `OnChainNotarization` into a `WasmOnChainNotarization`.
 impl From<OnChainNotarization> for WasmOnChainNotarization {
     fn from(notarization: OnChainNotarization) -> Self {
         WasmOnChainNotarization::new(notarization)
+    }
+}
+
+/// A builder for creating IOTA Resource Locators (IRLs) pointing within a notarization.
+#[wasm_bindgen(js_name = NotarizationResourceBuilder)]
+pub struct WasmNotarizationResourceBuilder(NotarizationResourceBuilder);
+
+#[wasm_bindgen(js_class = NotarizationResourceBuilder)]
+impl WasmNotarizationResourceBuilder {
+    /// Returns an IRL referencing this {@link OnChainNotarization} state's data.
+    pub fn data(&self) -> String {
+        self.0.data().to_string()
+    }
+
+    /// Returns an IRL referencing this {@link OnChainNotarization}'s immutable metadata.
+    #[wasm_bindgen(js_name = immutableMetadata)]
+    pub fn immutable_metadata(&self) -> String {
+        self.0.immutable_metadata().to_string()
+    }
+
+    /// Returns an IRL referencing this {@link OnChainNotarization} state's metadata.
+    #[wasm_bindgen(js_name = stateMetadata)]
+    pub fn state_metadata(&self) -> String {
+        self.0.state_metadata().to_string()
+    }
+
+    /// Returns an IRL referencing this {@link OnChainNotarization}'s updatable metadata.
+    #[wasm_bindgen(js_name = updatableMetadata)]
+    pub fn updatable_metadata(&self) -> String {
+        self.0.updatable_metadata().to_string()
+    }
+
+    /// Returns an IRL referencing this {@link OnChainNotarization}'s owner.
+    pub fn owner(&self) -> String {
+        self.0.owner().to_string()
     }
 }
 
