@@ -58,19 +58,71 @@ pub struct OnChainNotarization {
 
 #[cfg(feature = "irl")]
 mod irl_integration {
-    use iota_caip::iota::IotaResourceLocator;
+    use iota_caip::{
+        iota::{IotaAddress, IotaNetwork, IotaResourceLocator},
+        resource::RelativeUrl,
+    };
     use product_common::network_name::NetworkName;
 
     use super::OnChainNotarization;
 
     impl OnChainNotarization {
-        /// Returns an IOTA Resource Locator (IRL) to the data stored within this notarization.
+        /// Returns a builder for creating IOTA Resource Locators (IRLs) pointing within this notarization.
+        /// # Example
+        /// ```ignore
+        /// let notarization: OnChainNotarization = ...;
+        /// let notarized_data_irl = notarization
+        ///     .iota_resource_locator_builder(notarization_client.network())
+        ///     .data();
         ///
-        /// The returned IRL will be in the form: `iota:<network alias or genesis digest>/<notarization id>/state/data`.
-        pub fn to_iota_resource_locator(&self, network: &NetworkName) -> IotaResourceLocator {
-            format!("iota:{network}/{}/state/data", self.id.object_id())
-                .parse()
-                .expect("valid IRL")
+        /// assert_eq!(notarized_data_irl.to_string(), format!("iota:{}/{}/state/data", notarization_client.network().as_ref(), notarization.id.object_id()));
+        /// ```
+        pub fn iota_resource_locator_builder(&self, network: &NetworkName) -> NotarizationResourceBuilder {
+            NotarizationResourceBuilder {
+                network: IotaNetwork::custom(network.as_ref()).expect("valid network"),
+                notarization_id: IotaAddress::new(self.id.id.bytes.into_bytes()),
+            }
+        }
+    }
+
+    /// A builder for creating IOTA Resource Locators (IRLs) pointing within a notarization.
+    pub struct NotarizationResourceBuilder {
+        network: IotaNetwork,
+        notarization_id: IotaAddress,
+    }
+
+    impl NotarizationResourceBuilder {
+        /// Returns an IRL referencing this [OnChainNotarization] state's data.
+        pub fn data(&self) -> IotaResourceLocator {
+            self.make_irl("/state/data")
+        }
+
+        /// Returns an IRL referencing this [OnChainNotarization] state's metadata.
+        pub fn state_metadata(&self) -> IotaResourceLocator {
+            self.make_irl("/state/metadata")
+        }
+
+        /// Returns an IRL referencing this [OnChainNotarization]'s immutable metadata.
+        pub fn immutable_metadata(&self) -> IotaResourceLocator {
+            self.make_irl("/immutable_metadata")
+        }
+
+        /// Returns an IRL referencing this [OnChainNotarization]'s updatable metadata.
+        pub fn updatable_metadata(&self) -> IotaResourceLocator {
+            self.make_irl("/updatable_metadata")
+        }
+
+        /// Returns an IRL referencing this [OnChainNotarization]'s owner.
+        pub fn owner(&self) -> IotaResourceLocator {
+            self.make_irl("/owner")
+        }
+
+        fn make_irl(&self, path: &str) -> IotaResourceLocator {
+            IotaResourceLocator::new(
+                self.network.clone(),
+                self.notarization_id,
+                RelativeUrl::parse(path).expect("valid relative URL"),
+            )
         }
     }
 }
