@@ -57,7 +57,7 @@ pub struct OnChainNotarization {
 }
 
 #[cfg(feature = "irl")]
-mod irl_integration {
+pub mod irl_integration {
     use iota_caip::iota::{IotaAddress, IotaNetwork, IotaResourceLocator};
     use iota_caip::resource::RelativeUrl;
     use product_common::network_name::NetworkName;
@@ -84,6 +84,7 @@ mod irl_integration {
     }
 
     /// A builder for creating IOTA Resource Locators (IRLs) pointing within a notarization.
+    #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct NotarizationResourceBuilder {
         network: IotaNetwork,
         notarization_id: IotaAddress,
