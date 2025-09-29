@@ -58,10 +58,8 @@ pub struct OnChainNotarization {
 
 #[cfg(feature = "irl")]
 mod irl_integration {
-    use iota_caip::{
-        iota::{IotaAddress, IotaNetwork, IotaResourceLocator},
-        resource::RelativeUrl,
-    };
+    use iota_caip::iota::{IotaAddress, IotaNetwork, IotaResourceLocator};
+    use iota_caip::resource::RelativeUrl;
     use product_common::network_name::NetworkName;
 
     use super::OnChainNotarization;
