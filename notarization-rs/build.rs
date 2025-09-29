@@ -1,5 +1,5 @@
-use std::path::PathBuf;
 use product_common::move_history_manager::MoveHistoryManager;
+use std::path::PathBuf;
 
 fn main() {
     let move_lock_path = "../notarization-move/Move.lock";
@@ -10,10 +10,15 @@ fn main() {
     MoveHistoryManager::new(
         &PathBuf::from(move_lock_path),
         &PathBuf::from(move_history_path),
-        // Use `Some(vec![])` instead of `None`, if you don't want to ignore `localnet`
-        None,
-    ).manage_history_file(|message| { println!("[build.rs] {}", message); })
-        .expect("Successfully managed Move history file");
+        // We will watch the default watch list (`get_default_aliases_to_watch()`) in this build script
+        // so we leave the `additional_aliases_to_watch` argument vec empty.
+        // Use for example `vec!["localnet".to_string()]` instead, if you don't want to ignore `localnet`.
+        vec![],
+    )
+    .manage_history_file(|message| {
+        println!("[build.rs] {}", message);
+    })
+    .expect("Successfully managed Move history file");
 
     // Tell Cargo to rerun this build script if the Move.lock file changes.
     println!("cargo::rerun-if-changed={move_lock_path}");
