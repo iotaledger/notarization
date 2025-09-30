@@ -1,8 +1,8 @@
 // Copyright 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-import { getFundedClient } from "./util";
 import { strict as assert } from "assert";
+import { getFundedClient } from "./util";
 /** Demonstrate how to update the metadata of a Notarization. */
 export async function updateMetadata(): Promise<void> {
     console.log("Demonstrating metadata updates on dynamic notarization");

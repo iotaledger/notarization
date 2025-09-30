@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { TimeLock } from "@iota/notarization/node";
-import { getFundedClient } from "./util";
 import { strict as assert } from "assert";
+import { getFundedClient } from "./util";
 
 /** Demonstrate how to destroy a Notarization. */
 export async function destroyNotarization(): Promise<void> {

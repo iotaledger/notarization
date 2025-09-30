@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { State } from "@iota/notarization/node";
-import { getFundedClient } from "./util";
 import { strict as assert } from "assert";
+import { getFundedClient } from "./util";
 
 /** Demonstrate how to create a Dynamic Notarization, publish it and update its state. */
 export async function updateDynamic(): Promise<void> {

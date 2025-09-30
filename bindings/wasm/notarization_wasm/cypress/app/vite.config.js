@@ -11,7 +11,7 @@ export default defineConfig(({ command, mode }) => {
     return {
         plugins: [
             nodePolyfills({
-                include: ['assert'],
+                include: ["assert"],
             }),
         ],
         define: EXPOSED_ENVS.reduce((prev, env_var) => {
