@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { State, TimeLock } from "@iota/notarization/node";
-import { strict as assert } from "assert";
 import { getFundedClient } from "./util";
 
 /** Demonstrates read-only methods for notarization inspection. */
