@@ -77,8 +77,8 @@ The following examples are available:
 
 The following examples demonstrate practical use cases with proper field usage:
 
-| Name                                                                                                                                                          | Information                                                                        |
-| :------------------------------------------------------------------------------------------------------------------------------------------------------------ | :--------------------------------------------------------------------------------- |
+| Name                                                                                                                                                                        | Information                                                                        |
+| :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------- |
 | [01_real_world_iot_weather_station](https://github.com/iotaledger/notarization/tree/main/bindings/wasm/notarization_wasm/examples/src/real-world/01_iot_weather_station.ts) | IoT weather station using dynamic notarization for continuous sensor data updates. |
 | [02_real_world_legal_contract](https://github.com/iotaledger/notarization/tree/main/bindings/wasm/notarization_wasm/examples/src/real-world/02_legal_contract.ts)           | Legal contract using locked notarization for immutable document hash attestation.  |
 
