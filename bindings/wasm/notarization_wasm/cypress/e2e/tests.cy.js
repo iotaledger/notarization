@@ -4,20 +4,16 @@ describe(
     "Test Examples",
     () => {
         const examples = [
-            "01_create_federation",
-            "02_add_root_authority",
-            "03_add_properties",
-            "04_create_accreditation_to_attest",
-            "05_revoke_accreditation_to_attest",
-            "06_create_accreditation_to_accredit",
-            "07_revoke_accreditation_to_accredit",
-            "08_revoke_root_authority",
-            "09_reinstate_root_authority",
-            "01_get_accreditations",
-            "02_validate_properties",
-            "03_get_properties",
-            "real_world_01_iota_weather_station",
-            "real_world_02_legal_contract",
+            "01_create_locked",
+            "02_create_dynamic",
+            "03_update_dynamic",
+            "04_destroy_notarization",
+            "05_update_state",
+            "06_update_metadata",
+            "07_transfer_notarization",
+            "08_access_read_only_methods",
+            "01_real_world_iot_weather_station",
+            "02_real_world_legal_contract",
         ];
 
         _.each(examples, (example) => {
