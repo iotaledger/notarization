@@ -3,6 +3,7 @@
 
 import { TimeLock } from "@iota/notarization/node";
 import { getFundedClient } from "./util";
+import { strict as assert } from "assert";
 
 /** Demonstrate how to create a Locked Notarization and publish it. */
 export async function createLocked(): Promise<void> {
@@ -61,12 +62,12 @@ export async function createLocked(): Promise<void> {
     console.log("Notarization: ", notarization);
 
     // Verify the notarization method is Locked
-    console.assert(notarization.method === "Locked");
+    assert(notarization.method === "Locked");
 
     // Check if it has locking metadata and `updateLock` + `transferLock` are set to `UntilDestroyed`
-    console.assert(notarization.immutableMetadata.locking !== undefined);
-    console.assert(notarization.immutableMetadata.locking.updateLock.type === "UntilDestroyed");
-    console.assert(notarization.immutableMetadata.locking.transferLock.type === "UntilDestroyed");
+    assert(notarization.immutableMetadata.locking !== undefined);
+    assert(notarization.immutableMetadata.locking.updateLock.type === "UntilDestroyed");
+    assert(notarization.immutableMetadata.locking.transferLock.type === "UntilDestroyed");
 
     console.log("\n🔒 The notarization is Locked and cannot be updated or transferred until it is destroyed");
     console.log("🗑️ The notarization can only be destroyed after the delete lock expires");

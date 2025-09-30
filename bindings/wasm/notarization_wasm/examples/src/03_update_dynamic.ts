@@ -3,6 +3,7 @@
 
 import { State } from "@iota/notarization/node";
 import { getFundedClient } from "./util";
+import { strict as assert } from "assert";
 
 /** Demonstrate how to create a Dynamic Notarization, publish it and update its state. */
 export async function updateDynamic(): Promise<void> {
@@ -66,8 +67,9 @@ export async function updateDynamic(): Promise<void> {
 
     // Check that the state version count did not change
     const currentStateVersionCount = await notarizationReadOnly.stateVersionCount(notarization.id);
-    console.assert(
-        initialStateVersionCount === currentStateVersionCount,
+    assert.strictEqual(
+        initialStateVersionCount,
+        currentStateVersionCount,
         "State version count should not change after updating updatable metadata",
     );
     console.log("Current state version count is still:", currentStateVersionCount);

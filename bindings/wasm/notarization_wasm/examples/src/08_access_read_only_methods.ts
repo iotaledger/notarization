@@ -3,7 +3,7 @@
 
 import { State, TimeLock } from "@iota/notarization/node";
 import { getFundedClient } from "./util";
-
+import { strict as assert } from "assert";
 /** Demonstrates read-only methods for notarization inspection. */
 export async function accessReadOnlyMethods(): Promise<void> {
     console.log("Demonstrating read-only methods for notarization inspection");
@@ -54,7 +54,7 @@ export async function accessReadOnlyMethods(): Promise<void> {
     const lastStateChange = await notarizationClientReadOnly
         .lastStateChangeTs(dynamicNotarization.id);
     console.log("🕐 Last state change timestamp:", lastStateChange);
-    console.assert(
+    assert.equal(
         createdAt === lastStateChange,
         "createdAt timestamp must equal last state change after initial creation",
     );
@@ -63,13 +63,13 @@ export async function accessReadOnlyMethods(): Promise<void> {
     const versionCount = await notarizationClientReadOnly
         .stateVersionCount(dynamicNotarization.id);
     console.log("🔢 State version count:", versionCount);
-    console.assert(versionCount === 0n, "versionCount must be 0n after initial creation");
+    assert.equal(versionCount, 0n, "versionCount must be 0n after initial creation");
 
     // 7. Get notarization method
     const method = await notarizationClientReadOnly
         .notarizationMethod(dynamicNotarization.id);
     console.log("⚙️ Notarization method:", method);
-    console.assert(method === "Dynamic", "method of a dynamic Notarization must be 'Dynamic'");
+    assert.equal(method, "Dynamic", "method of a dynamic Notarization must be 'Dynamic'");
 
     // 8. Check lock statuses
     const isTransferLocked = await notarizationClientReadOnly
@@ -79,17 +79,17 @@ export async function accessReadOnlyMethods(): Promise<void> {
     const isDestroyAllowed = await notarizationClientReadOnly
         .isDestroyAllowed(dynamicNotarization.id);
     console.log("🔒 Transfer locked:", isTransferLocked);
-    console.assert(!isTransferLocked, "Per default a dynamic Notarization must be not transfer locked");
+    assert(!isTransferLocked, "Per default a dynamic Notarization must be not transfer locked");
     console.log("🔒 Update locked:", isUpdateLocked);
-    console.assert(!isUpdateLocked, "Per default a dynamic Notarization must be not update locked");
+    assert(!isUpdateLocked, "Per default a dynamic Notarization must be not update locked");
     console.log("🗑️ Destroy allowed:", isDestroyAllowed);
-    console.assert(isDestroyAllowed, "Per default deleting a dynamic Notarization shall be allowed");
+    assert(isDestroyAllowed, "Per default deleting a dynamic Notarization shall be allowed");
 
     // 9. Get lock metadata
     const lockMetadata = await notarizationClientReadOnly
         .lockMetadata(dynamicNotarization.id);
     console.log("🔐 Lock metadata:", lockMetadata);
-    console.assert(lockMetadata === undefined, "Per default a dynamic Notarization has no lock metadata");
+    assert(lockMetadata === undefined, "Per default a dynamic Notarization has no lock metadata");
 
     // 10. Get the whole OnChainNotarization at once and pretty print it
     const onChainNotarization = await notarizationClientReadOnly
@@ -118,15 +118,16 @@ export async function accessReadOnlyMethods(): Promise<void> {
     const updatedState = await notarizationClientReadOnly.state(dynamicNotarization.id);
 
     console.log("🔢 New version count:", updatedVersionCount);
-    console.assert(updatedVersionCount === 1n, "versionCount must be 1n after first state update");
+    assert.equal(updatedVersionCount, 1n, "versionCount must be 1n after first state update");
     console.log("🕐 Updated last change timestamp:", updatedLastChange);
-    console.assert(
+    assert.equal(
         createdAt < updatedLastChange,
         "createdAt timestamp must lower lastStateChange timestamp after first state update",
     );
     console.log("📄 Updated state content:", updatedState.data.toString());
-    console.assert(
-        updatedState.data.toString() !== currentState.data.toString(),
+    assert.notEqual(
+        updatedState.data.toString(),
+        currentState.data.toString(),
         "Intial State data must differ from current State data after first state update",
     );
 
@@ -163,15 +164,15 @@ export async function accessReadOnlyMethods(): Promise<void> {
     const lockedOnChainNotarization = await notarizationClientReadOnly
         .getNotarizationById(lockedNotarization.id);
     console.log("⚙️ Method:", lockedMethod);
-    console.assert(lockedMethod === "Locked", "method of a locked Notarization must be 'Locked'");
+    assert.equal(lockedMethod, "Locked", "method of a locked Notarization must be 'Locked'");
     console.log("🔒 Transfer locked:", lockedTransferLocked);
-    console.assert(lockedTransferLocked, "A locked Notarization must be transfer locked");
+    assert(lockedTransferLocked, "A locked Notarization must be transfer locked");
     console.log("🔒 Update locked:", lockedUpdateLocked);
-    console.assert(lockedUpdateLocked, "A locked Notarization must be update locked");
+    assert(lockedUpdateLocked, "A locked Notarization must be update locked");
     console.log("🗑️ Destroy allowed:", lockedDestroyAllowed);
-    console.assert(!lockedDestroyAllowed, "Destroying a delete-locked locked Notarization must be forbidden");
+    assert(!lockedDestroyAllowed, "Destroying a delete-locked locked Notarization must be forbidden");
     console.log("🔐 Lock metadata present:", lockedLockMetadata !== undefined);
-    console.assert(lockedLockMetadata !== undefined, "A locked Notarization must have lock metadata");
+    assert(lockedLockMetadata !== undefined, "A locked Notarization must have lock metadata");
     console.log("📦 Complete locked OnChainNotarization:", lockedOnChainNotarization);
 
     // Compare methods between dynamic and locked
@@ -190,8 +191,7 @@ export async function accessReadOnlyMethods(): Promise<void> {
         `│ Destroy Allowed     │ ${String(isDestroyAllowed).padEnd(11)} │ ${String(lockedDestroyAllowed).padEnd(11)} │`,
     );
     console.log(
-        `│ Has Lock Metadata   │ ${String(lockMetadata !== undefined).padEnd(11)} │ ${
-            String(lockedLockMetadata !== undefined).padEnd(11)
+        `│ Has Lock Metadata   │ ${String(lockMetadata !== undefined).padEnd(11)} │ ${String(lockedLockMetadata !== undefined).padEnd(11)
         } │`,
     );
     console.log("└─────────────────────┴─────────────┴─────────────┘");
