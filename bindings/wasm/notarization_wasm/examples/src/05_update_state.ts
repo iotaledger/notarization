@@ -3,7 +3,7 @@
 
 import { State } from "@iota/notarization/node";
 import { getFundedClient } from "./util";
-
+import { strict as assert } from "assert";
 /** Demonstrate how to update the state of a Notarization. */
 export async function updateState(): Promise<void> {
     console.log("Demonstrating state updates on dynamic notarization");
@@ -65,7 +65,7 @@ export async function updateState(): Promise<void> {
         console.log("New version count:", versionCount);
 
         // Verify version count incremented
-        console.assert(Number(versionCount) === i);
+        assert.equal(Number(versionCount), i);
     }
 
     // Show final version count

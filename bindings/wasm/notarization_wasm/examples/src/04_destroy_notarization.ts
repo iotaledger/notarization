@@ -3,6 +3,7 @@
 
 import { TimeLock } from "@iota/notarization/node";
 import { getFundedClient } from "./util";
+import { strict as assert } from "assert";
 
 /** Demonstrate how to destroy a Notarization. */
 export async function destroyNotarization(): Promise<void> {
@@ -63,7 +64,7 @@ export async function destroyNotarization(): Promise<void> {
         await notarizationClient
             .destroy(transferLocked.id)
             .buildAndExecute(notarizationClient);
-        throw new Error("❌ Unexpected: Destruction succeeded (should have failed)");
+        assert.fail("❌ Unexpected: Destruction succeeded (should have failed)");
     } catch (e) {
         console.log("✅ Expected: Destruction failed -", e);
     }
@@ -89,7 +90,7 @@ export async function destroyNotarization(): Promise<void> {
         await notarizationClient
             .destroy(deleteLocked.id)
             .buildAndExecute(notarizationClient);
-        throw new Error("❌ Unexpected: Destruction succeeded (should have failed)");
+        assert.fail("❌ Unexpected: Destruction succeeded (should have failed)");
     } catch (e) {
         console.log("✅ Expected: Destruction failed -", e);
     }
@@ -118,7 +119,7 @@ export async function destroyNotarization(): Promise<void> {
         console.log("✅ Successfully destroyed locked notarization with no delete lock");
     } catch (e) {
         console.log("❌ Failed to destroy:", e);
-        throw new Error("❌ Unexpected: Destruction failed");
+        assert.fail("❌ Unexpected: Destruction failed");
     }
 
     console.log("\n📋 Summary:");
