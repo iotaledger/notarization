@@ -121,8 +121,10 @@ Date: January 28, 2025
         // updatable_metadata: Administrative filing information
         // NOTE: For locked notarizations, this becomes immutable after creation!
         .withUpdatableMetadata(
-            `Filed: ${formatTimestamp(now)
-            } | HR Reference: HR-2025-001-EA | Legal Review: Completed | Storage: Digital Vault A7 | Notarization: ${formatTimestamp(now)
+            `Filed: ${
+                formatTimestamp(now)
+            } | HR Reference: HR-2025-001-EA | Legal Review: Completed | Storage: Digital Vault A7 | Notarization: ${
+                formatTimestamp(now)
             }`,
         )
         // Delete lock: Contract can only be deleted after 7-year legal retention period

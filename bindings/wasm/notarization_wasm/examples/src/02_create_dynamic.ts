@@ -4,7 +4,6 @@
 import { TimeLock } from "@iota/notarization/node";
 import { getFundedClient } from "./util";
 
-
 /** Demonstrate how to create a Dynamic Notarization and publish it. */
 export async function createDynamic(): Promise<void> {
     console.log("Creating a simple dynamic notarization example");

@@ -4,7 +4,6 @@
 import { State, TimeLock } from "@iota/notarization/node";
 import { getFundedClient } from "./util";
 
-
 /** Demonstrates read-only methods for notarization inspection. */
 export async function accessReadOnlyMethods(): Promise<void> {
     console.log("Demonstrating read-only methods for notarization inspection");
@@ -55,7 +54,10 @@ export async function accessReadOnlyMethods(): Promise<void> {
     const lastStateChange = await notarizationClientReadOnly
         .lastStateChangeTs(dynamicNotarization.id);
     console.log("🕐 Last state change timestamp:", lastStateChange);
-    console.assert(createdAt === lastStateChange, "createdAt timestamp must equal last state change after initial creation");
+    console.assert(
+        createdAt === lastStateChange,
+        "createdAt timestamp must equal last state change after initial creation",
+    );
 
     // 6. Get state version count
     const versionCount = await notarizationClientReadOnly
@@ -188,7 +190,8 @@ export async function accessReadOnlyMethods(): Promise<void> {
         `│ Destroy Allowed     │ ${String(isDestroyAllowed).padEnd(11)} │ ${String(lockedDestroyAllowed).padEnd(11)} │`,
     );
     console.log(
-        `│ Has Lock Metadata   │ ${String(lockMetadata !== undefined).padEnd(11)} │ ${String(lockedLockMetadata !== undefined).padEnd(11)
+        `│ Has Lock Metadata   │ ${String(lockMetadata !== undefined).padEnd(11)} │ ${
+            String(lockedLockMetadata !== undefined).padEnd(11)
         } │`,
     );
     console.log("└─────────────────────┴─────────────┴─────────────┘");
