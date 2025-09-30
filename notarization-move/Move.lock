@@ -2,27 +2,47 @@
 
 [move]
 version = 3
-manifest_digest = "2FA64AE578ECFADFE6576D98160FEBC1DFF70895E34236A183F6833371359743"
-deps_digest = "3C4103934B1E040BB6B23F1D610B4EF9F2F1166A50A104EADCF77467C004C600"
+manifest_digest = "2E3FF0C8C2529AC5F5521920800D3385F4B722FF03E524F5AF757E81CA710024"
+deps_digest = "F9B494B64F0615AED0E98FC12A85B85ECD2BC5185C22D30E7F67786BB52E507C"
+dependencies = [
+  { id = "Iota", name = "Iota" },
+  { id = "IotaSystem", name = "IotaSystem" },
+  { id = "MoveStdlib", name = "MoveStdlib" },
+  { id = "Stardust", name = "Stardust" },
+]
+
+[[move.package]]
+id = "Iota"
+source = { git = "https://github.com/iotaledger/iota.git", rev = "2544af4f4193cf0d67012a8fd20e7a401e8a8e2f", subdir = "crates/iota-framework/packages/iota-framework" }
+
+dependencies = [
+  { id = "MoveStdlib", name = "MoveStdlib" },
+]
+
+[[move.package]]
+id = "IotaSystem"
+source = { git = "https://github.com/iotaledger/iota.git", rev = "2544af4f4193cf0d67012a8fd20e7a401e8a8e2f", subdir = "crates/iota-framework/packages/iota-system" }
+
 dependencies = [
   { id = "Iota", name = "Iota" },
   { id = "MoveStdlib", name = "MoveStdlib" },
 ]
 
 [[move.package]]
-id = "Iota"
-source = { git = "https://github.com/iotaledger/iota.git", rev = "d9dbd00f5601f20f9d0d8381fc674f70869c7910", subdir = "crates/iota-framework/packages/iota-framework" }
+id = "MoveStdlib"
+source = { git = "https://github.com/iotaledger/iota.git", rev = "2544af4f4193cf0d67012a8fd20e7a401e8a8e2f", subdir = "crates/iota-framework/packages/move-stdlib" }
+
+[[move.package]]
+id = "Stardust"
+source = { git = "https://github.com/iotaledger/iota.git", rev = "2544af4f4193cf0d67012a8fd20e7a401e8a8e2f", subdir = "crates/iota-framework/packages/stardust" }
 
 dependencies = [
+  { id = "Iota", name = "Iota" },
   { id = "MoveStdlib", name = "MoveStdlib" },
 ]
 
-[[move.package]]
-id = "MoveStdlib"
-source = { git = "https://github.com/iotaledger/iota.git", rev = "d9dbd00f5601f20f9d0d8381fc674f70869c7910", subdir = "crates/iota-framework/packages/move-stdlib" }
-
 [move.toolchain-version]
-compiler-version = "1.2.3"
+compiler-version = "1.7.0-rc"
 edition = "2024.beta"
 flavor = "iota"
 
@@ -42,8 +62,8 @@ published-version = "1"
 
 [env.testnet]
 chain-id = "2304aa97"
-original-published-id = "0x00412bd469b7f980227c6c574090348239852e43aa07818b315854fdd8a2d25f"
-latest-published-id = "0x00412bd469b7f980227c6c574090348239852e43aa07818b315854fdd8a2d25f"
+original-published-id = "0x29f58d88d9f4d023d94b6c6e871897dfe6a7f246784e7e24f7b63e0bbee48cf7"
+latest-published-id = "0x29f58d88d9f4d023d94b6c6e871897dfe6a7f246784e7e24f7b63e0bbee48cf7"
 published-version = "1"
 
 [env.mainnet]
