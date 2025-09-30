@@ -22,8 +22,14 @@ type PackageRegistryLockMut = RwLockWriteGuard<'static, PackageRegistry>;
 
 /// Global registry for notarization package information.
 static NOTARIZATION_PACKAGE_REGISTRY: LazyLock<RwLock<PackageRegistry>> = LazyLock::new(|| {
-    let package_history_json = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../notarization-move/Move.history.json"));
-    RwLock::new(PackageRegistry::from_package_history_json_str(package_history_json).expect("Move.history.json exists and it's valid"))
+    let package_history_json = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../notarization-move/Move.history.json"
+    ));
+    RwLock::new(
+        PackageRegistry::from_package_history_json_str(package_history_json)
+            .expect("Move.history.json exists and it's valid"),
+    )
 });
 
 /// Returns a read lock to the package registry.

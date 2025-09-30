@@ -1,5 +1,6 @@
-use product_common::move_history_manager::MoveHistoryManager;
 use std::path::PathBuf;
+
+use product_common::move_history_manager::MoveHistoryManager;
 
 fn main() {
     let move_lock_path = "../notarization-move/Move.lock";

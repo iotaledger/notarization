@@ -17,7 +17,7 @@ use iota_interaction::types::transaction::{ProgrammableTransaction, TransactionK
 use iota_interaction_ts::bindings::WasmIotaClient;
 use product_common::core_client::CoreClientReadOnly;
 use product_common::network_name::NetworkName;
-use product_common::package_registry::{Env};
+use product_common::package_registry::Env;
 use serde::de::DeserializeOwned;
 
 use super::network_id;
