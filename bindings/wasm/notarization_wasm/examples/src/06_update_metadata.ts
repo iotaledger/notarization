@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { getFundedClient } from "./util";
+import { assert } from "chai";
 
 /** Demonstrate how to update the metadata of a Notarization. */
 export async function updateMetadata(): Promise<void> {

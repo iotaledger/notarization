@@ -3,6 +3,7 @@
 
 import { TimeLock } from "@iota/notarization/node";
 import { getFundedClient } from "./util";
+import { assert } from "chai";
 
 /** Demonstrate how to destroy a Notarization. */
 export async function destroyNotarization(): Promise<void> {

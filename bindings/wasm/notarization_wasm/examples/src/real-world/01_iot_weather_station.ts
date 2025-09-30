@@ -18,8 +18,7 @@
  * a clear separation of concerns between different types of data.
  */
 
-import { OnChainNotarization, State, TimeLock } from "@iota/notarization/node";
-import { strict as assert } from "assert";
+import { OnChainNotarization, State } from "@iota/notarization/node";
 import { getFundedClient } from "../util";
 
 interface WeatherReading {
@@ -56,9 +55,8 @@ export async function iotWeatherStation(): Promise<void> {
         timestamp: now,
     };
 
-    const initialMetadata = `Location: Hamburg, Germany | Coordinates: 53.5488°N, 9.9872°E | Recorded: ${
-        formatTimestamp(now)
-    }`;
+    const initialMetadata = `Location: Hamburg, Germany | Coordinates: 53.5488°N, 9.9872°E | Recorded: ${formatTimestamp(now)
+        }`;
 
     // Create dynamic notarization for weather station
     const weatherNotarization = await notarizationClient
@@ -110,9 +108,8 @@ export async function iotWeatherStation(): Promise<void> {
             timestamp: timestamp,
         };
 
-        const newMetadata = `Location: Hamburg, Germany | Coordinates: 53.5488°N, 9.9872°E | Recorded: ${
-            formatTimestamp(timestamp)
-        }`;
+        const newMetadata = `Location: Hamburg, Germany | Coordinates: 53.5488°N, 9.9872°E | Recorded: ${formatTimestamp(timestamp)
+            }`;
 
         // Update the weather reading
         await notarizationClient
@@ -185,8 +182,7 @@ function displayWeatherData(title: string, notarization: OnChainNotarization): v
         }
 
         console.log(
-            `🔢 Version: ${notarization.stateVersionCount} | 🕐 Updated: ${
-                formatTimestamp(Math.floor(Number(notarization.lastStateChangeAt) / 1000))
+            `🔢 Version: ${notarization.stateVersionCount} | 🕐 Updated: ${formatTimestamp(Math.floor(Number(notarization.lastStateChangeAt) / 1000))
             }`,
         );
     } catch (error) {

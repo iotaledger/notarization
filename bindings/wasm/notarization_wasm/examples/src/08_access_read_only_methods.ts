@@ -3,6 +3,7 @@
 
 import { State, TimeLock } from "@iota/notarization/node";
 import { getFundedClient } from "./util";
+import { assert } from "chai";
 
 /** Demonstrates read-only methods for notarization inspection. */
 export async function accessReadOnlyMethods(): Promise<void> {
@@ -187,8 +188,7 @@ export async function accessReadOnlyMethods(): Promise<void> {
         `│ Destroy Allowed     │ ${String(isDestroyAllowed).padEnd(11)} │ ${String(lockedDestroyAllowed).padEnd(11)} │`,
     );
     console.log(
-        `│ Has Lock Metadata   │ ${String(lockMetadata !== undefined).padEnd(11)} │ ${
-            String(lockedLockMetadata !== undefined).padEnd(11)
+        `│ Has Lock Metadata   │ ${String(lockMetadata !== undefined).padEnd(11)} │ ${String(lockedLockMetadata !== undefined).padEnd(11)
         } │`,
     );
     console.log("└─────────────────────┴─────────────┴─────────────┘");

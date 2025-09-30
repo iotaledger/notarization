@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { TimeLock } from "@iota/notarization/node";
+import { assert } from "chai";
 import { getFundedClient } from "./util";
 
 /** Demonstrate how to create a Locked Notarization and publish it. */

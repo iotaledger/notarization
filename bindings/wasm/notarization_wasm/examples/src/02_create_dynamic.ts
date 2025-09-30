@@ -3,6 +3,7 @@
 
 import { TimeLock } from "@iota/notarization/node";
 import { getFundedClient } from "./util";
+import { assert } from "chai";
 
 /** Demonstrate how to create a Dynamic Notarization and publish it. */
 export async function createDynamic(): Promise<void> {
