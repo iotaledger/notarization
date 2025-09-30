@@ -3,7 +3,6 @@
 
 import { State } from "@iota/notarization/node";
 import { getFundedClient } from "./util";
-import { assert } from "chai";
 
 /** Demonstrate how to create a Dynamic Notarization, publish it and update its state. */
 export async function updateDynamic(): Promise<void> {

@@ -3,7 +3,7 @@
 
 import { TimeLock } from "@iota/notarization/node";
 import { getFundedClient } from "./util";
-import { assert } from "chai";
+
 
 /** Demonstrate how to create a Dynamic Notarization and publish it. */
 export async function createDynamic(): Promise<void> {
@@ -59,12 +59,12 @@ export async function createDynamic(): Promise<void> {
     console.log("Notarization: ", notarization);
 
     // Verify the notarization method is Dynamic
-    assert(notarization.method === "Dynamic");
+    console.assert(notarization.method === "Dynamic");
 
     // Check if it has locking metadata and `transferLock` is set to `UnlockAt` using the right argument
-    assert(notarization.immutableMetadata.locking !== undefined);
-    assert(notarization.immutableMetadata.locking.transferLock.type == "UnlockAt");
-    assert(notarization.immutableMetadata.locking.transferLock.args === transfer_unlock_at);
+    console.assert(notarization.immutableMetadata.locking !== undefined);
+    console.assert(notarization.immutableMetadata.locking.transferLock.type == "UnlockAt");
+    console.assert(notarization.immutableMetadata.locking.transferLock.args === transfer_unlock_at);
 
     console.log("\n🔄 The notarization is Dynamic and can be updated at any time");
     console.log(

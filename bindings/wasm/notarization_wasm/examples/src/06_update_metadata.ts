@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { getFundedClient } from "./util";
-import { assert } from "chai";
 
 /** Demonstrate how to update the metadata of a Notarization. */
 export async function updateMetadata(): Promise<void> {
@@ -73,10 +72,10 @@ export async function updateMetadata(): Promise<void> {
         console.log("Version count (should remain unchanged):", versionCount);
 
         // Verify that state version count doesn't change with metadata updates
-        assert.equal(versionCount, initialVersionCount);
+        console.assert(versionCount === initialVersionCount);
 
         // Verify metadata matches what we set
-        assert.equal(currentMetadata, metadataUpdates[i]);
+        console.assert(currentMetadata === metadataUpdates[i]);
     }
 
     // Demonstrate that immutable description cannot be changed
@@ -85,7 +84,7 @@ export async function updateMetadata(): Promise<void> {
     const finalDescription = await notarizationClientReadOnly.description(notarization.id);
 
     console.log("Final description:", finalDescription);
-    assert.equal(finalDescription, initialDescription);
+    console.assert(finalDescription === initialDescription);
 
     // Show that state content is unaffected by metadata updates
     console.log("\n📄 Verifying state content is unaffected...");
@@ -106,7 +105,7 @@ export async function updateMetadata(): Promise<void> {
     console.log("Last state change:", lastStateChange);
 
     // Verify that lastStateChange timestamp equals the createdAt timestamp
-    assert.equal(lastStateChange, createdAt);
+    console.assert(lastStateChange === createdAt);
 
     // Final metadata state
     const finalUpdatableMetadata = await notarizationClientReadOnly

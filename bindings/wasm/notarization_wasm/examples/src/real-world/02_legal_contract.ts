@@ -19,7 +19,6 @@
  */
 
 import { OnChainNotarization, State, TimeLock } from "@iota/notarization/node";
-import { assert } from "chai";
 import { getFundedClient } from "../util";
 
 interface ContractMetadata {

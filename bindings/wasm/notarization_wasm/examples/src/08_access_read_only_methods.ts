@@ -3,7 +3,7 @@
 
 import { State, TimeLock } from "@iota/notarization/node";
 import { getFundedClient } from "./util";
-import { assert } from "chai";
+
 
 /** Demonstrates read-only methods for notarization inspection. */
 export async function accessReadOnlyMethods(): Promise<void> {
@@ -55,19 +55,19 @@ export async function accessReadOnlyMethods(): Promise<void> {
     const lastStateChange = await notarizationClientReadOnly
         .lastStateChangeTs(dynamicNotarization.id);
     console.log("🕐 Last state change timestamp:", lastStateChange);
-    assert(createdAt === lastStateChange, "createdAt timestamp must equal last state change after initial creation");
+    console.assert(createdAt === lastStateChange, "createdAt timestamp must equal last state change after initial creation");
 
     // 6. Get state version count
     const versionCount = await notarizationClientReadOnly
         .stateVersionCount(dynamicNotarization.id);
     console.log("🔢 State version count:", versionCount);
-    assert(versionCount === 0n, "versionCount must be 0n after initial creation");
+    console.assert(versionCount === 0n, "versionCount must be 0n after initial creation");
 
     // 7. Get notarization method
     const method = await notarizationClientReadOnly
         .notarizationMethod(dynamicNotarization.id);
     console.log("⚙️ Notarization method:", method);
-    assert(method === "Dynamic", "method of a dynamic Notarization must be 'Dynamic'");
+    console.assert(method === "Dynamic", "method of a dynamic Notarization must be 'Dynamic'");
 
     // 8. Check lock statuses
     const isTransferLocked = await notarizationClientReadOnly
@@ -77,17 +77,17 @@ export async function accessReadOnlyMethods(): Promise<void> {
     const isDestroyAllowed = await notarizationClientReadOnly
         .isDestroyAllowed(dynamicNotarization.id);
     console.log("🔒 Transfer locked:", isTransferLocked);
-    assert(!isTransferLocked, "Per default a dynamic Notarization must be not transfer locked");
+    console.assert(!isTransferLocked, "Per default a dynamic Notarization must be not transfer locked");
     console.log("🔒 Update locked:", isUpdateLocked);
-    assert(!isUpdateLocked, "Per default a dynamic Notarization must be not update locked");
+    console.assert(!isUpdateLocked, "Per default a dynamic Notarization must be not update locked");
     console.log("🗑️ Destroy allowed:", isDestroyAllowed);
-    assert(isDestroyAllowed, "Per default deleting a dynamic Notarization shall be allowed");
+    console.assert(isDestroyAllowed, "Per default deleting a dynamic Notarization shall be allowed");
 
     // 9. Get lock metadata
     const lockMetadata = await notarizationClientReadOnly
         .lockMetadata(dynamicNotarization.id);
     console.log("🔐 Lock metadata:", lockMetadata);
-    assert(lockMetadata === undefined, "Per default a dynamic Notarization has no lock metadata");
+    console.assert(lockMetadata === undefined, "Per default a dynamic Notarization has no lock metadata");
 
     // 10. Get the whole OnChainNotarization at once and pretty print it
     const onChainNotarization = await notarizationClientReadOnly
@@ -116,14 +116,14 @@ export async function accessReadOnlyMethods(): Promise<void> {
     const updatedState = await notarizationClientReadOnly.state(dynamicNotarization.id);
 
     console.log("🔢 New version count:", updatedVersionCount);
-    assert(updatedVersionCount === 1n, "versionCount must be 1n after first state update");
+    console.assert(updatedVersionCount === 1n, "versionCount must be 1n after first state update");
     console.log("🕐 Updated last change timestamp:", updatedLastChange);
-    assert(
+    console.assert(
         createdAt < updatedLastChange,
         "createdAt timestamp must lower lastStateChange timestamp after first state update",
     );
     console.log("📄 Updated state content:", updatedState.data.toString());
-    assert(
+    console.assert(
         updatedState.data.toString() !== currentState.data.toString(),
         "Intial State data must differ from current State data after first state update",
     );
@@ -161,15 +161,15 @@ export async function accessReadOnlyMethods(): Promise<void> {
     const lockedOnChainNotarization = await notarizationClientReadOnly
         .getNotarizationById(lockedNotarization.id);
     console.log("⚙️ Method:", lockedMethod);
-    assert(lockedMethod === "Locked", "method of a locked Notarization must be 'Locked'");
+    console.assert(lockedMethod === "Locked", "method of a locked Notarization must be 'Locked'");
     console.log("🔒 Transfer locked:", lockedTransferLocked);
-    assert(lockedTransferLocked, "A locked Notarization must be transfer locked");
+    console.assert(lockedTransferLocked, "A locked Notarization must be transfer locked");
     console.log("🔒 Update locked:", lockedUpdateLocked);
-    assert(lockedUpdateLocked, "A locked Notarization must be update locked");
+    console.assert(lockedUpdateLocked, "A locked Notarization must be update locked");
     console.log("🗑️ Destroy allowed:", lockedDestroyAllowed);
-    assert(!lockedDestroyAllowed, "Destroying a delete-locked locked Notarization must be forbidden");
+    console.assert(!lockedDestroyAllowed, "Destroying a delete-locked locked Notarization must be forbidden");
     console.log("🔐 Lock metadata present:", lockedLockMetadata !== undefined);
-    assert(lockedLockMetadata !== undefined, "A locked Notarization must have lock metadata");
+    console.assert(lockedLockMetadata !== undefined, "A locked Notarization must have lock metadata");
     console.log("📦 Complete locked OnChainNotarization:", lockedOnChainNotarization);
 
     // Compare methods between dynamic and locked

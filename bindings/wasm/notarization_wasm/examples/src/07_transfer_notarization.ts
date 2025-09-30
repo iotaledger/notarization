@@ -4,7 +4,7 @@
 import { Ed25519Keypair } from "@iota/iota-sdk/keypairs/ed25519";
 import { TimeLock } from "@iota/notarization/node";
 import { getFundedClient } from "./util";
-import { assert } from "chai";
+
 
 /** Demonstrate how to transfer a dynamic Notarization and transferring a locked Notarization will fail. */
 export async function transferNotarization(): Promise<void> {
@@ -47,7 +47,7 @@ export async function transferNotarization(): Promise<void> {
         console.log("✅ Successfully transferred unlocked notarization to Alice");
     } catch (e) {
         console.log("❌ Failed to transfer:", e);
-        assert.fail("Transfer of unlocked notarization should succeed");
+        throw new Error("Transfer of unlocked notarization should succeed");
     }
 
     // Scenario 2: Try to transfer a transfer-locked dynamic notarization (should fail)
@@ -76,7 +76,7 @@ export async function transferNotarization(): Promise<void> {
         await notarizationClient
             .transferNotarization(transferLocked.id, bob)
             .buildAndExecute(notarizationClient);
-        assert.fail("❌ Unexpected: Transfer succeeded (should have failed)");
+        throw new Error("❌ Unexpected: Transfer succeeded (should have failed)");
     } catch (e) {
         console.log("✅ Expected: Transfer failed -", e);
     }
@@ -104,7 +104,7 @@ export async function transferNotarization(): Promise<void> {
         await notarizationClient
             .transferNotarization(locked.id, alice)
             .buildAndExecute(notarizationClient);
-        assert.fail("❌ Unexpected: Transfer succeeded (should have failed)");
+        throw new Error("❌ Unexpected: Transfer succeeded (should have failed)");
     } catch (e) {
         console.log("✅ Expected: Transfer failed -", e);
     }
