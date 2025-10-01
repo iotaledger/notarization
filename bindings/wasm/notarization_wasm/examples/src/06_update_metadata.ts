@@ -3,7 +3,6 @@
 
 import { strict as assert } from "assert";
 import { getFundedClient } from "./util";
-
 /** Demonstrate how to update the metadata of a Notarization. */
 export async function updateMetadata(): Promise<void> {
     console.log("Demonstrating metadata updates on dynamic notarization");

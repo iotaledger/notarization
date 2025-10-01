@@ -18,8 +18,7 @@
  * a clear separation of concerns between different types of data.
  */
 
-import { OnChainNotarization, State, TimeLock } from "@iota/notarization/node";
-import { strict as assert } from "assert";
+import { OnChainNotarization, State } from "@iota/notarization/node";
 import { getFundedClient } from "../util";
 
 interface WeatherReading {
