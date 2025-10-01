@@ -38,7 +38,7 @@ export async function main(example?: string) {
             return await accessReadOnlyMethods();
         case "01_real_world_iot_weather_station":
             return await iotWeatherStation();
-        case "02_legal_contract":
+        case "02_real_world_legal_contract":
             return await legalContract();
         default:
             throw "Unknown example name: '" + argument + "'";
