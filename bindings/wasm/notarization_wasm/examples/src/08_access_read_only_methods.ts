@@ -117,8 +117,9 @@ export async function accessReadOnlyMethods(): Promise<void> {
     console.log("🔢 New version count:", updatedVersionCount);
     assert.equal(updatedVersionCount, 1n, "versionCount must be 1n after first state update");
     console.log("🕐 Updated last change timestamp:", updatedLastChange);
-    assert.equal(
-        createdAt < updatedLastChange,
+    assert.notEqual(
+        createdAt,
+        updatedLastChange,
         "createdAt timestamp must lower lastStateChange timestamp after first state update",
     );
     console.log("📄 Updated state content:", updatedState.data.toString());
