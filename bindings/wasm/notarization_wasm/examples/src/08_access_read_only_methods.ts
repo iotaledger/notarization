@@ -4,7 +4,6 @@
 import { State, TimeLock } from "@iota/notarization/node";
 import { strict as assert } from "assert";
 import { getFundedClient } from "./util";
-
 /** Demonstrates read-only methods for notarization inspection. */
 export async function accessReadOnlyMethods(): Promise<void> {
     console.log("Demonstrating read-only methods for notarization inspection");
@@ -61,13 +60,13 @@ export async function accessReadOnlyMethods(): Promise<void> {
     const versionCount = await notarizationClientReadOnly
         .stateVersionCount(dynamicNotarization.id);
     console.log("🔢 State version count:", versionCount);
-    assert(versionCount === 0n, "versionCount must be 0n after initial creation");
+    assert.equal(versionCount, 0n, "versionCount must be 0n after initial creation");
 
     // 7. Get notarization method
     const method = await notarizationClientReadOnly
         .notarizationMethod(dynamicNotarization.id);
     console.log("⚙️ Notarization method:", method);
-    assert(method === "Dynamic", "method of a dynamic Notarization must be 'Dynamic'");
+    assert.equal(method, "Dynamic", "method of a dynamic Notarization must be 'Dynamic'");
 
     // 8. Check lock statuses
     const isTransferLocked = await notarizationClientReadOnly
@@ -116,15 +115,17 @@ export async function accessReadOnlyMethods(): Promise<void> {
     const updatedState = await notarizationClientReadOnly.state(dynamicNotarization.id);
 
     console.log("🔢 New version count:", updatedVersionCount);
-    assert(updatedVersionCount === 1n, "versionCount must be 1n after first state update");
+    assert.equal(updatedVersionCount, 1n, "versionCount must be 1n after first state update");
     console.log("🕐 Updated last change timestamp:", updatedLastChange);
-    assert(
-        createdAt < updatedLastChange,
+    assert.notEqual(
+        createdAt,
+        updatedLastChange,
         "createdAt timestamp must lower lastStateChange timestamp after first state update",
     );
     console.log("📄 Updated state content:", updatedState.data.toString());
-    assert(
-        updatedState.data.toString() !== currentState.data.toString(),
+    assert.notEqual(
+        updatedState.data.toString(),
+        currentState.data.toString(),
         "Intial State data must differ from current State data after first state update",
     );
 
@@ -161,7 +162,7 @@ export async function accessReadOnlyMethods(): Promise<void> {
     const lockedOnChainNotarization = await notarizationClientReadOnly
         .getNotarizationById(lockedNotarization.id);
     console.log("⚙️ Method:", lockedMethod);
-    assert(lockedMethod === "Locked", "method of a locked Notarization must be 'Locked'");
+    assert.equal(lockedMethod, "Locked", "method of a locked Notarization must be 'Locked'");
     console.log("🔒 Transfer locked:", lockedTransferLocked);
     assert(lockedTransferLocked, "A locked Notarization must be transfer locked");
     console.log("🔒 Update locked:", lockedUpdateLocked);

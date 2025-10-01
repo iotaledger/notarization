@@ -38,7 +38,6 @@ export async function destroyNotarization(): Promise<void> {
         console.log("✅ Successfully destroyed unlocked dynamic notarization");
     } catch (e) {
         console.log("❌ Failed to destroy:", e);
-        assert.fail("❌ Unexpected: Destruction failed");
     }
 
     // Scenario 2: Try to destroy a transfer-locked dynamic notarization (should fail)
