@@ -38,6 +38,9 @@ async-trait.workspace = true
 iota_interaction = { workspace = true }
 product_common = { workspace = true, features = ["transaction", "test-utils"] }
 
+[build-dependencies]
+product_common = { workspace = true, features = ["move-history-manager"] }
+
 [features]
 default = ["send-sync"]
 send-sync = [
