@@ -41,7 +41,7 @@ public fun create<D: store + drop + copy>(
     delete_lock: TimeLock,
     clock: &Clock,
     ctx: &mut TxContext,
-) {
+): object::ID {
     let notarization = new(
         state,
         immutable_description,
@@ -56,4 +56,6 @@ public fun create<D: store + drop + copy>(
     event::emit(LockedNotarizationCreated { notarization_id: id });
 
     notarization::transfer_notarization(notarization, tx_context::sender(ctx));
+
+    id
 }
