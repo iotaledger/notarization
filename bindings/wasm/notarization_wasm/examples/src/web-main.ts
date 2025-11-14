@@ -36,10 +36,10 @@ export async function main(example?: string) {
             return await transferNotarization();
         case "08_access_read_only_methods":
             return await accessReadOnlyMethods();
-        case "legal_contract":
-            return await legalContract();
-        case "iot_weather_station":
+        case "01_real_world_iot_weather_station":
             return await iotWeatherStation();
+        case "02_real_world_legal_contract":
+            return await legalContract();
         default:
             throw "Unknown example name: '" + argument + "'";
     }

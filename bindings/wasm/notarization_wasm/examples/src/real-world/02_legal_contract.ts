@@ -19,7 +19,6 @@
  */
 
 import { OnChainNotarization, State, TimeLock } from "@iota/notarization/node";
-import { createHash } from "crypto";
 import { getFundedClient } from "../util";
 
 interface ContractMetadata {
@@ -79,7 +78,10 @@ Date: January 28, 2025
 `;
 
     // Calculate SHA-256 hash of the contract
-    const contractHash = createHash("sha256").update(contractContent).digest("hex");
+    const contractHash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(contractContent));
+    const contractHashString = Array.from(new Uint8Array(contractHash))
+        .map(b => b.toString(16).padStart(2, "0"))
+        .join("");
 
     // Create structured contract metadata
     const contractMetadata: ContractMetadata = {
@@ -98,7 +100,7 @@ Date: January 28, 2025
     // Calculate deletion unlock time (7 years for legal document retention)
     const deletionUnlock = now + (7 * 365 * 24 * 60 * 60); // 7 years from now
 
-    console.log(`🔒 Contract Hash: ${contractHash.substring(0, 16)}...`);
+    console.log(`🔒 Contract Hash: ${contractHashString.substring(0, 16)}...`);
     console.log("📅 Contract Effective: 2025-02-01 to 2027-01-31");
     console.log(`🗓️  Legal Retention: 7 years (until ${formatTimestamp(deletionUnlock)})`);
 
@@ -108,7 +110,7 @@ Date: January 28, 2025
         // state.data: The SHA-256 hash of the actual contract document
         // This proves document integrity - any change would result in a different hash
         .withStringState(
-            contractHash,
+            contractHashString,
             JSON.stringify(contractMetadata),
         )
         // immutable_description: Human-readable contract summary for legal identification
@@ -176,7 +178,7 @@ Date: January 28, 2025
     );
 
     const storedHash = verifiedNotarization.state.data.toString();
-    if (storedHash === contractHash) {
+    if (storedHash === contractHashString) {
         console.log("🎯 Contract integrity verified: Hash matches original");
     } else {
         console.log("❌ CRITICAL ERROR: Contract hash has been tampered with!");
