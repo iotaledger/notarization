@@ -17,6 +17,7 @@ use iota_interaction::types::transaction::{ProgrammableTransaction, TransactionK
 use iota_interaction_ts::bindings::WasmIotaClient;
 use product_common::core_client::CoreClientReadOnly;
 use product_common::network_name::NetworkName;
+#[allow(deprecated)] // TODO : Remove after MoveHistoryManager is released with product-core
 use product_common::package_registry::{Env, Metadata};
 use serde::de::DeserializeOwned;
 
@@ -151,6 +152,7 @@ impl NotarizationClientReadOnly {
     ///
     /// # Returns
     /// A `Result` containing the initialized [`NotarizationClientReadOnly`] or an [`Error`].
+    #[allow(deprecated)] // TODO : Remove after MoveHistoryManager is released with product-core
     pub async fn new_with_pkg_id(
         #[cfg(target_arch = "wasm32")] iota_client: WasmIotaClient,
         #[cfg(not(target_arch = "wasm32"))] iota_client: IotaClient,
