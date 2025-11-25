@@ -28,7 +28,6 @@ use super::super::types::{
     OnChainNotarization, TimeLock,
 };
 use crate::error::Error;
-use crate::package::notarization_package_id;
 
 /// A transaction that creates a new notarization.
 #[derive(Debug, Clone)]
@@ -88,7 +87,7 @@ impl<M: Clone> CreateNotarization<M> {
             ..
         } = self.builder.clone();
 
-        let package_id = notarization_package_id(client).await?;
+        let package_id = client.package_id();
 
         let state = state.ok_or_else(|| Error::InvalidArgument("State is required".to_string()))?;
 
