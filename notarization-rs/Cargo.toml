@@ -1,6 +1,6 @@
 [package]
 name = "notarization"
-version = "0.1.9-alpha"
+version = "0.1.10-alpha"
 authors.workspace = true
 edition.workspace = true
 homepage.workspace = true
