@@ -151,6 +151,7 @@ impl NotarizationClientReadOnly {
     ///
     /// # Returns
     /// A `Result` containing the initialized [`NotarizationClientReadOnly`] or an [`Error`].
+    #[allow(deprecated)] // TODO : Remove after MoveHistoryManager is released with product-core
     pub async fn new_with_pkg_id(
         #[cfg(target_arch = "wasm32")] iota_client: WasmIotaClient,
         #[cfg(not(target_arch = "wasm32"))] iota_client: IotaClient,
