@@ -17,7 +17,6 @@ type PackageRegistryLock = RwLockReadGuard<'static, PackageRegistry>;
 type PackageRegistryLockMut = RwLockWriteGuard<'static, PackageRegistry>;
 
 /// Global registry for notarization package information.
-#[allow(deprecated)] // TODO : Remove after MoveHistoryManager is released with product-core
 static NOTARIZATION_PACKAGE_REGISTRY: LazyLock<RwLock<PackageRegistry>> = LazyLock::new(|| {
     let package_history_json = include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),

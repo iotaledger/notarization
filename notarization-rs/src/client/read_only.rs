@@ -151,7 +151,6 @@ impl NotarizationClientReadOnly {
     ///
     /// # Returns
     /// A `Result` containing the initialized [`NotarizationClientReadOnly`] or an [`Error`].
-    #[allow(deprecated)] // TODO : Remove after MoveHistoryManager is released with product-core
     pub async fn new_with_pkg_id(
         #[cfg(target_arch = "wasm32")] iota_client: WasmIotaClient,
         #[cfg(not(target_arch = "wasm32"))] iota_client: IotaClient,
@@ -163,7 +162,7 @@ impl NotarizationClientReadOnly {
         // Use the passed pkg_id to add a new env or override the information of an existing one.
         {
             let mut registry = package::notarization_package_registry_mut().await;
-            registry.insert_env(Env::new(network.as_ref()), vec![package_id]);
+            registry.insert_env_history(Env::new(network.as_ref()), vec![package_id]);
         }
 
         Self::new_internal(client, network).await
