@@ -7,7 +7,6 @@
 //! notarizations, including builders, state management, and transaction operations.
 
 pub mod builder;
-pub(crate) mod move_utils;
 pub(crate) mod operations;
 pub mod transactions;
 pub mod types;

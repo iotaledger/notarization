@@ -9,17 +9,14 @@
 //!
 //! The operations are used to build transactions for notarizations.
 
-use std::str::FromStr;
-
 use async_trait::async_trait;
-use iota_interaction::types::Identifier;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use iota_interaction::types::transaction::{Argument, ObjectArg, ProgrammableTransaction};
 use iota_interaction::{OptionalSync, ident_str};
 use product_common::core_client::CoreClientReadOnly;
+use product_common::move_utils;
 
-use super::move_utils;
 use super::types::{State, TimeLock};
 use crate::error::Error;
 
@@ -54,41 +51,18 @@ impl NotarizationImpl {
         additional_args: F,
     ) -> Result<ProgrammableTransaction, Error>
     where
-        F: FnOnce(&mut ProgrammableTransactionBuilder) -> Result<Vec<Argument>, Error>,
+        F: FnOnce(&mut ProgrammableTransactionBuilder) -> Result<Vec<Argument>, product_common::Error>,
         C: CoreClientReadOnly + OptionalSync,
     {
-        let mut ptb = ProgrammableTransactionBuilder::new();
-
-        let tag = vec![move_utils::get_type_tag(client, &object_id).await?];
-
-        let mut args = {
-            let notarization = move_utils::get_object_ref_by_id(client, &object_id).await?;
-
-            vec![
-                ptb.obj(ObjectArg::ImmOrOwnedObject(notarization))
-                    .map_err(|e| Error::InvalidArgument(format!("Failed to create object argument: {e}")))?,
-            ]
-        };
-        // Add additional arguments
-        args.extend(
-            additional_args(&mut ptb)
-                .map_err(|e| Error::InvalidArgument(format!("Failed to add additional arguments: {e}")))?,
-        );
-
-        // Create method identifier
-        let function = Identifier::from_str(method.as_ref())
-            .map_err(|e| Error::InvalidArgument(format!("Invalid method name '{}': {}", method.as_ref(), e)))?;
-
-        // Build the move call
-        ptb.programmable_move_call(
-            client.package_id(),
-            ident_str!("notarization").into(),
-            function,
-            tag,
-            args,
-        );
-
-        Ok(ptb.finish())
+        move_utils::build_transaction(
+            client,
+            "notarization",
+            object_id,
+            method,
+            additional_args
+        )
+          .await
+          .map_err(| e| Error::GenericError(format!("Failed to build notarization transaction: {}", e)))
     }
 }
 
@@ -172,7 +146,9 @@ pub(crate) trait NotarizationOperations {
     {
         NotarizationImpl::build_transaction(client, object_id, "update_state", |ptb| {
             Ok(vec![
-                new_state.into_ptb(ptb, client.package_id())?,
+                new_state.into_ptb(ptb, client.package_id()).map_err(|e| {
+                    product_common::error::Error::InvalidMoveArgument(format!("Failed to create new state argument: {e}"))
+                })?,
                 move_utils::get_clock_ref(ptb),
             ])
         })

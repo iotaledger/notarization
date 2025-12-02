@@ -25,7 +25,7 @@ use iota_interaction::types::transaction::Argument;
 use iota_interaction::{MoveType, ident_str};
 use serde::{Deserialize, Serialize};
 
-use super::super::move_utils;
+use product_common::move_utils;
 use crate::error::Error;
 
 /// Metadata containing time-based access restrictions for a notarization.

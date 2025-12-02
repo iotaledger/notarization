@@ -49,7 +49,7 @@ use iota_interaction::types::transaction::Argument;
 use iota_interaction::types::{MOVE_STDLIB_PACKAGE_ID, TypeTag};
 use serde::{Deserialize, Deserializer, Serialize};
 
-use super::super::move_utils;
+use product_common::move_utils;
 use crate::error::Error;
 
 /// Represents the state of a notarization.

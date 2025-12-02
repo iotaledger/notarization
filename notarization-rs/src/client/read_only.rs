@@ -19,10 +19,10 @@ use product_common::core_client::CoreClientReadOnly;
 use product_common::network_name::NetworkName;
 #[allow(deprecated)] // TODO : Remove after MoveHistoryManager is released with product-core
 use product_common::package_registry::{Env, Metadata};
+use product_common::move_utils;
 use serde::de::DeserializeOwned;
 
 use super::network_id;
-use crate::core::move_utils;
 use crate::core::operations::{NotarizationImpl, NotarizationOperations};
 use crate::core::transactions::get_notarization_with_owner;
 use crate::core::types::{Data, LockMetadata, NotarizationMethod, OnChainNotarization, State};

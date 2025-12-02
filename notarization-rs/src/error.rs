@@ -23,8 +23,8 @@ pub enum Error {
     #[error("{0}")]
     GenericError(String),
     /// Failed to parse tag
-    #[error("Failed to parse tag: {0}")]
-    FailedToParseTag(String),
+    #[error("Failed to invoke product_common utils: {0}")]
+    ProductCommonError(#[from] product_common::error::Error),
     /// Invalid argument
     #[error("Invalid argument: {0}")]
     InvalidArgument(String),
