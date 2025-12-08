@@ -16,7 +16,7 @@ The Method specific behavior is achieved via configuration of this object.
 
 To minimize the need for config settings, the Notarization methods reduce the number of available configuration
 parameters while using method specific fixed settings for several parameters, resulting in the typical method
-specific behaviour. Here, Notarization methods can be seen as a prepared configuration sets to facilitate
+specific behaviour. Here, Notarization methods can be seen as prepared configuration sets to facilitate
 Notarization usage for often needed use cases.
 
 Here is an overview of the most important configuration parameters for each of these methods:
@@ -32,9 +32,10 @@ Explanation of terms and symbols for the table above:
 - [static]: Fixed or static parameter.
 - Optional:
   - Locks: The lock can be set to UnlockAt or UntilDestroyed.
-  - Locking exists: If no locking is used, there will be no [`LockMetadata`] stored with the Notarization object.
-    Otherwise [`LockMetadata`] will be created automatically.
-- *: delete_lock can not be set to `UntilDestroyed`.
+  - Locking exists: If no locking is used, there will be no [`LockMetadata`] stored with the Notarization object
+    Otherwise [`LockMetadata`] will be created automatically. If no [`LockMetadata`] exist, the behaviour is
+    equivalent to existing [`LockMetadata`] with all locks set to [`None`].
+  - *: delete_lock can not be set to `UntilDestroyed`.
 
 ## Process Flows
 
@@ -50,7 +51,7 @@ setter functions (The used terms can be found in the [glossary below](#glossary)
 - Initial State consisting of `Stored Data` and `State Metadata` that will be used to define the first version of the
   Notarization state.
 - Optional `Immutable Description`
-- Optional `Updatable Metadata` (dynamic: always updatable; locked: immutable)
+- Optional `Updatable Metadata` (**Dynamic**: always updatable; **Locked**: immutable)
 - An optional boolean indicator if the Notarization shall be transferable
 
 After a **dynamic** Notarization has been created, it can be updated using the `Notarization::update_state()` function and can be
@@ -68,22 +69,26 @@ sequenceDiagram
     participant Lib as Rust-Library
     participant Move as Move-SC
     participant Net as Iota-Network
-    Prover ->>+ Lib: fn NotarizationBuilder::new()
-    Lib ->>- Prover: NotarizationBuilder
-    Prover ->> Lib: fn NotarizationBuilder::iota_client()
-    Prover ->> Lib: fn NotarizationBuilder::signer()
-    Prover ->> Lib: fn NotarizationBuilder::immutable_description()
-    Prover ->> Lib: fn NotarizationBuilder::initial_state()
-    Note right of Prover: State = Binary Data + Metadata
-    Prover ->>+ Lib: fn NotarizationBuilder::create_dynamic()
-    Note right of Prover: Alternatively fn build_dynamic_ptb() <br> can be used to only return the <br> programmable transaction block
-    Lib ->>+ Move: notarization::new_state_from_vector()
+    Prover ->>+ Lib: fn NotarizationClientReadOnly::new(iota_client)
+    Lib ->>- Prover: NotarizationClientReadOnly
+    Prover ->>+ Lib: fn NotarizationClient::new(read_only_client, signer)
+    Lib ->>- Prover: NotarizationClient
+    Prover ->>+ Lib: fn NotarizationClient::create_dynamic_notarization()
+    Lib ->>- Prover: NotarizationBuilder<Dynamic>
+    Prover ->> Lib: fn NotarizationBuilder<Dynamic>::with_immutable_description(description)
+    Prover ->> Lib: fn NotarizationBuilder<Dynamic>::with_state(state)
+    Note right of Prover: state = Binary Data + Metadata
+    Prover ->>+ Lib: fn NotarizationBuilder<Dynamic>::finish()
+    Lib ->>- Prover: TransactionBuilder<CreateNotarization<Dynamic>>
+    Prover ->>+ Lib: fn TransactionBuilder<CreateNotarization<Dynamic>>::build_and_execute()
+    Note right of Prover: Alternatively fn execute_with_gas_station() <br> can be used to execute via Gas Station
+    Note right of Prover: Alternatively fn build() <br> can be used to only return the TransactionDate and signatures
+    Lib ->>+ Move: notarization::new_state_from_bytes()
     Move ->>- Lib: Notarization State
     Lib ->>+ Move: dynamic_notarization::create()
     Move ->> Net: transfer::transfer(notarization, sender)
-    Note right of Move: This is omitted if fn build_dynamic_ptb() is used
     Move ->>- Lib: TX Response
-    Lib ->>- Prover: Notarization + TX Response
+    Lib ->>- Prover: OnChainNotarization + IotaTransactionBlockResponse
 ```
 
 #### Fetching state data from a Notarization already existing on the ledger
@@ -97,13 +102,9 @@ sequenceDiagram
     participant Lib as Rust-Library
     participant Move as Move-SC
     participant Net as Iota-Network
-    Verifier ->>+ Lib: fn NotarizationBuilder::new()
-    Lib ->>- Verifier: NotarizationBuilder
-    Verifier ->> Lib: fn NotarizationBuilder::iota_client()
-    Verifier ->> Lib: fn NotarizationBuilder::object_id()
-    Verifier ->>+ Lib: fn NotarizationBuilder::finish()
-    Lib ->>- Verifier: Notarization
-    Verifier ->>+ Lib: fn Notarization::get_state()
+    Verifier ->>+ Lib: fn NotarizationClientReadOnly::new(iota_client)
+    Lib ->>- Verifier: NotarizationClientReadOnly
+    Verifier ->>+ Lib: fn NotarizationClientReadOnly::state(object_id)
     Lib -->> Net: RPC Calls
     Net -->> Lib: State Data
     Lib ->>- Verifier: State
@@ -120,32 +121,32 @@ sequenceDiagram
     participant Lib as Rust-Library
     participant Move as Move-SC
     participant Net as Iota-Network
-    Prover ->>+ Lib: fn NotarizationBuilder::new()
-    Lib ->>- Prover: NotarizationBuilder
-    Prover ->> Lib: fn NotarizationBuilder::iota_client()
-    Prover ->> Lib: fn NotarizationBuilder::object_id()
-    Prover ->> Lib: fn NotarizationBuilder::signer()
-    Note right of Prover: Needed for write access
-    Prover ->>+ Lib: fn NotarizationBuilder::finish()
-    Lib ->>- Prover: Notarization
-    Prover ->>+ Lib: fn Notarization::update_state()
-    Note right of Prover: Alternatively fn build_update_state_ptb() <br> can be used to only return the <br> programmable transaction block
+    Prover ->>+ Lib: fn NotarizationClientReadOnly::new(iota_client)
+    Lib ->>- Prover: NotarizationClientReadOnly
+    Prover ->>+ Lib: fn NotarizationClient::new(read_only_client, signer)
+    Lib ->>- Prover: NotarizationClient
+    Prover ->>+ Lib: fn NotarizationClient::update_state(state)
+    Note right of Prover: state = Binary Data + Metadata
+    Lib ->>- Prover: TransactionBuilder<UpdateState>
+    Prover ->>+ Lib: fn TransactionBuilder<UpdateState>::build_and_execute()
+    Note right of Prover: Alternatively fn execute_with_gas_station() <br> can be used to execute via Gas Station
+    Note right of Prover: Alternatively fn build() <br> can be used to only return the TransactionDate and signatures
     Lib ->>+ Move: notarization::new_state_from_vector()
     Move ->>- Lib: Notarization State
     Lib ->>+ Move: notarization::update_state()
     Move ->> Net: updates object fields on ledger
-    Note right of Move: Object update and emitting the <br> NotarizationUpdated Event is omitted <br> if fn build_update_state_ptb() is used
     Move ->> Net: event::emit(NotarizationUpdated)
     Move ->>- Lib: TX Response
-    Lib ->>- Prover: TX Response
+    Lib ->>- Prover: () + IotaTransactionBlockResponse
 ```
 
 ### Locked Notarizations
 
-In general _Locked Notarizations_ are handled similar to _Dynamic Notarizations_. A _Locked Notarization_ is created on the
-ledger using the `NotarizationBuilder::create_locked()` function.
+In general _Locked Notarizations_ are handled similar to _Dynamic Notarizations_. A `NotarizationBuilder` for _Locked Notarization_ is created
+using the `NotarizationClient::create_locked_notarization()` function. The resulting `NotarizationBuilder<Locked>` can be used to
+create the _Locked Notarization_ on the ledger using the `NotarizationBuilder<Locked>::finish()` function.
 
-To create a _Locked Notarization_ the following arguments need to be specified using the NotarizationBuilder setter
+To create a _Locked Notarization_ the following arguments need to be specified using the `NotarizationBuilder<Locked>` setter
 functions:
 
 - all arguments needed to create a _Dynamic Notarization_
@@ -155,7 +156,7 @@ After the _Locked Notarization_ has been created - by design - the `Latest State
 
 The lifecycle of a _Locked Notarization_ can be described as:
 
-- Create a Notarization object using the `NotarizationBuilder::create_locked()` function
+- Create a Notarization object using the functions `NotarizationClient::create_locked_notarization()` and `NotarizationBuilder<Locked>::finish()`
 - If a `Delete Timelock` has been used, wait at least until the time-lock has expired
 - Destroy the Notarization object
 

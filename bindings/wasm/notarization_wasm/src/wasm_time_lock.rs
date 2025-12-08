@@ -10,7 +10,7 @@ use wasm_bindgen::prelude::*;
 /// This enum defines the possible types of time locks that can be applied to a notarization object.
 /// - `None`: No time lock is applied.
 /// - `UnlockAt`: The object will unlock at a specific timestamp.
-/// - `UntilDestroyed`: The object remains locked until it is destroyed.
+/// - `UntilDestroyed`: The object remains locked until it is destroyed. Can not be used for `delete_lock`.
 #[wasm_bindgen(js_name = TimeLockType)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum WasmTimeLockType {

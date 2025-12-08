@@ -25,7 +25,7 @@ const ETimelockNotExpired: u64 = 1;
 public enum TimeLock has store {
     /// A lock that unlocks at a specific Unix timestamp (seconds since epoch)
     UnlockAt(u32),
-    /// A permanent lock that never unlocks (can't be used for locking delete)
+    /// A permanent lock that never unlocks until the notarization object is destroyed (can't be used for `delete_lock`)
     UntilDestroyed,
     /// No lock applied
     None,
@@ -40,7 +40,7 @@ public fun unlock_at(unix_time: u32, clock: &Clock): TimeLock {
     TimeLock::UnlockAt(unix_time)
 }
 
-/// Creates a new UntilDestroyed lock that never unlocks.
+/// Creates a new UntilDestroyed lock that never unlocks until the notarization object is destroyed.
 public fun until_destroyed(): TimeLock {
     TimeLock::UntilDestroyed
 }

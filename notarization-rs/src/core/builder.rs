@@ -24,7 +24,7 @@
 //! let builder = NotarizationBuilder::locked()
 //!     .with_string_state("Legal Document v1.0".to_string(), Some("PDF hash: abc123".to_string()))
 //!     .with_immutable_description("Employment Contract".to_string())
-//!     .with_delete_at(TimeLock::UnlockAt(1735689600)) // Unix timestamp
+//!     .with_delete_lock(TimeLock::UnlockAt(1735689600)) // Unix timestamp
 //!     .finish()?;
 //! ```
 //!
@@ -60,8 +60,8 @@ pub struct Dynamic;
 /// A builder for constructing notarization transactions.
 ///
 /// This builder uses the type parameter `M` to enforce method-specific
-/// constraints
-/// at compile time. The two supported types are [`NotarizationMethod::Locked`] and [`NotarizationMethod::Dynamic`].
+/// constraints at compile time.
+/// The two supported types are [`NotarizationMethod::Locked`] and [`NotarizationMethod::Dynamic`].
 #[derive(Debug, Clone)]
 pub struct NotarizationBuilder<M> {
     /// The data to be notarized
@@ -86,7 +86,7 @@ impl NotarizationBuilder<Locked> {
     /// Creates a new builder for a locked notarization.
     ///
     /// Locked notarizations are immutable after creation. They cannot be updated
-    /// or transferred, and can only be destroyed after a specified time period.
+    /// or transferred. Optionally, they can only be destroyed after a specified time period.
     ///
     /// ## Example
     ///
@@ -94,7 +94,7 @@ impl NotarizationBuilder<Locked> {
     /// use notarization::core::builder::NotarizationBuilder;
     /// use notarization::core::types::TimeLock;
     ///
-    /// let builder = NotarizationBuilder::locked().with_delete_at(TimeLock::UnlockAt(1735689600));
+    /// let builder = NotarizationBuilder::locked().with_delete_lock(TimeLock::UnlockAt(1735689600));
     /// ```
     pub fn locked() -> Self {
         Self {
@@ -110,9 +110,15 @@ impl NotarizationBuilder<Locked> {
 
     /// Sets when the notarization can be destroyed.
     ///
-    /// This is required for locked notarizations. Common patterns:
-    /// - `TimeLock::UnlockAt(timestamp)`: Can be destroyed after specific time
-    /// - `TimeLock::UntilDestroyed`: Can never be destroyed (permanent record)
+    /// By default, locked notarizations can be destroyed freely. Use this
+    /// to add time-based restrictions.
+    ///
+    /// ## Parameters
+    ///
+    /// `lock`: The time-based restriction for deletion. See [`TimeLock`] for more details.
+    /// - `TimeLock::None`: Can be destroyed anytime (default)
+    /// - `TimeLock::UnlockAt(timestamp)`: Can be destroyed after a specific timestamp
+    /// - `TimeLock::UntilDestroyed`: Can NOT be used  for `delete_lock`
     ///
     /// ## Example
     ///
@@ -121,7 +127,7 @@ impl NotarizationBuilder<Locked> {
     /// use notarization::core::types::TimeLock;
     ///
     /// // Can be destroyed after January 1, 2025
-    /// let builder = NotarizationBuilder::locked().with_delete_at(TimeLock::UnlockAt(1735689600));
+    /// let builder = NotarizationBuilder::locked().with_delete_lock(TimeLock::UnlockAt(1735689600));
     /// ```
     pub fn with_delete_lock(mut self, lock: TimeLock) -> Self {
         self.delete_lock = Some(lock);
@@ -129,10 +135,6 @@ impl NotarizationBuilder<Locked> {
     }
 
     /// Finalizes the builder and creates a transaction builder.
-    ///
-    /// ## Errors
-    ///
-    /// Returns an error if `delete_lock` is not set, as it's required for locked notarizations.
     ///
     /// ## Example
     ///
@@ -181,11 +183,12 @@ impl NotarizationBuilder<Dynamic> {
     /// By default, dynamic notarizations can be transferred freely. Use this
     /// to add time-based restrictions.
     ///
-    /// ## Common Patterns
+    /// ## Parameters
     ///
+    /// `lock`: The time-based restriction for deletion. See [`TimeLock`] for more details.
     /// - `TimeLock::None`: Can be transferred anytime (default)
-    /// - `TimeLock::UnlockAt(timestamp)`: Can be transferred after specific time
-    /// - `TimeLock::UntilDestroyed`: Can never be transferred
+    /// - `TimeLock::UnlockAt(timestamp)`: Can be transferred after a specific timestamp
+    /// - `TimeLock::UntilDestroyed`: Can not be transferred until the notarization is destroyed
     ///
     /// ## Example
     ///
