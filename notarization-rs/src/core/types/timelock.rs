@@ -12,7 +12,7 @@
 //! ## Types
 //!
 //! - `UnlockAt`: The lock is unlocked at a specific time.
-//! - `UntilDestroyed`: The lock is unlocked when the notarization is destroyed.
+//! - `UntilDestroyed`: The lock is locked until the notarization is destroyed.
 //! - `None`: The lock is not applied.
 
 use std::str::FromStr;

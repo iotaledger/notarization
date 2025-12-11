@@ -90,7 +90,7 @@ The following examples demonstrate practical use cases with proper field usage:
 
 - **None**: Can be destroyed immediately
 - **UnlockAt(timestamp)**: Cannot be destroyed until timestamp
-- **UntilDestroyed**: Cannot be destroyed (permanent)
+- Please note: **UntilDestroyed**: Cannot be used for Delete Locks
 
 ## Key Concepts
 

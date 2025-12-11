@@ -149,7 +149,7 @@ async fn main() -> Result<()> {
     println!("\n📋 Transfer Rules Summary:");
     println!("✅ Unlocked dynamic notarizations can be transferred freely");
     println!("🔒 Transfer-locked dynamic notarizations cannot be transferred until lock expires");
-    println!("🚫 Locked notarizations can never be transferred (transfer_lock = UntilDestroyed)");
+    println!("🚫 Locked notarizations can never be transferred (transfer_lock, update_lock, delete_lock)");
     println!("⏰ Transfer locks are time-based and will expire automatically");
     println!("🔍 Use is_transfer_locked() to check transfer status before attempting");
 
