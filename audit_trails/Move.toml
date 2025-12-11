@@ -1,0 +1,9 @@
+[package]
+name = "audit_trails_poc"
+edition = "2024.beta"
+
+[dependencies]
+Iota = { git = "https://github.com/iotaledger/iota.git", subdir = "crates/iota-framework/packages/iota-framework", rev = "v1.11.0-rc" }
+
+[addresses]
+audit_trails_poc = "0x0"
