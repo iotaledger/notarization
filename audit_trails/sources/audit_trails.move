@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /// Audit Trails - Tamper-proof sequential record chains with RBAC
-module audit_trails_poc::audit_trails;
+module audit_trails::audit_trails;
 
 use iota::clock::Clock;
 use iota::vec_map::VecMap;
