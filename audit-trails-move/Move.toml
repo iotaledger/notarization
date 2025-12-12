@@ -1,0 +1,8 @@
+[package]
+name = "audit_trails"
+edition = "2024.beta"
+
+[dependencies]
+
+[addresses]
+audit_trails = "0x0"
