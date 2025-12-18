@@ -8,23 +8,26 @@ import {EpochInfo, IotaTransactionBlockResponse} from "@iota/iota-sdk/client";
 const STATE_METADATA: string | null = null; // "State metadata example";
 const IMMUTABLE_DESCRIPTION: string | null  = null; // "This metadata will not change";
 
-let EPOCH_INFO: EpochInfo | null = null;
+let REFERENCE_GAS_PRICE: bigint | null = null;
 
 const BILLION = 1000000000;
+const MINIMUM_STORAGE_COST = 0.0029488; // Unit is IOTA not Nanos
 
 function print_gas_cost(transaction_type: String, flexDataSize: number, response: IotaTransactionBlockResponse) {
     const gasUsed = response.effects?.gasUsed;
-    const referenceGasPrice = EPOCH_INFO ? EPOCH_INFO.referenceGasPrice ? parseInt(EPOCH_INFO.referenceGasPrice) : 1000 : 1000; // Fallback to 1000 if EpochInfo is not available
+    const referenceGasPrice = REFERENCE_GAS_PRICE ? Number(REFERENCE_GAS_PRICE) : -1; // Fallback to -1 if EpochInfo is not available
 
     if (gasUsed != undefined) {
         const totalGasCost = parseInt(gasUsed.computationCost) + parseInt(gasUsed.storageCost) - parseInt(gasUsed.storageRebate);
         const storageCost = parseInt(gasUsed.storageCost) / BILLION;
-        const storageCostAboveMin = storageCost - 0.0029488;
+        const computationCostNanos = parseInt(gasUsed.computationCost);
+        const storageCostAboveMin = storageCost - MINIMUM_STORAGE_COST;
         console.log("-------------------------------------------------------------------------------------------------------");
         console.log(`--- Gas cost for '${transaction_type}' transaction`);
         console.log("-------------------------------------------------------------------------------------------------------");
-        console.log(`referenceGasPrice: ${referenceGasPrice / BILLION}`);
-        console.log(`computationCost: ${parseInt(gasUsed.computationCost) / BILLION}`);
+        console.log(`referenceGasPrice: ${referenceGasPrice}`);
+        console.log(`computationCost: ${computationCostNanos / BILLION}`);
+        console.log(`Computation Units: ${computationCostNanos / referenceGasPrice}`);
         console.log(`storageCost: ${storageCost}`);
         console.log(`flexDataSize: ${flexDataSize}`);
         console.log(`storageCost above minimum (0.0029488): ${storageCostAboveMin}`);
@@ -67,8 +70,8 @@ export async function createUpdateDestroy(): Promise<void> {
     const notarizationClient = await getFundedClient();
 
     const iotaClient = notarizationClient.iotaClient();
-    EPOCH_INFO = await iotaClient.getCurrentEpoch();
-    console.log("Successfully fetched the EpochInfo to evaluate the referenceGasPrice: ", EPOCH_INFO != null ? EPOCH_INFO.referenceGasPrice : "Not Available");
+    REFERENCE_GAS_PRICE = await iotaClient.getReferenceGasPrice();
+    console.log("Successfully fetched the referenceGasPrice: ", REFERENCE_GAS_PRICE != null ? REFERENCE_GAS_PRICE : "Not Available");
 
     let notarization;
 
@@ -87,7 +90,7 @@ export async function createUpdateDestroy(): Promise<void> {
         console.log(`\n--- Update ${i} ---`);
 
         // Create new state with updated content and metadata
-        const newContent = randomString(i * 50);
+        const newContent = randomString(i * 50); // Set this size to 138 bytes to keep total flex data size equal to the latest created notarization
         const newMetadata = `Version ${i + 1}.0 - Update ${i}`;
 
         // Update the state
@@ -99,7 +102,7 @@ export async function createUpdateDestroy(): Promise<void> {
             .buildAndExecute(notarizationClient);
 
         console.log(`✅ State update ${i} completed`);
-        const flexDataSize = newContent.length + (STATE_METADATA ? newMetadata.length : 0);
+        const flexDataSize = newContent.length + newMetadata.length;
         print_gas_cost("Update", flexDataSize, response);
     }
 
