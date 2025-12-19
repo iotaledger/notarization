@@ -18,7 +18,7 @@ The cost for creating a Notarization object can roughly be calculated by the fol
 Where:
 
 | Parameter            | Description                                                                                                                                                                                                                          |
-|----------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `FlexDataSize`       | Sum of the byte sizes of State Data, State Metadata, Updatable Metadata and Immutable Metadata. The value must be reduced by 1 as the `MinimumStorageCost` uses 1 byte of State Data.                                                |
 | `FlexDataByteCost`   | A constant value of 0.0000076 IOTA/Byte <br> This value denotes (`StorageCost` - `MinimumStorageCost`) divided by `FlexDataSize`.                                                                                                    |
 | `MinimumStorageCost` | A constant value of 0.00295 IOTA. <br> This value denotes the `StorageCost` for a Notarization with 1 Byte of `FlexDataSize` meaning a Notarization with 1 Byte of State Data, no meta data and no optional locks.                   |
@@ -28,20 +28,20 @@ Where:
 Examples:
 
 | `FlexDataSize` | `TotalCost` (Storage Rebate not taken into account) |
-|----------------|-----------------------------------------------------|
+| -------------- | --------------------------------------------------- |
 | 10             | 0.004026 IOTA                                       |
 | 100            | 0.00471 IOTA                                        |
 | 1000           | 0.01155 IOTA                                        |
 
 ## Updating Dynamic Notarizations
 
-The `TotalCost` for updating a Dynamic Notarization can roughly be calculated using the same equation used for creating 
+The `TotalCost` for updating a Dynamic Notarization can roughly be calculated using the same equation used for creating
 Notarization objects (see above).
 
 The value for `FlexDataByteCost` should be set to 0.00000769 IOTA/Byte.
 
-If the new Notarization State results in the same `FlexDataSize` as the overwritten old Notarization State, the Storage 
-Rebate will compensate the Storage Cost so that the real gas cost to be paid will be more or less the Computation Cost, 
+If the new Notarization State results in the same `FlexDataSize` as the overwritten old Notarization State, the Storage
+Rebate will compensate the Storage Cost so that the real gas cost to be paid will be more or less the Computation Cost,
 which is always 0.001 IOTA (presumed the Gas Price is 1000 nano).
 
 ## Destroying a Notarization
