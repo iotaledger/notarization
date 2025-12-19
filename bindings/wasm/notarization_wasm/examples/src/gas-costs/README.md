@@ -1,13 +1,22 @@
 # Gas Cost Estimation Example for Notarization
 
-This folder contains an example to estimate the gas cost for Notarization object creation , update anf destroy operations.
+This folder contains an example to estimate the gas cost for Notarization object creation, update and destroy operations.
 
 It can be run like any other example.
 
 The log output of the example is optimized to evaluate variables and constants needed to calculate gas cost as being
 described in the following sections.
 
-## Creating Notarizations
+## Results of the Gas Cost Estimation
+
+The gas cost for creating Dynamic and Locked Notarizations only differ in the amount of needed Storage Cost.
+The mimimum Byte size of a Locked Notarization is 19 bytes larger than the one of a Dynamic Notarization due to the additional
+lock information stored in the Notarization object. This results in a slightly higher Storage Cost (0.0001425 IOTA) for
+Locked Notarizations compared to Dynamic Notarizations when they are created with the same amount of State Data, Metadata, etc.
+
+**For the sake of simplicity, the following sections only describe the gas cost estimation for Dynamic Notarizations.**
+
+### Creating Notarizations
 
 The cost for creating a Notarization object can roughly be calculated by the following equation:
 
@@ -33,7 +42,7 @@ Examples:
 | 100            | 0.00471 IOTA                                        |
 | 1000           | 0.01155 IOTA                                        |
 
-## Updating Dynamic Notarizations
+### Updating Dynamic Notarizations
 
 The `TotalCost` for updating a Dynamic Notarization can roughly be calculated using the same equation used for creating
 Notarization objects (see above).
@@ -44,7 +53,7 @@ If the new Notarization State results in the same `FlexDataSize` as the overwrit
 Rebate will compensate the Storage Cost so that the real gas cost to be paid will be more or less the Computation Cost,
 which is always 0.001 IOTA (presumed the Gas Price is 1000 nano).
 
-## Destroying a Notarization
+### Destroying a Notarization
 
 The `TotalCost` for destroying a Notarization is the Computation Cost which is 0.001 IOTA (presumed the Gas Price is 1000 nano).
 
