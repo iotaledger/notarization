@@ -5,7 +5,7 @@
 ///
 /// A Record represents a single entry in an audit trail, stored in a LinkedTable
 /// and addressed by trail_id + sequence_number.
-module audit_trails::record;
+module audit_trail::record;
 
 use std::string::String;
 

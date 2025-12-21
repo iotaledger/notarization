@@ -1,8 +1,8 @@
 [package]
-name = "audit_trails"
+name = "audit_trail"
 edition = "2024.beta"
 
 [dependencies]
 
 [addresses]
-audit_trails = "0x0"
+audit_trail = "0x0"

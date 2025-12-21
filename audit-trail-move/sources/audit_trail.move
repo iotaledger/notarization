@@ -1,18 +1,18 @@
 // Copyright (c) 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-/// Audit trails with role-based access control and timelock
+/// Audit Trails with role-based access control and timelock
 ///
 /// An audit trail is a tamper-proof, sequential chain of notarized records where each entry
 /// references its predecessor, ensuring verifiable continuity and integrity.
 ///
 /// Records are addressed by trail_id + sequence_number
-module audit_trails::audit_trails;
+module audit_trail::main;
 
-use audit_trails::capabilities::{Self, Capability};
-use audit_trails::locking::{Self, LockingConfig};
-use audit_trails::permissions::{Self, Permission};
-use audit_trails::record::{Self, Record};
+use audit_trail::capability::{Self, Capability};
+use audit_trail::locking::{Self, LockingConfig};
+use audit_trail::permission::{Self, Permission};
+use audit_trail::record::{Self, Record};
 use iota::clock::{Self, Clock};
 use iota::event;
 use iota::linked_table::{Self, LinkedTable};
@@ -46,14 +46,14 @@ public struct AuditTrail<D: store + copy> has key, store {
     records: LinkedTable<u64, Record<D>>,
     /// Deletion locking rules
     locking_config: LockingConfig,
-    /// Role name -> set of permissions (TODO: implement)
-    permissions: VecMap<String, VecSet<Permission>>,
+    /// A list of role definitions consisting of a unique role specifier and a list of associated permissions
+    roles: VecMap<String, VecSet<Permission>>,
     /// Set at creation, cannot be changed
     immutable_metadata: TrailImmutableMetadata,
     /// Can be updated by holders of MetadataUpdate permission
     updatable_metadata: Option<String>,
     /// Whitelist of all issued capability IDs (TODO: implement)
-    issued_capabilities: VecSet<ID>,
+    issued_capability: VecSet<ID>,
 }
 
 // ===== Events =====
@@ -131,7 +131,7 @@ public fun create<D: store + copy>(
 
     // TODO: Initialize setup role with admin permissions (bootstrap)
     // The creator should receive a setup capability with PermissionAdmin + CapAdmin
-    // to configure roles and issue capabilities to other users.
+    // to configure roles and issue capability to other users.
 
     let trail = AuditTrail {
         id: trail_uid,
@@ -140,10 +140,10 @@ public fun create<D: store + copy>(
         record_count,
         records,
         locking_config,
-        permissions: vec_map::empty(),
+        roles: vec_map::empty(),
         immutable_metadata: trail_metadata,
         updatable_metadata,
-        issued_capabilities: iota::vec_set::empty(),
+        issued_capability: iota::vec_set::empty(),
     };
 
     transfer::share_object(trail);

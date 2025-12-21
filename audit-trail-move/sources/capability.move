@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /// Role-based access control capabilities for audit trails
-module audit_trails::capabilities;
+module audit_trail::capability;
 
 /// Capability granting role-based access to an audit trail
 public struct Capability has key, store {

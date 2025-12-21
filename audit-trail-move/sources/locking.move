@@ -5,7 +5,7 @@
 ///
 /// Controls when records can be deleted based on time window (records locked for N seconds)
 /// or count window (last N records always locked).
-module audit_trails::locking;
+module audit_trail::locking;
 
 /// Controls when records can be deleted (time OR count based)
 public struct LockingConfig has copy, drop, store {
