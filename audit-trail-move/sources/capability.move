@@ -38,8 +38,6 @@ public(package) fun new_capability(
 //     }
 // }
 
-
-
 /// Get the capability's ID
 public fun cap_id(cap: &Capability): ID {
     object::uid_to_inner(&cap.id)
@@ -66,6 +64,11 @@ public(package) fun cap_destroy(cap: Capability) {
     object::delete(id);
 }
 
+#[test_only]
+public fun cap_destroy_for_testing(cap: Capability) {
+    cap_destroy(cap);
+}
+
 // ===== public use statements =====
 
 public use fun cap_id as Capability.id;
@@ -73,3 +76,5 @@ public use fun cap_role as Capability.role;
 public use fun cap_trail_id as Capability.trail_id;
 public use fun cap_has_role as Capability.has_role;
 public use fun cap_destroy as Capability.destroy;
+#[test_only]
+public use fun cap_destroy_for_testing as Capability.destroy_for_testing;

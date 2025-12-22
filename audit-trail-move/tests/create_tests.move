@@ -14,12 +14,6 @@ public struct TestData has store, copy, drop {
     message: vector<u8>,
 }
 
-fun destroy_capability(admin_cap: Capability, scenario: &ts::Scenario) {
-    let mut trail = ts::take_shared<AuditTrail<TestData>>(scenario);
-    trail.destroy_capability( admin_cap);
-    ts::return_shared(trail);
-}
-
 #[test]
 fun test_create_without_initial_record() {
     let user = @0xA;
@@ -51,7 +45,7 @@ fun test_create_without_initial_record() {
         
         // Clean up
         clock::destroy_for_testing(clock);
-        destroy_capability(admin_cap, &scenario);
+        admin_cap.destroy_for_testing();
     };
     
     ts::next_tx(&mut scenario, user);
@@ -105,7 +99,7 @@ fun test_create_with_initial_record() {
         
         // Clean up
         clock::destroy_for_testing(clock);
-        destroy_capability(admin_cap, &scenario);
+        admin_cap.destroy_for_testing();
     };
     
     ts::next_tx(&mut scenario, user);
@@ -155,7 +149,7 @@ fun test_create_minimal_metadata() {
         assert!(admin_cap.role() == initial_admin_role_name(), 0);
         
         // Clean up
-        destroy_capability(admin_cap, &scenario);
+        admin_cap.destroy_for_testing();
         clock::destroy_for_testing(clock);
     };
     
@@ -200,7 +194,7 @@ fun test_create_with_locking_enabled() {
         );
         
         // Clean up
-        destroy_capability(admin_cap, &scenario);
+        admin_cap.destroy_for_testing();
         clock::destroy_for_testing(clock);
     };
     
@@ -247,7 +241,7 @@ fun test_create_multiple_trails() {
         );
         
         trail_ids.push_back(trail_id1);
-        ts::return_to_sender(&scenario, admin_cap1);
+        admin_cap1.destroy_for_testing();
         clock::destroy_for_testing(clock);
     };
     
@@ -279,7 +273,7 @@ fun test_create_multiple_trails() {
         // Verify trails have different IDs
         assert!(trail_ids[0] != trail_ids[1], 0);
         
-        ts::return_to_sender(&scenario, admin_cap2);
+        admin_cap2.destroy_for_testing();
         clock::destroy_for_testing(clock);
     };
     
