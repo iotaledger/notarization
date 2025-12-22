@@ -90,6 +90,15 @@ fun test_from_vec_multiple_permission() {
 }
 
 #[test]
+fun test_metadata_admin_permissions() {
+    let perms = permission::metadata_admin_permissions();
+    
+    assert!(permission::has_permission(&perms, &permission::meta_data_update()), 0);
+    assert!(permission::has_permission(&perms, &permission::meta_data_delete()), 0);
+    assert!(iota::vec_set::size(&perms) == 2, 0);
+}
+
+#[test]
 #[expected_failure(abort_code = vec_set::EKeyAlreadyExists)]
 fun test_from_vec_duplicate_permission() {
     // VecSet should throw error EKeyAlreadyExists on duplicate insertions

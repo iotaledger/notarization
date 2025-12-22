@@ -279,3 +279,80 @@ fun test_create_multiple_trails() {
     
     ts::end(scenario);
 }
+
+/// Test creating a MetaDataAdmin role with metadata_admin_permissions.
+/// 
+/// This test verifies that:
+/// 1. A creator can create an AuditTrail and receive an admin capability
+/// 2. The admin capability can be transferred to another user
+/// 3. The user can use the capability to create a new MetaDataAdmin role
+/// 4. The new role has the correct permissions (meta_data_update and meta_data_delete)
+#[test]
+fun test_create_metadata_admin_role() {
+    let creator = @0xA;
+    let user = @0xB;
+    let mut scenario = ts::begin(creator);
+    
+    // Creator creates the audit trail
+    {
+        let mut clock = clock::create_for_testing(ts::ctx(&mut scenario));
+        clock.set_for_testing(1000);
+        
+        let locking_config = locking::new(std::option::none(), std::option::some(0));
+        let trail_metadata = main::new_trail_metadata(
+            std::option::some(string::utf8(b"Test Trail for MetaDataAdmin")),
+            std::option::some(string::utf8(b"Testing metadata admin role creation")),
+        );
+        
+        let (admin_cap, trail_id) = main::create<TestData>(
+            std::option::none(),
+            std::option::none(),
+            locking_config,
+            trail_metadata,
+            std::option::some(string::utf8(b"Initial metadata")),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+        
+        // Verify admin capability was created
+        assert!(admin_cap.role() == initial_admin_role_name(), 0);
+        assert!(admin_cap.trail_id() == trail_id, 1);
+        
+        // Transfer the admin capability to the user
+        transfer::public_transfer(admin_cap, user);
+        
+        clock::destroy_for_testing(clock);
+    };
+    
+    // User receives the capability and creates the MetaDataAdmin role
+    ts::next_tx(&mut scenario, user);
+    {
+        let admin_cap = ts::take_from_sender<Capability>(&scenario);
+        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        
+        // Create the MetaDataAdmin role using the admin capability
+        let metadata_admin_role_name = string::utf8(b"MetaDataAdmin");
+        let metadata_admin_perms = audit_trail::permission::metadata_admin_permissions();
+        
+        trail.create_role(
+            &admin_cap,
+            metadata_admin_role_name,
+            metadata_admin_perms,
+            ts::ctx(&mut scenario),
+        );
+        
+        // Verify the role was created by fetching its permissions
+        let role_perms = trail.get_role_permissions(&string::utf8(b"MetaDataAdmin"));
+        
+        // Verify the role has the correct permissions
+        assert!(audit_trail::permission::has_permission(role_perms, &audit_trail::permission::meta_data_update()), 2);
+        assert!(audit_trail::permission::has_permission(role_perms, &audit_trail::permission::meta_data_delete()), 3);
+        assert!(iota::vec_set::size(role_perms) == 2, 4);
+        
+        // Clean up
+        ts::return_to_sender(&scenario, admin_cap);
+        ts::return_shared(trail);
+    };
+    
+    ts::end(scenario);
+}
