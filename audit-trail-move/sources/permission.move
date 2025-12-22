@@ -82,6 +82,11 @@ public fun has_permission(set: &VecSet<Permission>, perm: &Permission): bool {
 public fun admin_permissions(): VecSet<Permission> {
     let mut perms = vec_set::empty();
     perms.insert(audit_trail_delete());
+    perms.insert(capabilities_add());   
+    perms.insert(capabilities_revoke());
+    perms.insert(roles_add());
+    perms.insert(roles_update());
+    perms.insert(roles_delete());
     perms
 }
 

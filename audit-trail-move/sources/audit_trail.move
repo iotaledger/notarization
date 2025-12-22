@@ -17,12 +17,21 @@ use iota::clock::{Self, Clock};
 use iota::event;
 use iota::linked_table::{Self, LinkedTable};
 use iota::vec_map::{Self, VecMap};
-use iota::vec_set::VecSet;
+use iota::vec_set::{Self, VecSet};
 use std::string::String;
 
 // ===== Errors =====
 #[error]
 const ERecordNotFound: vector<u8> = b"Record not found at the given sequence number";
+#[error]
+const ERoleDoesNotExist: vector<u8> = b"The specified role does not exist in the roles map";
+#[error]
+const EPermissionDenied: vector<u8> = b"The role associated with the provided capability does not have the required permission";
+#[error]
+const ETrailIdNotCorrect: vector<u8> = b"The trail ID associated with the provided capability does not match the audit trail";
+
+// ===== Constants =====
+const INITIAL_ADMIN_ROLE_NAME: vector<u8> = b"Admin";
 
 // ===== Core Structures =====
 
@@ -66,6 +75,8 @@ public struct AuditTrailCreated has copy, drop {
     has_initial_record: bool,
 }
 
+// TODO: Add event for trail deletion
+
 /// Emitted when a record is added to the trail
 /// Records are identified by trail_id + sequence_number
 public struct RecordAdded has copy, drop {
@@ -74,6 +85,19 @@ public struct RecordAdded has copy, drop {
     added_by: address,
     timestamp: u64,
 }
+
+// TODO: Add event for Record deletion and (if part of MVP) correction
+
+/// Emitted when a capability is issued
+public struct CapabilityIssued has copy, drop {
+    trail_id: ID,
+    capability_id: ID,
+    role: String,
+    issued_to: address,
+    issued_by: address,
+    timestamp: u64,
+}   
+
 
 // ===== Constructors =====
 
@@ -88,6 +112,22 @@ public fun new_trail_metadata(
 // ===== Trail Creation =====
 
 /// Create a new audit trail with optional initial record
+/// 
+/// Initial roles config
+/// --------------------
+/// Initializes the `roles` map with only one role, called "Admin" which is associated with the permissions
+/// * TrailDelete
+/// * CapabilitiesAdd
+/// * CapabilitiesRevoke
+/// * RolesAdd
+/// * RolesUpdate
+/// * RolesDelete
+///
+/// Returns
+/// -------
+/// * Capability with "Admin" role, allowing the creator to define custom
+///   roles and issue capabilities to other users.
+/// * Trail ID
 public fun create<D: store + copy>(
     initial_data: Option<D>,
     initial_record_metadata: Option<String>,
@@ -96,7 +136,7 @@ public fun create<D: store + copy>(
     updatable_metadata: Option<String>,
     clock: &Clock,
     ctx: &mut TxContext,
-): ID {
+): (Capability, ID) {
     let creator = ctx.sender();
     let timestamp = clock::timestamp_ms(clock);
 
@@ -129,9 +169,8 @@ public fun create<D: store + copy>(
         initial_data.destroy_none();
     };
 
-    // TODO: Initialize setup role with admin permissions (bootstrap)
-    // The creator should receive a setup capability with PermissionAdmin + CapAdmin
-    // to configure roles and issue capability to other users.
+    let mut roles = vec_map::empty<String, VecSet<Permission>>();
+    roles.insert(initial_admin_role_name(), permission::admin_permissions());
 
     let trail = AuditTrail {
         id: trail_uid,
@@ -140,7 +179,7 @@ public fun create<D: store + copy>(
         record_count,
         records,
         locking_config,
-        roles: vec_map::empty(),
+        roles,
         immutable_metadata: trail_metadata,
         updatable_metadata,
         issued_capability: iota::vec_set::empty(),
@@ -148,6 +187,12 @@ public fun create<D: store + copy>(
 
     transfer::share_object(trail);
 
+    let admin_cap = capability::new_capability(
+        initial_admin_role_name(),
+        trail_id,
+        ctx,
+    );
+    
     event::emit(AuditTrailCreated {
         trail_id,
         creator,
@@ -155,7 +200,11 @@ public fun create<D: store + copy>(
         has_initial_record,
     });
 
-    trail_id
+    (admin_cap, trail_id)
+}
+
+public fun initial_admin_role_name(): String {
+    INITIAL_ADMIN_ROLE_NAME.to_string()
 }
 
 // ===== Record Operations =====
@@ -252,17 +301,17 @@ public fun update_metadata<D: store + copy>(
 // ===== Trail Query Functions =====
 
 /// Get the total number of records in the trail
-public fun record_count<D: store + copy>(trail: &AuditTrail<D>): u64 {
+public fun trail_record_count<D: store + copy>(trail: &AuditTrail<D>): u64 {
     trail.record_count
 }
 
 /// Get the trail creator address
-public fun creator<D: store + copy>(trail: &AuditTrail<D>): address {
+public fun trail_creator<D: store + copy>(trail: &AuditTrail<D>): address {
     trail.creator
 }
 
 /// Get the trail creation timestamp
-public fun created_at<D: store + copy>(trail: &AuditTrail<D>): u64 {
+public fun trail_created_at<D: store + copy>(trail: &AuditTrail<D>): u64 {
     trail.created_at
 }
 
@@ -272,49 +321,170 @@ public fun trail_id<D: store + copy>(trail: &AuditTrail<D>): ID {
 }
 
 /// Get the trail name (immutable metadata)
-public fun name<D: store + copy>(trail: &AuditTrail<D>): &Option<String> {
+public fun trail_name<D: store + copy>(trail: &AuditTrail<D>): &Option<String> {
     &trail.immutable_metadata.name
 }
 
 /// Get the trail description (immutable metadata)
-public fun description<D: store + copy>(trail: &AuditTrail<D>): &Option<String> {
+public fun trail_description<D: store + copy>(trail: &AuditTrail<D>): &Option<String> {
     &trail.immutable_metadata.description
 }
 
 /// Get the updatable metadata
-public fun metadata<D: store + copy>(trail: &AuditTrail<D>): &Option<String> {
+public fun trail_metadata<D: store + copy>(trail: &AuditTrail<D>): &Option<String> {
     &trail.updatable_metadata
 }
 
 /// Get the locking configuration
-public fun locking_config<D: store + copy>(trail: &AuditTrail<D>): &LockingConfig {
+public fun trail_locking_config<D: store + copy>(trail: &AuditTrail<D>): &LockingConfig {
     &trail.locking_config
 }
 
 /// Check if the trail is empty (no records)
-public fun is_empty<D: store + copy>(trail: &AuditTrail<D>): bool {
+public fun trail_is_empty<D: store + copy>(trail: &AuditTrail<D>): bool {
     linked_table::is_empty(&trail.records)
 }
 
 /// Get the first sequence number (None if empty)
-public fun first_sequence<D: store + copy>(trail: &AuditTrail<D>): Option<u64> {
+public fun trail_first_sequence<D: store + copy>(trail: &AuditTrail<D>): Option<u64> {
     *linked_table::front(&trail.records)
 }
 
 /// Get the last sequence number (None if empty)
-public fun last_sequence<D: store + copy>(trail: &AuditTrail<D>): Option<u64> {
+public fun trail_last_sequence<D: store + copy>(trail: &AuditTrail<D>): Option<u64> {
     *linked_table::back(&trail.records)
 }
 
 // ===== Record Query Functions =====
 
 /// Get a record by sequence number
-public fun get_record<D: store + copy>(trail: &AuditTrail<D>, sequence_number: u64): &Record<D> {
+public fun trail_get_record<D: store + copy>(trail: &AuditTrail<D>, sequence_number: u64): &Record<D> {
     assert!(linked_table::contains(&trail.records, sequence_number), ERecordNotFound);
     linked_table::borrow(&trail.records, sequence_number)
 }
 
 /// Check if a record exists at the given sequence number
-public fun has_record<D: store + copy>(trail: &AuditTrail<D>, sequence_number: u64): bool {
+public fun trail_has_record<D: store + copy>(trail: &AuditTrail<D>, sequence_number: u64): bool {
     linked_table::contains(&trail.records, sequence_number)
 }
+
+// ===== Role and Capability related Functions =====
+
+/// Get the permissions associated with a specific role.
+/// Aborts with ERoleDoesNotExist if the role does not exist.
+public fun trail_get_role_permissions<D: store + copy>(
+    trail: &AuditTrail<D>,
+    role: &String,
+): &VecSet<Permission> {
+    assert!(vec_map::contains(&trail.roles, role), ERoleDoesNotExist);
+    vec_map::get(&trail.roles, role)
+}
+
+/// Indicates if a provided capability has a specific permission.
+public fun trail_has_capability_permission<D: store + copy>(
+    trail: &AuditTrail<D>,
+    cap: &Capability,
+    permission: &Permission,
+): bool {
+    assert!(trail.id() == cap.trail_id(), ETrailIdNotCorrect);
+    let permissions = trail.get_role_permissions(cap.role());
+    vec_set::contains(permissions, permission)
+}   
+
+/// Create a new capability with a specific role
+public fun trail_new_capability<D: store + copy>(
+    trail: &mut AuditTrail<D>,
+    cap: &Capability,
+    role: &String,
+    ctx: &mut TxContext,
+): Capability { 
+    assert!(trail.has_capability_permission(cap, &permission::capabilities_add()), EPermissionDenied);
+    capability::new_capability(
+        *role,
+        trail.id(),
+        ctx,
+    )
+}
+
+/// Destroy an existing capability
+/// Every owner of a capability is allowed to destroy it when no longer needed.
+/// TODO: Clarify if we need to restrict access with the `CapabilitiesRevoke` permission here.
+///       If yes, we also need a destroy function for Admin capabilities (without the need of another Admin capability).
+///       Otherwise the last Admin capability holder will block the trail forever by not being able to destroy it.
+public fun trail_destroy_capability<D: store + copy>(
+    trail: &mut AuditTrail<D>,
+    cap_to_destroy: Capability,
+) {
+    assert!(trail.id() == cap_to_destroy.trail_id(), ETrailIdNotCorrect);
+    // TODO: Implement revocation logic (e.g., remove from issued_capability set)
+    cap_to_destroy.destroy();
+}
+
+public fun trail_revoke_capability<D: store + copy>(
+    trail: &mut AuditTrail<D>,
+    cap: &Capability,
+    cap_to_revoke: ID,
+) {
+    assert!(trail.has_capability_permission(cap, &permission::capabilities_revoke()), EPermissionDenied);
+    // TODO: Implement revocation logic (e.g., remove from issued_capability set)
+}
+
+/// Create a new role consisting of a role name and associated permissions
+public fun trail_create_role<D: store + copy>(
+    trail: &mut AuditTrail<D>,
+    cap: &Capability,
+    role: String,
+    permissions: VecSet<Permission>,
+    _ctx: &mut TxContext,
+) {
+    assert!(trail.has_capability_permission(cap, &permission::roles_add()), EPermissionDenied);
+    vec_map::insert(&mut trail.roles, role, permissions);
+}
+
+/// Delete an existing role
+public fun trail_delete_role<D: store + copy>(
+    trail: &mut AuditTrail<D>,
+    cap: &Capability,
+    role: &String,
+    _ctx: &mut TxContext,
+) {
+    assert!(trail.has_capability_permission(cap, &permission::roles_delete()), EPermissionDenied);
+    vec_map::remove(&mut trail.roles, role);
+}
+
+/// Update permissions associated with an existing role
+public fun trail_update_role_permissions<D: store + copy>(
+    trail: &mut AuditTrail<D>,
+    cap: &Capability,
+    role: &String,
+    new_permissions: VecSet<Permission>,
+    _ctx: &mut TxContext,
+) {
+    assert!(trail.has_capability_permission(cap, &permission::roles_update()), EPermissionDenied);
+    assert!(vec_map::contains(&trail.roles, role), ERoleDoesNotExist);
+    vec_map::insert(&mut trail.roles, *role, new_permissions);
+}
+
+// ===== public use statements =====
+
+public use fun trail_id as AuditTrail.id;
+public use fun trail_creator as AuditTrail.creator;
+public use fun trail_created_at as AuditTrail.created_at;
+public use fun trail_record_count as AuditTrail.record_count;
+public use fun trail_name as AuditTrail.name;
+public use fun trail_description as AuditTrail.description;
+public use fun trail_metadata as AuditTrail.metadata;
+public use fun trail_locking_config as AuditTrail.locking_config;
+public use fun trail_is_empty as AuditTrail.is_empty;
+public use fun trail_first_sequence as AuditTrail.first_sequence;
+public use fun trail_last_sequence as AuditTrail.last_sequence;
+public use fun trail_get_record as AuditTrail.get_record;
+public use fun trail_has_record as AuditTrail.has_record;
+public use fun trail_get_role_permissions as AuditTrail.get_role_permissions;
+public use fun trail_has_capability_permission as AuditTrail.has_capability_permission;
+public use fun trail_new_capability as AuditTrail.new_capability;
+public use fun trail_destroy_capability as AuditTrail.destroy_capability;
+public use fun trail_revoke_capability as AuditTrail.revoke_capability;
+public use fun trail_create_role as AuditTrail.create_role;
+public use fun trail_delete_role as AuditTrail.delete_role;
+public use fun trail_update_role_permissions as AuditTrail.update_role_permissions;
