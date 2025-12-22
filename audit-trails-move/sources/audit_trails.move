@@ -7,7 +7,7 @@
 /// references its predecessor, ensuring verifiable continuity and integrity.
 ///
 /// Records are addressed by trail_id + sequence_number
-module audit_trails::audit_trails;
+module audit_trails::main;
 
 use audit_trails::capabilities::{Self, Capability};
 use audit_trails::locking::{Self, LockingConfig};
@@ -47,7 +47,7 @@ public struct AuditTrail<D: store + copy> has key, store {
     /// Deletion locking rules
     locking_config: LockingConfig,
     /// Role name -> set of permissions (TODO: implement)
-    permissions: VecMap<String, VecSet<Permission>>,
+    roles: VecMap<String, VecSet<Permission>>,
     /// Set at creation, cannot be changed
     immutable_metadata: TrailImmutableMetadata,
     /// Can be updated by holders of MetadataUpdate permission
@@ -140,7 +140,7 @@ public fun create<D: store + copy>(
         record_count,
         records,
         locking_config,
-        permissions: vec_map::empty(),
+        roles: vec_map::empty(),
         immutable_metadata: trail_metadata,
         updatable_metadata,
         issued_capabilities: iota::vec_set::empty(),
