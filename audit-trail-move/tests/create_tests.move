@@ -4,15 +4,10 @@ module audit_trail::create_tests;
 use audit_trail::main::{Self, AuditTrail, initial_admin_role_name};
 use audit_trail::locking::{Self};
 use audit_trail::capability::{Capability};
+use audit_trail::test_utils::{setup_test_audit_trail, new_test_data, initial_time_for_testing, TestData};
 use iota::test_scenario::{Self as ts};
 use iota::clock::{Self};
 use std::string::{Self};
-
-/// Test data type for audit trail records
-public struct TestData has store, copy, drop {
-    value: u64,
-    message: vector<u8>,
-}
 
 #[test]
 fun test_create_without_initial_record() {
@@ -20,23 +15,12 @@ fun test_create_without_initial_record() {
     let mut scenario = ts::begin(user);
     
     {
-        let mut clock = clock::create_for_testing(ts::ctx(&mut scenario));
-        clock.set_for_testing(1000);
-        
         let locking_config = locking::new(std::option::none(), std::option::some(0));
-        let trail_metadata = main::new_trail_metadata(
-            std::option::some(string::utf8(b"Test Trail")),
-            std::option::some(string::utf8(b"A test audit trail")),
-        );
         
-        let (admin_cap, trail_id) = main::create<TestData>(
-            std::option::none(),
-            std::option::none(),
+        let (admin_cap, trail_id) = setup_test_audit_trail(
+            &mut scenario,
             locking_config,
-            trail_metadata,
-            std::option::some(string::utf8(b"Updatable metadata")),
-            &clock,
-            ts::ctx(&mut scenario),
+            std::option::none()
         );
         
         // Verify capability was created
@@ -44,7 +28,6 @@ fun test_create_without_initial_record() {
         assert!(admin_cap.trail_id() == trail_id, 1);
         
         // Clean up
-        clock::destroy_for_testing(clock);
         admin_cap.destroy_for_testing();
     };
     
@@ -54,7 +37,7 @@ fun test_create_without_initial_record() {
         
         // Verify trail was created correctly
         assert!(trail.trail_creator() == user, 2);
-        assert!(trail.trail_created_at() == 1000, 3);
+        assert!(trail.trail_created_at() == initial_time_for_testing(), 3);
         assert!(trail.trail_record_count() == 0, 4);
         
         ts::return_shared(trail);
@@ -69,28 +52,13 @@ fun test_create_with_initial_record() {
     let mut scenario = ts::begin(user);
     
     {
-        let mut clock = clock::create_for_testing(ts::ctx(&mut scenario));
-        clock.set_for_testing(2000);
-        
         let locking_config = locking::new(std::option::some(86400), std::option::none()); // 1 day in seconds
-        let trail_metadata = main::new_trail_metadata(
-            std::option::some(string::utf8(b"Test Trail with Record")),
-            std::option::some(string::utf8(b"A test audit trail with initial record")),
-        );
+        let initial_data = new_test_data(42, b"Hello, World!");
         
-        let initial_data = TestData {
-            value: 42,
-            message: b"Hello, World!",
-        };
-        
-        let (admin_cap, trail_id) = main::create<TestData>(
-            std::option::some(initial_data),
-            std::option::some(string::utf8(b"Initial record metadata")),
+        let (admin_cap, trail_id) = setup_test_audit_trail(
+            &mut scenario,
             locking_config,
-            trail_metadata,
-            std::option::some(string::utf8(b"Updatable metadata")),
-            &clock,
-            ts::ctx(&mut scenario),
+            std::option::some(initial_data)
         );
         
         // Verify capability
@@ -98,7 +66,6 @@ fun test_create_with_initial_record() {
         assert!(admin_cap.trail_id() == trail_id, 1);
         
         // Clean up
-        clock::destroy_for_testing(clock);
         admin_cap.destroy_for_testing();
     };
     
@@ -108,7 +75,7 @@ fun test_create_with_initial_record() {
         
         // Verify trail with initial record
         assert!(trail.trail_creator() == user, 2);
-        assert!(trail.trail_created_at() == 2000, 3);
+        assert!(trail.trail_created_at() == initial_time_for_testing(), 3);
         assert!(trail.trail_record_count() == 1, 4);
         
         // Verify the initial record exists
@@ -173,29 +140,16 @@ fun test_create_with_locking_enabled() {
     let user = @0xD;
     let mut scenario = ts::begin(user);
     
-    {
-        let mut clock = clock::create_for_testing(ts::ctx(&mut scenario));
-        clock.set_for_testing(4000);
-        
+    {       
         let locking_config = locking::new(std::option::some(604800), std::option::none()); // 7 days in seconds
-        let trail_metadata = main::new_trail_metadata(
-            std::option::some(string::utf8(b"Locked Trail")),
-            std::option::none(),
-        );
-        
-        let (admin_cap, _trail_id) = main::create<TestData>(
-            std::option::none(),
-            std::option::none(),
+        let (admin_cap, _trail_id) = setup_test_audit_trail(
+            &mut scenario,
             locking_config,
-            trail_metadata,
-            std::option::none(),
-            &clock,
-            ts::ctx(&mut scenario),
+            std::option::none()
         );
         
         // Clean up
         admin_cap.destroy_for_testing();
-        clock::destroy_for_testing(clock);
     };
     
     ts::next_tx(&mut scenario, user);
@@ -220,52 +174,27 @@ fun test_create_multiple_trails() {
     let mut trail_ids = vector::empty<iota::object::ID>();
     
     // Create first trail
-    {
-        let mut clock = clock::create_for_testing(ts::ctx(&mut scenario));
-        clock.set_for_testing(5000);
-        
+    {        
         let locking_config = locking::new(std::option::none(), std::option::some(0));
-        let trail_metadata = main::new_trail_metadata(
-            std::option::some(string::utf8(b"Trail 1")),
-            std::option::none(),
-        );
-        
-        let (admin_cap1, trail_id1) = main::create<TestData>(
-            std::option::none(),
-            std::option::none(),
+        let (admin_cap1, trail_id1) = setup_test_audit_trail(
+            &mut scenario,
             locking_config,
-            trail_metadata,
-            std::option::none(),
-            &clock,
-            ts::ctx(&mut scenario),
+            std::option::none()
         );
         
         trail_ids.push_back(trail_id1);
         admin_cap1.destroy_for_testing();
-        clock::destroy_for_testing(clock);
     };
     
     ts::next_tx(&mut scenario, user);
     
     // Create second trail
     {
-        let mut clock = clock::create_for_testing(ts::ctx(&mut scenario));
-        clock.set_for_testing(6000);
-        
         let locking_config = locking::new(std::option::none(), std::option::some(0));
-        let trail_metadata = main::new_trail_metadata(
-            std::option::some(string::utf8(b"Trail 2")),
-            std::option::none(),
-        );
-        
-        let (admin_cap2, trail_id2) = main::create<TestData>(
-            std::option::none(),
-            std::option::none(),
+        let (admin_cap2, trail_id2) = setup_test_audit_trail(
+            &mut scenario,
             locking_config,
-            trail_metadata,
-            std::option::none(),
-            &clock,
-            ts::ctx(&mut scenario),
+            std::option::none()
         );
         
         trail_ids.push_back(trail_id2);
@@ -274,7 +203,6 @@ fun test_create_multiple_trails() {
         assert!(trail_ids[0] != trail_ids[1], 0);
         
         admin_cap2.destroy_for_testing();
-        clock::destroy_for_testing(clock);
     };
     
     ts::end(scenario);
@@ -294,24 +222,13 @@ fun test_create_metadata_admin_role() {
     let mut scenario = ts::begin(creator);
     
     // Creator creates the audit trail
-    {
-        let mut clock = clock::create_for_testing(ts::ctx(&mut scenario));
-        clock.set_for_testing(1000);
-        
+    {        
         let locking_config = locking::new(std::option::none(), std::option::some(0));
-        let trail_metadata = main::new_trail_metadata(
-            std::option::some(string::utf8(b"Test Trail for MetaDataAdmin")),
-            std::option::some(string::utf8(b"Testing metadata admin role creation")),
-        );
         
-        let (admin_cap, trail_id) = main::create<TestData>(
-            std::option::none(),
-            std::option::none(),
+        let (admin_cap, trail_id) = setup_test_audit_trail(
+            &mut scenario,
             locking_config,
-            trail_metadata,
-            std::option::some(string::utf8(b"Initial metadata")),
-            &clock,
-            ts::ctx(&mut scenario),
+            std::option::none()
         );
         
         // Verify admin capability was created
@@ -319,9 +236,7 @@ fun test_create_metadata_admin_role() {
         assert!(admin_cap.trail_id() == trail_id, 1);
         
         // Transfer the admin capability to the user
-        transfer::public_transfer(admin_cap, user);
-        
-        clock::destroy_for_testing(clock);
+        transfer::public_transfer(admin_cap, user);        
     };
     
     // User receives the capability and creates the MetaDataAdmin role

@@ -28,7 +28,6 @@ public(package) fun new_capability(
     }
 }
 
-
 // TODO: Is this needed? What is a setup capability?
 //
 // /// Create a setup capability for trail initialization
