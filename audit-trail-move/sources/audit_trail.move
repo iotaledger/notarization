@@ -286,15 +286,13 @@ public fun update_locking_config<D: store + copy>(
 // ===== Metadata =====
 
 /// Update the trail's mutable metadata
-///
-/// TODO: Add capability parameter and permission check once implemented
 public fun update_metadata<D: store + copy>(
     trail: &mut AuditTrail<D>,
     cap: &Capability,
     new_metadata: Option<String>,
     _ctx: &mut TxContext,
 ) {
-    // TODO: check_permission(trail, cap, &permissions::metadata_update(), ctx);
+    assert!(trail.has_capability_permission(cap, &permission::meta_data_update()), EPermissionDenied);
     trail.updatable_metadata = new_metadata;
 }
 
