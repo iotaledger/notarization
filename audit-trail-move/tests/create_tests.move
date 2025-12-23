@@ -1,4 +1,5 @@
 #[test_only]
+/// This module contains comprehensive tests for the AuditTrail creation functionality.
 module audit_trail::create_tests;
 
 use audit_trail::main::{Self, AuditTrail, initial_admin_role_name};
@@ -9,6 +10,10 @@ use iota::test_scenario::{Self as ts};
 use iota::clock::{Self};
 use std::string::{Self};
 
+/// Goals of this test:
+/// - Verifies creating an AuditTrail with no initial record
+/// - Checks admin capability creation with correct role and trail_id
+/// - Validates trail metadata (creator, creation time, record count)
 #[test]
 fun test_create_without_initial_record() {
     let user = @0xA;
@@ -46,6 +51,10 @@ fun test_create_without_initial_record() {
     ts::end(scenario);  
 }
 
+/// Goals of this test:
+/// - Tests AuditTrail creation with an initial record
+/// - Verifies the trail contains exactly one record after creation
+/// - Validates the initial record exists at index 0
 #[test]
 fun test_create_with_initial_record() {
     let user = @0xB;
@@ -87,6 +96,10 @@ fun test_create_with_initial_record() {
     ts::end(scenario);
 }
 
+/// Goals of this test:
+/// - Tests creating a trail with minimal metadata (optional fields set to none)
+/// - Uses a custom clock time to verify timestamp handling
+/// - Ensures the system handles minimal configuration correctly
 #[test]
 fun test_create_minimal_metadata() {
     let user = @0xC;
@@ -135,6 +148,10 @@ fun test_create_minimal_metadata() {
     ts::end(scenario);
 }
 
+/// Goals of this test:
+/// - Verifies AuditTrail creation with locking configuration enabled
+/// - Tests a 7-day time-based lock period
+/// - Validates the trail is created successfully with locking constraints
 #[test]
 fun test_create_with_locking_enabled() {
     let user = @0xD;
@@ -166,6 +183,10 @@ fun test_create_with_locking_enabled() {
     ts::end(scenario);
 }
 
+/// Goals of this test:
+/// - Tests creating multiple independent AuditTrail instances
+/// - Verifies each trail receives a unique ID
+/// - Ensures multiple trails can coexist without conflicts
 #[test]
 fun test_create_multiple_trails() {
     let user = @0xE;

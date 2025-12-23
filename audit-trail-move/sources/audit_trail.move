@@ -24,9 +24,11 @@ use std::string::String;
 #[error]
 const ERecordNotFound: vector<u8> = b"Record not found at the given sequence number";
 #[error]
-const ERoleDoesNotExist: vector<u8> = b"The specified role does not exist in the roles map";
+const ERoleDoesNotExist: vector<u8> = b"The specified role does not exist in the `roles` map";
 #[error]
 const EPermissionDenied: vector<u8> = b"The role associated with the provided capability does not have the required permission";
+#[error]
+const ECapabilityHasBeenRevoked: vector<u8> = b"The provided capability has been revoked and is no longer valid";
 #[error]
 const ETrailIdNotCorrect: vector<u8> = b"The trail ID associated with the provided capability does not match the audit trail";
 
@@ -61,8 +63,8 @@ public struct AuditTrail<D: store + copy> has key, store {
     immutable_metadata: TrailImmutableMetadata,
     /// Can be updated by holders of MetadataUpdate permission
     updatable_metadata: Option<String>,
-    /// Whitelist of all issued capability IDs (TODO: implement)
-    issued_capability: VecSet<ID>,
+    /// Whitelist of all issued capability IDs
+    issued_capabilities: VecSet<ID>,
 }
 
 // ===== Events =====
@@ -172,6 +174,15 @@ public fun create<D: store + copy>(
     let mut roles = vec_map::empty<String, VecSet<Permission>>();
     roles.insert(initial_admin_role_name(), permission::admin_permissions());
 
+    let admin_cap = capability::new_capability(
+        initial_admin_role_name(),
+        trail_id,
+        ctx,
+    );
+    let mut issued_capabilities = vec_set::empty<ID>();
+    issued_capabilities.insert(admin_cap.id());
+
+
     let trail = AuditTrail {
         id: trail_uid,
         creator,
@@ -182,16 +193,10 @@ public fun create<D: store + copy>(
         roles,
         immutable_metadata: trail_metadata,
         updatable_metadata,
-        issued_capability: iota::vec_set::empty(),
+        issued_capabilities,
     };
 
     transfer::share_object(trail);
-
-    let admin_cap = capability::new_capability(
-        initial_admin_role_name(),
-        trail_id,
-        ctx,
-    );
     
     event::emit(AuditTrailCreated {
         trail_id,
@@ -432,7 +437,6 @@ public fun trail_has_role<D: store + copy>(
     vec_map::contains(&trail.roles, role)
 }
 
-
 // ===== Capability related Functions =====
 
 /// Indicates if a provided capability has a specific permission.
@@ -442,11 +446,13 @@ public fun trail_has_capability_permission<D: store + copy>(
     permission: &Permission,
 ): bool {
     assert!(trail.id() == cap.trail_id(), ETrailIdNotCorrect);
+    assert!(trail.issued_capabilities.contains(&cap.id()), ECapabilityHasBeenRevoked);
     let permissions = trail.get_role_permissions(cap.role());
     vec_set::contains(permissions, permission)
 }
 
 /// Create a new capability with a specific role
+/// Aborts with ERoleDoesNotExist if the role does not exist.
 public fun trail_new_capability<D: store + copy>(
     trail: &mut AuditTrail<D>,
     cap: &Capability,
@@ -454,11 +460,14 @@ public fun trail_new_capability<D: store + copy>(
     ctx: &mut TxContext,
 ): Capability { 
     assert!(trail.has_capability_permission(cap, &permission::capabilities_add()), EPermissionDenied);
-    capability::new_capability(
+    assert!(trail.roles.contains(role), ERoleDoesNotExist);
+    let new_cap = capability::new_capability(
         *role,
         trail.id(),
         ctx,
-    )
+    );
+    trail.issued_capabilities.insert(new_cap.id());
+    new_cap
 }
 
 /// Destroy an existing capability
@@ -471,7 +480,7 @@ public fun trail_destroy_capability<D: store + copy>(
     cap_to_destroy: Capability,
 ) {
     assert!(trail.id() == cap_to_destroy.trail_id(), ETrailIdNotCorrect);
-    // TODO: Implement revocation logic (e.g., remove from issued_capability set)
+    trail.issued_capabilities.remove(&cap_to_destroy.id());
     cap_to_destroy.destroy();
 }
 
@@ -481,7 +490,13 @@ public fun trail_revoke_capability<D: store + copy>(
     cap_to_revoke: ID,
 ) {
     assert!(trail.has_capability_permission(cap, &permission::capabilities_revoke()), EPermissionDenied);
-    // TODO: Implement revocation logic (e.g., remove from issued_capability set)
+    trail.issued_capabilities.remove(&cap_to_revoke);
+}
+
+public fun trail_issued_capabilities<D: store + copy>(
+    trail: &AuditTrail<D>,
+): &VecSet<ID> {
+    &trail.issued_capabilities
 }
 
 // ===== public use statements =====
@@ -505,6 +520,7 @@ public use fun trail_has_capability_permission as AuditTrail.has_capability_perm
 public use fun trail_new_capability as AuditTrail.new_capability;
 public use fun trail_destroy_capability as AuditTrail.destroy_capability;
 public use fun trail_revoke_capability as AuditTrail.revoke_capability;
+public use fun trail_issued_capabilities as AuditTrail.issued_capabilities;
 public use fun trail_get_role_permissions as AuditTrail.get_role_permissions;
 public use fun trail_create_role as AuditTrail.create_role;
 public use fun trail_delete_role as AuditTrail.delete_role;
