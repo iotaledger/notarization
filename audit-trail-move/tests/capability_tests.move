@@ -26,7 +26,7 @@ fun test_new_capability() {
     
     // Setup: Create audit trail with admin capability
     let trail_id = {
-        let locking_config = locking::new(std::option::none(), std::option::some(0));
+        let locking_config = locking::new(locking::window_count_based(0));
         
         let (admin_cap, trail_id) = setup_test_audit_trail(
             &mut scenario,
@@ -140,7 +140,7 @@ fun test_revoke_capability() {
     
     // Setup: Create audit trail with admin capability
     let _trail_id = {
-        let locking_config = locking::new(std::option::none(), std::option::some(0));
+        let locking_config = locking::new(locking::window_count_based(0));
         
         let (admin_cap, trail_id) = setup_test_audit_trail(
             &mut scenario,
@@ -278,7 +278,7 @@ fun test_destroy_capability() {
     
     // Setup: Create audit trail with admin capability
     let trail_id = {
-        let locking_config = locking::new(std::option::none(), std::option::some(0));
+        let locking_config = locking::new(locking::window_count_based(0));
         
         let (admin_cap, trail_id) = setup_test_audit_trail(
             &mut scenario,
@@ -415,7 +415,7 @@ fun test_capability_lifecycle() {
     
     // Setup: Create audit trail
     let trail_id = {
-        let locking_config = locking::new(std::option::none(), std::option::some(0));
+        let locking_config = locking::new(locking::window_count_based(0));
         
         let (admin_cap, trail_id) = setup_test_audit_trail(
             &mut scenario,

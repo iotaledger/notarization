@@ -36,7 +36,7 @@ fun test_role_based_permission_delegation() {
     
     // Step 1: admin_user creates the audit trail
     let trail_id = {
-        let locking_config = locking::new(std::option::none(), std::option::some(0));
+        let locking_config = locking::new(locking::window_count_based(0));
         
         let (admin_cap, trail_id) = setup_test_audit_trail(
             &mut scenario,
