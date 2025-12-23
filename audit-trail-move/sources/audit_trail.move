@@ -227,7 +227,7 @@ public fun trail_add_record<D: store + copy>(
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
-    assert!(trail.has_capability_permission(cap, &permission::record_add()), EPermissionDenied);
+    assert!(trail.has_capability_permission(cap, &permission::add_record()), EPermissionDenied);
 
     let caller = ctx.sender();
     let timestamp = clock::timestamp_ms(clock);
@@ -297,7 +297,7 @@ public fun update_metadata<D: store + copy>(
     new_metadata: Option<String>,
     _ctx: &mut TxContext,
 ) {
-    assert!(trail.has_capability_permission(cap, &permission::meta_data_update()), EPermissionDenied);
+    assert!(trail.has_capability_permission(cap, &permission::update_metadata()), EPermissionDenied);
     trail.updatable_metadata = new_metadata;
 }
 
@@ -396,7 +396,7 @@ public fun trail_create_role<D: store + copy>(
     permissions: VecSet<Permission>,
     _ctx: &mut TxContext,
 ) {
-    assert!(trail.has_capability_permission(cap, &permission::roles_add()), EPermissionDenied);
+    assert!(trail.has_capability_permission(cap, &permission::add_roles()), EPermissionDenied);
     vec_map::insert(&mut trail.roles, role, permissions);
 }
 
@@ -407,7 +407,7 @@ public fun trail_delete_role<D: store + copy>(
     role: &String,
     _ctx: &mut TxContext,
 ) {
-    assert!(trail.has_capability_permission(cap, &permission::roles_delete()), EPermissionDenied);
+    assert!(trail.has_capability_permission(cap, &permission::delete_roles()), EPermissionDenied);
     vec_map::remove(&mut trail.roles, role);
 }
 
@@ -419,7 +419,7 @@ public fun trail_update_role_permissions<D: store + copy>(
     new_permissions: VecSet<Permission>,
     _ctx: &mut TxContext,
 ) {
-    assert!(trail.has_capability_permission(cap, &permission::roles_update()), EPermissionDenied);
+    assert!(trail.has_capability_permission(cap, &permission::update_roles()), EPermissionDenied);
     assert!(vec_map::contains(&trail.roles, role), ERoleDoesNotExist);
     vec_map::insert(&mut trail.roles, *role, new_permissions);
 }
@@ -459,7 +459,7 @@ public fun trail_new_capability<D: store + copy>(
     role: &String,
     ctx: &mut TxContext,
 ): Capability { 
-    assert!(trail.has_capability_permission(cap, &permission::capabilities_add()), EPermissionDenied);
+    assert!(trail.has_capability_permission(cap, &permission::add_capabilities()), EPermissionDenied);
     assert!(trail.roles.contains(role), ERoleDoesNotExist);
     let new_cap = capability::new_capability(
         *role,
@@ -489,7 +489,7 @@ public fun trail_revoke_capability<D: store + copy>(
     cap: &Capability,
     cap_to_revoke: ID,
 ) {
-    assert!(trail.has_capability_permission(cap, &permission::capabilities_revoke()), EPermissionDenied);
+    assert!(trail.has_capability_permission(cap, &permission::revoke_capabilities()), EPermissionDenied);
     trail.issued_capabilities.remove(&cap_to_revoke);
 }
 

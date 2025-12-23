@@ -281,8 +281,8 @@ fun test_create_metadata_admin_role() {
         let role_perms = trail.get_role_permissions(&string::utf8(b"MetadataAdmin"));
         
         // Verify the role has the correct permissions
-        assert!(audit_trail::permission::has_permission(role_perms, &audit_trail::permission::meta_data_update()), 2);
-        assert!(audit_trail::permission::has_permission(role_perms, &audit_trail::permission::meta_data_delete()), 3);
+        assert!(audit_trail::permission::has_permission(role_perms, &audit_trail::permission::update_metadata()), 2);
+        assert!(audit_trail::permission::has_permission(role_perms, &audit_trail::permission::delete_metadata()), 3);
         assert!(iota::vec_set::size(role_perms) == 2, 4);
         
         // Clean up

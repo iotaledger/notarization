@@ -10,43 +10,43 @@ use iota::vec_set::{Self, VecSet};
 public enum Permission has copy, drop, store {
     // --- Whole AUdit TRail related - Proposed role: `Admin` ---
     /// Destroy the whole Audit Trail object
-    AuditTrailDelete,
+    DeleteAuditTrail,
 
     // --- Record Management - Proposed role: `RecordAdmin` ---
     /// Add records to the trail
-    RecordAdd,
+    AddRecord,
     /// Delete records from the trail
-    RecordDelete,
+    DeleteRecord,
     /// Correct existing records in the trail
-    RecordCorrect, // TODO: Clarify if needed for MVP
+    CorrectRecord, // TODO: Clarify if needed for MVP
 
 
     // --- Locking Config - Proposed role: `LockingAdmin` ---
     /// Edit the delete_lock configuration for records
-    RecordDeleteLockConfig,
+    ConfigRecordDeleteLock,
     /// Edit the delete_lock configuration for the whole Audit Trail
-    TrailDeleteLockConfig,
+    ConfigTrailDeleteLock,
 
 
     // --- Role Management - Proposed role: `RoleAdmin` ---
     /// Add new roles with associated permissions
-    RolesAdd,
+    AddRoles,
     /// Update permissions associated with existing roles
-    RolesUpdate,
+    UpdateRoles,
     /// Delete existing roles
-    RolesDelete,
+    DeleteRoles,
     
     // --- Capability Management - Proposed role: `CapAdmin` ---
     /// Issue new capabilities
-    CapabilitiesAdd,
+    AddCapabilities,
     /// Revoke existing capabilities
-    CapabilitiesRevoke,
+    RevokeCapabilities,
 
     // --- Meta Data related - Proposed role: `MetadataAdmin` ---
     /// Update the updatable metadata field
-    MetadataUpdate,
+    UpdateMetadata,
     /// Delete the updatable metadata field
-    MetadataDelete,
+    DeleteMetadata,
 }
 
 /// Create an empty permission set
@@ -81,120 +81,120 @@ public fun has_permission(set: &VecSet<Permission>, perm: &Permission): bool {
 /// Create permissions typical used for the `Admin` rolepermissions
 public fun admin_permissions(): VecSet<Permission> {
     let mut perms = vec_set::empty();
-    perms.insert(audit_trail_delete());
-    perms.insert(capabilities_add());   
-    perms.insert(capabilities_revoke());
-    perms.insert(roles_add());
-    perms.insert(roles_update());
-    perms.insert(roles_delete());
+    perms.insert(delete_audit_trail());
+    perms.insert(add_capabilities());   
+    perms.insert(revoke_capabilities());
+    perms.insert(add_roles());
+    perms.insert(update_roles());
+    perms.insert(delete_roles());
     perms
 }
 
 /// Create permissions typical used for the `RecordAdmin` role
 public fun record_admin_permissions(): VecSet<Permission> {
     let mut perms = vec_set::empty();
-    perms.insert(record_add());
-    perms.insert(record_delete());
-    perms.insert(record_correct());
+    perms.insert(add_record());
+    perms.insert(delete_record());
+    perms.insert(correct_record());
     perms
 }
 
 /// Create permissions typical used for the `LockingAdmin` role
 public fun locking_admin_permissions(): VecSet<Permission> {
     let mut perms = vec_set::empty();
-    perms.insert(record_delete_lock_config());
-    perms.insert(trail_delete_lock_config());
+    perms.insert(config_record_delete_lock());
+    perms.insert(config_trail_delete_lock());
     perms
 }
 
 /// Create permissions typical used for the `RoleAdmin` role
 public fun role_admin_permissions(): VecSet<Permission> {
     let mut perms = vec_set::empty();
-    perms.insert(roles_add());
-    perms.insert(roles_update());
-    perms.insert(roles_delete());
+    perms.insert(add_roles());
+    perms.insert(update_roles());
+    perms.insert(delete_roles());
     perms
 }
 
 /// Create permissions typical used for the `CapAdmin` role
 public fun cap_admin_permissions(): VecSet<Permission> {
     let mut perms = vec_set::empty();
-    perms.insert(capabilities_add());
-    perms.insert(capabilities_revoke());
+    perms.insert(add_capabilities());
+    perms.insert(revoke_capabilities());
     perms
 }
 
 /// Create permissions typical used for the `MetadataAdmin` role
 public fun metadata_admin_permissions(): VecSet<Permission> {
     let mut perms = vec_set::empty();
-    perms.insert(meta_data_update());
-    perms.insert(meta_data_delete());
+    perms.insert(update_metadata());
+    perms.insert(delete_metadata());
     perms
 }
 
 // --------------------------- Constructor functions for all Permission variants ---------------------------
 
 /// Returns a permission allowing to destroy the whole Audit Trail object
-public fun audit_trail_delete(): Permission {
-    Permission::AuditTrailDelete
+public fun delete_audit_trail(): Permission {
+    Permission::DeleteAuditTrail
 }
 
 /// Returns a permission allowing to add records to the trail
-public fun record_add(): Permission {
-    Permission::RecordAdd
+public fun add_record(): Permission {
+    Permission::AddRecord
 }
 
 /// Returns a permission allowing to delete records from the trail
-public fun record_delete(): Permission {
-    Permission::RecordDelete
+public fun delete_record(): Permission {
+    Permission::DeleteRecord
 }
 
 /// Returns a permission allowing to correct existing records in the trail
-public fun record_correct(): Permission {
-    Permission::RecordCorrect
+public fun correct_record(): Permission {
+    Permission::CorrectRecord
 }
 
 /// Returns a permission allowing to edit the delete_lock configuration for records
-public fun record_delete_lock_config(): Permission {
-    Permission::RecordDeleteLockConfig
+public fun config_record_delete_lock(): Permission {
+    Permission::ConfigRecordDeleteLock
 }
 
 /// Returns a permission allowing to edit the delete_lock configuration for the whole Audit Trail
-public fun trail_delete_lock_config(): Permission {
-    Permission::TrailDeleteLockConfig
+public fun config_trail_delete_lock(): Permission {
+    Permission::ConfigTrailDeleteLock
 }
 
 /// Returns a permission allowing to add new roles with associated permissions
-public fun roles_add(): Permission {
-    Permission::RolesAdd
+public fun add_roles(): Permission {
+    Permission::AddRoles
 }
 
 /// Returns a permission allowing to update permissions associated with existing roles
-public fun roles_update(): Permission {
-    Permission::RolesUpdate
+public fun update_roles(): Permission {
+    Permission::UpdateRoles
 }
 
 /// Returns a permission allowing to delete existing roles
-public fun roles_delete(): Permission {
-    Permission::RolesDelete
+public fun delete_roles(): Permission {
+    Permission::DeleteRoles
 }
 
 /// Returns a permission allowing to issue new capabilities
-public fun capabilities_add(): Permission {
-    Permission::CapabilitiesAdd
+public fun add_capabilities(): Permission {
+    Permission::AddCapabilities
 }
 
 /// Returns a permission allowing to revoke existing capabilities
-public fun capabilities_revoke(): Permission {
-    Permission::CapabilitiesRevoke
+public fun revoke_capabilities(): Permission {
+    Permission::RevokeCapabilities
 }
 
 /// Returns a permission allowing to update the updatable_metadata field
-public fun meta_data_update(): Permission {
-    Permission::MetadataUpdate
+public fun update_metadata(): Permission {
+    Permission::UpdateMetadata
 }
 
 /// Returns a permission allowing to delete the updatable_metadata field
-public fun meta_data_delete(): Permission {
-    Permission::MetadataDelete
+public fun delete_metadata(): Permission {
+    Permission::DeleteMetadata
 }
