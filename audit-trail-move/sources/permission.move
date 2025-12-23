@@ -44,7 +44,7 @@ public enum Permission has copy, drop, store {
 
     // --- Meta Data related - Proposed role: `MetaDataAdmin` ---
     /// Update the updatable metadata field
-    MetaDataUpdate,
+    MetadataUpdate,
     /// Delete the updatable metadata field
     MetaDataDelete,
 }
