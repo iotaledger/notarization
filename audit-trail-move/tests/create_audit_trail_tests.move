@@ -1,6 +1,6 @@
 #[test_only]
 /// This module contains comprehensive tests for the AuditTrail creation functionality.
-module audit_trail::create_tests;
+module audit_trail::create_audit_trail_tests;
 
 use audit_trail::main::{Self, AuditTrail, initial_admin_role_name};
 use audit_trail::locking::{Self};
