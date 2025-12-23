@@ -42,11 +42,11 @@ public enum Permission has copy, drop, store {
     /// Revoke existing capabilities
     CapabilitiesRevoke,
 
-    // --- Meta Data related - Proposed role: `MetaDataAdmin` ---
+    // --- Meta Data related - Proposed role: `MetadataAdmin` ---
     /// Update the updatable metadata field
     MetadataUpdate,
     /// Delete the updatable metadata field
-    MetaDataDelete,
+    MetadataDelete,
 }
 
 /// Create an empty permission set
@@ -124,7 +124,7 @@ public fun cap_admin_permissions(): VecSet<Permission> {
     perms
 }
 
-/// Create permissions typical used for the `MetaDataAdmin` role
+/// Create permissions typical used for the `MetadataAdmin` role
 public fun metadata_admin_permissions(): VecSet<Permission> {
     let mut perms = vec_set::empty();
     perms.insert(meta_data_update());
@@ -191,10 +191,10 @@ public fun capabilities_revoke(): Permission {
 
 /// Returns a permission allowing to update the updatable_metadata field
 public fun meta_data_update(): Permission {
-    Permission::MetaDataUpdate
+    Permission::MetadataUpdate
 }
 
 /// Returns a permission allowing to delete the updatable_metadata field
 public fun meta_data_delete(): Permission {
-    Permission::MetaDataDelete
+    Permission::MetadataDelete
 }

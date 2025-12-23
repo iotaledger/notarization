@@ -229,12 +229,12 @@ fun test_create_multiple_trails() {
     ts::end(scenario);
 }
 
-/// Test creating a MetaDataAdmin role with metadata_admin_permissions.
+/// Test creating a MetadataAdmin role with metadata_admin_permissions.
 /// 
 /// This test verifies that:
 /// 1. A creator can create an AuditTrail and receive an admin capability
 /// 2. The admin capability can be transferred to another user
-/// 3. The user can use the capability to create a new MetaDataAdmin role
+/// 3. The user can use the capability to create a new MetadataAdmin role
 /// 4. The new role has the correct permissions (meta_data_update and meta_data_delete)
 #[test]
 fun test_create_metadata_admin_role() {
@@ -260,14 +260,14 @@ fun test_create_metadata_admin_role() {
         transfer::public_transfer(admin_cap, user);        
     };
     
-    // User receives the capability and creates the MetaDataAdmin role
+    // User receives the capability and creates the MetadataAdmin role
     ts::next_tx(&mut scenario, user);
     {
         let admin_cap = ts::take_from_sender<Capability>(&scenario);
         let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
         
-        // Create the MetaDataAdmin role using the admin capability
-        let metadata_admin_role_name = string::utf8(b"MetaDataAdmin");
+        // Create the MetadataAdmin role using the admin capability
+        let metadata_admin_role_name = string::utf8(b"MetadataAdmin");
         let metadata_admin_perms = audit_trail::permission::metadata_admin_permissions();
         
         trail.create_role(
@@ -278,7 +278,7 @@ fun test_create_metadata_admin_role() {
         );
         
         // Verify the role was created by fetching its permissions
-        let role_perms = trail.get_role_permissions(&string::utf8(b"MetaDataAdmin"));
+        let role_perms = trail.get_role_permissions(&string::utf8(b"MetadataAdmin"));
         
         // Verify the role has the correct permissions
         assert!(audit_trail::permission::has_permission(role_perms, &audit_trail::permission::meta_data_update()), 2);
