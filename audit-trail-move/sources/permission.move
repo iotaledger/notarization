@@ -22,11 +22,12 @@ public enum Permission has copy, drop, store {
 
 
     // --- Locking Config - Proposed role: `LockingAdmin` ---
-    /// Edit the delete_lock configuration for records
-    ConfigRecordDeleteLock,
-    /// Edit the delete_lock configuration for the whole Audit Trail
-    ConfigTrailDeleteLock,
-
+    /// Update the whole locking configuration
+    UpdateLockingConfig,
+    /// Update the delete_record_lock configuration which is part of the locking configuration
+    UpdateLockingConfigForDeleteRecord,
+    /// Update the delete_lock configuration for the whole Audit Trail
+    UpdateLockingConfigForDeleteTrail,
 
     // --- Role Management - Proposed role: `RoleAdmin` ---
     /// Add new roles with associated permissions
@@ -102,8 +103,9 @@ public fun record_admin_permissions(): VecSet<Permission> {
 /// Create permissions typical used for the `LockingAdmin` role
 public fun locking_admin_permissions(): VecSet<Permission> {
     let mut perms = vec_set::empty();
-    perms.insert(config_record_delete_lock());
-    perms.insert(config_trail_delete_lock());
+    perms.insert(update_locking_config());
+    perms.insert(update_locking_config_for_delete_trail());
+    perms.insert(update_locking_config_for_delete_record());
     perms
 }
 
@@ -154,14 +156,19 @@ public fun correct_record(): Permission {
     Permission::CorrectRecord
 }
 
-/// Returns a permission allowing to edit the delete_lock configuration for records
-public fun config_record_delete_lock(): Permission {
-    Permission::ConfigRecordDeleteLock
+/// Returns a permission allowing to update the whole locking configuration
+public fun update_locking_config(): Permission {
+    Permission::UpdateLockingConfig
 }
 
-/// Returns a permission allowing to edit the delete_lock configuration for the whole Audit Trail
-public fun config_trail_delete_lock(): Permission {
-    Permission::ConfigTrailDeleteLock
+/// Returns a permission allowing to update the delete_lock configuration for records
+public fun update_locking_config_for_delete_record(): Permission {
+    Permission::UpdateLockingConfigForDeleteRecord
+}
+
+/// Returns a permission allowing to update the delete_lock configuration for the whole Audit Trail
+public fun update_locking_config_for_delete_trail(): Permission {
+    Permission::UpdateLockingConfigForDeleteTrail
 }
 
 /// Returns a permission allowing to add new roles with associated permissions

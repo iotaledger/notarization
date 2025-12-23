@@ -10,7 +10,7 @@
 module audit_trail::main;
 
 use audit_trail::capability::{Self, Capability};
-use audit_trail::locking::{Self, LockingConfig};
+use audit_trail::locking::{Self, LockingConfig, LockingWindow, set_delete_record_lock};
 use audit_trail::permission::{Self, Permission};
 use audit_trail::record::{Self, Record};
 use iota::clock::{Self, Clock};
@@ -217,8 +217,6 @@ public fun initial_admin_role_name(): String {
 /// Add a record to the trail
 ///
 /// Records are added sequentially with auto-assigned sequence numbers.
-///
-/// TODO: Add capability parameter and permission check once implemented
 public fun trail_add_record<D: store + copy>(
     trail: &mut AuditTrail<D>,
     cap: &Capability,
@@ -256,7 +254,7 @@ public fun trail_add_record<D: store + copy>(
 // ===== Locking =====
 
 /// Check if a record is locked (cannot be deleted)
-public fun is_record_locked<D: store + copy>(
+public fun trail_is_record_locked<D: store + copy>(
     trail: &AuditTrail<D>,
     sequence_number: u64,
     clock: &Clock,
@@ -276,22 +274,29 @@ public fun is_record_locked<D: store + copy>(
 }
 
 /// Update the locking configuration
-///
-/// TODO: Add capability parameter and permission check once implemented
-public fun update_locking_config<D: store + copy>(
+public fun trail_update_locking_config<D: store + copy>(
     trail: &mut AuditTrail<D>,
     cap: &Capability,
     new_config: LockingConfig,
     _ctx: &mut TxContext,
 ) {
-    // TODO: check_permission(trail, cap, &permissions::locking_update(), ctx);
+    assert!(trail.has_capability_permission(cap, &permission::update_locking_config()), EPermissionDenied);
     trail.locking_config = new_config;
 }
 
-// ===== Metadata =====
+/// Update the `delete_record_lock` locking configuration
+public fun trail_update_locking_config_for_delete_record<D: store + copy>(
+    trail: &mut AuditTrail<D>,
+    cap: &Capability,
+    new_delete_record_lock: LockingWindow,
+    _ctx: &mut TxContext,
+) {
+    assert!(trail.has_capability_permission(cap, &permission::update_locking_config_for_delete_record()), EPermissionDenied);
+    set_delete_record_lock(&mut trail.locking_config, new_delete_record_lock);
+}
 
 /// Update the trail's mutable metadata
-public fun update_metadata<D: store + copy>(
+public fun trail_update_metadata<D: store + copy>(
     trail: &mut AuditTrail<D>,
     cap: &Capability,
     new_metadata: Option<String>,
@@ -511,6 +516,10 @@ public use fun trail_name as AuditTrail.name;
 public use fun trail_description as AuditTrail.description;
 public use fun trail_metadata as AuditTrail.metadata;
 public use fun trail_locking_config as AuditTrail.locking_config;
+public use fun trail_update_locking_config as AuditTrail.update_locking_config;
+public use fun trail_is_record_locked as AuditTrail.is_record_locked;
+public use fun trail_update_locking_config_for_delete_record as AuditTrail.update_locking_config_for_delete_record;
+public use fun trail_update_metadata as AuditTrail.update_metadata;
 public use fun trail_is_empty as AuditTrail.is_empty;
 public use fun trail_first_sequence as AuditTrail.first_sequence;
 public use fun trail_last_sequence as AuditTrail.last_sequence;

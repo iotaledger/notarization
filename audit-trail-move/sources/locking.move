@@ -99,6 +99,13 @@ public fun delete_record_lock(config: &LockingConfig): &LockingWindow {
     &config.delete_record_lock
 }
 
+// ===== LockingConfig Setters =====
+
+/// Set the record deletion locking window
+public(package) fun set_delete_record_lock(config: &mut LockingConfig, window: LockingWindow) {
+    config.delete_record_lock = window;
+}
+
 // ===== Locking Logic (LockingWindow) =====
 
 /// Check if a record is locked based on time window
