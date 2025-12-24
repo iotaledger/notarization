@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /// Locking configuration for audit trail records
-module audit_trails::locking;
+module audit_trail::locking;
 
 /// Defines a locking window (time OR count based)
 public struct LockingWindow has copy, drop, store {
@@ -97,6 +97,13 @@ public fun count_window(window: &LockingWindow): &Option<u64> {
 /// Get the record deletion locking window
 public fun delete_record_lock(config: &LockingConfig): &LockingWindow {
     &config.delete_record_lock
+}
+
+// ===== LockingConfig Setters =====
+
+/// Set the record deletion locking window
+public(package) fun set_delete_record_lock(config: &mut LockingConfig, window: LockingWindow) {
+    config.delete_record_lock = window;
 }
 
 // ===== Locking Logic (LockingWindow) =====
