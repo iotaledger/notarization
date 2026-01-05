@@ -95,7 +95,7 @@ public fun new_trail_metadata(
 // ===== Trail Creation =====
 
 /// Create a new audit trail with optional initial record
-/// 
+///
 /// Initial roles config
 /// --------------------
 /// Initializes the `roles` map with only one role, called "Admin" which is associated with the permissions
@@ -185,7 +185,7 @@ public fun create<D: store + copy>(
     };
 
     transfer::share_object(trail);
-    
+
     event::emit(AuditTrailCreated {
         trail_id,
         creator,
@@ -321,7 +321,7 @@ public fun trail_update_metadata<D: store + copy>(
             ctx
         ),
         EPermissionDenied
-    );    
+    );
     trail.updatable_metadata = new_metadata;
 }
 
@@ -385,7 +385,10 @@ public fun trail_last_sequence<D: store + copy>(trail: &AuditTrail<D>): Option<u
 // ===== Record Query Functions =====
 
 /// Get a record by sequence number
-public fun trail_get_record<D: store + copy>(trail: &AuditTrail<D>, sequence_number: u64): &Record<D> {
+public fun trail_get_record<D: store + copy>(
+    trail: &AuditTrail<D>,
+    sequence_number: u64,
+): &Record<D> {
     assert!(linked_table::contains(&trail.records, sequence_number), ERecordNotFound);
     linked_table::borrow(&trail.records, sequence_number)
 }
@@ -425,7 +428,8 @@ public use fun trail_metadata as AuditTrail.metadata;
 public use fun trail_locking_config as AuditTrail.locking_config;
 public use fun trail_update_locking_config as AuditTrail.update_locking_config;
 public use fun trail_is_record_locked as AuditTrail.is_record_locked;
-public use fun trail_update_locking_config_for_delete_record as AuditTrail.update_locking_config_for_delete_record;
+public use fun trail_update_locking_config_for_delete_record as
+    AuditTrail.update_locking_config_for_delete_record;
 public use fun trail_update_metadata as AuditTrail.update_metadata;
 public use fun trail_is_empty as AuditTrail.is_empty;
 public use fun trail_first_sequence as AuditTrail.first_sequence;

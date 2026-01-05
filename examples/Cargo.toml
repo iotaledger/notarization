@@ -1,6 +1,6 @@
 [package]
 name = "examples"
-version = "0.1.11-alpha"
+version = "0.1.12-alpha"
 authors = ["IOTA Stiftung"]
 edition = "2024"
 publish = false
@@ -51,6 +51,7 @@ path = "real-world/02_legal_contract.rs"
 [dependencies]
 anyhow.workspace = true
 chrono = { workspace = true }
+hyper = { workspace = true } # Fix for iota-sdk 1.13 issue with axum-server.
 iota-sdk = { workspace = true }
 notarization = { path = "../notarization-rs" }
 product_common = { workspace = true, features = ["core-client", "test-utils", "transaction"] }

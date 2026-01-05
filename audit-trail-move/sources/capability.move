@@ -37,7 +37,7 @@ public struct Capability has key, store {
 }
 
 /// Create a new capability with a specific role and all available optional restrictions
-/// 
+///
 /// Parameters:
 /// * role: The role granted by this capability
 /// * security_vault_id: The ID of onchain object (i.e. an audit trail) this capability applies to
@@ -45,9 +45,9 @@ public struct Capability has key, store {
 /// * valid_from: Optional validity period start timestamp (in seconds since Unix epoch); if Some(ts), the capability is valid from that timestamp onwards
 /// * valid_until: Optional validity period end timestamp (in seconds since Unix epoch); if Some(ts), the capability is valid until that timestamp
 /// * ctx: The transaction context
-/// 
+///
 /// Returns: The newly created Capability
-/// 
+///
 /// Errors:
 /// * EValidityPeriodInconsistent: If both valid_from and valid_until are provided and valid_from >= valid_until
 public(package) fun new_capability(
@@ -163,7 +163,7 @@ public fun cap_valid_until(cap: &Capability): &Option<u64> {
 // Check if the capability is currently valid for `clock::timestamp_ms(clock)`
 public fun cap_is_currently_valid(cap: &Capability, clock: &Clock,): bool {
     let current_ts = clock::timestamp_ms(clock) / 1000; // convert to seconds
-    cap.is_valid_for_timestamp(current_ts) 
+    cap.is_valid_for_timestamp(current_ts)
 }
 
 // Check if the capability is valid for a specific timestamp (in seconds since Unix epoch)

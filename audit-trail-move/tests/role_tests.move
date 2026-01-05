@@ -183,7 +183,7 @@ fun test_role_based_permission_delegation() {
         // Verify initial record count
         let initial_record_count = trail.records().length();
 
-        
+
         let test_data = test_utils::new_test_data(42, b"Test record added by RecordAdmin");
 
         trail.add_record(
