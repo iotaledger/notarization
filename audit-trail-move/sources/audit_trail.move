@@ -9,21 +9,22 @@
 /// Records are addressed by trail_id + sequence_number
 module audit_trail::main;
 
-use audit_trail::capability::Capability;
-use audit_trail::locking::{Self, LockingConfig, LockingWindow, set_delete_record_lock};
-use audit_trail::permission::{Self, Permission};
-use audit_trail::role_map::{Self, RoleMap};
-use audit_trail::record::{Self, Record};
-use iota::clock::{Self, Clock};
-use iota::event;
-use iota::linked_table::{Self, LinkedTable};
+use audit_trail::{
+    capability::Capability,
+    locking::{Self, LockingConfig, LockingWindow, set_delete_record_lock},
+    permission::{Self, Permission},
+    record::{Self, Record},
+    role_map::{Self, RoleMap}
+};
+use iota::{clock::{Self, Clock}, event, linked_table::{Self, LinkedTable}};
 use std::string::String;
 
 // ===== Errors =====
 #[error]
 const ERecordNotFound: vector<u8> = b"Record not found at the given sequence number";
 #[error]
-const EPermissionDenied: vector<u8> = b"The role associated with the provided capability does not have the required permission";
+const EPermissionDenied: vector<u8> =
+    b"The role associated with the provided capability does not have the required permission";
 
 // ===== Constants =====
 const INITIAL_ADMIN_ROLE_NAME: vector<u8> = b"Admin";
@@ -80,7 +81,6 @@ public struct RecordAdded has copy, drop {
 }
 
 // TODO: Add event for Record deletion and (if part of MVP) correction
-
 
 // ===== Constructors =====
 
@@ -169,7 +169,7 @@ public fun create<D: store + copy>(
         permission::admin_permissions(),
         role_admin_permissions,
         capability_admin_permissions,
-        ctx
+        ctx,
     );
 
     let trail = AuditTrail {
@@ -213,13 +213,16 @@ public fun trail_add_record<D: store + copy>(
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
-    assert!(trail.roles.is_capability_valid(
-            cap,
-            &permission::add_record(),
-            clock,
-            ctx
-        ),
-        EPermissionDenied
+    assert!(
+        trail
+            .roles
+            .is_capability_valid(
+                cap,
+                &permission::add_record(),
+                clock,
+                ctx,
+            ),
+        EPermissionDenied,
     );
 
     let caller = ctx.sender();
@@ -276,13 +279,16 @@ public fun trail_update_locking_config<D: store + copy>(
     clock: &Clock,
     ctx: &TxContext,
 ) {
-    assert!(trail.roles.is_capability_valid(
-            cap,
-            &permission::update_locking_config(),
-            clock,
-            ctx
-        ),
-        EPermissionDenied
+    assert!(
+        trail
+            .roles
+            .is_capability_valid(
+                cap,
+                &permission::update_locking_config(),
+                clock,
+                ctx,
+            ),
+        EPermissionDenied,
     );
     trail.locking_config = new_config;
 }
@@ -295,13 +301,16 @@ public fun trail_update_locking_config_for_delete_record<D: store + copy>(
     clock: &Clock,
     ctx: &TxContext,
 ) {
-    assert!(trail.roles.is_capability_valid(
-            cap,
-            &permission::update_locking_config_for_delete_record(),
-            clock,
-            ctx
-        ),
-        EPermissionDenied
+    assert!(
+        trail
+            .roles
+            .is_capability_valid(
+                cap,
+                &permission::update_locking_config_for_delete_record(),
+                clock,
+                ctx,
+            ),
+        EPermissionDenied,
     );
     set_delete_record_lock(&mut trail.locking_config, new_delete_record_lock);
 }
@@ -314,13 +323,16 @@ public fun trail_update_metadata<D: store + copy>(
     clock: &Clock,
     ctx: &TxContext,
 ) {
-    assert!(trail.roles.is_capability_valid(
-            cap,
-            &permission::update_metadata(),
-            clock,
-            ctx
-        ),
-        EPermissionDenied
+    assert!(
+        trail
+            .roles
+            .is_capability_valid(
+                cap,
+                &permission::update_metadata(),
+                clock,
+                ctx,
+            ),
+        EPermissionDenied,
     );
     trail.updatable_metadata = new_metadata;
 }

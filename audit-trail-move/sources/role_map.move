@@ -6,7 +6,7 @@
 /// Provides the following functionalities:
 /// - Define an initial role with a custom set of permissions (i.e. an Admin role).
 /// - Use custom permission types defined by the integrating module using the generic parameter `P`.
-/// - Create, delete, and update roles and their permissions 
+/// - Create, delete, and update roles and their permissions
 /// - Issue, revoke, and destroy `audit_trail::capability`s associated with a specific role.
 /// - Validate `audit_trail::capability`s against the defined roles to facilitate proper access control by other modules
 ///   (function `RoleMap.is_capability_valid()`)
@@ -14,33 +14,36 @@
 ///
 /// Examples:
 /// - audit_trail::main module uses `RoleMap` to manage access to the audit trail records and their operations.
- 
+
 module audit_trail::role_map;
 
-use std::string::String;
-use iota::vec_map::{Self, VecMap};
-use iota::vec_set::{Self, VecSet};
 use audit_trail::capability::{Self, Capability};
-use iota::clock::Clock;
-use iota::event;
+use iota::{clock::Clock, event, vec_map::{Self, VecMap}, vec_set::{Self, VecSet}};
+use std::string::String;
 
 // =============== Errors ==========================================================
 
 #[error]
-const EPermissionDenied: vector<u8> = b"The role associated with the provided capability does not have the required permission";
+const EPermissionDenied: vector<u8> =
+    b"The role associated with the provided capability does not have the required permission";
 #[error]
-const ERoleDoesNotExist: vector<u8> = b"The specified role, directly specified or specified by a capability, does not exist in the `RoleMap` mapping";
+const ERoleDoesNotExist: vector<u8> =
+    b"The specified role, directly specified or specified by a capability, does not exist in the `RoleMap` mapping";
 #[error]
-const ECapabilityHasBeenRevoked: vector<u8> = b"The provided capability has been revoked and is no longer valid";
+const ECapabilityHasBeenRevoked: vector<u8> =
+    b"The provided capability has been revoked and is no longer valid";
 #[error]
-const ECapabilitySecurityVaultIdMismatch: vector<u8> = b"The security_vault_id associated with the provided capability does not match the security_vault_id of the `RoleMap`";
+const ECapabilitySecurityVaultIdMismatch: vector<u8> =
+    b"The security_vault_id associated with the provided capability does not match the security_vault_id of the `RoleMap`";
 #[error]
-const ECapabilityTimeConstraintsNotMet: vector<u8> = b"The capability's time constraints are not currently met either due to `valid_from` or `valid_until` restrictions";
+const ECapabilityTimeConstraintsNotMet: vector<u8> =
+    b"The capability's time constraints are not currently met either due to `valid_from` or `valid_until` restrictions";
 #[error]
-const ECapabilityIssuedToMismatch: vector<u8> = b"The capability is restricted to a specific address which does not match the caller's address";
+const ECapabilityIssuedToMismatch: vector<u8> =
+    b"The capability is restricted to a specific address which does not match the caller's address";
 #[error]
-const ECapabilityPermissionDenied: vector<u8> = b"The role associated with provided capability does not have the required permission";
-
+const ECapabilityPermissionDenied: vector<u8> =
+    b"The role associated with provided capability does not have the required permission";
 
 // =============== Events ==========================================================
 
@@ -68,10 +71,9 @@ public struct CapabilityDestroyed has copy, drop {
 public struct CapabilityRevoked has copy, drop {
     security_vault_id: ID,
     capability_id: ID,
-} 
+}
 
 // TODO: Add event for Role creation, removing, updating, etc.
-
 
 // =============== Core Types ======================================================
 
@@ -141,7 +143,7 @@ public fun new_capability_admin_permissions<P: copy + drop>(
 /// The initial admin capability has no restrictions (no address, valid_from, or valid_until)
 /// The security_vault_id is associated with both the RoleMap and the initial admin capability
 /// Returns the newly created RoleMap and the initial admin capability
-/// 
+///
 /// Parameters
 /// ----------
 /// - security_vault_id:
@@ -167,7 +169,7 @@ public fun new<P: copy + drop>(
 ): (RoleMap<P>, Capability) {
     let mut roles = vec_map::empty<String, VecSet<P>>();
     roles.insert(initial_admin_role_name, initial_admin_role_permissions);
-        
+
     let admin_cap = capability::new_capability_without_restrictions(
         initial_admin_role_name,
         security_vault_id,
@@ -205,14 +207,15 @@ public fun rmap_create_role<P: copy + drop>(
     clock: &Clock,
     ctx: &TxContext,
 ) {
-    assert!(role_map.is_capability_valid(
+    assert!(
+        role_map.is_capability_valid(
             cap,
             &role_map.role_admin_permissions.add,
             clock,
-            ctx
+            ctx,
         ),
-        EPermissionDenied
-    );    
+        EPermissionDenied,
+    );
 
     vec_map::insert(&mut role_map.roles, role, permissions);
 }
@@ -225,14 +228,15 @@ public fun rmap_delete_role<P: copy + drop>(
     clock: &Clock,
     ctx: &TxContext,
 ) {
-    assert!(role_map.is_capability_valid(
+    assert!(
+        role_map.is_capability_valid(
             cap,
             &role_map.role_admin_permissions.delete,
             clock,
-            ctx
+            ctx,
         ),
-        EPermissionDenied
-    );    
+        EPermissionDenied,
+    );
 
     vec_map::remove(&mut role_map.roles, role);
 }
@@ -246,31 +250,29 @@ public fun rmap_update_role_permissions<P: copy + drop>(
     clock: &Clock,
     ctx: &TxContext,
 ) {
-    assert!(role_map.is_capability_valid(
+    assert!(
+        role_map.is_capability_valid(
             cap,
             &role_map.role_admin_permissions.update,
             clock,
-            ctx
+            ctx,
         ),
-        EPermissionDenied
-    );    
+        EPermissionDenied,
+    );
 
     assert!(vec_map::contains(&role_map.roles, role), ERoleDoesNotExist);
     vec_map::insert(&mut role_map.roles, *role, new_permissions);
 }
 
 /// Indicates if the specified role exists in the role_map
-public fun rmap_has_role<P: copy + drop>(
-    role_map: &RoleMap<P>,
-    role: &String,
-): bool {
+public fun rmap_has_role<P: copy + drop>(role_map: &RoleMap<P>, role: &String): bool {
     vec_map::contains(&role_map.roles, role)
 }
 
 // =============== Capability related Functions ====================================
 
 /// Indicates if a provided capability is valid.
-/// 
+///
 /// A capability is considered valid if:
 /// - The capability's security_vault_id matches the RoleMap's security_vault_id.
 ///   Aborts with ECapabilitySecurityVaultIdMismatch if not matching.
@@ -284,7 +286,7 @@ public fun rmap_has_role<P: copy + drop>(
 ///   Aborts with ECapabilityTimeConstraintsNotMet, if the current time is outside the valid_from and valid_until range.
 /// - If the capability is restricted to a specific address, the caller's address matches the sender of the transaction.
 ///   Aborts with ECapabilityIssuedToMismatch if the addresses do not match.
-/// 
+///
 /// Parameters
 /// ----------
 /// - role_map: Reference to the `RoleMap` mapping.
@@ -292,7 +294,7 @@ public fun rmap_has_role<P: copy + drop>(
 /// - permission: The permission to check against the capability's role.
 /// - clock: Reference to a Clock instance for time-based validation.
 /// - ctx: Reference to the transaction context for accessing the caller's address.
-/// 
+///
 /// Returns
 /// -------
 /// - bool: true if the capability is valid, otherwise aborts with the relevant error.
@@ -303,13 +305,16 @@ public fun rmap_is_capability_valid<P: copy + drop>(
     clock: &Clock,
     ctx: &TxContext,
 ): bool {
-    assert!(role_map.security_vault_id == cap.security_vault_id(), ECapabilitySecurityVaultIdMismatch);
+    assert!(
+        role_map.security_vault_id == cap.security_vault_id(),
+        ECapabilitySecurityVaultIdMismatch,
+    );
 
     let permissions = role_map.get_role_permissions(cap.role());
     assert!(vec_set::contains(permissions, permission), ECapabilityPermissionDenied);
 
     assert!(role_map.issued_capabilities.contains(&cap.id()), ECapabilityHasBeenRevoked);
-    
+
     if (cap.valid_from().is_some() || cap.valid_until().is_some()) {
         assert!(cap.is_currently_valid(clock), ECapabilityTimeConstraintsNotMet);
     };
@@ -335,11 +340,11 @@ public fun rmap_is_capability_valid<P: copy + drop>(
 /// - valid_until: Optional end time (in seconds since Unix epoch) for the new capability.
 /// - clock: Reference to a Clock instance for time-based validation.
 /// - ctx: Reference to the transaction context.
-/// 
+///
 /// Returns the newly created capability.
-/// 
+///
 /// Sends a CapabilityIssued event upon successful creation.
-/// 
+///
 /// Errors:
 /// - Aborts with EPermissionDenied if the provided capability does not have the permission specified with `CapabilityAdminPermissions::add`.
 /// - Aborts with ERoleDoesNotExist if the specified role does not exist in the role_map.
@@ -354,14 +359,15 @@ public fun rmap_new_capability<P: copy + drop>(
     clock: &Clock,
     ctx: &mut TxContext,
 ): Capability {
-    assert!(role_map.is_capability_valid(
+    assert!(
+        role_map.is_capability_valid(
             cap,
             &role_map.capability_admin_permissions.add,
             clock,
-            ctx
+            ctx,
         ),
-        EPermissionDenied
-    );    
+        EPermissionDenied,
+    );
 
     assert!(role_map.roles.contains(role), ERoleDoesNotExist);
     let new_cap = capability::new_capability(
@@ -378,11 +384,11 @@ public fun rmap_new_capability<P: copy + drop>(
 
 /// Create a new unrestricted capability with a specific role without any
 /// address, valid_from, or valid_until restrictions.
-/// 
+///
 /// Returns the newly created capability.
-/// 
+///
 /// Sends a CapabilityIssued event upon successful creation.
-/// 
+///
 /// Errors:
 /// - Aborts with EPermissionDenied if the provided capability does not have the permission specified with `CapabilityAdminPermissions::add`.
 /// - Aborts with ERoleDoesNotExist if the specified role does not exist in the role_map.
@@ -393,14 +399,15 @@ public fun rmap_new_capability_without_restrictions<P: copy + drop>(
     clock: &Clock,
     ctx: &mut TxContext,
 ): Capability {
-    assert!(role_map.is_capability_valid(
+    assert!(
+        role_map.is_capability_valid(
             cap,
             &role_map.capability_admin_permissions.add,
             clock,
-            ctx
+            ctx,
         ),
-        EPermissionDenied
-    );    
+        EPermissionDenied,
+    );
 
     assert!(role_map.roles.contains(role), ERoleDoesNotExist);
     let new_cap = capability::new_capability_without_restrictions(
@@ -414,11 +421,11 @@ public fun rmap_new_capability_without_restrictions<P: copy + drop>(
 }
 
 /// Create a new capability with a specific role that expires at a given timestamp (seconds since Unix epoch).
-/// 
+///
 /// Returns the newly created capability.
-/// 
+///
 /// Sends a CapabilityIssued event upon successful creation.
-/// 
+///
 /// Errors:
 /// - Aborts with EPermissionDenied if the provided capability does not have the permission specified with `CapabilityAdminPermissions::add`.
 /// - Aborts with ERoleDoesNotExist if the specified role does not exist in the role_map.
@@ -430,14 +437,15 @@ public fun rmap_new_capability_valid_until<P: copy + drop>(
     clock: &Clock,
     ctx: &mut TxContext,
 ): Capability {
-        assert!(role_map.is_capability_valid(
+    assert!(
+        role_map.is_capability_valid(
             cap,
             &role_map.capability_admin_permissions.add,
             clock,
-            ctx
+            ctx,
         ),
-        EPermissionDenied
-    );    
+        EPermissionDenied,
+    );
 
     assert!(role_map.roles.contains(role), ERoleDoesNotExist);
     let new_cap = capability::new_capability_valid_until(
@@ -453,11 +461,11 @@ public fun rmap_new_capability_valid_until<P: copy + drop>(
 
 /// Create a new capability with a specific role restricted to an address.
 /// Optionally set an expiration time (seconds since Unix epoch).
-/// 
+///
 /// Returns the newly created capability.
-/// 
+///
 /// Sends a CapabilityIssued event upon successful creation.
-/// 
+///
 /// Errors:
 /// - Aborts with EPermissionDenied if the provided capability does not have the permission specified with `CapabilityAdminPermissions::add`.
 /// - Aborts with ERoleDoesNotExist if the specified role does not exist in the role_map.
@@ -470,14 +478,15 @@ public fun rmap_new_capability_for_address<P: copy + drop>(
     clock: &Clock,
     ctx: &mut TxContext,
 ): Capability {
-        assert!(role_map.is_capability_valid(
+    assert!(
+        role_map.is_capability_valid(
             cap,
             &role_map.capability_admin_permissions.add,
             clock,
-            ctx
+            ctx,
         ),
-        EPermissionDenied
-    );    
+        EPermissionDenied,
+    );
 
     assert!(role_map.roles.contains(role), ERoleDoesNotExist);
     let new_cap = capability::new_capability_for_address(
@@ -494,9 +503,9 @@ public fun rmap_new_capability_for_address<P: copy + drop>(
 
 /// Destroy an existing capability
 /// Every owner of a capability is allowed to destroy it when no longer needed.
-/// 
+///
 /// Sends a CapabilityDestroyed event upon successful destruction.
-/// 
+///
 /// TODO: Clarify if we need to restrict access with the `CapabilitiesRevoke` permission here.
 ///       If yes, we also need a destroy function for Admin capabilities (without the need of another Admin capability).
 ///       Otherwise the last Admin capability holder will block the role_map forever by not being able to destroy it.
@@ -504,7 +513,10 @@ public fun rmap_destroy_capability<P: copy + drop>(
     role_map: &mut RoleMap<P>,
     cap_to_destroy: Capability,
 ) {
-    assert!(role_map.security_vault_id == cap_to_destroy.security_vault_id(), ECapabilitySecurityVaultIdMismatch);
+    assert!(
+        role_map.security_vault_id == cap_to_destroy.security_vault_id(),
+        ECapabilitySecurityVaultIdMismatch,
+    );
     role_map.issued_capabilities.remove(&cap_to_destroy.id());
 
     event::emit(CapabilityDestroyed {
@@ -520,9 +532,9 @@ public fun rmap_destroy_capability<P: copy + drop>(
 }
 
 /// Revoke an existing capability
-/// 
+///
 /// Sends a CapabilityRevoked event upon successful revocation.
-/// 
+///
 /// Errors:
 /// - Aborts with EPermissionDenied if the provided capability does not have the permission specified with `CapabilityAdminPermissions::revoke`.
 /// - Aborts with ERoleDoesNotExist if the specified role does not exist in the `RoleMap.issued_capabilities()` list.
@@ -533,13 +545,14 @@ public fun rmap_revoke_capability<P: copy + drop>(
     clock: &Clock,
     ctx: &TxContext,
 ) {
-    assert!(role_map.is_capability_valid(
+    assert!(
+        role_map.is_capability_valid(
             cap,
             &role_map.capability_admin_permissions.revoke,
             clock,
-            ctx
+            ctx,
         ),
-        EPermissionDenied
+        EPermissionDenied,
     );
 
     assert!(role_map.issued_capabilities.contains(&cap_to_revoke), ERoleDoesNotExist);
@@ -551,10 +564,7 @@ public fun rmap_revoke_capability<P: copy + drop>(
     });
 }
 
-fun register_new_capability<P: copy + drop>(
-    role_map: &mut RoleMap<P>,
-    new_cap: &Capability,
-) {
+fun register_new_capability<P: copy + drop>(role_map: &mut RoleMap<P>, new_cap: &Capability) {
     role_map.issued_capabilities.insert(new_cap.id());
 
     event::emit(CapabilityIssued {
@@ -580,13 +590,13 @@ public fun rmap_security_vault_id<P: copy + drop>(role_map: &RoleMap<P>): ID {
 }
 
 //Returns the role admin permissions associated with the role_map
-public fun rmap_role_admin_permissions<P: copy + drop>(role_map: &RoleMap<P>): &RoleAdminPermissions<P> {
+public fun rmap_role_admin_permissions<P: copy + drop>(
+    role_map: &RoleMap<P>,
+): &RoleAdminPermissions<P> {
     &role_map.role_admin_permissions
 }
 
-public fun rmap_issued_capabilities<P: copy + drop>(
-    role_map: &RoleMap<P>,
-): &VecSet<ID> {
+public fun rmap_issued_capabilities<P: copy + drop>(role_map: &RoleMap<P>): &VecSet<ID> {
     &role_map.issued_capabilities
 }
 
@@ -602,7 +612,8 @@ public use fun rmap_security_vault_id as RoleMap.security_vault_id;
 public use fun rmap_role_admin_permissions as RoleMap.role_admin_permissions;
 public use fun rmap_is_capability_valid as RoleMap.is_capability_valid;
 public use fun rmap_new_capability as RoleMap.new_capability;
-public use fun rmap_new_capability_without_restrictions as RoleMap.new_capability_without_restrictions;
+public use fun rmap_new_capability_without_restrictions as
+    RoleMap.new_capability_without_restrictions;
 public use fun rmap_new_capability_valid_until as RoleMap.new_capability_valid_until;
 public use fun rmap_new_capability_for_address as RoleMap.new_capability_for_address;
 public use fun rmap_destroy_capability as RoleMap.destroy_capability;

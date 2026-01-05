@@ -4,13 +4,14 @@
 /// Role-based access control capabilities for audit trails
 module audit_trail::capability;
 
-use std::string::String;
 use iota::clock::{Self, Clock};
+use std::string::String;
 
 // ===== Errors =====
 
 #[error]
-const EValidityPeriodInconsistent: vector<u8> = b"Validity period is inconsistent: valid_from must be before valid_until";
+const EValidityPeriodInconsistent: vector<u8> =
+    b"Validity period is inconsistent: valid_from must be before valid_until";
 
 // ===== Core Structures =====
 
@@ -161,23 +162,23 @@ public fun cap_valid_until(cap: &Capability): &Option<u64> {
 }
 
 // Check if the capability is currently valid for `clock::timestamp_ms(clock)`
-public fun cap_is_currently_valid(cap: &Capability, clock: &Clock,): bool {
+public fun cap_is_currently_valid(cap: &Capability, clock: &Clock): bool {
     let current_ts = clock::timestamp_ms(clock) / 1000; // convert to seconds
     cap.is_valid_for_timestamp(current_ts)
 }
 
 // Check if the capability is valid for a specific timestamp (in seconds since Unix epoch)
-public fun cap_is_valid_for_timestamp(cap: &Capability, timestamp_secs: u64,): bool {
+public fun cap_is_valid_for_timestamp(cap: &Capability, timestamp_secs: u64): bool {
     let valid_from_ok = if (cap.valid_from.is_some()) {
         let from = cap.valid_from.borrow();
         timestamp_secs >= *from
-    } else  {
+    } else {
         true
     };
     let valid_until_ok = if (cap.valid_until.is_some()) {
         let until = cap.valid_until.borrow();
         timestamp_secs < *until
-    } else  {
+    } else {
         true
     };
     valid_from_ok && valid_until_ok

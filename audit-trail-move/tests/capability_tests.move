@@ -1,13 +1,21 @@
 #[test_only]
 module audit_trail::capability_tests;
 
-use audit_trail::permission::{Self};
-use audit_trail::locking::{Self};
-use audit_trail::main::{AuditTrail};
-use audit_trail::test_utils::{Self, TestData, setup_test_audit_trail, fetch_capability_trail_and_clock, cleanup_capability_trail_and_clock};
+use audit_trail::{
+    capability::Capability,
+    locking,
+    main::AuditTrail,
+    permission,
+    test_utils::{
+        Self,
+        TestData,
+        setup_test_audit_trail,
+        fetch_capability_trail_and_clock,
+        cleanup_capability_trail_and_clock
+    }
+};
 use iota::test_scenario::{Self as ts, Scenario};
-use std::string::{Self};
-use audit_trail::capability::Capability;
+use std::string;
 
 /// Helper function to setup an audit trail with a RecordAdmin role and a capability
 /// with a time window restriction transferred to the record_user.
@@ -19,7 +27,7 @@ fun setup_trail_with_record_admin_capability_and_time_window_restriction(
     valid_from_secs: u64,
     valid_until_secs: u64,
 ): ID {
-        // Setup
+    // Setup
     let trail_id = setup_trail_with_record_admin_role(scenario, admin_user);
 
     // Issue capability with time window
@@ -27,15 +35,17 @@ fun setup_trail_with_record_admin_capability_and_time_window_restriction(
     {
         let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(scenario);
 
-        let cap = trail.roles_mut().new_capability(
-            &admin_cap,
-            &string::utf8(b"RecordAdmin"),
-            std::option::none(), // no address restriction
-            std::option::some(valid_from_secs),
-            std::option::some(valid_until_secs),
-            &clock,
-            ts::ctx(scenario),
-        );
+        let cap = trail
+            .roles_mut()
+            .new_capability(
+                &admin_cap,
+                &string::utf8(b"RecordAdmin"),
+                std::option::none(), // no address restriction
+                std::option::some(valid_from_secs),
+                std::option::some(valid_until_secs),
+                &clock,
+                ts::ctx(scenario),
+            );
 
         // Verify capability properties
         assert!(cap.issued_to().is_none(), 0);
@@ -49,13 +59,9 @@ fun setup_trail_with_record_admin_capability_and_time_window_restriction(
     trail_id
 }
 
-
 /// Helper function to setup an audit trail with a RecordAdmin role.
 /// Returns the trail_id.
-fun setup_trail_with_record_admin_role(
-    scenario: &mut Scenario,
-    admin_user: address,
-): ID {
+fun setup_trail_with_record_admin_role(scenario: &mut Scenario, admin_user: address): ID {
     // Setup: Create audit trail with admin capability
     let trail_id = {
         let locking_config = locking::new(locking::window_count_based(0));
@@ -76,16 +82,18 @@ fun setup_trail_with_record_admin_role(
         let admin_cap = ts::take_from_sender<Capability>(scenario);
         let mut trail = ts::take_shared<AuditTrail<TestData>>(scenario);
         let clock = iota::clock::create_for_testing(ts::ctx(scenario));
-        
+
         let record_admin_perms = permission::record_admin_permissions();
-        trail.roles_mut().create_role(
-            &admin_cap,
-            string::utf8(b"RecordAdmin"),
-            record_admin_perms,
-            &clock,
-            ts::ctx(scenario),
-        );
-        
+        trail
+            .roles_mut()
+            .create_role(
+                &admin_cap,
+                string::utf8(b"RecordAdmin"),
+                record_admin_perms,
+                &clock,
+                ts::ctx(scenario),
+            );
+
         iota::clock::destroy_for_testing(clock);
         ts::return_to_sender(scenario, admin_cap);
         ts::return_shared(trail);
@@ -119,18 +127,20 @@ fun test_new_capability() {
         // Verify initial state - only admin capability should be tracked
         let initial_cap_count = trail.roles().issued_capabilities().size();
         assert!(initial_cap_count == 1, 0); // Only admin cap
-        
-        let cap1 = trail.roles_mut().new_capability_without_restrictions(
-            &admin_cap,
-            &string::utf8(b"RecordAdmin"),
-            &clock,
-            ts::ctx(&mut scenario),
-        );
+
+        let cap1 = trail
+            .roles_mut()
+            .new_capability_without_restrictions(
+                &admin_cap,
+                &string::utf8(b"RecordAdmin"),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         // Verify capability was created correctly
         assert!(cap1.role() == string::utf8(b"RecordAdmin"), 1);
         assert!(cap1.security_vault_id() == trail_id, 2);
-        
+
         let cap1_id = object::id(&cap1);
 
         // Verify capability ID is tracked in issued_capabilities
@@ -150,12 +160,14 @@ fun test_new_capability() {
 
         let previous_cap_count = trail.roles().issued_capabilities().size();
 
-        let cap2 = trail.roles_mut().new_capability_without_restrictions(
-            &admin_cap,
-            &string::utf8(b"RecordAdmin"),
-            &clock,
-            ts::ctx(&mut scenario),
-        );
+        let cap2 = trail
+            .roles_mut()
+            .new_capability_without_restrictions(
+                &admin_cap,
+                &string::utf8(b"RecordAdmin"),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         let cap2_id = object::id(&cap2);
 
@@ -163,13 +175,13 @@ fun test_new_capability() {
         assert!(trail.roles().issued_capabilities().size() == previous_cap_count + 1, 5);
         assert!(trail.roles().issued_capabilities().contains(&cap1_id), 6);
         assert!(trail.roles().issued_capabilities().contains(&cap2_id), 7);
-        
+
         // Verify capabilities have unique IDs
         assert!(cap1_id != cap2_id, 8);
 
         transfer::public_transfer(cap2, user2);
         cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
-        
+
         cap2_id
     };
 
@@ -190,34 +202,38 @@ fun test_revoke_capability() {
     let user2 = @0xCAB;
 
     let mut scenario = ts::begin(admin_user);
-    
+
     let _trail_id = setup_trail_with_record_admin_role(&mut scenario, admin_user);
-    
+
     // Issue two capabilities
     ts::next_tx(&mut scenario, admin_user);
     let (cap1_id, cap2_id) = {
         let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
-        let cap1 = trail.roles_mut().new_capability_without_restrictions(
-            &admin_cap,
-            &string::utf8(b"RecordAdmin"),
-            &clock,
-            ts::ctx(&mut scenario),
-        );
+        let cap1 = trail
+            .roles_mut()
+            .new_capability_without_restrictions(
+                &admin_cap,
+                &string::utf8(b"RecordAdmin"),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
         let cap1_id = object::id(&cap1);
         transfer::public_transfer(cap1, user1);
-        
-        let cap2 = trail.roles_mut().new_capability_without_restrictions(
-            &admin_cap,
-            &string::utf8(b"RecordAdmin"),
-            &clock,
-            ts::ctx(&mut scenario),
-        );
+
+        let cap2 = trail
+            .roles_mut()
+            .new_capability_without_restrictions(
+                &admin_cap,
+                &string::utf8(b"RecordAdmin"),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
         let cap2_id = object::id(&cap2);
         transfer::public_transfer(cap2, user2);
-        
+
         cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
-        
+
         (cap1_id, cap2_id)
     };
 
@@ -226,19 +242,21 @@ fun test_revoke_capability() {
     {
         let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
         let cap1 = ts::take_from_address<Capability>(&scenario, user1);
-        
+
         // Verify both capabilities are tracked before revocation
         let cap_count_before = trail.roles().issued_capabilities().size();
         assert!(trail.roles().issued_capabilities().contains(&cap1_id), 0);
         assert!(trail.roles().issued_capabilities().contains(&cap2_id), 1);
-        
+
         // Revoke the capability
-        trail.roles_mut().revoke_capability(
-            &admin_cap,
-            cap1.id(),
-            &clock,
-            ts::ctx(&mut scenario),
-        );
+        trail
+            .roles_mut()
+            .revoke_capability(
+                &admin_cap,
+                cap1.id(),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         // Verify capability was removed from tracking
         assert!(trail.roles().issued_capabilities().size() == cap_count_before - 1, 2);
@@ -265,12 +283,14 @@ fun test_revoke_capability() {
 
         let cap_count_before = trail.roles().issued_capabilities().size();
 
-        trail.roles_mut().revoke_capability(
-            &admin_cap,
-            cap2.id(),
-            &clock,
-            ts::ctx(&mut scenario),
-        );
+        trail
+            .roles_mut()
+            .revoke_capability(
+                &admin_cap,
+                cap2.id(),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         // Verify capability was removed from tracking
         assert!(trail.roles().issued_capabilities().size() == cap_count_before - 1, 6);
@@ -297,34 +317,38 @@ fun test_destroy_capability() {
     let user2 = @0xCAB;
 
     let mut scenario = ts::begin(admin_user);
-    
+
     let _trail_id = setup_trail_with_record_admin_role(&mut scenario, admin_user);
-    
+
     // Issue two capabilities
     ts::next_tx(&mut scenario, admin_user);
     let (cap1_id, cap2_id) = {
         let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
-        let cap1 = trail.roles_mut().new_capability_without_restrictions(
-            &admin_cap,
-            &string::utf8(b"RecordAdmin"),
-            &clock,
-            ts::ctx(&mut scenario),
-        );
+        let cap1 = trail
+            .roles_mut()
+            .new_capability_without_restrictions(
+                &admin_cap,
+                &string::utf8(b"RecordAdmin"),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
         let cap1_id = object::id(&cap1);
         transfer::public_transfer(cap1, user1);
-        
-        let cap2 = trail.roles_mut().new_capability_without_restrictions(
-            &admin_cap,
-            &string::utf8(b"RecordAdmin"),
-            &clock,
-            ts::ctx(&mut scenario),
-        );
+
+        let cap2 = trail
+            .roles_mut()
+            .new_capability_without_restrictions(
+                &admin_cap,
+                &string::utf8(b"RecordAdmin"),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
         let cap2_id = object::id(&cap2);
         transfer::public_transfer(cap2, user2);
-        
+
         cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
-        
+
         (cap1_id, cap2_id)
     };
 
@@ -338,17 +362,17 @@ fun test_destroy_capability() {
         let cap_count_before = trail.roles().issued_capabilities().size();
         assert!(trail.roles().issued_capabilities().contains(&cap1_id), 0);
         assert!(trail.roles().issued_capabilities().contains(&cap2_id), 1);
-        
+
         // Destroy the capability
         trail.roles_mut().destroy_capability(cap1);
-        
+
         // Verify capability was removed from tracking
         assert!(trail.roles().issued_capabilities().size() == cap_count_before - 1, 2);
         assert!(!trail.roles().issued_capabilities().contains(&cap1_id), 3);
-        
+
         // Verify other capability is still tracked
         assert!(trail.roles().issued_capabilities().contains(&cap2_id), 4);
-        
+
         ts::return_shared(trail);
     };
 
@@ -364,11 +388,11 @@ fun test_destroy_capability() {
     {
         let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
         let cap2 = ts::take_from_sender<Capability>(&scenario);
-        
+
         let cap_count_before = trail.roles().issued_capabilities().size();
 
         trail.roles_mut().destroy_capability(cap2);
-        
+
         // Verify capability was removed from tracking
         assert!(trail.roles().issued_capabilities().size() == cap_count_before - 1, 6);
         assert!(!trail.roles().issued_capabilities().contains(&cap2_id), 7);
@@ -383,7 +407,7 @@ fun test_destroy_capability() {
 
         // Only the initial admin capability should remain
         assert!(trail.roles().issued_capabilities().size() == 1, 8);
-        
+
         ts::return_shared(trail);
     };
 
@@ -408,23 +432,24 @@ fun test_capability_lifecycle() {
     // Setup: Create audit trail
     let _trail_id = setup_trail_with_record_admin_role(&mut scenario, admin_user);
 
-
     // Create an additional RoleAdmin role
     ts::next_tx(&mut scenario, admin_user);
     {
         let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
-        
+
         // Initially only admin cap should be tracked
         assert!(trail.roles().issued_capabilities().size() == 1, 0);
 
-        trail.roles_mut().create_role(
-            &admin_cap,
-            string::utf8(b"RoleAdmin"),
-            permission::role_admin_permissions(),
-            &clock,
-            ts::ctx(&mut scenario),
-        );
-        
+        trail
+            .roles_mut()
+            .create_role(
+                &admin_cap,
+                string::utf8(b"RoleAdmin"),
+                permission::role_admin_permissions(),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
+
         cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
     };
 
@@ -433,21 +458,25 @@ fun test_capability_lifecycle() {
     let (record_cap_id, role_cap_id) = {
         let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
-        let record_cap = trail.roles_mut().new_capability_without_restrictions(
-            &admin_cap,
-            &string::utf8(b"RecordAdmin"),
-            &clock,
-            ts::ctx(&mut scenario),
-        );
+        let record_cap = trail
+            .roles_mut()
+            .new_capability_without_restrictions(
+                &admin_cap,
+                &string::utf8(b"RecordAdmin"),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
         let record_cap_id = object::id(&record_cap);
         transfer::public_transfer(record_cap, record_admin_user);
-        
-        let role_cap = trail.roles_mut().new_capability_without_restrictions(
-            &admin_cap,
-            &string::utf8(b"RoleAdmin"),
-            &clock,
-            ts::ctx(&mut scenario),
-        );
+
+        let role_cap = trail
+            .roles_mut()
+            .new_capability_without_restrictions(
+                &admin_cap,
+                &string::utf8(b"RoleAdmin"),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
         let role_cap_id = object::id(&role_cap);
         transfer::public_transfer(role_cap, role_admin_user);
 
@@ -457,7 +486,7 @@ fun test_capability_lifecycle() {
         assert!(trail.roles().issued_capabilities().contains(&role_cap_id), 3);
 
         cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
-        
+
         (record_cap_id, role_cap_id)
     };
 
@@ -476,7 +505,7 @@ fun test_capability_lifecycle() {
             &clock,
             ts::ctx(&mut scenario),
         );
-        
+
         cleanup_capability_trail_and_clock(&scenario, record_cap, trail, clock);
     };
 
@@ -485,9 +514,9 @@ fun test_capability_lifecycle() {
     {
         let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
         let record_cap = ts::take_from_sender<Capability>(&scenario);
-        
+
         trail.roles_mut().destroy_capability(record_cap);
-        
+
         // Verify capability was removed
         assert!(trail.roles().issued_capabilities().size() == 2, 4); // admin + role
         assert!(!trail.roles().issued_capabilities().contains(&record_cap_id), 5);
@@ -501,12 +530,14 @@ fun test_capability_lifecycle() {
         let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
         let role_cap = ts::take_from_address<Capability>(&scenario, role_admin_user);
 
-        trail.roles_mut().revoke_capability(
-            &admin_cap,
-            role_cap.id(),
-            &clock,
-            ts::ctx(&mut scenario),
-        );
+        trail
+            .roles_mut()
+            .revoke_capability(
+                &admin_cap,
+                role_cap.id(),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         // Verify capability was removed
         assert!(trail.roles().issued_capabilities().size() == 1, 6); // only admin remains
@@ -515,7 +546,6 @@ fun test_capability_lifecycle() {
         ts::return_to_address(role_admin_user, role_cap);
 
         cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
-
     };
 
     ts::end(scenario);
@@ -542,14 +572,16 @@ fun test_capability_issued_to_only() {
     {
         let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
-        let cap = trail.roles_mut().new_capability_for_address(
-            &admin_cap,
-            &string::utf8(b"RecordAdmin"),
-            authorized_user,
-            std::option::none(), // no time restriction
-            &clock,
-            ts::ctx(&mut scenario),
-        );
+        let cap = trail
+            .roles_mut()
+            .new_capability_for_address(
+                &admin_cap,
+                &string::utf8(b"RecordAdmin"),
+                authorized_user,
+                std::option::none(), // no time restriction
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         // Verify capability properties
         assert!(cap.issued_to() == std::option::some(authorized_user), 0);
@@ -564,7 +596,6 @@ fun test_capability_issued_to_only() {
     ts::next_tx(&mut scenario, authorized_user);
     {
         let (record_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
-
 
         let test_data = test_utils::new_test_data(1, b"Authorized record");
         trail.add_record(
@@ -595,7 +626,7 @@ fun test_capability_issued_to_only() {
             test_data,
             std::option::none(),
             &clock,
-            ts::ctx(&mut scenario)
+            ts::ctx(&mut scenario),
         );
 
         cleanup_capability_trail_and_clock(&scenario, record_cap, trail, clock);
@@ -627,15 +658,17 @@ fun test_capability_valid_from_only() {
     {
         let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
-        let cap = trail.roles_mut().new_capability(
-            &admin_cap,
-            &string::utf8(b"RecordAdmin"),
-            std::option::none(), // no address restriction
-            std::option::some(valid_from_time),
-            std::option::none(), // no valid_until
-            &clock,
-            ts::ctx(&mut scenario)
-        );
+        let cap = trail
+            .roles_mut()
+            .new_capability(
+                &admin_cap,
+                &string::utf8(b"RecordAdmin"),
+                std::option::none(), // no address restriction
+                std::option::some(valid_from_time),
+                std::option::none(), // no valid_until
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         // Verify capability properties
         assert!(cap.issued_to().is_none(), 0);
@@ -664,7 +697,7 @@ fun test_capability_valid_from_only() {
         cleanup_capability_trail_and_clock(&scenario, cap, trail, clock);
     };
 
-        // Try to use the capability before valid_from
+    // Try to use the capability before valid_from
     ts::next_tx(&mut scenario, user);
     {
         let (cap, mut trail, mut clock) = fetch_capability_trail_and_clock(&mut scenario);
@@ -699,7 +732,7 @@ fun test_capability_valid_until_only() {
 
     let mut scenario = ts::begin(admin_user);
 
-    let valid_until_time_secs= test_utils::initial_time_for_testing() / 1000 + 10;
+    let valid_until_time_secs = test_utils::initial_time_for_testing() / 1000 + 10;
 
     // Setup
     let _trail_id = setup_trail_with_record_admin_role(&mut scenario, admin_user);
@@ -709,13 +742,15 @@ fun test_capability_valid_until_only() {
     {
         let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
-        let cap = trail.roles_mut().new_capability_valid_until(
-            &admin_cap,
-            &string::utf8(b"RecordAdmin"),
-            valid_until_time_secs,
-            &clock,
-            ts::ctx(&mut scenario),
-        );
+        let cap = trail
+            .roles_mut()
+            .new_capability_valid_until(
+                &admin_cap,
+                &string::utf8(b"RecordAdmin"),
+                valid_until_time_secs,
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         // Verify capability properties
         assert!(cap.issued_to().is_none(), 0);
@@ -765,7 +800,6 @@ fun test_capability_valid_until_only() {
 
     ts::end(scenario);
 }
-
 
 /// Test capability with valid_from and valid_until restrictions (time window).
 ///
@@ -823,8 +857,8 @@ fun test_capability_time_window_before_valid_from() {
 
     let mut scenario = ts::begin(admin_user);
 
-    let valid_from_time_secs= test_utils::initial_time_for_testing() / 1000 + 5;
-    let valid_until_time_secs= test_utils::initial_time_for_testing() / 1000 + 10;
+    let valid_from_time_secs = test_utils::initial_time_for_testing() / 1000 + 5;
+    let valid_until_time_secs = test_utils::initial_time_for_testing() / 1000 + 10;
 
     // Setup
     let _trail_id = setup_trail_with_record_admin_capability_and_time_window_restriction(
@@ -867,8 +901,8 @@ fun test_capability_time_window_after_valid_until() {
 
     let mut scenario = ts::begin(admin_user);
 
-    let valid_from_time_secs= test_utils::initial_time_for_testing() / 1000 + 5;
-    let valid_until_time_secs= test_utils::initial_time_for_testing() / 1000 + 10;
+    let valid_from_time_secs = test_utils::initial_time_for_testing() / 1000 + 5;
+    let valid_until_time_secs = test_utils::initial_time_for_testing() / 1000 + 10;
 
     // Setup
     let _trail_id = setup_trail_with_record_admin_capability_and_time_window_restriction(
@@ -926,15 +960,17 @@ fun test_is_valid_for_timestamp() {
     {
         let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
-        let cap = trail.roles_mut().new_capability(
-            &admin_cap,
-            &string::utf8(b"RecordAdmin"),
-            std::option::none(),
-            std::option::some(valid_from_time),
-            std::option::some(valid_until_time),
-            &clock,
-            ts::ctx(&mut scenario),
-        );
+        let cap = trail
+            .roles_mut()
+            .new_capability(
+                &admin_cap,
+                &string::utf8(b"RecordAdmin"),
+                std::option::none(),
+                std::option::some(valid_from_time),
+                std::option::some(valid_until_time),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         // Before valid_from
         assert!(!cap.is_valid_for_timestamp(valid_from_time - 1), 0);
@@ -963,12 +999,14 @@ fun test_is_valid_for_timestamp() {
     {
         let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
-        let unrestricted_cap = trail.roles_mut().new_capability_without_restrictions(
-            &admin_cap,
-            &string::utf8(b"RecordAdmin"),
-            &clock,
-            ts::ctx(&mut scenario),
-        );
+        let unrestricted_cap = trail
+            .roles_mut()
+            .new_capability_without_restrictions(
+                &admin_cap,
+                &string::utf8(b"RecordAdmin"),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         // Should be valid at any timestamp
         assert!(unrestricted_cap.is_valid_for_timestamp(0), 6);
@@ -1007,15 +1045,17 @@ fun test_is_currently_valid() {
     {
         let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
-        let cap = trail.roles_mut().new_capability(
-            &admin_cap,
-            &string::utf8(b"RecordAdmin"),
-            std::option::none(),
-            std::option::some(valid_from_time / 1000),
-            std::option::some(valid_until_time / 1000),
-            &clock,
-            ts::ctx(&mut scenario),
-        );
+        let cap = trail
+            .roles_mut()
+            .new_capability(
+                &admin_cap,
+                &string::utf8(b"RecordAdmin"),
+                std::option::none(),
+                std::option::some(valid_from_time / 1000),
+                std::option::some(valid_until_time / 1000),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         transfer::public_transfer(cap, user);
         cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
@@ -1084,12 +1124,14 @@ fun test_new_capability_without_restrictions() {
     {
         let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
-        let cap = trail.roles_mut().new_capability_without_restrictions(
-            &admin_cap,
-            &string::utf8(b"RecordAdmin"),
-            &clock,
-            ts::ctx(&mut scenario),
-        );
+        let cap = trail
+            .roles_mut()
+            .new_capability_without_restrictions(
+                &admin_cap,
+                &string::utf8(b"RecordAdmin"),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         // Verify no restrictions
         assert!(cap.issued_to().is_none(), 0);
@@ -1146,13 +1188,15 @@ fun test_new_capability_valid_until() {
     {
         let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
-        let cap = trail.roles_mut().new_capability_valid_until(
-            &admin_cap,
-            &string::utf8(b"RecordAdmin"),
-            valid_until_time,
-            &clock,
-            ts::ctx(&mut scenario),
-        );
+        let cap = trail
+            .roles_mut()
+            .new_capability_valid_until(
+                &admin_cap,
+                &string::utf8(b"RecordAdmin"),
+                valid_until_time,
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         // Verify restrictions
         assert!(cap.issued_to().is_none(), 0);
@@ -1189,14 +1233,16 @@ fun test_new_capability_for_address_no_expiration() {
     {
         let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
-        let cap = trail.roles_mut().new_capability_for_address(
-            &admin_cap,
-            &string::utf8(b"RecordAdmin"),
-            authorized_user,
-            std::option::none(), // no expiration
-            &clock,
-            ts::ctx(&mut scenario),
-        );
+        let cap = trail
+            .roles_mut()
+            .new_capability_for_address(
+                &admin_cap,
+                &string::utf8(b"RecordAdmin"),
+                authorized_user,
+                std::option::none(), // no expiration
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         // Verify restrictions
         assert!(cap.issued_to() == std::option::some(authorized_user), 0);
