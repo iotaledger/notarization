@@ -9,15 +9,19 @@
 /// Records are addressed by trail_id + sequence_number
 module audit_trail::main;
 
-use audit_trail::capability::{Self, Capability};
-use audit_trail::locking::{Self, LockingConfig, LockingWindow, set_delete_record_lock};
-use audit_trail::permission::{Self, Permission};
-use audit_trail::record::{Self, Record};
-use iota::clock::{Self, Clock};
-use iota::event;
-use iota::linked_table::{Self, LinkedTable};
-use iota::vec_map::{Self, VecMap};
-use iota::vec_set::{Self, VecSet};
+use audit_trail::{
+    capability::{Self, Capability},
+    locking::{Self, LockingConfig, LockingWindow, set_delete_record_lock},
+    permission::{Self, Permission},
+    record::{Self, Record}
+};
+use iota::{
+    clock::{Self, Clock},
+    event,
+    linked_table::{Self, LinkedTable},
+    vec_map::{Self, VecMap},
+    vec_set::{Self, VecSet}
+};
 use std::string::String;
 
 // ===== Errors =====
@@ -26,11 +30,14 @@ const ERecordNotFound: vector<u8> = b"Record not found at the given sequence num
 #[error]
 const ERoleDoesNotExist: vector<u8> = b"The specified role does not exist in the `roles` map";
 #[error]
-const EPermissionDenied: vector<u8> = b"The role associated with the provided capability does not have the required permission";
+const EPermissionDenied: vector<u8> =
+    b"The role associated with the provided capability does not have the required permission";
 #[error]
-const ECapabilityHasBeenRevoked: vector<u8> = b"The provided capability has been revoked and is no longer valid";
+const ECapabilityHasBeenRevoked: vector<u8> =
+    b"The provided capability has been revoked and is no longer valid";
 #[error]
-const ETrailIdNotCorrect: vector<u8> = b"The trail ID associated with the provided capability does not match the audit trail";
+const ETrailIdNotCorrect: vector<u8> =
+    b"The trail ID associated with the provided capability does not match the audit trail";
 
 // ===== Constants =====
 const INITIAL_ADMIN_ROLE_NAME: vector<u8> = b"Admin";
@@ -98,8 +105,7 @@ public struct CapabilityIssued has copy, drop {
     issued_to: address,
     issued_by: address,
     timestamp: u64,
-}   
-
+}
 
 // ===== Constructors =====
 
@@ -114,7 +120,7 @@ public fun new_trail_metadata(
 // ===== Trail Creation =====
 
 /// Create a new audit trail with optional initial record
-/// 
+///
 /// Initial roles config
 /// --------------------
 /// Initializes the `roles` map with only one role, called "Admin" which is associated with the permissions
@@ -182,7 +188,6 @@ public fun create<D: store + copy>(
     let mut issued_capabilities = vec_set::empty<ID>();
     issued_capabilities.insert(admin_cap.id());
 
-
     let trail = AuditTrail {
         id: trail_uid,
         creator,
@@ -197,7 +202,7 @@ public fun create<D: store + copy>(
     };
 
     transfer::share_object(trail);
-    
+
     event::emit(AuditTrailCreated {
         trail_id,
         creator,
@@ -280,7 +285,10 @@ public fun trail_update_locking_config<D: store + copy>(
     new_config: LockingConfig,
     _ctx: &mut TxContext,
 ) {
-    assert!(trail.has_capability_permission(cap, &permission::update_locking_config()), EPermissionDenied);
+    assert!(
+        trail.has_capability_permission(cap, &permission::update_locking_config()),
+        EPermissionDenied,
+    );
     trail.locking_config = new_config;
 }
 
@@ -291,7 +299,13 @@ public fun trail_update_locking_config_for_delete_record<D: store + copy>(
     new_delete_record_lock: LockingWindow,
     _ctx: &mut TxContext,
 ) {
-    assert!(trail.has_capability_permission(cap, &permission::update_locking_config_for_delete_record()), EPermissionDenied);
+    assert!(
+        trail.has_capability_permission(
+            cap,
+            &permission::update_locking_config_for_delete_record(),
+        ),
+        EPermissionDenied,
+    );
     set_delete_record_lock(&mut trail.locking_config, new_delete_record_lock);
 }
 
@@ -302,7 +316,10 @@ public fun trail_update_metadata<D: store + copy>(
     new_metadata: Option<String>,
     _ctx: &mut TxContext,
 ) {
-    assert!(trail.has_capability_permission(cap, &permission::update_metadata()), EPermissionDenied);
+    assert!(
+        trail.has_capability_permission(cap, &permission::update_metadata()),
+        EPermissionDenied,
+    );
     trail.updatable_metadata = new_metadata;
 }
 
@@ -366,7 +383,10 @@ public fun trail_last_sequence<D: store + copy>(trail: &AuditTrail<D>): Option<u
 // ===== Record Query Functions =====
 
 /// Get a record by sequence number
-public fun trail_get_record<D: store + copy>(trail: &AuditTrail<D>, sequence_number: u64): &Record<D> {
+public fun trail_get_record<D: store + copy>(
+    trail: &AuditTrail<D>,
+    sequence_number: u64,
+): &Record<D> {
     assert!(linked_table::contains(&trail.records, sequence_number), ERecordNotFound);
     linked_table::borrow(&trail.records, sequence_number)
 }
@@ -430,15 +450,14 @@ public fun trail_update_role_permissions<D: store + copy>(
 }
 
 /// Returns the roles defined in the audit trail
-public fun trail_roles<D: store + copy>(trail: &AuditTrail<D>): &VecMap<String, VecSet<Permission>> {
+public fun trail_roles<D: store + copy>(
+    trail: &AuditTrail<D>,
+): &VecMap<String, VecSet<Permission>> {
     &trail.roles
 }
 
 /// Indicates if the specified role exists in the audit trail
-public fun trail_has_role<D: store + copy>(
-    trail: &AuditTrail<D>,
-    role: &String,
-): bool {
+public fun trail_has_role<D: store + copy>(trail: &AuditTrail<D>, role: &String): bool {
     vec_map::contains(&trail.roles, role)
 }
 
@@ -463,8 +482,11 @@ public fun trail_new_capability<D: store + copy>(
     cap: &Capability,
     role: &String,
     ctx: &mut TxContext,
-): Capability { 
-    assert!(trail.has_capability_permission(cap, &permission::add_capabilities()), EPermissionDenied);
+): Capability {
+    assert!(
+        trail.has_capability_permission(cap, &permission::add_capabilities()),
+        EPermissionDenied,
+    );
     assert!(trail.roles.contains(role), ERoleDoesNotExist);
     let new_cap = capability::new_capability(
         *role,
@@ -494,13 +516,14 @@ public fun trail_revoke_capability<D: store + copy>(
     cap: &Capability,
     cap_to_revoke: ID,
 ) {
-    assert!(trail.has_capability_permission(cap, &permission::revoke_capabilities()), EPermissionDenied);
+    assert!(
+        trail.has_capability_permission(cap, &permission::revoke_capabilities()),
+        EPermissionDenied,
+    );
     trail.issued_capabilities.remove(&cap_to_revoke);
 }
 
-public fun trail_issued_capabilities<D: store + copy>(
-    trail: &AuditTrail<D>,
-): &VecSet<ID> {
+public fun trail_issued_capabilities<D: store + copy>(trail: &AuditTrail<D>): &VecSet<ID> {
     &trail.issued_capabilities
 }
 
@@ -518,7 +541,8 @@ public use fun trail_metadata as AuditTrail.metadata;
 public use fun trail_locking_config as AuditTrail.locking_config;
 public use fun trail_update_locking_config as AuditTrail.update_locking_config;
 public use fun trail_is_record_locked as AuditTrail.is_record_locked;
-public use fun trail_update_locking_config_for_delete_record as AuditTrail.update_locking_config_for_delete_record;
+public use fun trail_update_locking_config_for_delete_record as
+    AuditTrail.update_locking_config_for_delete_record;
 public use fun trail_update_metadata as AuditTrail.update_metadata;
 public use fun trail_is_empty as AuditTrail.is_empty;
 public use fun trail_first_sequence as AuditTrail.first_sequence;

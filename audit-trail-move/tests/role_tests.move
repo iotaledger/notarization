@@ -1,14 +1,15 @@
 #[test_only]
 module audit_trail::role_tests;
 
-use audit_trail::permission::{Self};
-use audit_trail::locking::{Self};
-use audit_trail::main::{Self, AuditTrail, initial_admin_role_name};
-use audit_trail::test_utils::{Self, TestData, setup_test_audit_trail};
-use iota::test_scenario::{Self as ts};
-use iota::clock::{Self};
-use std::string::{Self};
-use audit_trail::capability::Capability;
+use audit_trail::{
+    capability::Capability,
+    locking,
+    main::{Self, AuditTrail, initial_admin_role_name},
+    permission,
+    test_utils::{Self, TestData, setup_test_audit_trail}
+};
+use iota::{clock, test_scenario as ts};
+use std::string;
 
 /// Test comprehensive role-based access control delegation workflow.
 ///
@@ -31,35 +32,35 @@ fun test_role_based_permission_delegation() {
     let role_admin_user = @0xB0B;
     let cap_admin_user = @0xCAB;
     let record_admin_user = @0xDED;
-    
+
     let mut scenario = ts::begin(admin_user);
-    
+
     // Step 1: admin_user creates the audit trail
     let trail_id = {
         let locking_config = locking::new(locking::window_count_based(0));
-        
+
         let (admin_cap, trail_id) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
-            std::option::none()
+            std::option::none(),
         );
-        
+
         // Verify admin capability was created with correct role and trail reference
         assert!(admin_cap.role() == initial_admin_role_name(), 0);
         assert!(admin_cap.trail_id() == trail_id, 1);
-        
+
         // Transfer the admin capability to the user
-        transfer::public_transfer(admin_cap, admin_user);        
+        transfer::public_transfer(admin_cap, admin_user);
 
         trail_id
     };
-    
+
     // Step 2: Admin creates RoleAdmin and CapAdmin roles
     ts::next_tx(&mut scenario, admin_user);
     {
         let admin_cap = ts::take_from_sender<Capability>(&scenario);
         let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
-        
+
         // Verify initial state - should only have the initial admin role
         assert!(trail.roles().size() == 1, 2);
 
@@ -80,7 +81,7 @@ fun test_role_based_permission_delegation() {
             cap_admin_perms,
             ts::ctx(&mut scenario),
         );
-        
+
         // Verify both roles were created
         assert!(trail.roles().size() == 3, 3); // Initial admin + RoleAdmin + CapAdmin
         assert!(trail.has_role(&string::utf8(b"RoleAdmin")), 4);
@@ -89,19 +90,19 @@ fun test_role_based_permission_delegation() {
         ts::return_to_sender(&scenario, admin_cap);
         ts::return_shared(trail);
     };
-    
+
     // Step 3: Admin creates capability for RoleAdmin and CapAdmin and transfers to the respective users
     ts::next_tx(&mut scenario, admin_user);
     {
         let admin_cap = ts::take_from_sender<Capability>(&scenario);
         let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
-        
+
         let role_admin_cap = trail.new_capability(
             &admin_cap,
             &string::utf8(b"RoleAdmin"),
             ts::ctx(&mut scenario),
         );
-        
+
         // Verify the capability was created with correct role and trail ID
         assert!(role_admin_cap.role() == string::utf8(b"RoleAdmin"), 6);
         assert!(role_admin_cap.trail_id() == trail_id, 7);
@@ -113,7 +114,7 @@ fun test_role_based_permission_delegation() {
             &string::utf8(b"CapAdmin"),
             ts::ctx(&mut scenario),
         );
-        
+
         // Verify the capability was created with correct role and trail ID
         assert!(cap_admin_cap.role() == string::utf8(b"CapAdmin"), 8);
         assert!(cap_admin_cap.trail_id() == trail_id, 9);
@@ -124,13 +125,12 @@ fun test_role_based_permission_delegation() {
         ts::return_shared(trail);
     };
 
-    
     // Step 5: RoleAdmin creates RecordAdmin role (demonstrating delegated role management)
     ts::next_tx(&mut scenario, role_admin_user);
     {
         let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
         let role_admin_cap = ts::take_from_sender<Capability>(&scenario);
-        
+
         // Verify RoleAdmin has the correct role
         assert!(role_admin_cap.role() == string::utf8(b"RoleAdmin"), 10);
 
@@ -141,7 +141,7 @@ fun test_role_based_permission_delegation() {
             record_admin_perms,
             ts::ctx(&mut scenario),
         );
-        
+
         // Verify RecordAdmin role was created successfully
         assert!(trail.roles().size() == 4, 11); // Initial admin + RoleAdmin + CapAdmin + RecordAdmin
         assert!(trail.has_role(&string::utf8(b"RecordAdmin")), 12);
@@ -149,7 +149,7 @@ fun test_role_based_permission_delegation() {
         ts::return_to_sender(&scenario, role_admin_cap);
         ts::return_shared(trail);
     };
-    
+
     // Step 6: CapAdmin creates capability for RecordAdmin and transfers to record_admin_user
     ts::next_tx(&mut scenario, cap_admin_user);
     {
@@ -164,7 +164,7 @@ fun test_role_based_permission_delegation() {
             &string::utf8(b"RecordAdmin"),
             ts::ctx(&mut scenario),
         );
-        
+
         // Verify the capability was created with correct role and trail ID
         assert!(record_admin_cap.role() == string::utf8(b"RecordAdmin"), 14);
         assert!(record_admin_cap.trail_id() == trail_id, 15);
@@ -174,7 +174,7 @@ fun test_role_based_permission_delegation() {
         ts::return_to_sender(&scenario, cap_admin_cap);
         ts::return_shared(trail);
     };
-    
+
     // Step 7: RecordAdmin adds a new record to the audit trail (demonstrating delegated record management)
     ts::next_tx(&mut scenario, record_admin_user);
     {
@@ -189,7 +189,7 @@ fun test_role_based_permission_delegation() {
 
         let mut clock = clock::create_for_testing(ts::ctx(&mut scenario));
         clock.set_for_testing(test_utils::initial_time_for_testing() + 1000);
-        
+
         let test_data = test_utils::new_test_data(42, b"Test record added by RecordAdmin");
 
         trail.add_record(
@@ -199,7 +199,7 @@ fun test_role_based_permission_delegation() {
             &clock,
             ts::ctx(&mut scenario),
         );
-        
+
         // Verify the record was added successfully
         assert!(trail.records().length() == initial_record_count + 1, 17);
 
@@ -207,7 +207,7 @@ fun test_role_based_permission_delegation() {
         ts::return_to_sender(&scenario, record_admin_cap);
         ts::return_shared(trail);
     };
-    
+
     // Cleanup
     ts::next_tx(&mut scenario, admin_user);
     ts::end(scenario);

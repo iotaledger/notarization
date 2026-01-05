@@ -12,16 +12,12 @@ use std::string::String;
 public struct Capability has key, store {
     id: UID,
     trail_id: ID,
-    role: String
+    role: String,
 }
 
 /// Create a new capability with a specific role
-public(package) fun new_capability(
-    role: String,
-    trail_id: ID,
-    ctx: &mut TxContext,
-): Capability { 
-    Capability {        
+public(package) fun new_capability(role: String, trail_id: ID, ctx: &mut TxContext): Capability {
+    Capability {
         id: object::new(ctx),
         role,
         trail_id,

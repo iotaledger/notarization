@@ -11,7 +11,6 @@ public enum Permission has copy, drop, store {
     // --- Whole AUdit TRail related - Proposed role: `Admin` ---
     /// Destroy the whole Audit Trail object
     DeleteAuditTrail,
-
     // --- Record Management - Proposed role: `RecordAdmin` ---
     /// Add records to the trail
     AddRecord,
@@ -19,8 +18,6 @@ public enum Permission has copy, drop, store {
     DeleteRecord,
     /// Correct existing records in the trail
     CorrectRecord, // TODO: Clarify if needed for MVP
-
-
     // --- Locking Config - Proposed role: `LockingAdmin` ---
     /// Update the whole locking configuration
     UpdateLockingConfig,
@@ -28,7 +25,6 @@ public enum Permission has copy, drop, store {
     UpdateLockingConfigForDeleteRecord,
     /// Update the delete_lock configuration for the whole Audit Trail
     UpdateLockingConfigForDeleteTrail,
-
     // --- Role Management - Proposed role: `RoleAdmin` ---
     /// Add new roles with associated permissions
     AddRoles,
@@ -36,13 +32,11 @@ public enum Permission has copy, drop, store {
     UpdateRoles,
     /// Delete existing roles
     DeleteRoles,
-    
     // --- Capability Management - Proposed role: `CapAdmin` ---
     /// Issue new capabilities
     AddCapabilities,
     /// Revoke existing capabilities
     RevokeCapabilities,
-
     // --- Meta Data related - Proposed role: `MetadataAdmin` ---
     /// Update the updatable metadata field
     UpdateMetadata,
@@ -83,7 +77,7 @@ public fun has_permission(set: &VecSet<Permission>, perm: &Permission): bool {
 public fun admin_permissions(): VecSet<Permission> {
     let mut perms = vec_set::empty();
     perms.insert(delete_audit_trail());
-    perms.insert(add_capabilities());   
+    perms.insert(add_capabilities());
     perms.insert(revoke_capabilities());
     perms.insert(add_roles());
     perms.insert(update_roles());
