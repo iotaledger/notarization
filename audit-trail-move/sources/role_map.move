@@ -517,7 +517,11 @@ public fun rmap_destroy_capability<P: copy + drop>(
         role_map.security_vault_id == cap_to_destroy.security_vault_id(),
         ECapabilitySecurityVaultIdMismatch,
     );
-    role_map.issued_capabilities.remove(&cap_to_destroy.id());
+
+    if (role_map.issued_capabilities.contains(&cap_to_destroy.id())) {
+        // Capability has not been revoked before destroying, so let's remove it now
+        role_map.issued_capabilities.remove(&cap_to_destroy.id());
+    };
 
     event::emit(CapabilityDestroyed {
         security_vault_id: role_map.security_vault_id,
