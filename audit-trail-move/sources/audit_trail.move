@@ -503,7 +503,7 @@ public fun has_capability_permission<D: store + copy>(
     cap: &Capability,
     permission: &Permission,
 ): bool {
-    assert!(trail.id() == cap.id(), ETrailIdNotCorrect);
+    assert!(trail.id() == cap.trail_id(), ETrailIdNotCorrect);
     assert!(trail.issued_capabilities.contains(&cap.id()), ECapabilityHasBeenRevoked);
     let permissions = trail.get_role_permissions(cap.role());
     vec_set::contains(permissions, permission)
@@ -540,7 +540,7 @@ public fun destroy_capability<D: store + copy>(
     trail: &mut AuditTrail<D>,
     cap_to_destroy: Capability,
 ) {
-    assert!(trail.id() == cap_to_destroy.id(), ETrailIdNotCorrect);
+    assert!(trail.id() == cap_to_destroy.trail_id(), ETrailIdNotCorrect);
     trail.issued_capabilities.remove(&cap_to_destroy.id());
     cap_to_destroy.destroy();
 }
