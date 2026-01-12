@@ -211,7 +211,11 @@ fun test_create_role_permission_denied() {
     // Setup
     {
         let locking_config = locking::new(locking::window_count_based(0));
-        let (admin_cap, _) = setup_test_audit_trail(&mut scenario, locking_config, std::option::none());
+        let (admin_cap, _) = setup_test_audit_trail(
+            &mut scenario,
+            locking_config,
+            std::option::none(),
+        );
         transfer::public_transfer(admin_cap, admin_user);
     };
 
@@ -265,7 +269,11 @@ fun test_delete_role_permission_denied() {
     // Setup
     {
         let locking_config = locking::new(locking::window_count_based(0));
-        let (admin_cap, _) = setup_test_audit_trail(&mut scenario, locking_config, std::option::none());
+        let (admin_cap, _) = setup_test_audit_trail(
+            &mut scenario,
+            locking_config,
+            std::option::none(),
+        );
         transfer::public_transfer(admin_cap, admin_user);
     };
 
@@ -281,7 +289,12 @@ fun test_delete_role_permission_denied() {
 
         // Create role WITHOUT delete_roles permission
         let no_delete_perms = permission::from_vec(vector[permission::add_record()]);
-        trail.create_role(&admin_cap, string::utf8(b"NoDeleteRolePerm"), no_delete_perms, ts::ctx(&mut scenario));
+        trail.create_role(
+            &admin_cap,
+            string::utf8(b"NoDeleteRolePerm"),
+            no_delete_perms,
+            ts::ctx(&mut scenario),
+        );
 
         let user_cap = trail.new_capability(
             &admin_cap,
@@ -321,7 +334,11 @@ fun test_update_role_permissions_permission_denied() {
     // Setup
     {
         let locking_config = locking::new(locking::window_count_based(0));
-        let (admin_cap, _) = setup_test_audit_trail(&mut scenario, locking_config, std::option::none());
+        let (admin_cap, _) = setup_test_audit_trail(
+            &mut scenario,
+            locking_config,
+            std::option::none(),
+        );
         transfer::public_transfer(admin_cap, admin_user);
     };
 
@@ -337,7 +354,12 @@ fun test_update_role_permissions_permission_denied() {
 
         // Create role WITHOUT update_roles permission
         let no_update_perms = permission::from_vec(vector[permission::add_record()]);
-        trail.create_role(&admin_cap, string::utf8(b"NoUpdateRolePerm"), no_update_perms, ts::ctx(&mut scenario));
+        trail.create_role(
+            &admin_cap,
+            string::utf8(b"NoUpdateRolePerm"),
+            no_update_perms,
+            ts::ctx(&mut scenario),
+        );
 
         let user_cap = trail.new_capability(
             &admin_cap,
@@ -359,7 +381,12 @@ fun test_update_role_permissions_permission_denied() {
         let new_perms = permission::from_vec(vector[permission::delete_record()]);
 
         // This should fail - no update_roles permission
-        trail.update_role_permissions(&user_cap, &string::utf8(b"RoleToUpdate"), new_perms, ts::ctx(&mut scenario));
+        trail.update_role_permissions(
+            &user_cap,
+            &string::utf8(b"RoleToUpdate"),
+            new_perms,
+            ts::ctx(&mut scenario),
+        );
 
         ts::return_to_sender(&scenario, user_cap);
         ts::return_shared(trail);
@@ -377,7 +404,11 @@ fun test_get_role_permissions_nonexistent() {
 
     {
         let locking_config = locking::new(locking::window_count_based(0));
-        let (admin_cap, _) = setup_test_audit_trail(&mut scenario, locking_config, std::option::none());
+        let (admin_cap, _) = setup_test_audit_trail(
+            &mut scenario,
+            locking_config,
+            std::option::none(),
+        );
         admin_cap.destroy_for_testing();
     };
 
@@ -403,7 +434,11 @@ fun test_update_role_permissions_nonexistent() {
 
     {
         let locking_config = locking::new(locking::window_count_based(0));
-        let (admin_cap, _) = setup_test_audit_trail(&mut scenario, locking_config, std::option::none());
+        let (admin_cap, _) = setup_test_audit_trail(
+            &mut scenario,
+            locking_config,
+            std::option::none(),
+        );
         transfer::public_transfer(admin_cap, admin_user);
     };
 
@@ -415,7 +450,12 @@ fun test_update_role_permissions_nonexistent() {
         let new_perms = permission::from_vec(vector[permission::add_record()]);
 
         // This should fail - role doesn't exist
-        trail.update_role_permissions(&admin_cap, &string::utf8(b"NonExistentRole"), new_perms, ts::ctx(&mut scenario));
+        trail.update_role_permissions(
+            &admin_cap,
+            &string::utf8(b"NonExistentRole"),
+            new_perms,
+            ts::ctx(&mut scenario),
+        );
 
         ts::return_to_sender(&scenario, admin_cap);
         ts::return_shared(trail);

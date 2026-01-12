@@ -99,7 +99,11 @@ fun test_count_based_locking() {
     // Create trail with count-based locking (last 2 locked)
     {
         let locking_config = locking::count_based(2);
-        let (admin_cap, _) = setup_test_audit_trail(&mut scenario, locking_config, std::option::none());
+        let (admin_cap, _) = setup_test_audit_trail(
+            &mut scenario,
+            locking_config,
+            std::option::none(),
+        );
         transfer::public_transfer(admin_cap, admin);
     };
 
@@ -138,7 +142,13 @@ fun test_count_based_locking() {
 
         let mut i = 0u64;
         while (i < 5) {
-            trail.add_record(&record_cap, new_test_data(i, b"Record"), std::option::none(), &clock, ts::ctx(&mut scenario));
+            trail.add_record(
+                &record_cap,
+                new_test_data(i, b"Record"),
+                std::option::none(),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
             i = i + 1;
         };
 
@@ -274,7 +284,11 @@ fun test_update_locking_config() {
         assert!(!trail.is_record_locked(0, &clock), 0);
 
         // Update to 1 hour time-based locking
-        trail.update_locking_config(&locking_cap, locking::time_based(3600), ts::ctx(&mut scenario));
+        trail.update_locking_config(
+            &locking_cap,
+            locking::time_based(3600),
+            ts::ctx(&mut scenario),
+        );
 
         // Now locked
         assert!(trail.is_record_locked(0, &clock), 1);
@@ -295,7 +309,11 @@ fun test_update_locking_config_permission_denied() {
 
     {
         let locking_config = locking::none();
-        let (admin_cap, _) = setup_test_audit_trail(&mut scenario, locking_config, std::option::none());
+        let (admin_cap, _) = setup_test_audit_trail(
+            &mut scenario,
+            locking_config,
+            std::option::none(),
+        );
         transfer::public_transfer(admin_cap, admin);
     };
 
@@ -306,7 +324,12 @@ fun test_update_locking_config_permission_denied() {
         let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
 
         let perms = permission::from_vec(vector[permission::add_record()]);
-        trail.create_role(&admin_cap, string::utf8(b"NoLockingPerm"), perms, ts::ctx(&mut scenario));
+        trail.create_role(
+            &admin_cap,
+            string::utf8(b"NoLockingPerm"),
+            perms,
+            ts::ctx(&mut scenario),
+        );
 
         let no_locking_cap = trail.new_capability(
             &admin_cap,
@@ -325,7 +348,11 @@ fun test_update_locking_config_permission_denied() {
         let no_locking_cap = ts::take_from_sender<Capability>(&scenario);
         let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
 
-        trail.update_locking_config(&no_locking_cap, locking::time_based(3600), ts::ctx(&mut scenario));
+        trail.update_locking_config(
+            &no_locking_cap,
+            locking::time_based(3600),
+            ts::ctx(&mut scenario),
+        );
 
         no_locking_cap.destroy_for_testing();
         ts::return_shared(trail);
@@ -356,8 +383,15 @@ fun test_update_locking_config_for_delete_record() {
         let admin_cap = ts::take_from_sender<Capability>(&scenario);
         let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
 
-        let perms = permission::from_vec(vector[permission::update_locking_config_for_delete_record()]);
-        trail.create_role(&admin_cap, string::utf8(b"DeleteLockAdmin"), perms, ts::ctx(&mut scenario));
+        let perms = permission::from_vec(vector[
+            permission::update_locking_config_for_delete_record(),
+        ]);
+        trail.create_role(
+            &admin_cap,
+            string::utf8(b"DeleteLockAdmin"),
+            perms,
+            ts::ctx(&mut scenario),
+        );
 
         let delete_lock_cap = trail.new_capability(
             &admin_cap,
@@ -383,7 +417,11 @@ fun test_update_locking_config_for_delete_record() {
         assert!(!trail.is_record_locked(0, &clock), 0);
 
         // Update to count-based (last 5 locked)
-        trail.update_locking_config_for_delete_record(&delete_lock_cap, locking::window_count_based(5), ts::ctx(&mut scenario));
+        trail.update_locking_config_for_delete_record(
+            &delete_lock_cap,
+            locking::window_count_based(5),
+            ts::ctx(&mut scenario),
+        );
 
         // Now locked (single record, last 5 are locked)
         assert!(trail.is_record_locked(0, &clock), 1);
@@ -404,7 +442,11 @@ fun test_update_locking_config_for_delete_record_permission_denied() {
 
     {
         let locking_config = locking::none();
-        let (admin_cap, _) = setup_test_audit_trail(&mut scenario, locking_config, std::option::none());
+        let (admin_cap, _) = setup_test_audit_trail(
+            &mut scenario,
+            locking_config,
+            std::option::none(),
+        );
         transfer::public_transfer(admin_cap, admin);
     };
 
@@ -434,7 +476,11 @@ fun test_update_locking_config_for_delete_record_permission_denied() {
         let wrong_cap = ts::take_from_sender<Capability>(&scenario);
         let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
 
-        trail.update_locking_config_for_delete_record(&wrong_cap, locking::window_count_based(5), ts::ctx(&mut scenario));
+        trail.update_locking_config_for_delete_record(
+            &wrong_cap,
+            locking::window_count_based(5),
+            ts::ctx(&mut scenario),
+        );
 
         wrong_cap.destroy_for_testing();
         ts::return_shared(trail);
