@@ -142,7 +142,7 @@ public fun new_metadata(name: Option<String>, description: Option<String>): Immu
 ///
 /// Returns
 /// -------
-/// * Capability with "Admin" role, allowing the creator to define custom
+/// * Capability with *Admin* role, allowing the creator to define custom
 ///   roles and issue capabilities to other users.
 /// * Trail ID
 public fun create<D: store + copy>(
