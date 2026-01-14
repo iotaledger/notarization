@@ -20,6 +20,14 @@ public(package) fun new_test_data(value: u64, message: vector<u8>): TestData {
     }
 }
 
+public(package) fun test_data_value(data: &TestData): u64 {
+    data.value
+}
+
+public(package) fun test_data_message(data: &TestData): vector<u8> {
+    data.message
+}
+
 public(package) fun initial_time_for_testing(): u64 {
     INITIAL_TIME_FOR_TESTING
 }
@@ -36,7 +44,7 @@ public(package) fun setup_test_audit_trail(
 
         let trail_metadata = main::new_trail_metadata(
             string::utf8(b"Setup Test Trail"),
-            string::utf8(b"Setup Test Trail Description"),
+            option::some(string::utf8(b"Setup Test Trail Description")),
         );
 
         let (admin_cap, trail_id) = main::create<TestData>(

@@ -8,7 +8,7 @@ use iota::vec_set::{Self, VecSet};
 
 /// Existing permissions for the Audit Trail object
 public enum Permission has copy, drop, store {
-    // --- Whole AUdit TRail related - Proposed role: `Admin` ---
+    // --- Whole Audit Trail related - Proposed role: `Admin` ---
     /// Destroy the whole Audit Trail object
     DeleteAuditTrail,
     // --- Record Management - Proposed role: `RecordAdmin` ---
@@ -73,7 +73,7 @@ public fun has_permission(set: &VecSet<Permission>, perm: &Permission): bool {
 
 // --------------------------- Functions creating permission sets for often used roles ---------------------------
 
-/// Create permissions typical used for the `Admin` rolepermissions
+/// Create permissions typically used for the `Admin` role
 public fun admin_permissions(): VecSet<Permission> {
     let mut perms = vec_set::empty();
     perms.insert(delete_audit_trail());
