@@ -33,7 +33,7 @@ fun test_new_capability() {
         let (admin_cap, trail_id) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
-            std::option::none(),
+            option::none(),
         );
 
         transfer::public_transfer(admin_cap, admin_user);
@@ -147,7 +147,7 @@ fun test_revoke_capability() {
         let (admin_cap, trail_id) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
-            std::option::none(),
+            option::none(),
         );
 
         transfer::public_transfer(admin_cap, admin_user);
@@ -285,7 +285,7 @@ fun test_destroy_capability() {
         let (admin_cap, trail_id) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
-            std::option::none(),
+            option::none(),
         );
 
         transfer::public_transfer(admin_cap, admin_user);
@@ -422,7 +422,7 @@ fun test_capability_lifecycle() {
         let (admin_cap, trail_id) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
-            std::option::none(),
+            option::none(),
         );
 
         transfer::public_transfer(admin_cap, admin_user);
@@ -502,7 +502,7 @@ fun test_capability_lifecycle() {
         trail.add_record(
             &record_cap,
             test_data,
-            std::option::none(),
+            option::none(),
             &clock,
             ts::ctx(&mut scenario),
         );

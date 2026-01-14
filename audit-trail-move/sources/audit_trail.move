@@ -46,7 +46,7 @@ const INITIAL_ADMIN_ROLE_NAME: vector<u8> = b"Admin";
 
 /// Metadata set at trail creation (immutable)
 public struct TrailImmutableMetadata has copy, drop, store {
-    name: Option<String>,
+    name: String,
     description: Option<String>,
 }
 
@@ -67,7 +67,7 @@ public struct AuditTrail<D: store + copy> has key, store {
     /// A list of role definitions consisting of a unique role specifier and a list of associated permissions
     roles: VecMap<String, VecSet<Permission>>,
     /// Set at creation, cannot be changed
-    immutable_metadata: TrailImmutableMetadata,
+    immutable_metadata: Option<TrailImmutableMetadata>,
     /// Can be updated by holders of MetadataUpdate permission
     updatable_metadata: Option<String>,
     /// Whitelist of all issued capability IDs
@@ -110,10 +110,7 @@ public struct CapabilityIssued has copy, drop {
 // ===== Constructors =====
 
 /// Create immutable trail metadata
-public fun new_trail_metadata(
-    name: Option<String>,
-    description: Option<String>,
-): TrailImmutableMetadata {
+public fun new_trail_metadata(name: String, description: Option<String>): TrailImmutableMetadata {
     TrailImmutableMetadata { name, description }
 }
 
@@ -140,7 +137,7 @@ public fun create<D: store + copy>(
     initial_data: Option<D>,
     initial_record_metadata: Option<String>,
     locking_config: LockingConfig,
-    trail_metadata: TrailImmutableMetadata,
+    trail_metadata: Option<TrailImmutableMetadata>,
     updatable_metadata: Option<String>,
     clock: &Clock,
     ctx: &mut TxContext,
@@ -346,13 +343,17 @@ public fun trail_id<D: store + copy>(trail: &AuditTrail<D>): ID {
 }
 
 /// Get the trail name (immutable metadata)
-public fun trail_name<D: store + copy>(trail: &AuditTrail<D>): &Option<String> {
-    &trail.immutable_metadata.name
+public fun trail_name<D: store + copy>(trail: &AuditTrail<D>): Option<String> {
+    trail.immutable_metadata.map!(|metadata| metadata.name)
 }
 
 /// Get the trail description (immutable metadata)
-public fun trail_description<D: store + copy>(trail: &AuditTrail<D>): &Option<String> {
-    &trail.immutable_metadata.description
+public fun trail_description<D: store + copy>(trail: &AuditTrail<D>): Option<String> {
+    if (trail.immutable_metadata.is_some()) {
+        option::borrow(&trail.immutable_metadata).description
+    } else {
+        option::none()
+    }
 }
 
 /// Get the updatable metadata
