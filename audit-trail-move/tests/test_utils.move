@@ -42,17 +42,17 @@ public(package) fun setup_test_audit_trail(
         let mut clock = clock::create_for_testing(ts::ctx(scenario));
         clock.set_for_testing(INITIAL_TIME_FOR_TESTING);
 
-        let trail_metadata = main::new_metadata(
-            std::option::some(string::utf8(b"Setup Test Trail")),
-            std::option::none(),
+        let trail_metadata = main::new_trail_metadata(
+            string::utf8(b"Setup Test Trail"),
+            option::some(string::utf8(b"Setup Test Trail Description")),
         );
 
         let (admin_cap, trail_id) = main::create<TestData>(
             initial_data,
-            std::option::none(),
+            option::none(),
             locking_config,
-            trail_metadata,
-            std::option::none(),
+            option::some(trail_metadata),
+            option::none(),
             &clock,
             ts::ctx(scenario),
         );

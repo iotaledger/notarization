@@ -494,7 +494,12 @@ fun test_update_role_permissions_success() {
 
         // Create a role with add_record permission
         let initial_perms = permission::from_vec(vector[permission::add_record()]);
-        trail.create_role(&admin_cap, string::utf8(b"TestRole"), initial_perms, ts::ctx(&mut scenario));
+        trail.create_role(
+            &admin_cap,
+            string::utf8(b"TestRole"),
+            initial_perms,
+            ts::ctx(&mut scenario),
+        );
 
         // Verify the role was created with add_record permission
         let perms = trail.get_role_permissions(&string::utf8(b"TestRole"));

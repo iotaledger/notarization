@@ -21,7 +21,7 @@ fun test_create_without_initial_record() {
         let (admin_cap, trail_id) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
-            std::option::none(),
+            option::none(),
         );
 
         // Verify capability was created
@@ -98,17 +98,13 @@ fun test_create_minimal_metadata() {
         clock.set_for_testing(3000);
 
         let locking_config = locking::new(locking::window_count_based(0));
-        let trail_metadata = main::new_metadata(
-            std::option::none(),
-            std::option::none(),
-        );
 
         let (admin_cap, _trail_id) = main::create<TestData>(
-            std::option::none(),
-            std::option::none(),
+            option::none(),
+            option::none(),
             locking_config,
-            trail_metadata,
-            std::option::none(),
+            option::none(),
+            option::none(),
             &clock,
             ts::ctx(&mut scenario),
         );
@@ -146,7 +142,7 @@ fun test_create_with_locking_enabled() {
         let (admin_cap, _trail_id) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
-            std::option::none(),
+            option::none(),
         );
 
         // Clean up
@@ -180,7 +176,7 @@ fun test_create_multiple_trails() {
         let (admin_cap1, trail_id1) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
-            std::option::none(),
+            option::none(),
         );
 
         trail_ids.push_back(trail_id1);
@@ -195,7 +191,7 @@ fun test_create_multiple_trails() {
         let (admin_cap2, trail_id2) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
-            std::option::none(),
+            option::none(),
         );
 
         trail_ids.push_back(trail_id2);
@@ -222,7 +218,7 @@ fun test_create_metadata_admin_role() {
         let (admin_cap, trail_id) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
-            std::option::none(),
+            option::none(),
         );
 
         // Verify admin capability was created

@@ -42,6 +42,6 @@ dependencies = [
 ]
 
 [move.toolchain-version]
-compiler-version = "1.14.0-rc"
+compiler-version = "1.14.1-rc"
 edition = "2024.beta"
 flavor = "iota"
