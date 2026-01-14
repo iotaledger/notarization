@@ -20,6 +20,14 @@ public(package) fun new_test_data(value: u64, message: vector<u8>): TestData {
     }
 }
 
+public(package) fun test_data_value(data: &TestData): u64 {
+    data.value
+}
+
+public(package) fun test_data_message(data: &TestData): vector<u8> {
+    data.message
+}
+
 public(package) fun initial_time_for_testing(): u64 {
     INITIAL_TIME_FOR_TESTING
 }
@@ -34,7 +42,7 @@ public(package) fun setup_test_audit_trail(
         let mut clock = clock::create_for_testing(ts::ctx(scenario));
         clock.set_for_testing(INITIAL_TIME_FOR_TESTING);
 
-        let trail_metadata = main::new_trail_metadata(
+        let trail_metadata = main::new_metadata(
             std::option::some(string::utf8(b"Setup Test Trail")),
             std::option::none(),
         );
