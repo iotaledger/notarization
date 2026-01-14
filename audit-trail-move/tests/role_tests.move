@@ -198,6 +198,52 @@ fun test_role_based_permission_delegation() {
     ts::end(scenario);
 }
 
+#[test]
+fun test_delete_role_success() {
+    let admin_user = @0xAD;
+
+    let mut scenario = ts::begin(admin_user);
+
+    {
+        let locking_config = locking::new(locking::window_count_based(0));
+        let (admin_cap, _) = setup_test_audit_trail(
+            &mut scenario,
+            locking_config,
+            std::option::none(),
+        );
+        transfer::public_transfer(admin_cap, admin_user);
+    };
+
+    ts::next_tx(&mut scenario, admin_user);
+    {
+        let admin_cap = ts::take_from_sender<Capability>(&scenario);
+        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+
+        // Verify initial state - only Admin role exists
+        assert!(trail.roles().size() == 1, 0);
+
+        // Create a role to delete
+        let perms = permission::from_vec(vector[permission::add_record()]);
+        trail.create_role(&admin_cap, string::utf8(b"RoleToDelete"), perms, ts::ctx(&mut scenario));
+
+        // Verify the role was created
+        assert!(trail.roles().size() == 2, 1);
+        assert!(trail.has_role(&string::utf8(b"RoleToDelete")), 2);
+
+        // Delete the role
+        trail.delete_role(&admin_cap, &string::utf8(b"RoleToDelete"), ts::ctx(&mut scenario));
+
+        // Verify the role was deleted
+        assert!(trail.roles().size() == 1, 3);
+        assert!(!trail.has_role(&string::utf8(b"RoleToDelete")), 4);
+
+        ts::return_to_sender(&scenario, admin_cap);
+        ts::return_shared(trail);
+    };
+
+    ts::end(scenario);
+}
+
 // ===== Error Case Tests =====
 
 #[test]
@@ -419,6 +465,57 @@ fun test_get_role_permissions_nonexistent() {
         // This should fail - role doesn't exist
         let _perms = trail.get_role_permissions(&string::utf8(b"NonExistentRole"));
 
+        ts::return_shared(trail);
+    };
+
+    ts::end(scenario);
+}
+
+#[test]
+fun test_update_role_permissions_success() {
+    let admin_user = @0xAD;
+
+    let mut scenario = ts::begin(admin_user);
+
+    {
+        let locking_config = locking::new(locking::window_count_based(0));
+        let (admin_cap, _) = setup_test_audit_trail(
+            &mut scenario,
+            locking_config,
+            std::option::none(),
+        );
+        transfer::public_transfer(admin_cap, admin_user);
+    };
+
+    ts::next_tx(&mut scenario, admin_user);
+    {
+        let admin_cap = ts::take_from_sender<Capability>(&scenario);
+        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+
+        // Create a role with add_record permission
+        let initial_perms = permission::from_vec(vector[permission::add_record()]);
+        trail.create_role(&admin_cap, string::utf8(b"TestRole"), initial_perms, ts::ctx(&mut scenario));
+
+        // Verify the role was created with add_record permission
+        let perms = trail.get_role_permissions(&string::utf8(b"TestRole"));
+        assert!(perms.contains(&permission::add_record()), 0);
+        assert!(!perms.contains(&permission::delete_record()), 1);
+
+        // Update the role to have delete_record permission instead
+        let new_perms = permission::from_vec(vector[permission::delete_record()]);
+        trail.update_role_permissions(
+            &admin_cap,
+            &string::utf8(b"TestRole"),
+            new_perms,
+            ts::ctx(&mut scenario),
+        );
+
+        // Verify the permissions were updated
+        let updated_perms = trail.get_role_permissions(&string::utf8(b"TestRole"));
+        assert!(!updated_perms.contains(&permission::add_record()), 2);
+        assert!(updated_perms.contains(&permission::delete_record()), 3);
+
+        ts::return_to_sender(&scenario, admin_cap);
         ts::return_shared(trail);
     };
 

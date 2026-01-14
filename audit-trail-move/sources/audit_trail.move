@@ -2,11 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /// Audit Trails with role-based access control and timelock
-///
-/// An audit trail is a tamper-proof, sequential chain of notarized records where each entry
-/// references its predecessor, ensuring verifiable continuity and integrity.
-///
-/// Records are addressed by id + sequence_number
+/// A trail is a tamper-proof, sequential chain of notarized records where each
+/// entry references its predecessor, ensuring verifiable continuity and
+/// integrity.
 module audit_trail::main;
 
 use audit_trail::{
@@ -46,33 +44,37 @@ const INITIAL_ADMIN_ROLE_NAME: vector<u8> = b"Admin";
 
 // ===== Core Structures =====
 
-/// Metadata set at trail creation (immutable)
+/// Metadata set at trail creation
 public struct ImmutableMetadata has copy, drop, store {
     name: Option<String>,
     description: Option<String>,
 }
 
-/// Shared audit trail object with role-based access control
-/// Records are stored in a LinkedTable and addressed by sequence number
+/// A shared, tamper-evident ledger for storing sequential records with
+/// role-based access control.
+///
+/// It maintains an ordered sequence of records, each assigned a unique
+/// auto-incrementing sequence number.
+/// Uses capability-based RBAC to manage access to the trail and its records.
 public struct AuditTrail<D: store + copy> has key, store {
     id: UID,
     /// Address that created this trail
     creator: address,
-    /// Creation timestamp (milliseconds)
+    /// Creation timestamp in milliseconds
     created_at: u64,
-    /// Total records ever added (also serves as next sequence number)
+    /// Total records added (also next sequence number)
     record_count: u64,
-    /// Records stored by sequence number (0-indexed)
+    /// LinkedTable mapping sequence numbers to records
     records: LinkedTable<u64, Record<D>>,
     /// Deletion locking rules
     locking_config: LockingConfig,
-    /// A list of role definitions consisting of a unique role specifier and a list of associated permissions
+    /// Map of role names to permission sets.
     roles: VecMap<String, VecSet<Permission>>,
-    /// Set at creation, cannot be changed
+    /// Fix name/description set at creation, cannot be changed
     immutable_metadata: ImmutableMetadata,
-    /// Can be updated by holders of MetadataUpdate permission
+    /// Mutable metadata (requires `MetadataUpdate` permission)
     updatable_metadata: Option<String>,
-    /// Whitelist of all issued capability IDs
+    /// Whitelist of valid capability IDs
     issued_capabilities: VecSet<ID>,
 }
 
@@ -93,7 +95,6 @@ public struct AuditTrailDeleted has copy, drop {
 }
 
 /// Emitted when a record is added to the trail
-/// Records are identified by trail_id + sequence_number
 public struct RecordAdded has copy, drop {
     trail_id: ID,
     sequence_number: u64,
@@ -168,7 +169,7 @@ public fun create<D: store + copy>(
         let record = record::new(
             initial_data.destroy_some(),
             initial_record_metadata,
-            0, // sequence_number
+            0,
             creator,
             timestamp,
         );
@@ -243,7 +244,7 @@ public fun add_record<D: store + copy>(
 
     let caller = ctx.sender();
     let timestamp = clock::timestamp_ms(clock);
-    let trail_id = object::uid_to_inner(&trail.id);
+    let trail_id = trail.id();
     let sequence_number = trail.record_count;
 
     let record = record::new(
@@ -282,7 +283,7 @@ public fun delete_record<D: store + copy + drop>(
 
     let caller = ctx.sender();
     let timestamp = clock::timestamp_ms(clock);
-    let trail_id = object::uid_to_inner(&trail.id);
+    let trail_id = trail.id();
 
     let record = linked_table::remove(&mut trail.records, sequence_number);
     record::destroy(record);
@@ -297,7 +298,8 @@ public fun delete_record<D: store + copy + drop>(
 
 // ===== Locking =====
 
-/// Check if a record is locked (cannot be deleted)
+/// Check if a record is locked based on the trail's locking configuration.
+/// Aborts with ERecordNotFound if the record doesn't exist.
 public fun is_record_locked<D: store + copy>(
     trail: &AuditTrail<D>,
     sequence_number: u64,
@@ -317,12 +319,12 @@ public fun is_record_locked<D: store + copy>(
     )
 }
 
-/// Update the locking configuration
+/// Update the locking configuration. Requires `UpdateLockingConfig` permission.
 public fun update_locking_config<D: store + copy>(
     trail: &mut AuditTrail<D>,
     cap: &Capability,
     new_config: LockingConfig,
-    _ctx: &mut TxContext,
+    _: &mut TxContext,
 ) {
     assert!(
         trail.has_capability_permission(cap, &permission::update_locking_config()),
@@ -336,7 +338,7 @@ public fun update_locking_config_for_delete_record<D: store + copy>(
     trail: &mut AuditTrail<D>,
     cap: &Capability,
     new_delete_record_lock: LockingWindow,
-    _ctx: &mut TxContext,
+    _: &mut TxContext,
 ) {
     assert!(
         trail.has_capability_permission(
@@ -353,7 +355,7 @@ public fun update_metadata<D: store + copy>(
     trail: &mut AuditTrail<D>,
     cap: &Capability,
     new_metadata: Option<String>,
-    _ctx: &mut TxContext,
+    _: &mut TxContext,
 ) {
     assert!(
         trail.has_capability_permission(cap, &permission::update_metadata()),
@@ -384,12 +386,12 @@ public fun id<D: store + copy>(trail: &AuditTrail<D>): ID {
     object::uid_to_inner(&trail.id)
 }
 
-/// Get the trail name (immutable metadata)
+/// Get the trail name
 public fun name<D: store + copy>(trail: &AuditTrail<D>): &Option<String> {
     &trail.immutable_metadata.name
 }
 
-/// Get the trail description (immutable metadata)
+/// Get the trail description
 public fun description<D: store + copy>(trail: &AuditTrail<D>): &Option<String> {
     &trail.immutable_metadata.description
 }
@@ -404,17 +406,17 @@ public fun locking_config<D: store + copy>(trail: &AuditTrail<D>): &LockingConfi
     &trail.locking_config
 }
 
-/// Check if the trail is empty (no records)
+/// Check if the trail is empty
 public fun is_empty<D: store + copy>(trail: &AuditTrail<D>): bool {
     linked_table::is_empty(&trail.records)
 }
 
-/// Get the first sequence number (None if empty)
+/// Get the first sequence number
 public fun first_sequence<D: store + copy>(trail: &AuditTrail<D>): Option<u64> {
     *linked_table::front(&trail.records)
 }
 
-/// Get the last sequence number (None if empty)
+/// Get the last sequence number
 public fun last_sequence<D: store + copy>(trail: &AuditTrail<D>): Option<u64> {
     *linked_table::back(&trail.records)
 }
@@ -455,7 +457,7 @@ public fun create_role<D: store + copy>(
     cap: &Capability,
     role: String,
     permissions: VecSet<Permission>,
-    _ctx: &mut TxContext,
+    _: &mut TxContext,
 ) {
     assert!(trail.has_capability_permission(cap, &permission::add_roles()), EPermissionDenied);
     vec_map::insert(&mut trail.roles, role, permissions);
@@ -466,7 +468,7 @@ public fun delete_role<D: store + copy>(
     trail: &mut AuditTrail<D>,
     cap: &Capability,
     role: &String,
-    _ctx: &mut TxContext,
+    _: &mut TxContext,
 ) {
     assert!(trail.has_capability_permission(cap, &permission::delete_roles()), EPermissionDenied);
     vec_map::remove(&mut trail.roles, role);
@@ -478,10 +480,11 @@ public fun update_role_permissions<D: store + copy>(
     cap: &Capability,
     role: &String,
     new_permissions: VecSet<Permission>,
-    _ctx: &mut TxContext,
+    _: &mut TxContext,
 ) {
     assert!(trail.has_capability_permission(cap, &permission::update_roles()), EPermissionDenied);
     assert!(vec_map::contains(&trail.roles, role), ERoleDoesNotExist);
+    vec_map::remove(&mut trail.roles, role);
     vec_map::insert(&mut trail.roles, *role, new_permissions);
 }
 
@@ -545,6 +548,7 @@ public fun destroy_capability<D: store + copy>(
     cap_to_destroy.destroy();
 }
 
+/// Revoke a capability. Requires `CapabilitiesRevoke` permission.
 public fun revoke_capability<D: store + copy>(
     trail: &mut AuditTrail<D>,
     cap: &Capability,
@@ -557,6 +561,7 @@ public fun revoke_capability<D: store + copy>(
     trail.issued_capabilities.remove(&cap_to_revoke);
 }
 
+/// Get the capabilities issued for this trail
 public fun issued_capabilities<D: store + copy>(trail: &AuditTrail<D>): &VecSet<ID> {
     &trail.issued_capabilities
 }
