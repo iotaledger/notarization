@@ -28,6 +28,8 @@ const ERecordNotFound: vector<u8> = b"Record not found at the given sequence num
 #[error]
 const ERoleDoesNotExist: vector<u8> = b"The specified role does not exist in the `roles` map";
 #[error]
+const ERoleAlreadyExists: vector<u8> = b"The specified role already exists in the `roles` map";
+#[error]
 const EPermissionDenied: vector<u8> =
     b"The role associated with the provided capability does not have the required permission";
 #[error]
@@ -464,6 +466,7 @@ public fun create_role<D: store + copy>(
     _: &mut TxContext,
 ) {
     assert!(trail.has_capability_permission(cap, &permission::add_roles()), EPermissionDenied);
+    assert!(!vec_map::contains(&trail.roles, &role), ERoleAlreadyExists);
     vec_map::insert(&mut trail.roles, role, permissions);
 }
 
@@ -475,6 +478,7 @@ public fun delete_role<D: store + copy>(
     _: &mut TxContext,
 ) {
     assert!(trail.has_capability_permission(cap, &permission::delete_roles()), EPermissionDenied);
+    assert!(vec_map::contains(&trail.roles, role), ERoleDoesNotExist);
     vec_map::remove(&mut trail.roles, role);
 }
 
@@ -505,6 +509,8 @@ public fun has_role<D: store + copy>(trail: &AuditTrail<D>, role: &String): bool
 // ===== Capability related Functions =====
 
 /// Indicates if a provided capability has a specific permission.
+///
+/// If the capability has been revoked or does not belong to this trail, it aborts.
 public fun has_capability_permission<D: store + copy>(
     trail: &AuditTrail<D>,
     cap: &Capability,
