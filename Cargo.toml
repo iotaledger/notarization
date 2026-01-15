@@ -17,7 +17,7 @@ async-trait = "0.1"
 bcs = "0.1"
 # Latest hyper is not compatible with axum-server used by iota-sdk. We need to pin it to 1.7 until iota-sdk upgrades axum-server.
 hyper = "=1.7" # Fix for iota-sdk 1.13 issue with axum-server.
-iota-sdk = { git = "https://github.com/iotaledger/iota.git", package = "iota-sdk", tag = "v1.14.1-rc" }
+iota-sdk = { git = "https://github.com/iotaledger/iota.git", package = "iota-sdk", tag = "v1.14.1" }
 iota_interaction = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/iota-v1-14-0-rc-upstream-merge", default-features = false, package = "iota_interaction" }
 iota_interaction_rust = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/iota-v1-14-0-rc-upstream-merge", default-features = false, package = "iota_interaction_rust" }
 iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/iota-v1-14-0-rc-upstream-merge", default-features = false, package = "iota_interaction_ts" }
