@@ -1,5 +1,4 @@
 #[test_only]
-/// This module contains comprehensive tests for the AuditTrail creation functionality.
 module audit_trail::create_audit_trail_tests;
 
 use audit_trail::{
@@ -17,10 +16,6 @@ use audit_trail::{
 use iota::{clock, test_scenario as ts};
 use std::string;
 
-/// Goals of this test:
-/// - Verifies creating an AuditTrail with no initial record
-/// - Checks admin capability creation with correct role and trail_id
-/// - Validates trail metadata (creator, creation time, record count)
 #[test]
 fun test_create_without_initial_record() {
     let user = @0xA;
@@ -32,7 +27,7 @@ fun test_create_without_initial_record() {
         let (admin_cap, trail_id) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
-            std::option::none(),
+            option::none(),
         );
 
         // Verify capability was created
@@ -48,9 +43,9 @@ fun test_create_without_initial_record() {
         let trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
 
         // Verify trail was created correctly
-        assert!(trail.trail_creator() == user, 2);
-        assert!(trail.trail_created_at() == initial_time_for_testing(), 3);
-        assert!(trail.trail_record_count() == 0, 4);
+        assert!(trail.creator() == user, 2);
+        assert!(trail.created_at() == initial_time_for_testing(), 3);
+        assert!(trail.record_count() == 0, 4);
 
         ts::return_shared(trail);
     };
@@ -58,10 +53,6 @@ fun test_create_without_initial_record() {
     ts::end(scenario);
 }
 
-/// Goals of this test:
-/// - Tests AuditTrail creation with an initial record
-/// - Verifies the trail contains exactly one record after creation
-/// - Validates the initial record exists at index 0
 #[test]
 fun test_create_with_initial_record() {
     let user = @0xB;
@@ -90,12 +81,12 @@ fun test_create_with_initial_record() {
         let trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
 
         // Verify trail with initial record
-        assert!(trail.trail_creator() == user, 2);
-        assert!(trail.trail_created_at() == initial_time_for_testing(), 3);
-        assert!(trail.trail_record_count() == 1, 4);
+        assert!(trail.creator() == user, 2);
+        assert!(trail.created_at() == initial_time_for_testing(), 3);
+        assert!(trail.record_count() == 1, 4);
 
         // Verify the initial record exists
-        assert!(trail.trail_has_record(0), 5);
+        assert!(trail.has_record(0), 5);
 
         ts::return_shared(trail);
     };
@@ -103,10 +94,6 @@ fun test_create_with_initial_record() {
     ts::end(scenario);
 }
 
-/// Goals of this test:
-/// - Tests creating a trail with minimal metadata (optional fields set to none)
-/// - Uses a custom clock time to verify timestamp handling
-/// - Ensures the system handles minimal configuration correctly
 #[test]
 fun test_create_minimal_metadata() {
     let user = @0xC;
@@ -117,17 +104,13 @@ fun test_create_minimal_metadata() {
         clock.set_for_testing(3000);
 
         let locking_config = locking::new(locking::window_count_based(0));
-        let trail_metadata = main::new_trail_metadata(
-            std::option::none(),
-            std::option::none(),
-        );
 
         let (admin_cap, _trail_id) = main::create<TestData>(
-            std::option::none(),
-            std::option::none(),
+            option::none(),
+            option::none(),
             locking_config,
-            trail_metadata,
-            std::option::none(),
+            option::none(),
+            option::none(),
             &clock,
             ts::ctx(&mut scenario),
         );
@@ -145,9 +128,9 @@ fun test_create_minimal_metadata() {
         let trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
 
         // Verify trail was created
-        assert!(trail.trail_creator() == user, 1);
-        assert!(trail.trail_created_at() == 3000, 2);
-        assert!(trail.trail_record_count() == 0, 3);
+        assert!(trail.creator() == user, 1);
+        assert!(trail.created_at() == 3000, 2);
+        assert!(trail.record_count() == 0, 3);
 
         ts::return_shared(trail);
     };
@@ -155,10 +138,6 @@ fun test_create_minimal_metadata() {
     ts::end(scenario);
 }
 
-/// Goals of this test:
-/// - Verifies AuditTrail creation with locking configuration enabled
-/// - Tests a 7-day time-based lock period
-/// - Validates the trail is created successfully with locking constraints
 #[test]
 fun test_create_with_locking_enabled() {
     let user = @0xD;
@@ -169,7 +148,7 @@ fun test_create_with_locking_enabled() {
         let (admin_cap, _trail_id) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
-            std::option::none(),
+            option::none(),
         );
 
         // Clean up
@@ -181,8 +160,8 @@ fun test_create_with_locking_enabled() {
         let trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
 
         // Verify trail with locking enabled
-        assert!(trail.trail_creator() == user, 0);
-        assert!(trail.trail_record_count() == 0, 1);
+        assert!(trail.creator() == user, 0);
+        assert!(trail.record_count() == 0, 1);
 
         ts::return_shared(trail);
     };
@@ -190,10 +169,6 @@ fun test_create_with_locking_enabled() {
     ts::end(scenario);
 }
 
-/// Goals of this test:
-/// - Tests creating multiple independent AuditTrail instances
-/// - Verifies each trail receives a unique ID
-/// - Ensures multiple trails can coexist without conflicts
 #[test]
 fun test_create_multiple_trails() {
     let user = @0xE;
@@ -207,7 +182,7 @@ fun test_create_multiple_trails() {
         let (admin_cap1, trail_id1) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
-            std::option::none(),
+            option::none(),
         );
 
         trail_ids.push_back(trail_id1);
@@ -222,7 +197,7 @@ fun test_create_multiple_trails() {
         let (admin_cap2, trail_id2) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
-            std::option::none(),
+            option::none(),
         );
 
         trail_ids.push_back(trail_id2);
@@ -236,13 +211,6 @@ fun test_create_multiple_trails() {
     ts::end(scenario);
 }
 
-/// Test creating a MetadataAdmin role with metadata_admin_permissions.
-///
-/// This test verifies that:
-/// 1. A creator can create an AuditTrail and receive an admin capability
-/// 2. The admin capability can be transferred to another user
-/// 3. The user can use the capability to create a new MetadataAdmin role
-/// 4. The new role has the correct permissions (meta_data_update and meta_data_delete)
 #[test]
 fun test_create_metadata_admin_role() {
     let creator = @0xA;
@@ -256,7 +224,7 @@ fun test_create_metadata_admin_role() {
         let (admin_cap, trail_id) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
-            std::option::none(),
+            option::none(),
         );
 
         // Verify admin capability was created

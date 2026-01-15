@@ -68,3 +68,17 @@ public fun added_by<D: store + copy>(record: &Record<D>): address {
 public fun added_at<D: store + copy>(record: &Record<D>): u64 {
     record.added_at
 }
+
+// ===== Destructors =====
+
+/// Destroy a record (package-private, called by audit_trail module when deleting)
+/// Note: D must have `drop` ability to allow deletion
+public(package) fun destroy<D: store + copy + drop>(record: Record<D>) {
+    let Record {
+        stored_data: _,
+        record_metadata: _,
+        sequence_number: _,
+        added_by: _,
+        added_at: _,
+    } = record;
+}
