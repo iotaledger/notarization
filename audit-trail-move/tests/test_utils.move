@@ -1,8 +1,8 @@
 #[test_only]
 module audit_trail::test_utils;
 
-use audit_trail::{capability::Capability, locking, main};
-use iota::{clock, test_scenario::{Self as ts, Scenario}};
+use audit_trail::{capability::Capability, locking, main::{Self, AuditTrail}};
+use iota::{clock::{Self, Clock}, test_scenario::{Self as ts, Scenario}};
 use std::string;
 
 const INITIAL_TIME_FOR_TESTING: u64 = 1234;
@@ -62,4 +62,29 @@ public(package) fun setup_test_audit_trail(
     };
 
     (admin_cap, trail_id)
+}
+
+public(package) fun fetch_capability_trail_and_clock(
+    scenario: &mut Scenario,
+): (Capability, AuditTrail<TestData>, Clock) {
+    let admin_cap = ts::take_from_sender<Capability>(scenario);
+    let trail = ts::take_shared<AuditTrail<TestData>>(scenario);
+    let clock = iota::clock::create_for_testing(ts::ctx(scenario));
+    (admin_cap, trail, clock)
+}
+
+public(package) fun cleanup_capability_trail_and_clock(
+    scenario: &Scenario,
+    cap: Capability,
+    trail: AuditTrail<TestData>,
+    clock: Clock,
+) {
+    iota::clock::destroy_for_testing(clock);
+    ts::return_to_sender(scenario, cap);
+    ts::return_shared(trail);
+}
+
+public(package) fun cleanup_trail_and_clock(trail: AuditTrail<TestData>, clock: Clock) {
+    iota::clock::destroy_for_testing(clock);
+    ts::return_shared(trail);
 }
