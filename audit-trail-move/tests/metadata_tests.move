@@ -4,9 +4,12 @@ module audit_trail::metadata_tests;
 use audit_trail::{
     capability::Capability,
     locking,
-    main::{Self, AuditTrail},
     permission,
-    test_utils::{TestData, setup_test_audit_trail}
+    test_utils::{
+        setup_test_audit_trail,
+        fetch_capability_trail_and_clock,
+        cleanup_capability_trail_and_clock
+    }
 };
 use iota::test_scenario as ts;
 use std::string;
@@ -34,41 +37,45 @@ fun test_update_metadata_success() {
     // Create MetadataAdmin role and capability
     ts::next_tx(&mut scenario, admin_user);
     {
-        let admin_cap = ts::take_from_sender<Capability>(&scenario);
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
         // Create MetadataAdmin role with metadata permissions
         let metadata_perms = permission::metadata_admin_permissions();
-        trail.create_role(
-            &admin_cap,
-            string::utf8(b"MetadataAdmin"),
-            metadata_perms,
-            ts::ctx(&mut scenario),
-        );
+        trail
+            .roles_mut()
+            .create_role(
+                &admin_cap,
+                string::utf8(b"MetadataAdmin"),
+                metadata_perms,
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         // Issue capability to metadata admin user
-        let metadata_cap = trail.new_capability(
-            &admin_cap,
-            &string::utf8(b"MetadataAdmin"),
-            ts::ctx(&mut scenario),
-        );
+        let metadata_cap = trail
+            .roles_mut()
+            .new_capability_without_restrictions(
+                &admin_cap,
+                &string::utf8(b"MetadataAdmin"),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         transfer::public_transfer(metadata_cap, metadata_admin_user);
-        ts::return_to_sender(&scenario, admin_cap);
-        ts::return_shared(trail);
+        cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
     };
 
     // Test: MetadataAdmin updates metadata
     ts::next_tx(&mut scenario, metadata_admin_user);
     {
-        let metadata_cap = ts::take_from_sender<Capability>(&scenario);
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let (metadata_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
         // Update metadata
         let new_metadata = std::option::some(string::utf8(b"Updated metadata value"));
         trail.update_metadata(
             &metadata_cap,
             new_metadata,
+            &clock,
             ts::ctx(&mut scenario),
         );
 
@@ -77,21 +84,20 @@ fun test_update_metadata_success() {
         assert!(current_metadata.is_some(), 0);
         assert!(*current_metadata.borrow() == string::utf8(b"Updated metadata value"), 1);
 
-        ts::return_to_sender(&scenario, metadata_cap);
-        ts::return_shared(trail);
+        cleanup_capability_trail_and_clock(&scenario, metadata_cap, trail, clock);
     };
 
     // Test: Update metadata again to verify multiple updates work
     ts::next_tx(&mut scenario, metadata_admin_user);
     {
-        let metadata_cap = ts::take_from_sender<Capability>(&scenario);
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let (metadata_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
         // Update to different value
         let new_metadata = std::option::some(string::utf8(b"Second update"));
         trail.update_metadata(
             &metadata_cap,
             new_metadata,
+            &clock,
             ts::ctx(&mut scenario),
         );
 
@@ -100,20 +106,19 @@ fun test_update_metadata_success() {
         assert!(current_metadata.is_some(), 2);
         assert!(*current_metadata.borrow() == string::utf8(b"Second update"), 3);
 
-        ts::return_to_sender(&scenario, metadata_cap);
-        ts::return_shared(trail);
+        cleanup_capability_trail_and_clock(&scenario, metadata_cap, trail, clock);
     };
 
     // Test: Set metadata to none
     ts::next_tx(&mut scenario, metadata_admin_user);
     {
-        let metadata_cap = ts::take_from_sender<Capability>(&scenario);
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let (metadata_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
         // Set to none
         trail.update_metadata(
             &metadata_cap,
             std::option::none(),
+            &clock,
             ts::ctx(&mut scenario),
         );
 
@@ -121,8 +126,7 @@ fun test_update_metadata_success() {
         let current_metadata = trail.metadata();
         assert!(current_metadata.is_none(), 4);
 
-        ts::return_to_sender(&scenario, metadata_cap);
-        ts::return_shared(trail);
+        cleanup_capability_trail_and_clock(&scenario, metadata_cap, trail, clock);
     };
 
     ts::end(scenario);
@@ -131,7 +135,7 @@ fun test_update_metadata_success() {
 // ===== Error Case Tests =====
 
 #[test]
-#[expected_failure(abort_code = main::EPermissionDenied)]
+#[expected_failure(abort_code = audit_trail::role_map::ECapabilityPermissionDenied)]
 fun test_update_metadata_permission_denied() {
     let admin_user = @0xAD;
     let user = @0xB0B;
@@ -152,51 +156,54 @@ fun test_update_metadata_permission_denied() {
     // Create role WITHOUT update_metadata permission
     ts::next_tx(&mut scenario, admin_user);
     {
-        let admin_cap = ts::take_from_sender<Capability>(&scenario);
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
         // Create role with only add_record permission (no update_metadata)
         let perms = permission::from_vec(vector[permission::add_record()]);
-        trail.create_role(
-            &admin_cap,
-            string::utf8(b"NoMetadataPerm"),
-            perms,
-            ts::ctx(&mut scenario),
-        );
+        trail
+            .roles_mut()
+            .create_role(
+                &admin_cap,
+                string::utf8(b"NoMetadataPerm"),
+                perms,
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
-        let user_cap = trail.new_capability(
-            &admin_cap,
-            &string::utf8(b"NoMetadataPerm"),
-            ts::ctx(&mut scenario),
-        );
+        let user_cap = trail
+            .roles_mut()
+            .new_capability_without_restrictions(
+                &admin_cap,
+                &string::utf8(b"NoMetadataPerm"),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         transfer::public_transfer(user_cap, user);
-        ts::return_to_sender(&scenario, admin_cap);
-        ts::return_shared(trail);
+        cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
     };
 
     // User tries to update metadata - should fail
     ts::next_tx(&mut scenario, user);
     {
-        let user_cap = ts::take_from_sender<Capability>(&scenario);
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let (user_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
         // This should fail - no update_metadata permission
         trail.update_metadata(
             &user_cap,
             std::option::some(string::utf8(b"Should fail")),
+            &clock,
             ts::ctx(&mut scenario),
         );
 
-        ts::return_to_sender(&scenario, user_cap);
-        ts::return_shared(trail);
+        cleanup_capability_trail_and_clock(&scenario, user_cap, trail, clock);
     };
 
     ts::end(scenario);
 }
 
 #[test]
-#[expected_failure(abort_code = main::ECapabilityHasBeenRevoked)]
+#[expected_failure(abort_code = audit_trail::role_map::ECapabilityHasBeenRevoked)]
 fun test_update_metadata_revoked_capability() {
     let admin_user = @0xAD;
     let metadata_admin_user = @0xB0B;
@@ -217,59 +224,62 @@ fun test_update_metadata_revoked_capability() {
     // Create MetadataAdmin role and capability
     ts::next_tx(&mut scenario, admin_user);
     {
-        let admin_cap = ts::take_from_sender<Capability>(&scenario);
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
         // Create MetadataAdmin role
         let metadata_perms = permission::metadata_admin_permissions();
-        trail.create_role(
-            &admin_cap,
-            string::utf8(b"MetadataAdmin"),
-            metadata_perms,
-            ts::ctx(&mut scenario),
-        );
+        trail
+            .roles_mut()
+            .create_role(
+                &admin_cap,
+                string::utf8(b"MetadataAdmin"),
+                metadata_perms,
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         // Issue capability
-        let metadata_cap = trail.new_capability(
-            &admin_cap,
-            &string::utf8(b"MetadataAdmin"),
-            ts::ctx(&mut scenario),
-        );
+        let metadata_cap = trail
+            .roles_mut()
+            .new_capability_without_restrictions(
+                &admin_cap,
+                &string::utf8(b"MetadataAdmin"),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         transfer::public_transfer(metadata_cap, metadata_admin_user);
-        ts::return_to_sender(&scenario, admin_cap);
-        ts::return_shared(trail);
+        cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
     };
 
     // Revoke the capability
     ts::next_tx(&mut scenario, admin_user);
     {
-        let admin_cap = ts::take_from_sender<Capability>(&scenario);
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
         let metadata_cap = ts::take_from_address<Capability>(&scenario, metadata_admin_user);
 
-        trail.revoke_capability(&admin_cap, metadata_cap.id());
+        trail
+            .roles_mut()
+            .revoke_capability(&admin_cap, metadata_cap.id(), &clock, ts::ctx(&mut scenario));
 
         ts::return_to_address(metadata_admin_user, metadata_cap);
-        ts::return_to_sender(&scenario, admin_cap);
-        ts::return_shared(trail);
+        cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
     };
 
     // Try to use revoked capability - should fail
     ts::next_tx(&mut scenario, metadata_admin_user);
     {
-        let metadata_cap = ts::take_from_sender<Capability>(&scenario);
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let (metadata_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
         // This should fail - capability has been revoked
         trail.update_metadata(
             &metadata_cap,
             std::option::some(string::utf8(b"Should fail")),
+            &clock,
             ts::ctx(&mut scenario),
         );
 
-        ts::return_to_sender(&scenario, metadata_cap);
-        ts::return_shared(trail);
+        cleanup_capability_trail_and_clock(&scenario, metadata_cap, trail, clock);
     };
 
     ts::end(scenario);

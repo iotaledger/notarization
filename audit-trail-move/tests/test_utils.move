@@ -83,3 +83,8 @@ public(package) fun cleanup_capability_trail_and_clock(
     ts::return_to_sender(scenario, cap);
     ts::return_shared(trail);
 }
+
+public(package) fun cleanup_trail_and_clock(trail: AuditTrail<TestData>, clock: Clock) {
+    iota::clock::destroy_for_testing(clock);
+    ts::return_shared(trail);
+}

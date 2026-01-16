@@ -24,9 +24,6 @@ const ERecordNotFound: vector<u8> = b"Record not found at the given sequence num
 const EPermissionDenied: vector<u8> =
     b"The role associated with the provided capability does not have the required permission";
 #[error]
-const ETrailIdNotCorrect: vector<u8> =
-    b"The trail ID associated with the provided capability does not match the audit trail";
-##[error]
 const ERecordLocked: vector<u8> = b"The record is locked and cannot be deleted";
 
 // ===== Constants =====
@@ -273,7 +270,17 @@ public fun delete_record<D: store + copy + drop>(
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
-    assert!(trail.has_capability_permission(cap, &permission::delete_record()), EPermissionDenied);
+    assert!(
+        trail
+            .roles
+            .is_capability_valid(
+                cap,
+                &permission::delete_record(),
+                clock,
+                ctx,
+            ),
+        EPermissionDenied,
+    );
     assert!(linked_table::contains(&trail.records, sequence_number), ERecordNotFound);
     assert!(!trail.is_record_locked(sequence_number, clock), ERecordLocked);
 
@@ -467,6 +474,6 @@ public fun roles<D: store + copy>(trail: &AuditTrail<D>): &RoleMap<Permission> {
 }
 
 /// Returns a mutable reference to the RoleMap managing the roles and capabilities used in the audit trail
-public fun trail_roles_mut<D: store + copy>(trail: &mut AuditTrail<D>): &mut RoleMap<Permission> {
+public fun roles_mut<D: store + copy>(trail: &mut AuditTrail<D>): &mut RoleMap<Permission> {
     &mut trail.roles
 }

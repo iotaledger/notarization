@@ -190,16 +190,13 @@ public fun new<P: copy + drop>(
 
 /// Get the permissions associated with a specific role.
 /// Aborts with ERoleDoesNotExist if the role does not exist.
-public fun rmap_get_role_permissions<P: copy + drop>(
-    role_map: &RoleMap<P>,
-    role: &String,
-): &VecSet<P> {
+public fun get_role_permissions<P: copy + drop>(role_map: &RoleMap<P>, role: &String): &VecSet<P> {
     assert!(vec_map::contains(&role_map.roles, role), ERoleDoesNotExist);
     vec_map::get(&role_map.roles, role)
 }
 
 /// Create a new role consisting of a role name and associated permissions
-public fun rmap_create_role<P: copy + drop>(
+public fun create_role<P: copy + drop>(
     role_map: &mut RoleMap<P>,
     cap: &Capability,
     role: String,
@@ -221,7 +218,7 @@ public fun rmap_create_role<P: copy + drop>(
 }
 
 /// Delete an existing role
-public fun rmap_delete_role<P: copy + drop>(
+public fun delete_role<P: copy + drop>(
     role_map: &mut RoleMap<P>,
     cap: &Capability,
     role: &String,
@@ -242,7 +239,7 @@ public fun rmap_delete_role<P: copy + drop>(
 }
 
 /// Update permissions associated with an existing role
-public fun rmap_update_role_permissions<P: copy + drop>(
+public fun update_role_permissions<P: copy + drop>(
     role_map: &mut RoleMap<P>,
     cap: &Capability,
     role: &String,
@@ -261,11 +258,12 @@ public fun rmap_update_role_permissions<P: copy + drop>(
     );
 
     assert!(vec_map::contains(&role_map.roles, role), ERoleDoesNotExist);
+    vec_map::remove(&mut role_map.roles, role);
     vec_map::insert(&mut role_map.roles, *role, new_permissions);
 }
 
 /// Indicates if the specified role exists in the role_map
-public fun rmap_has_role<P: copy + drop>(role_map: &RoleMap<P>, role: &String): bool {
+public fun has_role<P: copy + drop>(role_map: &RoleMap<P>, role: &String): bool {
     vec_map::contains(&role_map.roles, role)
 }
 
@@ -298,7 +296,7 @@ public fun rmap_has_role<P: copy + drop>(role_map: &RoleMap<P>, role: &String): 
 /// Returns
 /// -------
 /// - bool: true if the capability is valid, otherwise aborts with the relevant error.
-public fun rmap_is_capability_valid<P: copy + drop>(
+public fun is_capability_valid<P: copy + drop>(
     role_map: &RoleMap<P>,
     cap: &Capability,
     permission: &P,
@@ -349,7 +347,7 @@ public fun rmap_is_capability_valid<P: copy + drop>(
 /// - Aborts with EPermissionDenied if the provided capability does not have the permission specified with `CapabilityAdminPermissions::add`.
 /// - Aborts with ERoleDoesNotExist if the specified role does not exist in the role_map.
 /// - Aborts with audit_trail::capability::EValidityPeriodInconsistent if the provided valid_from and valid_until are inconsistent.
-public fun rmap_new_capability<P: copy + drop>(
+public fun new_capability<P: copy + drop>(
     role_map: &mut RoleMap<P>,
     cap: &Capability,
     role: &String,
@@ -392,7 +390,7 @@ public fun rmap_new_capability<P: copy + drop>(
 /// Errors:
 /// - Aborts with EPermissionDenied if the provided capability does not have the permission specified with `CapabilityAdminPermissions::add`.
 /// - Aborts with ERoleDoesNotExist if the specified role does not exist in the role_map.
-public fun rmap_new_capability_without_restrictions<P: copy + drop>(
+public fun new_capability_without_restrictions<P: copy + drop>(
     role_map: &mut RoleMap<P>,
     cap: &Capability,
     role: &String,
@@ -429,7 +427,7 @@ public fun rmap_new_capability_without_restrictions<P: copy + drop>(
 /// Errors:
 /// - Aborts with EPermissionDenied if the provided capability does not have the permission specified with `CapabilityAdminPermissions::add`.
 /// - Aborts with ERoleDoesNotExist if the specified role does not exist in the role_map.
-public fun rmap_new_capability_valid_until<P: copy + drop>(
+public fun new_capability_valid_until<P: copy + drop>(
     role_map: &mut RoleMap<P>,
     cap: &Capability,
     role: &String,
@@ -469,7 +467,7 @@ public fun rmap_new_capability_valid_until<P: copy + drop>(
 /// Errors:
 /// - Aborts with EPermissionDenied if the provided capability does not have the permission specified with `CapabilityAdminPermissions::add`.
 /// - Aborts with ERoleDoesNotExist if the specified role does not exist in the role_map.
-public fun rmap_new_capability_for_address<P: copy + drop>(
+public fun new_capability_for_address<P: copy + drop>(
     role_map: &mut RoleMap<P>,
     cap: &Capability,
     role: &String,
@@ -509,7 +507,7 @@ public fun rmap_new_capability_for_address<P: copy + drop>(
 /// TODO: Clarify if we need to restrict access with the `CapabilitiesRevoke` permission here.
 ///       If yes, we also need a destroy function for Admin capabilities (without the need of another Admin capability).
 ///       Otherwise the last Admin capability holder will block the role_map forever by not being able to destroy it.
-public fun rmap_destroy_capability<P: copy + drop>(
+public fun destroy_capability<P: copy + drop>(
     role_map: &mut RoleMap<P>,
     cap_to_destroy: Capability,
 ) {
@@ -542,7 +540,7 @@ public fun rmap_destroy_capability<P: copy + drop>(
 /// Errors:
 /// - Aborts with EPermissionDenied if the provided capability does not have the permission specified with `CapabilityAdminPermissions::revoke`.
 /// - Aborts with ERoleDoesNotExist if the specified role does not exist in the `RoleMap.issued_capabilities()` list.
-public fun rmap_revoke_capability<P: copy + drop>(
+public fun revoke_capability<P: copy + drop>(
     role_map: &mut RoleMap<P>,
     cap: &Capability,
     cap_to_revoke: ID,
@@ -584,42 +582,20 @@ fun register_new_capability<P: copy + drop>(role_map: &mut RoleMap<P>, new_cap: 
 // =============== Getter Functions ================================================
 
 /// Returns the size of the role_map, the number of managed roles
-public fun rmap_size<P: copy + drop>(role_map: &RoleMap<P>): u64 {
+public fun size<P: copy + drop>(role_map: &RoleMap<P>): u64 {
     vec_map::size(&role_map.roles)
 }
 
 /// Returns the security_vault_id associated with the role_map
-public fun rmap_security_vault_id<P: copy + drop>(role_map: &RoleMap<P>): ID {
+public fun security_vault_id<P: copy + drop>(role_map: &RoleMap<P>): ID {
     role_map.security_vault_id
 }
 
 //Returns the role admin permissions associated with the role_map
-public fun rmap_role_admin_permissions<P: copy + drop>(
-    role_map: &RoleMap<P>,
-): &RoleAdminPermissions<P> {
+public fun role_admin_permissions<P: copy + drop>(role_map: &RoleMap<P>): &RoleAdminPermissions<P> {
     &role_map.role_admin_permissions
 }
 
-public fun rmap_issued_capabilities<P: copy + drop>(role_map: &RoleMap<P>): &VecSet<ID> {
+public fun issued_capabilities<P: copy + drop>(role_map: &RoleMap<P>): &VecSet<ID> {
     &role_map.issued_capabilities
 }
-
-// =============== public use statements ===========================================
-
-public use fun rmap_get_role_permissions as RoleMap.get_role_permissions;
-public use fun rmap_create_role as RoleMap.create_role;
-public use fun rmap_delete_role as RoleMap.delete_role;
-public use fun rmap_update_role_permissions as RoleMap.update_role_permissions;
-public use fun rmap_has_role as RoleMap.has_role;
-public use fun rmap_size as RoleMap.size;
-public use fun rmap_security_vault_id as RoleMap.security_vault_id;
-public use fun rmap_role_admin_permissions as RoleMap.role_admin_permissions;
-public use fun rmap_is_capability_valid as RoleMap.is_capability_valid;
-public use fun rmap_new_capability as RoleMap.new_capability;
-public use fun rmap_new_capability_without_restrictions as
-    RoleMap.new_capability_without_restrictions;
-public use fun rmap_new_capability_valid_until as RoleMap.new_capability_valid_until;
-public use fun rmap_new_capability_for_address as RoleMap.new_capability_for_address;
-public use fun rmap_destroy_capability as RoleMap.destroy_capability;
-public use fun rmap_revoke_capability as RoleMap.revoke_capability;
-public use fun rmap_issued_capabilities as RoleMap.issued_capabilities;

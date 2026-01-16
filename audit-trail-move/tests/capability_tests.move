@@ -4,7 +4,7 @@ module audit_trail::capability_tests;
 use audit_trail::{
     capability::Capability,
     locking,
-    main::{Self, AuditTrail},
+    main::AuditTrail,
     permission,
     test_utils::{
         Self,
@@ -108,14 +108,12 @@ fun test_new_capability() {
     let user1 = @0xB0B;
     let user2 = @0xCAB;
 
-        transfer::public_transfer(cap, record_user);
-        cleanup_capability_trail_and_clock(scenario, admin_cap, trail, clock);
-    };
+    let mut scenario = ts::begin(admin_user);
 
     let trail_id = {
         let locking_config = locking::new(locking::window_count_based(0));
         let (admin_cap, trail_id) = setup_test_audit_trail(
-            scenario,
+            &mut scenario,
             locking_config,
             option::none(),
         );
@@ -126,20 +124,19 @@ fun test_new_capability() {
     // Create a role to issue capabilities for
     ts::next_tx(&mut scenario, admin_user);
     {
-        let admin_cap = ts::take_from_sender<Capability>(scenario);
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(scenario);
-        let clock = iota::clock::create_for_testing(ts::ctx(scenario));
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
-        trail.create_role(
-            &admin_cap,
-            string::utf8(b"RecordAdmin"),
-            permission::record_admin_permissions(),
-            ts::ctx(&mut scenario),
-        );
+        trail
+            .roles_mut()
+            .create_role(
+                &admin_cap,
+                string::utf8(b"RecordAdmin"),
+                permission::record_admin_permissions(),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
-        iota::clock::destroy_for_testing(clock);
-        ts::return_to_sender(scenario, admin_cap);
-        ts::return_shared(trail);
+        cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
     };
 
     // Issue first capability and verify it's tracked
@@ -147,7 +144,6 @@ fun test_new_capability() {
     let cap1_id = {
         let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
-        let initial_cap_count = trail.issued_capabilities().size();
         // Verify initial state - only admin capability should be tracked
         let initial_cap_count = trail.roles().issued_capabilities().size();
         assert!(initial_cap_count == 1, 0); // Only admin cap
@@ -615,10 +611,31 @@ fun test_capability_issued_to_only() {
         ts::return_shared(trail);
     };
 
+    // Unauthorized user cannot use the capability
+    ts::next_tx(&mut scenario, unauthorized_user);
+    {
+        let (record_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
+
+        // This should fail as unauthorized_user has the wrong address
+        let test_data = test_utils::new_test_data(1, b"Unauthorized record");
+        trail.add_record(
+            &record_cap,
+            test_data,
+            std::option::none(),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        cleanup_capability_trail_and_clock(&scenario, record_cap, trail, clock);
+    };
+
+    ts::end(scenario);
+}
+
 // ===== Error Case Tests =====
 
 #[test]
-#[expected_failure(abort_code = main::ECapabilityHasBeenRevoked)]
+#[expected_failure(abort_code = audit_trail::role_map::ECapabilityHasBeenRevoked)]
 fun test_revoked_capability_cannot_be_used() {
     let admin_user = @0xAD;
     let user = @0xB0B;
@@ -640,43 +657,47 @@ fun test_revoked_capability_cannot_be_used() {
     {
         let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
-        trail.create_role(
-            &admin_cap,
-            string::utf8(b"RecordAdmin"),
-            permission::record_admin_permissions(),
-            ts::ctx(&mut scenario),
-        );
+        trail
+            .roles_mut()
+            .create_role(
+                &admin_cap,
+                string::utf8(b"RecordAdmin"),
+                permission::record_admin_permissions(),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
-        let user_cap = trail.new_capability(
-            &admin_cap,
-            &string::utf8(b"RecordAdmin"),
-            ts::ctx(&mut scenario),
-        );
+        let user_cap = trail
+            .roles_mut()
+            .new_capability_without_restrictions(
+                &admin_cap,
+                &string::utf8(b"RecordAdmin"),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         transfer::public_transfer(user_cap, user);
-        ts::return_to_sender(&scenario, admin_cap);
-        ts::return_shared(trail);
+        cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
     };
 
     // Revoke the capability
     ts::next_tx(&mut scenario, admin_user);
     {
-        let admin_cap = ts::take_from_sender<Capability>(&scenario);
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
         let user_cap = ts::take_from_address<Capability>(&scenario, user);
 
-        trail.revoke_capability(&admin_cap, user_cap.id());
+        trail
+            .roles_mut()
+            .revoke_capability(&admin_cap, user_cap.id(), &clock, ts::ctx(&mut scenario));
 
         ts::return_to_address(user, user_cap);
-        ts::return_to_sender(&scenario, admin_cap);
-        ts::return_shared(trail);
+        cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
     };
 
     // Try to use revoked capability - should fail
     ts::next_tx(&mut scenario, user);
     {
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
-        let user_cap = ts::take_from_sender<Capability>(&scenario);
+        let (user_cap, mut trail, mut clock) = fetch_capability_trail_and_clock(&mut scenario);
 
         clock.set_for_testing(test_utils::initial_time_for_testing() + 1000);
 
@@ -688,16 +709,14 @@ fun test_revoked_capability_cannot_be_used() {
             ts::ctx(&mut scenario),
         );
 
-        iota::clock::destroy_for_testing(clock);
-        ts::return_to_sender(&scenario, user_cap);
-        ts::return_shared(trail);
+        cleanup_capability_trail_and_clock(&scenario, user_cap, trail, clock);
     };
 
     ts::end(scenario);
 }
 
 #[test]
-#[expected_failure(abort_code = main::ERoleDoesNotExist)]
+#[expected_failure(abort_code = audit_trail::role_map::ERoleDoesNotExist)]
 fun test_new_capability_for_nonexistent_role() {
     let admin_user = @0xAD;
 
@@ -715,25 +734,26 @@ fun test_new_capability_for_nonexistent_role() {
 
     ts::next_tx(&mut scenario, admin_user);
     {
-        let admin_cap = ts::take_from_sender<Capability>(&scenario);
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
-        let bad_cap = trail.new_capability(
-            &admin_cap,
-            &string::utf8(b"NonExistentRole"),
-            ts::ctx(&mut scenario),
-        );
+        let bad_cap = trail
+            .roles_mut()
+            .new_capability_without_restrictions(
+                &admin_cap,
+                &string::utf8(b"NonExistentRole"),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         bad_cap.destroy_for_testing();
-        ts::return_to_sender(&scenario, admin_cap);
-        ts::return_shared(trail);
+        cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
     };
 
     ts::end(scenario);
 }
 
 #[test]
-#[expected_failure(abort_code = main::EPermissionDenied)]
+#[expected_failure(abort_code = audit_trail::role_map::ECapabilityPermissionDenied)]
 fun test_revoke_capability_permission_denied() {
     let admin_user = @0xAD;
     let user1 = @0xB0B;
@@ -754,35 +774,50 @@ fun test_revoke_capability_permission_denied() {
     // Create two roles: one without revoke permission, one with record permissions
     ts::next_tx(&mut scenario, admin_user);
     {
-        let admin_cap = ts::take_from_sender<Capability>(&scenario);
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
         let perms = permission::from_vec(vector[permission::add_record()]);
-        trail.create_role(&admin_cap, string::utf8(b"NoRevokePerm"), perms, ts::ctx(&mut scenario));
+        trail
+            .roles_mut()
+            .create_role(
+                &admin_cap,
+                string::utf8(b"NoRevokePerm"),
+                perms,
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
-        trail.create_role(
-            &admin_cap,
-            string::utf8(b"RecordAdmin"),
-            permission::record_admin_permissions(),
-            ts::ctx(&mut scenario),
-        );
+        trail
+            .roles_mut()
+            .create_role(
+                &admin_cap,
+                string::utf8(b"RecordAdmin"),
+                permission::record_admin_permissions(),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
-        let user1_cap = trail.new_capability(
-            &admin_cap,
-            &string::utf8(b"NoRevokePerm"),
-            ts::ctx(&mut scenario),
-        );
+        let user1_cap = trail
+            .roles_mut()
+            .new_capability_without_restrictions(
+                &admin_cap,
+                &string::utf8(b"NoRevokePerm"),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
-        let user2_cap = trail.new_capability(
-            &admin_cap,
-            &string::utf8(b"RecordAdmin"),
-            ts::ctx(&mut scenario),
-        );
+        let user2_cap = trail
+            .roles_mut()
+            .new_capability_without_restrictions(
+                &admin_cap,
+                &string::utf8(b"RecordAdmin"),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         transfer::public_transfer(user1_cap, user1);
         transfer::public_transfer(user2_cap, user2);
-        ts::return_to_sender(&scenario, admin_cap);
-        ts::return_shared(trail);
+        cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
     };
 
     // User1 (without revoke permission) tries to revoke User2's capability
@@ -791,19 +826,23 @@ fun test_revoke_capability_permission_denied() {
         let user1_cap = ts::take_from_sender<Capability>(&scenario);
         let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
         let user2_cap = ts::take_from_address<Capability>(&scenario, user2);
+        let clock = iota::clock::create_for_testing(ts::ctx(&mut scenario));
 
-        trail.revoke_capability(&user1_cap, user2_cap.id());
+        trail
+            .roles_mut()
+            .revoke_capability(&user1_cap, user2_cap.id(), &clock, ts::ctx(&mut scenario));
 
         ts::return_to_address(user2, user2_cap);
         ts::return_to_sender(&scenario, user1_cap);
         ts::return_shared(trail);
+        iota::clock::destroy_for_testing(clock);
     };
 
     ts::end(scenario);
 }
 
 #[test]
-#[expected_failure(abort_code = main::EPermissionDenied)]
+#[expected_failure(abort_code = audit_trail::role_map::ECapabilityPermissionDenied)]
 fun test_new_capability_permission_denied() {
     let admin_user = @0xAD;
     let user = @0xB0B;
@@ -823,63 +862,58 @@ fun test_new_capability_permission_denied() {
     // Create role without add_capabilities permission
     ts::next_tx(&mut scenario, admin_user);
     {
-        let admin_cap = ts::take_from_sender<Capability>(&scenario);
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
         let perms = permission::from_vec(vector[permission::add_record()]);
-        trail.create_role(&admin_cap, string::utf8(b"NoCapPerm"), perms, ts::ctx(&mut scenario));
+        trail
+            .roles_mut()
+            .create_role(
+                &admin_cap,
+                string::utf8(b"NoCapPerm"),
+                perms,
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
-        trail.create_role(
-            &admin_cap,
-            string::utf8(b"RecordAdmin"),
-            permission::record_admin_permissions(),
-            ts::ctx(&mut scenario),
-        );
+        trail
+            .roles_mut()
+            .create_role(
+                &admin_cap,
+                string::utf8(b"RecordAdmin"),
+                permission::record_admin_permissions(),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
-        let user_cap = trail.new_capability(
-            &admin_cap,
-            &string::utf8(b"NoCapPerm"),
-            ts::ctx(&mut scenario),
-        );
+        let user_cap = trail
+            .roles_mut()
+            .new_capability_without_restrictions(
+                &admin_cap,
+                &string::utf8(b"NoCapPerm"),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         transfer::public_transfer(user_cap, user);
-        ts::return_to_sender(&scenario, admin_cap);
-        ts::return_shared(trail);
+        cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
     };
 
     // User tries to issue a new capability without permission
     ts::next_tx(&mut scenario, user);
     {
-        let user_cap = ts::take_from_sender<Capability>(&scenario);
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let (user_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
-        let new_cap = trail.new_capability(
-            &user_cap,
-            &string::utf8(b"RecordAdmin"),
-            ts::ctx(&mut scenario),
-        );
+        let new_cap = trail
+            .roles_mut()
+            .new_capability_without_restrictions(
+                &user_cap,
+                &string::utf8(b"RecordAdmin"),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         new_cap.destroy_for_testing();
-        ts::return_to_sender(&scenario, user_cap);
-        ts::return_shared(trail);
-    };
-
-    // Unauthorized user cannot use the capability
-    ts::next_tx(&mut scenario, unauthorized_user);
-    {
-        let (record_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
-
-        // This should fail as unauthorized_user has the wrong address
-        let test_data = test_utils::new_test_data(1, b"Unauthorized record");
-        trail.add_record(
-            &record_cap,
-            test_data,
-            std::option::none(),
-            &clock,
-            ts::ctx(&mut scenario),
-        );
-
-        cleanup_capability_trail_and_clock(&scenario, record_cap, trail, clock);
+        cleanup_capability_trail_and_clock(&scenario, user_cap, trail, clock);
     };
 
     ts::end(scenario);

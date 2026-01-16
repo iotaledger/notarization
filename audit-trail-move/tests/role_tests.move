@@ -3,10 +3,11 @@ module audit_trail::role_tests;
 
 use audit_trail::{
     locking,
-    main::initial_admin_role_name,
+    main::{initial_admin_role_name, AuditTrail},
     permission,
     test_utils::{
         Self,
+        TestData,
         setup_test_audit_trail,
         fetch_capability_trail_and_clock,
         cleanup_capability_trail_and_clock
@@ -227,29 +228,42 @@ fun test_delete_role_success() {
 
     ts::next_tx(&mut scenario, admin_user);
     {
-        let admin_cap = ts::take_from_sender<Capability>(&scenario);
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
         // Verify initial state - only Admin role exists
         assert!(trail.roles().size() == 1, 0);
 
         // Create a role to delete
         let perms = permission::from_vec(vector[permission::add_record()]);
-        trail.create_role(&admin_cap, string::utf8(b"RoleToDelete"), perms, ts::ctx(&mut scenario));
+        trail
+            .roles_mut()
+            .create_role(
+                &admin_cap,
+                string::utf8(b"RoleToDelete"),
+                perms,
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         // Verify the role was created
         assert!(trail.roles().size() == 2, 1);
-        assert!(trail.has_role(&string::utf8(b"RoleToDelete")), 2);
+        assert!(trail.roles().has_role(&string::utf8(b"RoleToDelete")), 2);
 
         // Delete the role
-        trail.delete_role(&admin_cap, &string::utf8(b"RoleToDelete"), ts::ctx(&mut scenario));
+        trail
+            .roles_mut()
+            .delete_role(
+                &admin_cap,
+                &string::utf8(b"RoleToDelete"),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         // Verify the role was deleted
         assert!(trail.roles().size() == 1, 3);
-        assert!(!trail.has_role(&string::utf8(b"RoleToDelete")), 4);
+        assert!(!trail.roles().has_role(&string::utf8(b"RoleToDelete")), 4);
 
-        ts::return_to_sender(&scenario, admin_cap);
-        ts::return_shared(trail);
+        cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
     };
 
     ts::end(scenario);
@@ -258,7 +272,7 @@ fun test_delete_role_success() {
 // ===== Error Case Tests =====
 
 #[test]
-#[expected_failure(abort_code = main::EPermissionDenied)]
+#[expected_failure(abort_code = audit_trail::role_map::ECapabilityPermissionDenied)]
 fun test_create_role_permission_denied() {
     let admin_user = @0xAD;
     let user = @0xB0B;
@@ -279,44 +293,59 @@ fun test_create_role_permission_denied() {
     // Create role without RolesAdd permission
     ts::next_tx(&mut scenario, admin_user);
     {
-        let admin_cap = ts::take_from_sender<Capability>(&scenario);
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
         // Create role WITHOUT add_roles permission
         let perms = permission::from_vec(vector[permission::add_record()]);
-        trail.create_role(&admin_cap, string::utf8(b"NoRolesPerm"), perms, ts::ctx(&mut scenario));
+        trail
+            .roles_mut()
+            .create_role(
+                &admin_cap,
+                string::utf8(b"NoRolesPerm"),
+                perms,
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
-        let user_cap = trail.new_capability(
-            &admin_cap,
-            &string::utf8(b"NoRolesPerm"),
-            ts::ctx(&mut scenario),
-        );
+        let user_cap = trail
+            .roles_mut()
+            .new_capability_without_restrictions(
+                &admin_cap,
+                &string::utf8(b"NoRolesPerm"),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         transfer::public_transfer(user_cap, user);
-        ts::return_to_sender(&scenario, admin_cap);
-        ts::return_shared(trail);
+        cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
     };
 
     // User tries to create a role - should fail
     ts::next_tx(&mut scenario, user);
     {
-        let user_cap = ts::take_from_sender<Capability>(&scenario);
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let (user_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
         let perms = permission::from_vec(vector[permission::add_record()]);
 
         // This should fail - no add_roles permission
-        trail.create_role(&user_cap, string::utf8(b"NewRole"), perms, ts::ctx(&mut scenario));
+        trail
+            .roles_mut()
+            .create_role(
+                &user_cap,
+                string::utf8(b"NewRole"),
+                perms,
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
-        ts::return_to_sender(&scenario, user_cap);
-        ts::return_shared(trail);
+        cleanup_capability_trail_and_clock(&scenario, user_cap, trail, clock);
     };
 
     ts::end(scenario);
 }
 
 #[test]
-#[expected_failure(abort_code = main::EPermissionDenied)]
+#[expected_failure(abort_code = audit_trail::role_map::ECapabilityPermissionDenied)]
 fun test_delete_role_permission_denied() {
     let admin_user = @0xAD;
     let user = @0xB0B;
@@ -337,51 +366,63 @@ fun test_delete_role_permission_denied() {
     // Create roles
     ts::next_tx(&mut scenario, admin_user);
     {
-        let admin_cap = ts::take_from_sender<Capability>(&scenario);
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
         // Create a role to delete
         let perms = permission::from_vec(vector[permission::add_record()]);
-        trail.create_role(&admin_cap, string::utf8(b"RoleToDelete"), perms, ts::ctx(&mut scenario));
+        trail
+            .roles_mut()
+            .create_role(
+                &admin_cap,
+                string::utf8(b"RoleToDelete"),
+                perms,
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         // Create role WITHOUT delete_roles permission
         let no_delete_perms = permission::from_vec(vector[permission::add_record()]);
-        trail.create_role(
-            &admin_cap,
-            string::utf8(b"NoDeleteRolePerm"),
-            no_delete_perms,
-            ts::ctx(&mut scenario),
-        );
+        trail
+            .roles_mut()
+            .create_role(
+                &admin_cap,
+                string::utf8(b"NoDeleteRolePerm"),
+                no_delete_perms,
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
-        let user_cap = trail.new_capability(
-            &admin_cap,
-            &string::utf8(b"NoDeleteRolePerm"),
-            ts::ctx(&mut scenario),
-        );
+        let user_cap = trail
+            .roles_mut()
+            .new_capability_without_restrictions(
+                &admin_cap,
+                &string::utf8(b"NoDeleteRolePerm"),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         transfer::public_transfer(user_cap, user);
-        ts::return_to_sender(&scenario, admin_cap);
-        ts::return_shared(trail);
+        cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
     };
 
     // User tries to delete a role - should fail
     ts::next_tx(&mut scenario, user);
     {
-        let user_cap = ts::take_from_sender<Capability>(&scenario);
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let (user_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
         // This should fail - no delete_roles permission
-        trail.delete_role(&user_cap, &string::utf8(b"RoleToDelete"), ts::ctx(&mut scenario));
+        trail
+            .roles_mut()
+            .delete_role(&user_cap, &string::utf8(b"RoleToDelete"), &clock, ts::ctx(&mut scenario));
 
-        ts::return_to_sender(&scenario, user_cap);
-        ts::return_shared(trail);
+        cleanup_capability_trail_and_clock(&scenario, user_cap, trail, clock);
     };
 
     ts::end(scenario);
 }
 
 #[test]
-#[expected_failure(abort_code = main::EPermissionDenied)]
+#[expected_failure(abort_code = audit_trail::role_map::ECapabilityPermissionDenied)]
 fun test_update_role_permissions_permission_denied() {
     let admin_user = @0xAD;
     let user = @0xB0B;
@@ -402,58 +443,71 @@ fun test_update_role_permissions_permission_denied() {
     // Create roles
     ts::next_tx(&mut scenario, admin_user);
     {
-        let admin_cap = ts::take_from_sender<Capability>(&scenario);
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
         // Create a role to update
         let perms = permission::from_vec(vector[permission::add_record()]);
-        trail.create_role(&admin_cap, string::utf8(b"RoleToUpdate"), perms, ts::ctx(&mut scenario));
+        trail
+            .roles_mut()
+            .create_role(
+                &admin_cap,
+                string::utf8(b"RoleToUpdate"),
+                perms,
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         // Create role WITHOUT update_roles permission
         let no_update_perms = permission::from_vec(vector[permission::add_record()]);
-        trail.create_role(
-            &admin_cap,
-            string::utf8(b"NoUpdateRolePerm"),
-            no_update_perms,
-            ts::ctx(&mut scenario),
-        );
+        trail
+            .roles_mut()
+            .create_role(
+                &admin_cap,
+                string::utf8(b"NoUpdateRolePerm"),
+                no_update_perms,
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
-        let user_cap = trail.new_capability(
-            &admin_cap,
-            &string::utf8(b"NoUpdateRolePerm"),
-            ts::ctx(&mut scenario),
-        );
+        let user_cap = trail
+            .roles_mut()
+            .new_capability_without_restrictions(
+                &admin_cap,
+                &string::utf8(b"NoUpdateRolePerm"),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         transfer::public_transfer(user_cap, user);
-        ts::return_to_sender(&scenario, admin_cap);
-        ts::return_shared(trail);
+        cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
     };
 
     // User tries to update a role - should fail
     ts::next_tx(&mut scenario, user);
     {
-        let user_cap = ts::take_from_sender<Capability>(&scenario);
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let (user_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
         let new_perms = permission::from_vec(vector[permission::delete_record()]);
 
         // This should fail - no update_roles permission
-        trail.update_role_permissions(
-            &user_cap,
-            &string::utf8(b"RoleToUpdate"),
-            new_perms,
-            ts::ctx(&mut scenario),
-        );
+        trail
+            .roles_mut()
+            .update_role_permissions(
+                &user_cap,
+                &string::utf8(b"RoleToUpdate"),
+                new_perms,
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
-        ts::return_to_sender(&scenario, user_cap);
-        ts::return_shared(trail);
+        cleanup_capability_trail_and_clock(&scenario, user_cap, trail, clock);
     };
 
     ts::end(scenario);
 }
 
 #[test]
-#[expected_failure(abort_code = main::ERoleDoesNotExist)]
+#[expected_failure(abort_code = audit_trail::role_map::ERoleDoesNotExist)]
 fun test_get_role_permissions_nonexistent() {
     let admin_user = @0xAD;
 
@@ -474,7 +528,7 @@ fun test_get_role_permissions_nonexistent() {
         let trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
 
         // This should fail - role doesn't exist
-        let _perms = trail.get_role_permissions(&string::utf8(b"NonExistentRole"));
+        let _perms = trail.roles().get_role_permissions(&string::utf8(b"NonExistentRole"));
 
         ts::return_shared(trail);
     };
@@ -500,46 +554,50 @@ fun test_update_role_permissions_success() {
 
     ts::next_tx(&mut scenario, admin_user);
     {
-        let admin_cap = ts::take_from_sender<Capability>(&scenario);
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
         // Create a role with add_record permission
         let initial_perms = permission::from_vec(vector[permission::add_record()]);
-        trail.create_role(
-            &admin_cap,
-            string::utf8(b"TestRole"),
-            initial_perms,
-            ts::ctx(&mut scenario),
-        );
+        trail
+            .roles_mut()
+            .create_role(
+                &admin_cap,
+                string::utf8(b"TestRole"),
+                initial_perms,
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         // Verify the role was created with add_record permission
-        let perms = trail.get_role_permissions(&string::utf8(b"TestRole"));
+        let perms = trail.roles().get_role_permissions(&string::utf8(b"TestRole"));
         assert!(perms.contains(&permission::add_record()), 0);
         assert!(!perms.contains(&permission::delete_record()), 1);
 
         // Update the role to have delete_record permission instead
         let new_perms = permission::from_vec(vector[permission::delete_record()]);
-        trail.update_role_permissions(
-            &admin_cap,
-            &string::utf8(b"TestRole"),
-            new_perms,
-            ts::ctx(&mut scenario),
-        );
+        trail
+            .roles_mut()
+            .update_role_permissions(
+                &admin_cap,
+                &string::utf8(b"TestRole"),
+                new_perms,
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         // Verify the permissions were updated
-        let updated_perms = trail.get_role_permissions(&string::utf8(b"TestRole"));
+        let updated_perms = trail.roles().get_role_permissions(&string::utf8(b"TestRole"));
         assert!(!updated_perms.contains(&permission::add_record()), 2);
         assert!(updated_perms.contains(&permission::delete_record()), 3);
 
-        ts::return_to_sender(&scenario, admin_cap);
-        ts::return_shared(trail);
+        cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
     };
 
     ts::end(scenario);
 }
 
 #[test]
-#[expected_failure(abort_code = main::ERoleDoesNotExist)]
+#[expected_failure(abort_code = audit_trail::role_map::ERoleDoesNotExist)]
 fun test_update_role_permissions_nonexistent() {
     let admin_user = @0xAD;
 
@@ -557,21 +615,22 @@ fun test_update_role_permissions_nonexistent() {
 
     ts::next_tx(&mut scenario, admin_user);
     {
-        let admin_cap = ts::take_from_sender<Capability>(&scenario);
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
         let new_perms = permission::from_vec(vector[permission::add_record()]);
 
         // This should fail - role doesn't exist
-        trail.update_role_permissions(
-            &admin_cap,
-            &string::utf8(b"NonExistentRole"),
-            new_perms,
-            ts::ctx(&mut scenario),
-        );
+        trail
+            .roles_mut()
+            .update_role_permissions(
+                &admin_cap,
+                &string::utf8(b"NonExistentRole"),
+                new_perms,
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
-        ts::return_to_sender(&scenario, admin_cap);
-        ts::return_shared(trail);
+        cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
     };
 
     ts::end(scenario);
