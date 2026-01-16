@@ -2,10 +2,16 @@
 module audit_trail::create_audit_trail_tests;
 
 use audit_trail::{
-    capability::Capability,
     locking,
     main::{Self, AuditTrail, initial_admin_role_name},
-    test_utils::{setup_test_audit_trail, new_test_data, initial_time_for_testing, TestData}
+    test_utils::{
+        setup_test_audit_trail,
+        new_test_data,
+        initial_time_for_testing,
+        TestData,
+        fetch_capability_trail_and_clock,
+        cleanup_capability_trail_and_clock
+    }
 };
 use iota::{clock, test_scenario as ts};
 use std::string;
@@ -26,7 +32,7 @@ fun test_create_without_initial_record() {
 
         // Verify capability was created
         assert!(admin_cap.role() == initial_admin_role_name(), 0);
-        assert!(admin_cap.trail_id() == trail_id, 1);
+        assert!(admin_cap.security_vault_id() == trail_id, 1);
 
         // Clean up
         admin_cap.destroy_for_testing();
@@ -64,7 +70,7 @@ fun test_create_with_initial_record() {
 
         // Verify capability
         assert!(admin_cap.role() == initial_admin_role_name(), 0);
-        assert!(admin_cap.trail_id() == trail_id, 1);
+        assert!(admin_cap.security_vault_id() == trail_id, 1);
 
         // Clean up
         admin_cap.destroy_for_testing();
@@ -223,7 +229,7 @@ fun test_create_metadata_admin_role() {
 
         // Verify admin capability was created
         assert!(admin_cap.role() == initial_admin_role_name(), 0);
-        assert!(admin_cap.trail_id() == trail_id, 1);
+        assert!(admin_cap.security_vault_id() == trail_id, 1);
 
         // Transfer the admin capability to the user
         transfer::public_transfer(admin_cap, user);
@@ -232,22 +238,23 @@ fun test_create_metadata_admin_role() {
     // User receives the capability and creates the MetadataAdmin role
     ts::next_tx(&mut scenario, user);
     {
-        let admin_cap = ts::take_from_sender<Capability>(&scenario);
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
-
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
         // Create the MetadataAdmin role using the admin capability
         let metadata_admin_role_name = string::utf8(b"MetadataAdmin");
         let metadata_admin_perms = audit_trail::permission::metadata_admin_permissions();
 
-        trail.create_role(
-            &admin_cap,
-            metadata_admin_role_name,
-            metadata_admin_perms,
-            ts::ctx(&mut scenario),
-        );
+        trail
+            .roles_mut()
+            .create_role(
+                &admin_cap,
+                metadata_admin_role_name,
+                metadata_admin_perms,
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         // Verify the role was created by fetching its permissions
-        let role_perms = trail.get_role_permissions(&string::utf8(b"MetadataAdmin"));
+        let role_perms = trail.roles().get_role_permissions(&string::utf8(b"MetadataAdmin"));
 
         // Verify the role has the correct permissions
         assert!(
@@ -267,8 +274,7 @@ fun test_create_metadata_admin_role() {
         assert!(iota::vec_set::size(role_perms) == 2, 4);
 
         // Clean up
-        ts::return_to_sender(&scenario, admin_cap);
-        ts::return_shared(trail);
+        cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
     };
 
     ts::end(scenario);

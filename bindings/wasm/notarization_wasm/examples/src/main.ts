@@ -9,6 +9,7 @@ import { updateState } from "./05_update_state";
 import { updateMetadata } from "./06_update_metadata";
 import { transferNotarization } from "./07_transfer_notarization";
 import { accessReadOnlyMethods } from "./08_access_read_only_methods";
+import { createUpdateDestroy } from "./gas-costs/01_create_update_destroy";
 import { iotWeatherStation } from "./real-world/01_iot_weather_station";
 import { legalContract } from "./real-world/02_legal_contract";
 
@@ -40,6 +41,8 @@ export async function main(example?: string) {
             return await iotWeatherStation();
         case "02_real_world_legal_contract":
             return await legalContract();
+        case "01_gas_costs_create_update_destroy":
+            return await createUpdateDestroy();
         default:
             throw "Unknown example name: '" + argument + "'";
     }
