@@ -127,48 +127,48 @@ public(package) fun new_capability_for_address(
 }
 
 /// Get the capability's ID
-public fun cap_id(cap: &Capability): ID {
+public fun id(cap: &Capability): ID {
     object::uid_to_inner(&cap.id)
 }
 
 /// Get the capability's role
-public fun cap_role(cap: &Capability): &String {
+public fun role(cap: &Capability): &String {
     &cap.role
 }
 
 /// Get the capability's security_vault_id
-public fun cap_security_vault_id(cap: &Capability): ID {
+public fun security_vault_id(cap: &Capability): ID {
     cap.security_vault_id
 }
 
 /// Check if the capability has a specific role
-public fun cap_has_role(cap: &Capability, role: &String): bool {
+public fun has_role(cap: &Capability, role: &String): bool {
     &cap.role == role
 }
 
 // Get the capability's issued_to address
-public fun cap_issued_to(cap: &Capability): &Option<address> {
+public fun issued_to(cap: &Capability): &Option<address> {
     &cap.issued_to
 }
 
 // Get the capability's valid_from timestamp
-public fun cap_valid_from(cap: &Capability): &Option<u64> {
+public fun valid_from(cap: &Capability): &Option<u64> {
     &cap.valid_from
 }
 
 // Get the capability's valid_until timestamp
-public fun cap_valid_until(cap: &Capability): &Option<u64> {
+public fun valid_until(cap: &Capability): &Option<u64> {
     &cap.valid_until
 }
 
 // Check if the capability is currently valid for `clock::timestamp_ms(clock)`
-public fun cap_is_currently_valid(cap: &Capability, clock: &Clock): bool {
+public fun is_currently_valid(cap: &Capability, clock: &Clock): bool {
     let current_ts = clock::timestamp_ms(clock) / 1000; // convert to seconds
     cap.is_valid_for_timestamp(current_ts)
 }
 
 // Check if the capability is valid for a specific timestamp (in seconds since Unix epoch)
-public fun cap_is_valid_for_timestamp(cap: &Capability, timestamp_secs: u64): bool {
+public fun is_valid_for_timestamp(cap: &Capability, timestamp_secs: u64): bool {
     let valid_from_ok = if (cap.valid_from.is_some()) {
         let from = cap.valid_from.borrow();
         timestamp_secs >= *from
@@ -185,7 +185,7 @@ public fun cap_is_valid_for_timestamp(cap: &Capability, timestamp_secs: u64): bo
 }
 
 /// Destroy a capability
-public(package) fun cap_destroy(cap: Capability) {
+public(package) fun destroy(cap: Capability) {
     let Capability {
         id,
         role: _role,
@@ -198,21 +198,6 @@ public(package) fun cap_destroy(cap: Capability) {
 }
 
 #[test_only]
-public fun cap_destroy_for_testing(cap: Capability) {
-    cap_destroy(cap);
+public fun destroy_for_testing(cap: Capability) {
+    destroy(cap);
 }
-
-// ===== public use statements =====
-
-public use fun cap_id as Capability.id;
-public use fun cap_role as Capability.role;
-public use fun cap_security_vault_id as Capability.security_vault_id;
-public use fun cap_has_role as Capability.has_role;
-public use fun cap_destroy as Capability.destroy;
-public use fun cap_issued_to as Capability.issued_to;
-public use fun cap_valid_from as Capability.valid_from;
-public use fun cap_valid_until as Capability.valid_until;
-public use fun cap_is_currently_valid as Capability.is_currently_valid;
-public use fun cap_is_valid_for_timestamp as Capability.is_valid_for_timestamp;
-#[test_only]
-public use fun cap_destroy_for_testing as Capability.destroy_for_testing;
