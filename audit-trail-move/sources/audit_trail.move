@@ -49,8 +49,8 @@ public struct AuditTrail<D: store + copy> has key, store {
     creator: address,
     /// Creation timestamp in milliseconds
     created_at: u64,
-    /// Total records added (also next sequence number)
-    record_count: u64,
+    /// Monotonic counter for sequence assignment (never decrements)
+    sequence_number: u64,
     /// LinkedTable mapping sequence numbers to records
     records: LinkedTable<u64, Record<D>>,
     /// Deletion locking rules
@@ -137,7 +137,7 @@ public fun create<D: store + copy>(
     let trail_id = object::uid_to_inner(&trail_uid);
 
     let mut records = linked_table::new<u64, Record<D>>(ctx);
-    let mut record_count = 0;
+    let mut sequence_number = 0;
     let has_initial_record = initial_data.is_some();
 
     if (initial_data.is_some()) {
@@ -150,7 +150,7 @@ public fun create<D: store + copy>(
         );
 
         linked_table::push_back(&mut records, 0, record);
-        record_count = 1;
+        sequence_number = 1;
 
         event::emit(RecordAdded {
             trail_id,
@@ -186,7 +186,7 @@ public fun create<D: store + copy>(
         id: trail_uid,
         creator,
         created_at: timestamp,
-        record_count,
+        sequence_number,
         records,
         locking_config,
         roles,
@@ -238,22 +238,22 @@ public fun add_record<D: store + copy>(
     let caller = ctx.sender();
     let timestamp = clock::timestamp_ms(clock);
     let trail_id = trail.id();
-    let sequence_number = trail.record_count;
+    let seq = trail.sequence_number;
 
     let record = record::new(
         stored_data,
         record_metadata,
-        sequence_number,
+        seq,
         caller,
         timestamp,
     );
 
-    linked_table::push_back(&mut trail.records, sequence_number, record);
-    trail.record_count = trail.record_count + 1;
+    linked_table::push_back(&mut trail.records, seq, record);
+    trail.sequence_number = trail.sequence_number + 1;
 
     event::emit(RecordAdded {
         trail_id,
-        sequence_number,
+        sequence_number: seq,
         added_by: caller,
         timestamp,
     });
@@ -317,7 +317,7 @@ public fun is_record_locked<D: store + copy>(
         &trail.locking_config,
         sequence_number,
         record::added_at(record),
-        trail.record_count,
+        trail.sequence_number,
         current_time,
     )
 }
@@ -328,7 +328,7 @@ public fun update_locking_config<D: store + copy>(
     cap: &Capability,
     new_config: LockingConfig,
     clock: &Clock,
-    ctx: &TxContext,
+    ctx: &mut TxContext,
 ) {
     assert!(
         trail
@@ -350,7 +350,7 @@ public fun update_locking_config_for_delete_record<D: store + copy>(
     cap: &Capability,
     new_delete_record_lock: LockingWindow,
     clock: &Clock,
-    ctx: &TxContext,
+    ctx: &mut TxContext,
 ) {
     assert!(
         trail
@@ -372,7 +372,7 @@ public fun update_metadata<D: store + copy>(
     cap: &Capability,
     new_metadata: Option<String>,
     clock: &Clock,
-    ctx: &TxContext,
+    ctx: &mut TxContext,
 ) {
     assert!(
         trail
@@ -390,9 +390,14 @@ public fun update_metadata<D: store + copy>(
 
 // ===== Trail Query Functions =====
 
-/// Get the total number of records in the trail
+/// Get the total number of records currently in the trail
 public fun record_count<D: store + copy>(trail: &AuditTrail<D>): u64 {
-    trail.record_count
+    linked_table::length(&trail.records)
+}
+
+/// Get the next sequence number (monotonic counter, never decrements)
+public fun sequence_number<D: store + copy>(trail: &AuditTrail<D>): u64 {
+    trail.sequence_number
 }
 
 /// Get the trail creator address
