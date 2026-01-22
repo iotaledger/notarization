@@ -23,7 +23,7 @@ const ETimelockNotExpired: u64 = 1;
 /// Represents different types of time-based locks that can be applied to
 /// notarizations.
 public enum TimeLock has store {
-    /// A lock that unlocks at a specific Unix timestamp (seconds since epoch)
+    /// A lock that unlocks at a specific Unix timestamp (seconds since Unix epoch)
     UnlockAt(u32),
     /// A permanent lock that never unlocks until the notarization object is destroyed (can't be used for `delete_lock`)
     UntilDestroyed,
