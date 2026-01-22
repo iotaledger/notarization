@@ -2,7 +2,6 @@
 module audit_trail::locking_tests;
 
 use audit_trail::{
-    capability::Capability,
     locking,
     main::AuditTrail,
     permission,
@@ -18,6 +17,7 @@ use audit_trail::{
 };
 use iota::{clock, test_scenario as ts};
 use std::string;
+use tf_components::capability::Capability;
 
 // ===== Time-Based Locking Tests =====
 

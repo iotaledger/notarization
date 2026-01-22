@@ -2,7 +2,6 @@
 module audit_trail::capability_tests;
 
 use audit_trail::{
-    capability::Capability,
     locking,
     main::AuditTrail,
     permission,
@@ -16,6 +15,7 @@ use audit_trail::{
 };
 use iota::test_scenario::{Self as ts, Scenario};
 use std::string;
+use tf_components::capability::Capability;
 
 /// Helper function to setup an audit trail with a RecordAdmin role and a capability
 /// with a time window restriction transferred to the record_user.
