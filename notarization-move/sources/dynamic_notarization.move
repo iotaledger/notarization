@@ -5,8 +5,9 @@
 module iota_notarization::dynamic_notarization;
 
 use iota::{clock::Clock, event};
-use iota_notarization::{notarization, timelock::TimeLock};
+use iota_notarization::notarization;
 use std::string::String;
+use tf_components::timelock::TimeLock;
 
 // ===== Constants =====
 /// Cannot transfer a locked notarization
