@@ -3,7 +3,6 @@
 module audit_trail::metadata_tests;
 
 use audit_trail::{
-    capability::Capability,
     locking,
     permission,
     test_utils::{
@@ -14,6 +13,7 @@ use audit_trail::{
 };
 use iota::test_scenario as ts;
 use std::string;
+use tf_components::capability::Capability;
 
 // ===== Success Case Tests =====
 
