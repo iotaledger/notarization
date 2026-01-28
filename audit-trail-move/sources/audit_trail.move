@@ -68,7 +68,7 @@ public struct AuditTrail<D: store + copy> has key, store {
     /// Can be updated by holders of MetadataUpdate permission
     updatable_metadata: Option<String>,
     /// Package version
-    package_version: u64,
+    version: u64,
 }
 
 // ===== Events =====
@@ -200,7 +200,7 @@ public fun create<D: store + copy>(
         roles,
         immutable_metadata: trail_metadata,
         updatable_metadata,
-        package_version: PACKAGE_VERSION,
+        version: PACKAGE_VERSION,
     };
 
     transfer::share_object(trail);
@@ -226,7 +226,7 @@ entry fun migrate<D: store + copy>(
     clock: &Clock,
     ctx: &TxContext,
 ) {
-    assert!(trail.package_version < PACKAGE_VERSION, EPackageVersionMismatch);
+    assert!(trail.version < PACKAGE_VERSION, EPackageVersionMismatch);
     assert!(
         trail
             .roles
@@ -238,7 +238,7 @@ entry fun migrate<D: store + copy>(
             ),
         EPermissionDenied,
     );
-    trail.package_version = PACKAGE_VERSION;
+    trail.version = PACKAGE_VERSION;
 }
 
 // ===== Record Operations =====
@@ -254,7 +254,7 @@ public fun add_record<D: store + copy>(
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
-    assert!(trail.package_version == PACKAGE_VERSION, EPackageVersionMismatch);
+    assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     assert!(
         trail
             .roles
@@ -302,7 +302,7 @@ public fun delete_record<D: store + copy + drop>(
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
-    assert!(trail.package_version == PACKAGE_VERSION, EPackageVersionMismatch);
+    assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     assert!(
         trail
             .roles
@@ -363,7 +363,7 @@ public fun update_locking_config<D: store + copy>(
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
-    assert!(trail.package_version == PACKAGE_VERSION, EPackageVersionMismatch);
+    assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     assert!(
         trail
             .roles
@@ -386,7 +386,7 @@ public fun update_locking_config_for_delete_record<D: store + copy>(
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
-    assert!(trail.package_version == PACKAGE_VERSION, EPackageVersionMismatch);
+    assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     assert!(
         trail
             .roles
@@ -409,7 +409,7 @@ public fun update_metadata<D: store + copy>(
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
-    assert!(trail.package_version == PACKAGE_VERSION, EPackageVersionMismatch);
+    assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     assert!(
         trail
             .roles
@@ -494,32 +494,32 @@ public fun last_sequence<D: store + copy>(trail: &AuditTrail<D>): Option<u64> {
 
 /// Get a record by sequence number
 public fun get_record<D: store + copy>(trail: &AuditTrail<D>, sequence_number: u64): &Record<D> {
-    assert!(trail.package_version == PACKAGE_VERSION, EPackageVersionMismatch);
+    assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     assert!(linked_table::contains(&trail.records, sequence_number), ERecordNotFound);
     linked_table::borrow(&trail.records, sequence_number)
 }
 
 /// Check if a record exists at the given sequence number
 public fun has_record<D: store + copy>(trail: &AuditTrail<D>, sequence_number: u64): bool {
-    assert!(trail.package_version == PACKAGE_VERSION, EPackageVersionMismatch);
+    assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     linked_table::contains(&trail.records, sequence_number)
 }
 
 /// Returns all records of the audit trail
 public fun records<D: store + copy>(trail: &AuditTrail<D>): &LinkedTable<u64, Record<D>> {
-    assert!(trail.package_version == PACKAGE_VERSION, EPackageVersionMismatch);
+    assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     &trail.records
 }
 // ===== Role and Capability Functions =====
 
 /// Returns a reference the RoleMap managing the roles and capabilities used in the audit trail
 public fun roles<D: store + copy>(trail: &AuditTrail<D>): &RoleMap<Permission> {
-    assert!(trail.package_version == PACKAGE_VERSION, EPackageVersionMismatch);
+    assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     &trail.roles
 }
 
 /// Returns a mutable reference to the RoleMap managing the roles and capabilities used in the audit trail
 public fun roles_mut<D: store + copy>(trail: &mut AuditTrail<D>): &mut RoleMap<Permission> {
-    assert!(trail.package_version == PACKAGE_VERSION, EPackageVersionMismatch);
+    assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     &mut trail.roles
 }
