@@ -1,3 +1,4 @@
+#[allow(lint(abort_without_constant))]
 #[test_only]
 module audit_trail::create_audit_trail_tests;
 

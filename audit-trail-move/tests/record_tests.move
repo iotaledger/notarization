@@ -1,3 +1,4 @@
+#[allow(lint(abort_without_constant))]
 #[test_only]
 module audit_trail::record_tests;
 
@@ -303,8 +304,9 @@ fun test_delete_record_success() {
         trail.delete_record(&record_cap, 0, &clock, ts::ctx(&mut scenario));
 
         // Verify record was deleted
-        assert!(trail.record_count() == 1, 2); // record_count doesn't decrease
-        assert!(!trail.has_record(0), 3); // but record is gone
+        assert!(trail.record_count() == 0, 2); // actual count decreases
+        assert!(trail.sequence_number() == 1, 3); // sequence stays monotonic
+        assert!(!trail.has_record(0), 4); // record is gone
 
         cleanup_capability_trail_and_clock(&scenario, record_cap, trail, clock);
     };
