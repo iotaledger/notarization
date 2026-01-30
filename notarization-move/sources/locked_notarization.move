@@ -5,8 +5,9 @@
 module iota_notarization::locked_notarization;
 
 use iota::{clock::Clock, event};
-use iota_notarization::{notarization, timelock::TimeLock};
+use iota_notarization::notarization;
 use std::string::String;
+use tf_components::timelock::TimeLock;
 
 /// Event emitted when a locked notarization is created
 public struct LockedNotarizationCreated has copy, drop {
