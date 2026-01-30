@@ -18,10 +18,10 @@ bcs = "0.1"
 # Latest hyper is not compatible with axum-server used by iota-sdk. We need to pin it to 1.7 until iota-sdk upgrades axum-server.
 hyper = "=1.7" # Fix for iota-sdk 1.13 issue with axum-server.
 iota-sdk = { git = "https://github.com/iotaledger/iota.git", package = "iota-sdk", tag = "v1.15.0" }
-iota_interaction = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/iota-v1-15-0-rc-upstream-merge", default-features = false, package = "iota_interaction" }
-iota_interaction_rust = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/iota-v1-15-0-rc-upstream-merge", default-features = false, package = "iota_interaction_rust" }
-iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/iota-v1-15-0-rc-upstream-merge", default-features = false, package = "iota_interaction_ts" }
-product_common = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/iota-v1-15-0-rc-upstream-merge", default-features = false, package = "product_common" }
+iota_interaction = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.10", default-features = false, package = "iota_interaction" }
+iota_interaction_rust = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.10", default-features = false, package = "iota_interaction_rust" }
+iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.10", default-features = false, package = "iota_interaction_ts" }
+product_common = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.10", default-features = false, package = "product_common" }
 serde = { version = "1.0", default-features = false, features = ["alloc", "derive"] }
 serde_json = { version = "1.0", default-features = false }
 strum = { version = "0.27", default-features = false, features = ["std", "derive"] }
