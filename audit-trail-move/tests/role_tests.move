@@ -38,7 +38,7 @@ fun test_role_based_permission_delegation() {
 
         // Verify admin capability was created with correct role and trail reference
         assert!(admin_cap.role() == initial_admin_role_name(), 0);
-        assert!(admin_cap.security_vault_id() == trail_id, 1);
+        assert!(admin_cap.target_key() == trail_id, 1);
 
         // Transfer the admin capability to the user
         transfer::public_transfer(admin_cap, admin_user);
@@ -102,7 +102,7 @@ fun test_role_based_permission_delegation() {
 
         // Verify the capability was created with correct role and trail ID
         assert!(role_admin_cap.role() == string::utf8(b"RoleAdmin"), 6);
-        assert!(role_admin_cap.security_vault_id() == trail_id, 7);
+        assert!(role_admin_cap.target_key() == trail_id, 7);
 
         iota::transfer::public_transfer(role_admin_cap, role_admin_user);
 
@@ -117,7 +117,7 @@ fun test_role_based_permission_delegation() {
 
         // Verify the capability was created with correct role and trail ID
         assert!(cap_admin_cap.role() == string::utf8(b"CapAdmin"), 8);
-        assert!(cap_admin_cap.security_vault_id() == trail_id, 9);
+        assert!(cap_admin_cap.target_key() == trail_id, 9);
 
         iota::transfer::public_transfer(cap_admin_cap, cap_admin_user);
 
@@ -169,7 +169,7 @@ fun test_role_based_permission_delegation() {
 
         // Verify the capability was created with correct role and trail ID
         assert!(record_admin_cap.role() == string::utf8(b"RecordAdmin"), 14);
-        assert!(record_admin_cap.security_vault_id() == trail_id, 15);
+        assert!(record_admin_cap.target_key() == trail_id, 15);
 
         iota::transfer::public_transfer(record_admin_cap, record_admin_user);
 

@@ -159,7 +159,7 @@ fun test_new_capability() {
             );
 
         assert!(cap1.role() == string::utf8(b"RecordAdmin"), 1);
-        assert!(cap1.security_vault_id() == trail_id, 2);
+        assert!(cap1.target_key() == trail_id, 2);
 
         let cap1_id = object::id(&cap1);
 
@@ -1423,7 +1423,7 @@ fun test_new_capability_without_restrictions() {
         assert!(cap.valid_from().is_none(), 1);
         assert!(cap.valid_until().is_none(), 2);
         assert!(cap.role() == string::utf8(b"RecordAdmin"), 3);
-        assert!(cap.security_vault_id() == trail_id, 4);
+        assert!(cap.target_key() == trail_id, 4);
 
         transfer::public_transfer(cap, any_user);
         cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
@@ -1488,7 +1488,7 @@ fun test_new_capability_valid_until() {
         assert!(cap.valid_from().is_none(), 1);
         assert!(cap.valid_until() == std::option::some(valid_until_time), 2);
         assert!(cap.role() == string::utf8(b"RecordAdmin"), 3);
-        assert!(cap.security_vault_id() == trail_id, 4);
+        assert!(cap.target_key() == trail_id, 4);
 
         transfer::public_transfer(cap, user);
         cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
@@ -1534,7 +1534,7 @@ fun test_new_capability_for_address_no_expiration() {
         assert!(cap.valid_from().is_none(), 1);
         assert!(cap.valid_until().is_none(), 2);
         assert!(cap.role() == string::utf8(b"RecordAdmin"), 3);
-        assert!(cap.security_vault_id() == trail_id, 4);
+        assert!(cap.target_key() == trail_id, 4);
 
         transfer::public_transfer(cap, authorized_user);
         cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
