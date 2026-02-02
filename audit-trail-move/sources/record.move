@@ -3,15 +3,14 @@
 
 /// Record module for audit trail entries
 ///
-/// A Record represents a single entry in an audit trail, stored in a LinkedTable
-/// and addressed by trail_id + sequence_number.
+/// A Record represents a single entry in an audit trail, stored in a
+/// LinkedTable and addressed by trail_id + sequence_number.
 module audit_trail::record;
 
 use audit_trail::record_correction::RecordCorrection;
-use iota::vec_set::{Self, VecSet};
 use std::string::String;
 
-/// A single record in the audit trail (stored in LinkedTable, no ObjectID)
+/// A single record in the audit trail
 public struct Record<D: store + copy> has store {
     /// Arbitrary data stored on-chain
     stored_data: D,
@@ -29,7 +28,7 @@ public struct Record<D: store + copy> has store {
 
 // ===== Constructors =====
 
-/// Create a new record (package-private, called by audit_trails module)
+/// Create a new record
 public(package) fun new<D: store + copy>(
     stored_data: D,
     record_metadata: Option<String>,
@@ -80,10 +79,7 @@ public fun correction<D: store + copy>(record: &Record<D>): &RecordCorrection {
     &record.correction
 }
 
-// ===== Destructors =====
-
-/// Destroy a record (package-private, called by audit_trail module when deleting)
-/// Note: D must have `drop` ability to allow deletion
+/// Destroy a record
 public(package) fun destroy<D: store + copy + drop>(record: Record<D>) {
     let Record {
         stored_data: _,
