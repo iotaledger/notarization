@@ -7,6 +7,7 @@ use audit_trail::{
     main::AuditTrail,
     permission,
     test_utils::{
+        Self,
         TestData,
         setup_test_audit_trail,
         new_test_data,
@@ -131,14 +132,13 @@ fun test_count_based_locking() {
                 ts::ctx(&mut scenario),
             );
 
-        let record_cap = trail
-            .roles_mut()
-            .new_capability_without_restrictions(
-                &admin_cap,
-                &string::utf8(b"RecordAdmin"),
-                &clock,
-                ts::ctx(&mut scenario),
-            );
+        let record_cap = test_utils::new_capability_without_restrictions(
+            trail.roles_mut(),
+            &admin_cap,
+            &string::utf8(b"RecordAdmin"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
 
         transfer::public_transfer(record_cap, admin);
         admin_cap.destroy_for_testing();
@@ -281,14 +281,13 @@ fun test_update_locking_config() {
                 ts::ctx(&mut scenario),
             );
 
-        let locking_cap = trail
-            .roles_mut()
-            .new_capability_without_restrictions(
-                &admin_cap,
-                &string::utf8(b"LockingAdmin"),
-                &clock,
-                ts::ctx(&mut scenario),
-            );
+        let locking_cap = test_utils::new_capability_without_restrictions(
+            trail.roles_mut(),
+            &admin_cap,
+            &string::utf8(b"LockingAdmin"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
 
         transfer::public_transfer(locking_cap, admin);
         admin_cap.destroy_for_testing();
@@ -354,14 +353,13 @@ fun test_update_locking_config_permission_denied() {
                 ts::ctx(&mut scenario),
             );
 
-        let no_locking_cap = trail
-            .roles_mut()
-            .new_capability_without_restrictions(
-                &admin_cap,
-                &string::utf8(b"NoLockingPerm"),
-                &clock,
-                ts::ctx(&mut scenario),
-            );
+        let no_locking_cap = test_utils::new_capability_without_restrictions(
+            trail.roles_mut(),
+            &admin_cap,
+            &string::utf8(b"NoLockingPerm"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
         transfer::public_transfer(no_locking_cap, admin);
         admin_cap.destroy_for_testing();
         cleanup_trail_and_clock(trail, clock);
@@ -419,14 +417,13 @@ fun test_update_locking_config_for_delete_record() {
                 ts::ctx(&mut scenario),
             );
 
-        let delete_lock_cap = trail
-            .roles_mut()
-            .new_capability_without_restrictions(
-                &admin_cap,
-                &string::utf8(b"DeleteLockAdmin"),
-                &clock,
-                ts::ctx(&mut scenario),
-            );
+        let delete_lock_cap = test_utils::new_capability_without_restrictions(
+            trail.roles_mut(),
+            &admin_cap,
+            &string::utf8(b"DeleteLockAdmin"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
 
         transfer::public_transfer(delete_lock_cap, admin);
         admin_cap.destroy_for_testing();
@@ -493,14 +490,13 @@ fun test_update_locking_config_for_delete_record_permission_denied() {
                 ts::ctx(&mut scenario),
             );
 
-        let wrong_cap = trail
-            .roles_mut()
-            .new_capability_without_restrictions(
-                &admin_cap,
-                &string::utf8(b"WrongPerm"),
-                &clock,
-                ts::ctx(&mut scenario),
-            );
+        let wrong_cap = test_utils::new_capability_without_restrictions(
+            trail.roles_mut(),
+            &admin_cap,
+            &string::utf8(b"WrongPerm"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
 
         transfer::public_transfer(wrong_cap, admin);
         admin_cap.destroy_for_testing();
@@ -556,14 +552,13 @@ fun test_delete_record_after_time_lock_expires() {
                 ts::ctx(&mut scenario),
             );
 
-        let record_cap = trail
-            .roles_mut()
-            .new_capability_without_restrictions(
-                &admin_cap,
-                &string::utf8(b"RecordAdmin"),
-                &clock,
-                ts::ctx(&mut scenario),
-            );
+        let record_cap = test_utils::new_capability_without_restrictions(
+            trail.roles_mut(),
+            &admin_cap,
+            &string::utf8(b"RecordAdmin"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
 
         transfer::public_transfer(record_cap, admin);
         admin_cap.destroy_for_testing();
@@ -681,14 +676,13 @@ fun test_combined_time_and_count_locking_both_lock() {
                 ts::ctx(&mut scenario),
             );
 
-        let record_cap = trail
-            .roles_mut()
-            .new_capability_without_restrictions(
-                &admin_cap,
-                &string::utf8(b"RecordAdmin"),
-                &clock,
-                ts::ctx(&mut scenario),
-            );
+        let record_cap = test_utils::new_capability_without_restrictions(
+            trail.roles_mut(),
+            &admin_cap,
+            &string::utf8(b"RecordAdmin"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
 
         // Add 5 records
         clock.set_for_testing(initial_time_for_testing() + 1000);
@@ -766,14 +760,13 @@ fun test_combined_locking_time_expired_but_count_locked() {
                 ts::ctx(&mut scenario),
             );
 
-        let record_cap = trail
-            .roles_mut()
-            .new_capability_without_restrictions(
-                &admin_cap,
-                &string::utf8(b"RecordAdmin"),
-                &clock,
-                ts::ctx(&mut scenario),
-            );
+        let record_cap = test_utils::new_capability_without_restrictions(
+            trail.roles_mut(),
+            &admin_cap,
+            &string::utf8(b"RecordAdmin"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
 
         // Add 5 records
         clock.set_for_testing(initial_time_for_testing() + 1000);
@@ -852,14 +845,13 @@ fun test_combined_locking_count_satisfied_but_time_locked() {
                 ts::ctx(&mut scenario),
             );
 
-        let record_cap = trail
-            .roles_mut()
-            .new_capability_without_restrictions(
-                &admin_cap,
-                &string::utf8(b"RecordAdmin"),
-                &clock,
-                ts::ctx(&mut scenario),
-            );
+        let record_cap = test_utils::new_capability_without_restrictions(
+            trail.roles_mut(),
+            &admin_cap,
+            &string::utf8(b"RecordAdmin"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
 
         // Add 5 records
         clock.set_for_testing(initial_time_for_testing() + 1000);
@@ -935,14 +927,13 @@ fun test_combined_locking_both_satisfied_can_delete() {
                 ts::ctx(&mut scenario),
             );
 
-        let record_cap = trail
-            .roles_mut()
-            .new_capability_without_restrictions(
-                &admin_cap,
-                &string::utf8(b"RecordAdmin"),
-                &clock,
-                ts::ctx(&mut scenario),
-            );
+        let record_cap = test_utils::new_capability_without_restrictions(
+            trail.roles_mut(),
+            &admin_cap,
+            &string::utf8(b"RecordAdmin"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
 
         // Add 5 records
         clock.set_for_testing(initial_time_for_testing() + 1000);

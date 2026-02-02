@@ -6,6 +6,7 @@ use audit_trail::{
     locking,
     permission,
     test_utils::{
+        Self,
         setup_test_audit_trail,
         fetch_capability_trail_and_clock,
         cleanup_capability_trail_and_clock
@@ -53,14 +54,13 @@ fun test_update_metadata_success() {
             );
 
         // Issue capability to metadata admin user
-        let metadata_cap = trail
-            .roles_mut()
-            .new_capability_without_restrictions(
-                &admin_cap,
-                &string::utf8(b"MetadataAdmin"),
-                &clock,
-                ts::ctx(&mut scenario),
-            );
+        let metadata_cap = test_utils::new_capability_without_restrictions(
+            trail.roles_mut(),
+            &admin_cap,
+            &string::utf8(b"MetadataAdmin"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
 
         transfer::public_transfer(metadata_cap, metadata_admin_user);
         cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
@@ -171,14 +171,13 @@ fun test_update_metadata_permission_denied() {
                 ts::ctx(&mut scenario),
             );
 
-        let user_cap = trail
-            .roles_mut()
-            .new_capability_without_restrictions(
-                &admin_cap,
-                &string::utf8(b"NoMetadataPerm"),
-                &clock,
-                ts::ctx(&mut scenario),
-            );
+        let user_cap = test_utils::new_capability_without_restrictions(
+            trail.roles_mut(),
+            &admin_cap,
+            &string::utf8(b"NoMetadataPerm"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
 
         transfer::public_transfer(user_cap, user);
         cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
@@ -240,14 +239,13 @@ fun test_update_metadata_revoked_capability() {
             );
 
         // Issue capability
-        let metadata_cap = trail
-            .roles_mut()
-            .new_capability_without_restrictions(
-                &admin_cap,
-                &string::utf8(b"MetadataAdmin"),
-                &clock,
-                ts::ctx(&mut scenario),
-            );
+        let metadata_cap = test_utils::new_capability_without_restrictions(
+            trail.roles_mut(),
+            &admin_cap,
+            &string::utf8(b"MetadataAdmin"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
 
         transfer::public_transfer(metadata_cap, metadata_admin_user);
         cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);

@@ -4,7 +4,7 @@ module audit_trail::test_utils;
 use audit_trail::{locking, main::{Self, AuditTrail}};
 use iota::{clock::{Self, Clock}, test_scenario::{Self as ts, Scenario}};
 use std::string;
-use tf_components::capability::Capability;
+use tf_components::{capability::Capability, role_map::RoleMap};
 
 const INITIAL_TIME_FOR_TESTING: u64 = 1234567;
 
@@ -63,6 +63,92 @@ public(package) fun setup_test_audit_trail(
     };
 
     (admin_cap, trail_id)
+}
+
+/// Create a new unrestricted capability with a specific role without any
+/// address, valid_from, or valid_until restrictions.
+///
+/// Returns the newly created capability.
+///
+/// Sends a CapabilityIssued event upon successful creation.
+///
+/// Errors:
+/// - Aborts with EPermissionDenied if the provided capability does not have the permission specified with `CapabilityAdminPermissions::add`.
+/// - Aborts with ERoleDoesNotExist if the specified role does not exist in the role_map.
+public fun new_capability_without_restrictions<P: copy + drop>(
+    role_map: &mut RoleMap<P>,
+    cap: &Capability,
+    role: &string::String,
+    clock: &Clock,
+    ctx: &mut TxContext,
+): Capability {
+    role_map.new_capability(
+        cap,
+        role,
+        std::option::none(),
+        std::option::none(),
+        std::option::none(),
+        clock,
+        ctx,
+    )
+}
+
+/// Create a new capability with a specific role that expires at a given timestamp (milliseconds since Unix epoch).
+///
+/// Returns the newly created capability.
+///
+/// Sends a CapabilityIssued event upon successful creation.
+///
+/// Errors:
+/// - Aborts with EPermissionDenied if the provided capability does not have the permission specified with `CapabilityAdminPermissions::add`.
+/// - Aborts with ERoleDoesNotExist if the specified role does not exist in the role_map.
+public(package) fun new_capability_valid_until<P: copy + drop>(
+    role_map: &mut RoleMap<P>,
+    cap: &Capability,
+    role: &string::String,
+    valid_until: u64,
+    clock: &Clock,
+    ctx: &mut TxContext,
+): Capability {
+    role_map.new_capability(
+        cap,
+        role,
+        std::option::none(),
+        std::option::none(),
+        std::option::some(valid_until),
+        clock,
+        ctx,
+    )
+}
+
+/// Create a new capability with a specific role restricted to an address.
+/// Optionally set an expiration time (milliseconds since Unix epoch).
+///
+/// Returns the newly created capability.
+///
+/// Sends a CapabilityIssued event upon successful creation.
+///
+/// Errors:
+/// - Aborts with EPermissionDenied if the provided capability does not have the permission specified with `CapabilityAdminPermissions::add`.
+/// - Aborts with ERoleDoesNotExist if the specified role does not exist in the role_map.
+public fun new_capability_for_address<P: copy + drop>(
+    role_map: &mut RoleMap<P>,
+    cap: &Capability,
+    role: &string::String,
+    issued_to: address,
+    valid_until: Option<u64>,
+    clock: &Clock,
+    ctx: &mut TxContext,
+): Capability {
+    role_map.new_capability(
+        cap,
+        role,
+        std::option::some(issued_to),
+        std::option::none(),
+        valid_until,
+        clock,
+        ctx,
+    )
 }
 
 public(package) fun fetch_capability_trail_and_clock(
