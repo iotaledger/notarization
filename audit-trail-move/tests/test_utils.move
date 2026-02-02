@@ -6,7 +6,7 @@ use iota::{clock::{Self, Clock}, test_scenario::{Self as ts, Scenario}};
 use std::string;
 use tf_components::capability::Capability;
 
-const INITIAL_TIME_FOR_TESTING: u64 = 1234;
+const INITIAL_TIME_FOR_TESTING: u64 = 1234567;
 
 /// Test data type for audit trail records
 public struct TestData has copy, drop, store {

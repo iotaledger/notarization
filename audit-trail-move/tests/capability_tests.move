@@ -25,8 +25,8 @@ fun setup_trail_with_record_admin_capability_and_time_window_restriction(
     scenario: &mut Scenario,
     admin_user: address,
     record_user: address,
-    valid_from_secs: u64,
-    valid_until_secs: u64,
+    valid_from_ms: u64,
+    valid_until_ms: u64,
 ): ID {
     // Setup
     let trail_id = setup_trail_with_record_admin_role(scenario, admin_user);
@@ -42,16 +42,16 @@ fun setup_trail_with_record_admin_capability_and_time_window_restriction(
                 &admin_cap,
                 &string::utf8(b"RecordAdmin"),
                 std::option::none(), // no address restriction
-                std::option::some(valid_from_secs),
-                std::option::some(valid_until_secs),
+                std::option::some(valid_from_ms),
+                std::option::some(valid_until_ms),
                 &clock,
                 ts::ctx(scenario),
             );
 
         // Verify capability properties
         assert!(cap.issued_to().is_none(), 0);
-        assert!(cap.valid_from() == std::option::some(valid_from_secs), 1);
-        assert!(cap.valid_until() == std::option::some(valid_until_secs), 2);
+        assert!(cap.valid_from() == std::option::some(valid_from_ms), 1);
+        assert!(cap.valid_until() == std::option::some(valid_until_ms), 2);
 
         transfer::public_transfer(cap, record_user);
         cleanup_capability_trail_and_clock(scenario, admin_cap, trail, clock);
@@ -1017,7 +1017,7 @@ fun test_capability_valid_until_only() {
 
     let mut scenario = ts::begin(admin_user);
 
-    let valid_until_time_secs = test_utils::initial_time_for_testing() / 1000 + 10;
+    let valid_until_time_ms = test_utils::initial_time_for_testing() + 10000;
 
     // Setup
     let _trail_id = setup_trail_with_record_admin_role(&mut scenario, admin_user);
@@ -1032,7 +1032,7 @@ fun test_capability_valid_until_only() {
             .new_capability_valid_until(
                 &admin_cap,
                 &string::utf8(b"RecordAdmin"),
-                valid_until_time_secs,
+                valid_until_time_ms,
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -1040,7 +1040,7 @@ fun test_capability_valid_until_only() {
         // Verify capability properties
         assert!(cap.issued_to().is_none(), 0);
         assert!(cap.valid_from().is_none(), 1);
-        assert!(cap.valid_until() == std::option::some(valid_until_time_secs), 2);
+        assert!(cap.valid_until() == std::option::some(valid_until_time_ms), 2);
 
         transfer::public_transfer(cap, user);
         cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
@@ -1050,7 +1050,7 @@ fun test_capability_valid_until_only() {
     ts::next_tx(&mut scenario, user);
     {
         let (cap, mut trail, mut clock) = fetch_capability_trail_and_clock(&mut scenario);
-        clock.set_for_testing(valid_until_time_secs* 1000 - 1000);
+        clock.set_for_testing(valid_until_time_ms - 1000000);
 
         let test_data = test_utils::new_test_data(1, b"Test record before valid_until");
         trail.add_record(
@@ -1068,7 +1068,7 @@ fun test_capability_valid_until_only() {
     ts::next_tx(&mut scenario, user);
     {
         let (cap, mut trail, mut clock) = fetch_capability_trail_and_clock(&mut scenario);
-        clock.set_for_testing(valid_until_time_secs* 1000 + 1000);
+        clock.set_for_testing(valid_until_time_ms + 100000);
 
         // This should fail as the capability has expired
         let test_data = test_utils::new_test_data(1, b"Test record after valid_until");
@@ -1106,8 +1106,8 @@ fun test_capability_time_window() {
         &mut scenario,
         admin_user,
         user,
-        valid_from_time / 1000,
-        valid_until_time / 1000,
+        valid_from_time,
+        valid_until_time,
     );
 
     // Use the capability within the valid time window
@@ -1142,23 +1142,23 @@ fun test_capability_time_window_before_valid_from() {
 
     let mut scenario = ts::begin(admin_user);
 
-    let valid_from_time_secs = test_utils::initial_time_for_testing() / 1000 + 5;
-    let valid_until_time_secs = test_utils::initial_time_for_testing() / 1000 + 10;
+    let valid_from_time_ms = test_utils::initial_time_for_testing() + 5000;
+    let valid_until_time_ms = test_utils::initial_time_for_testing() + 10000;
 
     // Setup
     let _trail_id = setup_trail_with_record_admin_capability_and_time_window_restriction(
         &mut scenario,
         admin_user,
         user,
-        valid_from_time_secs,
-        valid_until_time_secs,
+        valid_from_time_ms,
+        valid_until_time_ms,
     );
 
     // Use the capability before valid_from
     ts::next_tx(&mut scenario, user);
     {
         let (cap, mut trail, mut clock) = fetch_capability_trail_and_clock(&mut scenario);
-        clock.set_for_testing(valid_from_time_secs* 1000 - 1000);
+        clock.set_for_testing(valid_from_time_ms - 1000);
 
         let test_data = test_utils::new_test_data(1, b"Test record before valid_from");
         trail.add_record(
@@ -1186,23 +1186,23 @@ fun test_capability_time_window_after_valid_until() {
 
     let mut scenario = ts::begin(admin_user);
 
-    let valid_from_time_secs = test_utils::initial_time_for_testing() / 1000 + 5;
-    let valid_until_time_secs = test_utils::initial_time_for_testing() / 1000 + 10;
+    let valid_from_time_ms = test_utils::initial_time_for_testing() + 5000;
+    let valid_until_time_ms = test_utils::initial_time_for_testing() + 10000;
 
     // Setup
     let _trail_id = setup_trail_with_record_admin_capability_and_time_window_restriction(
         &mut scenario,
         admin_user,
         user,
-        valid_from_time_secs,
-        valid_until_time_secs,
+        valid_from_time_ms,
+        valid_until_time_ms,
     );
 
     // Use the capability after valid_until
     ts::next_tx(&mut scenario, user);
     {
         let (cap, mut trail, mut clock) = fetch_capability_trail_and_clock(&mut scenario);
-        clock.set_for_testing(valid_until_time_secs* 1000 + 1000);
+        clock.set_for_testing(valid_until_time_ms + 1000);
 
         let test_data = test_utils::new_test_data(1, b"Test record after valid_until");
         trail.add_record(
@@ -1269,8 +1269,8 @@ fun test_is_valid_for_timestamp() {
         // Before valid_until (exclusive)
         assert!(cap.is_valid_for_timestamp(valid_until_time - 1), 3);
 
-        // At valid_until (exclusive)
-        assert!(!cap.is_valid_for_timestamp(valid_until_time), 4);
+        // At valid_until (inclusive)
+        assert!(cap.is_valid_for_timestamp(valid_until_time), 4);
 
         // After valid_until
         assert!(!cap.is_valid_for_timestamp(valid_until_time + 1), 5);
@@ -1336,8 +1336,8 @@ fun test_is_currently_valid() {
                 &admin_cap,
                 &string::utf8(b"RecordAdmin"),
                 std::option::none(),
-                std::option::some(valid_from_time / 1000),
-                std::option::some(valid_until_time / 1000),
+                std::option::some(valid_from_time),
+                std::option::some(valid_until_time),
                 &clock,
                 ts::ctx(&mut scenario),
             );
