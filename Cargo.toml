@@ -8,7 +8,7 @@ rust-version = "1.85"
 
 [workspace]
 resolver = "2"
-members = ["examples", "notarization-rs"]
+members = ["examples", "notarization-rs", "audit-trail-rs"]
 exclude = ["bindings/wasm/notarization_wasm"]
 
 [workspace.dependencies]

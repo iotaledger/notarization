@@ -1,0 +1,59 @@
+[package]
+name = "audit-trails"
+version = "0.1.0-alpha"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+keywords = ["iota", "tangle", "utxo", "audit-trail", "audit-trails"]
+license.workspace = true
+readme = "./README.md"
+repository.workspace = true
+rust-version.workspace = true
+description = "An audit trail toolkit for the IOTA Ledger."
+
+[dependencies]
+anyhow.workspace = true
+async-trait.workspace = true
+bcs.workspace = true
+iota-caip = { git = "https://github.com/iotaledger/iota-caip.git", default-features = false, features = ["iota"], optional = true }
+iota_interaction = { workspace = true, default-features = false }
+product_common = { workspace = true, default-features = false, features = ["transaction"] }
+secret-storage = { workspace = true, default-features = false }
+serde.workspace = true
+serde_json.workspace = true
+strum.workspace = true
+thiserror.workspace = true
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+iota_interaction_rust = { workspace = true, default-features = false }
+hyper = { workspace = true } # Fix for iota-sdk 1.13 issue with axum-server.
+iota-sdk = { workspace = true }
+tokio = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+iota_interaction_ts.workspace = true
+tokio = { version = "1.46.1", default-features = false, features = ["sync"] }
+
+[dev-dependencies]
+async-trait.workspace = true
+iota_interaction = { workspace = true }
+product_common = { workspace = true, features = ["transaction", "test-utils"] }
+
+[build-dependencies]
+product_common = { workspace = true, features = ["move-history-manager"] }
+
+[features]
+default = ["send-sync"]
+send-sync = [
+  "send-sync-storage",
+  "product_common/send-sync",
+  "iota_interaction/send-sync-transaction",
+]
+# Enables `Send` + `Sync` bounds for the storage traits.
+send-sync-storage = ["secret-storage/send-sync-storage"]
+# Enables an high-level integration with IOTA gas-station.
+gas-station = ["product_common/gas-station"]
+# Uses a default HTTP Client instead of a user-provided one.
+default-http-client = ["product_common/default-http-client"]
+# Enables the interaction with IOTA Resource Locators.
+irl = ["dep:iota-caip"]
