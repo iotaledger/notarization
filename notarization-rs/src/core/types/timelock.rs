@@ -8,12 +8,6 @@
 //! ## Overview
 //!
 //! The time-based locks are used to restrict the access to a notarization.
-//!
-//! ## Types
-//!
-//! - `UnlockAt`: The lock is unlocked at a specific time.
-//! - `UntilDestroyed`: The lock is locked until the notarization is destroyed.
-//! - `None`: The lock is not applied.
 
 use std::str::FromStr;
 use std::time::SystemTime;
@@ -40,20 +34,25 @@ pub struct LockMetadata {
 /// notarizations.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum TimeLock {
-    /// A lock that is unlocked at a specific time.
+    /// A lock that unlocks at a specific Unix timestamp (seconds since Unix epoch)
     UnlockAt(u32),
-    /// A lock that is unlocked when the notarization is destroyed.
+    /// Same as UnlockAt (unlocks at specific timestamp) but using milliseconds since Unix epoch
+    UnlockAtMs(u64),
+    /// A permanent lock that never unlocks until the locked object is destroyed (can't be used for `delete_lock`)
     UntilDestroyed,
+    /// A lock that never unlocks (permanent lock)
+    Infinite,
+    /// No lock applied
     None,
 }
 
 impl TimeLock {
-    /// Creates a new `TimeLock` with a specified unlock time.\
+    /// Creates a new `TimeLock::UnlockAt` with a specified unlock time.\
     ///
     /// The unlock time is the time in seconds since the Unix epoch and
     /// must be in the future.
-    pub fn new_with_ts(unlock_time: u32) -> Result<Self, Error> {
-        if unlock_time
+    pub fn new_with_ts(unlock_time_sec: u32) -> Result<Self, Error> {
+        if unlock_time_sec
             <= SystemTime::now()
                 .duration_since(SystemTime::UNIX_EPOCH)
                 .expect("system time is before the Unix epoch")
@@ -62,7 +61,24 @@ impl TimeLock {
             return Err(Error::InvalidArgument("unlock time must be in the future".to_string()));
         }
 
-        Ok(TimeLock::UnlockAt(unlock_time))
+        Ok(TimeLock::UnlockAt(unlock_time_sec))
+    }
+
+    /// Creates a new `TimeLock::UnlockAtMs` with a specified unlock time.\
+    ///
+    /// The unlock time is the time in seconds since the Unix epoch and
+    /// must be in the future.
+    pub fn new_with_ts_ms(unlock_time_ms: u64) -> Result<Self, Error> {
+        if unlock_time_ms
+          <= SystemTime::now()
+          .duration_since(SystemTime::UNIX_EPOCH)
+          .expect("system time is before the Unix epoch")
+          .as_secs() as u64
+        {
+            return Err(Error::InvalidArgument("unlock time must be in the future".to_string()));
+        }
+
+        Ok(TimeLock::UnlockAtMs(unlock_time_ms))
     }
 
     /// Creates a new `Argument` from the `TimeLock`.
@@ -71,23 +87,39 @@ impl TimeLock {
     pub(in crate::core) fn to_ptb(&self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
         match self {
             TimeLock::UnlockAt(unlock_time) => new_unlock_at(ptb, *unlock_time, package_id),
+            TimeLock::UnlockAtMs(unlock_time) => new_unlock_at_ms(ptb, *unlock_time, package_id),
             TimeLock::UntilDestroyed => new_until_destroyed(ptb, package_id),
+            TimeLock::Infinite => new_infinite(ptb, package_id),
             TimeLock::None => new_none(ptb, package_id),
         }
     }
 }
 
 /// Creates a new `Argument` for the `unlock_at` function.
-pub(super) fn new_unlock_at(ptb: &mut Ptb, unlock_time: u32, package_id: ObjectID) -> Result<Argument, Error> {
+pub(super) fn new_unlock_at(ptb: &mut Ptb, unlock_time_sec: u32, package_id: ObjectID) -> Result<Argument, Error> {
     let clock = move_utils::get_clock_ref(ptb);
-    let unlock_time = move_utils::ptb_pure(ptb, "unlock_time", unlock_time)?;
+    let unlock_time_sec = move_utils::ptb_pure(ptb, "unlock_time", unlock_time_sec)?;
 
     Ok(ptb.programmable_move_call(
         package_id,
         ident_str!("timelock").into(),
         ident_str!("unlock_at").into(),
         vec![],
-        vec![unlock_time, clock],
+        vec![unlock_time_sec, clock],
+    ))
+}
+
+/// Creates a new `Argument` for the `unlock_at` function.
+pub(super) fn new_unlock_at_ms(ptb: &mut Ptb, unlock_time_ms: u64, package_id: ObjectID) -> Result<Argument, Error> {
+    let clock = move_utils::get_clock_ref(ptb);
+    let unlock_time_ms = move_utils::ptb_pure(ptb, "unlock_time", unlock_time_ms)?;
+
+    Ok(ptb.programmable_move_call(
+        package_id,
+        ident_str!("timelock").into(),
+        ident_str!("unlock_at").into(),
+        vec![],
+        vec![unlock_time_ms, clock],
     ))
 }
 
@@ -97,6 +129,17 @@ pub(super) fn new_until_destroyed(ptb: &mut Ptb, package_id: ObjectID) -> Result
         package_id,
         ident_str!("timelock").into(),
         ident_str!("until_destroyed").into(),
+        vec![],
+        vec![],
+    ))
+}
+
+/// Creates a new `Argument` for the `until_destroyed` function.
+pub(super) fn new_infinite(ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
+    Ok(ptb.programmable_move_call(
+        package_id,
+        ident_str!("timelock").into(),
+        ident_str!("infinite").into(),
         vec![],
         vec![],
     ))

@@ -5,14 +5,14 @@
     "mainnet": "6364aad5"
   },
   "envs": {
-    "e678123a": [
-      "0x0d88bcecde97585d50207a029a85d7ea0bacf73ab741cbaa975a6e279251033a"
+    "2304aa97": [
+      "0x00412bd469b7f980227c6c574090348239852e43aa07818b315854fdd8a2d25f"
     ],
     "6364aad5": [
       "0x909ce9dcd9a5e97b7b8884fac8e018fad9dece348bf73837379b8694ff684cf3"
     ],
-    "2304aa97": [
-      "0x00412bd469b7f980227c6c574090348239852e43aa07818b315854fdd8a2d25f"
+    "e678123a": [
+      "0x0d88bcecde97585d50207a029a85d7ea0bacf73ab741cbaa975a6e279251033a"
     ]
   }
 }
