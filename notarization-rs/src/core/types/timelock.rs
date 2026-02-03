@@ -71,9 +71,9 @@ impl TimeLock {
     pub fn new_with_ts_ms(unlock_time_ms: u64) -> Result<Self, Error> {
         if unlock_time_ms
             <= SystemTime::now()
-                .duration_since(SystemTime::UNIX_EPOCH)
-                .expect("system time is before the Unix epoch")
-                .as_secs() as u64
+          .duration_since(SystemTime::UNIX_EPOCH)
+          .expect("system time is before the Unix epoch")
+          .as_millis() as u64
         {
             return Err(Error::InvalidArgument("unlock time must be in the future".to_string()));
         }
