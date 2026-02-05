@@ -38,7 +38,7 @@ fun test_role_based_permission_delegation() {
 
         // Verify admin capability was created with correct role and trail reference
         assert!(admin_cap.role() == initial_admin_role_name(), 0);
-        assert!(admin_cap.security_vault_id() == trail_id, 1);
+        assert!(admin_cap.target_key() == trail_id, 1);
 
         // Transfer the admin capability to the user
         transfer::public_transfer(admin_cap, admin_user);
@@ -91,33 +91,31 @@ fun test_role_based_permission_delegation() {
     {
         let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
-        let role_admin_cap = trail
-            .roles_mut()
-            .new_capability_without_restrictions(
-                &admin_cap,
-                &string::utf8(b"RoleAdmin"),
-                &clock,
-                ts::ctx(&mut scenario),
-            );
+        let role_admin_cap = test_utils::new_capability_without_restrictions(
+            trail.roles_mut(),
+            &admin_cap,
+            &string::utf8(b"RoleAdmin"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
 
         // Verify the capability was created with correct role and trail ID
         assert!(role_admin_cap.role() == string::utf8(b"RoleAdmin"), 6);
-        assert!(role_admin_cap.security_vault_id() == trail_id, 7);
+        assert!(role_admin_cap.target_key() == trail_id, 7);
 
         iota::transfer::public_transfer(role_admin_cap, role_admin_user);
 
-        let cap_admin_cap = trail
-            .roles_mut()
-            .new_capability_without_restrictions(
-                &admin_cap,
-                &string::utf8(b"CapAdmin"),
-                &clock,
-                ts::ctx(&mut scenario),
-            );
+        let cap_admin_cap = test_utils::new_capability_without_restrictions(
+            trail.roles_mut(),
+            &admin_cap,
+            &string::utf8(b"CapAdmin"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
 
         // Verify the capability was created with correct role and trail ID
         assert!(cap_admin_cap.role() == string::utf8(b"CapAdmin"), 8);
-        assert!(cap_admin_cap.security_vault_id() == trail_id, 9);
+        assert!(cap_admin_cap.target_key() == trail_id, 9);
 
         iota::transfer::public_transfer(cap_admin_cap, cap_admin_user);
 
@@ -158,18 +156,17 @@ fun test_role_based_permission_delegation() {
         // Verify CapAdmin has the correct role
         assert!(cap_admin_cap.role() == string::utf8(b"CapAdmin"), 13);
 
-        let record_admin_cap = trail
-            .roles_mut()
-            .new_capability_without_restrictions(
-                &cap_admin_cap,
-                &string::utf8(b"RecordAdmin"),
-                &clock,
-                ts::ctx(&mut scenario),
-            );
+        let record_admin_cap = test_utils::new_capability_without_restrictions(
+            trail.roles_mut(),
+            &cap_admin_cap,
+            &string::utf8(b"RecordAdmin"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
 
         // Verify the capability was created with correct role and trail ID
         assert!(record_admin_cap.role() == string::utf8(b"RecordAdmin"), 14);
-        assert!(record_admin_cap.security_vault_id() == trail_id, 15);
+        assert!(record_admin_cap.target_key() == trail_id, 15);
 
         iota::transfer::public_transfer(record_admin_cap, record_admin_user);
 
@@ -308,14 +305,13 @@ fun test_create_role_permission_denied() {
                 ts::ctx(&mut scenario),
             );
 
-        let user_cap = trail
-            .roles_mut()
-            .new_capability_without_restrictions(
-                &admin_cap,
-                &string::utf8(b"NoRolesPerm"),
-                &clock,
-                ts::ctx(&mut scenario),
-            );
+        let user_cap = test_utils::new_capability_without_restrictions(
+            trail.roles_mut(),
+            &admin_cap,
+            &string::utf8(b"NoRolesPerm"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
 
         transfer::public_transfer(user_cap, user);
         cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
@@ -393,14 +389,13 @@ fun test_delete_role_permission_denied() {
                 ts::ctx(&mut scenario),
             );
 
-        let user_cap = trail
-            .roles_mut()
-            .new_capability_without_restrictions(
-                &admin_cap,
-                &string::utf8(b"NoDeleteRolePerm"),
-                &clock,
-                ts::ctx(&mut scenario),
-            );
+        let user_cap = test_utils::new_capability_without_restrictions(
+            trail.roles_mut(),
+            &admin_cap,
+            &string::utf8(b"NoDeleteRolePerm"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
 
         transfer::public_transfer(user_cap, user);
         cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
@@ -470,14 +465,13 @@ fun test_update_role_permissions_permission_denied() {
                 ts::ctx(&mut scenario),
             );
 
-        let user_cap = trail
-            .roles_mut()
-            .new_capability_without_restrictions(
-                &admin_cap,
-                &string::utf8(b"NoUpdateRolePerm"),
-                &clock,
-                ts::ctx(&mut scenario),
-            );
+        let user_cap = test_utils::new_capability_without_restrictions(
+            trail.roles_mut(),
+            &admin_cap,
+            &string::utf8(b"NoUpdateRolePerm"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
 
         transfer::public_transfer(user_cap, user);
         cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
