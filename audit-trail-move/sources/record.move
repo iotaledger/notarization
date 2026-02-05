@@ -3,13 +3,14 @@
 
 /// Record module for audit trail entries
 ///
-/// A Record represents a single entry in an audit trail, stored in a LinkedTable
-/// and addressed by trail_id + sequence_number.
+/// A Record represents a single entry in an audit trail, stored in a
+/// LinkedTable and addressed by trail_id + sequence_number.
 module audit_trail::record;
 
+use audit_trail::record_correction::RecordCorrection;
 use std::string::String;
 
-/// A single record in the audit trail (stored in LinkedTable, no ObjectID)
+/// A single record in the audit trail
 public struct Record<D: store + copy> has store {
     /// Arbitrary data stored on-chain
     stored_data: D,
@@ -21,17 +22,20 @@ public struct Record<D: store + copy> has store {
     added_by: address,
     /// When this record was added (milliseconds)
     added_at: u64,
+    /// Correction tracker for this record
+    correction: RecordCorrection,
 }
 
 // ===== Constructors =====
 
-/// Create a new record (package-private, called by audit_trails module)
+/// Create a new record
 public(package) fun new<D: store + copy>(
     stored_data: D,
     record_metadata: Option<String>,
     sequence_number: u64,
     added_by: address,
     added_at: u64,
+    correction: RecordCorrection,
 ): Record<D> {
     Record {
         stored_data,
@@ -39,6 +43,7 @@ public(package) fun new<D: store + copy>(
         sequence_number,
         added_by,
         added_at,
+        correction,
     }
 }
 
@@ -69,10 +74,12 @@ public fun added_at<D: store + copy>(record: &Record<D>): u64 {
     record.added_at
 }
 
-// ===== Destructors =====
+/// Get the correction tracker for this record
+public fun correction<D: store + copy>(record: &Record<D>): &RecordCorrection {
+    &record.correction
+}
 
-/// Destroy a record (package-private, called by audit_trail module when deleting)
-/// Note: D must have `drop` ability to allow deletion
+/// Destroy a record
 public(package) fun destroy<D: store + copy + drop>(record: Record<D>) {
     let Record {
         stored_data: _,
@@ -80,5 +87,6 @@ public(package) fun destroy<D: store + copy + drop>(record: Record<D>) {
         sequence_number: _,
         added_by: _,
         added_at: _,
+        correction: _,
     } = record;
 }
