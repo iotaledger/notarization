@@ -12,6 +12,7 @@ use audit_trail::{
     locking::{Self, LockingConfig, LockingWindow, set_delete_record_lock},
     permission::{Self, Permission},
     record::{Self, Record},
+    record_correction,
     role_map::{Self, RoleMap}
 };
 use iota::{clock::{Self, Clock}, event, linked_table::{Self, LinkedTable}};
@@ -155,6 +156,7 @@ public fun create<D: store + copy>(
             0,
             creator,
             timestamp,
+            record_correction::new(),
         );
 
         linked_table::push_back(&mut records, 0, record);
@@ -278,6 +280,7 @@ public fun add_record<D: store + copy>(
         seq,
         caller,
         timestamp,
+        record_correction::new(),
     );
 
     linked_table::push_back(&mut trail.records, seq, record);
