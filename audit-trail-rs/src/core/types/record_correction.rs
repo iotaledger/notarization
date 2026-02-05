@@ -1,24 +1,26 @@
 // Copyright 2020-2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+use std::collections::HashSet;
+
 use serde::{Deserialize, Serialize};
 
 /// Bidirectional correction tracking for audit records.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RecordCorrection {
-    pub replaces: Vec<u64>,
+    pub replaces: HashSet<u64>,
     pub is_replaced_by: Option<u64>,
 }
 
 impl RecordCorrection {
     pub fn new() -> Self {
         Self {
-            replaces: Vec::new(),
+            replaces: HashSet::new(),
             is_replaced_by: None,
         }
     }
 
-    pub fn with_replaces(replaces: Vec<u64>) -> Self {
+    pub fn with_replaces(replaces: HashSet<u64>) -> Self {
         Self {
             replaces,
             is_replaced_by: None,
