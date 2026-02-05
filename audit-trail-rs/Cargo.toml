@@ -1,5 +1,5 @@
 [package]
-name = "audit-trails"
+name = "audit_trails"
 version = "0.1.0-alpha"
 authors.workspace = true
 edition.workspace = true
