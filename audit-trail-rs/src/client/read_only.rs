@@ -1,22 +1,24 @@
-// Copyright 2020-2025 IOTA Stiftung
+// Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
 //! A read-only client for interacting with IOTA Audit Trail module objects.
-//!
-//! This client provides minimal setup to resolve the audit trail package ID
-//! and basic access to the underlying IOTA client adapter.
 
 use std::ops::Deref;
 
 #[cfg(not(target_arch = "wasm32"))]
 use iota_interaction::IotaClient;
-use iota_interaction::types::base_types::ObjectID;
+use iota_interaction::IotaClientTrait;
+use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::transaction::{ProgrammableTransaction, TransactionKind};
 #[cfg(target_arch = "wasm32")]
 use iota_interaction_ts::bindings::WasmIotaClient;
+use product_common::core_client::CoreClientReadOnly;
 use product_common::network_name::NetworkName;
 use product_common::package_registry::Env;
+use serde::de::DeserializeOwned;
 
 use super::network_id;
+use crate::core::handler::{AuditTrailHandle, AuditTrailReadOnly};
 use crate::error::Error;
 use crate::iota_interaction_adapter::IotaClientAdapter;
 use crate::package;
@@ -60,6 +62,11 @@ impl AuditTrailClientReadOnly {
     /// Returns a reference to the underlying IOTA client adapter.
     pub const fn iota_client(&self) -> &IotaClientAdapter {
         &self.iota_client
+    }
+
+    /// Returns a typed handle bound to a trail id.
+    pub fn trail<'a>(&'a self, trail_id: ObjectID) -> AuditTrailHandle<'a, Self> {
+        AuditTrailHandle::new(self, trail_id)
     }
 
     /// Attempts to create a new [`AuditTrailClientReadOnly`] from a given IOTA client.
@@ -124,5 +131,50 @@ impl AuditTrailClientReadOnly {
         }
 
         Self::new_internal(client, network).await
+    }
+}
+
+#[async_trait::async_trait]
+impl CoreClientReadOnly for AuditTrailClientReadOnly {
+    fn package_id(&self) -> ObjectID {
+        self.audit_trail_pkg_id
+    }
+
+    fn network_name(&self) -> &NetworkName {
+        &self.network
+    }
+
+    fn client_adapter(&self) -> &IotaClientAdapter {
+        &self.iota_client
+    }
+}
+
+#[async_trait::async_trait]
+impl AuditTrailReadOnly for AuditTrailClientReadOnly {
+    async fn execute_read_only_transaction<T: DeserializeOwned>(
+        &self,
+        tx: ProgrammableTransaction,
+    ) -> Result<T, Error> {
+        let inspection_result = self
+            .iota_client
+            .read_api()
+            .dev_inspect_transaction_block(IotaAddress::ZERO, TransactionKind::programmable(tx), None, None, None)
+            .await
+            .map_err(|err| Error::UnexpectedApiResponse(format!("Failed to inspect transaction block: {err}")))?;
+
+        let execution_results = inspection_result
+            .results
+            .ok_or_else(|| Error::UnexpectedApiResponse("DevInspectResults missing 'results' field".to_string()))?;
+
+        let (return_value_bytes, _) = execution_results
+            .first()
+            .ok_or_else(|| Error::UnexpectedApiResponse("Execution results list is empty".to_string()))?
+            .return_values
+            .first()
+            .ok_or_else(|| Error::InvalidArgument("should have at least one return value".to_string()))?;
+
+        let deserialized_output = bcs::from_bytes::<T>(return_value_bytes)?;
+
+        Ok(deserialized_output)
     }
 }

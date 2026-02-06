@@ -3,6 +3,9 @@
 
 //! Core types and builders for audit trails.
 
+pub mod builder;
+pub mod handler;
+pub(crate) mod move_utils;
+pub(crate) mod operations;
+pub mod transactions;
 pub mod types;
-
-pub use types::*;

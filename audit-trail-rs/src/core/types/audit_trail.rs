@@ -1,4 +1,4 @@
-// Copyright 2020-2025 IOTA Stiftung
+// Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
 use iota_interaction::types::base_types::IotaAddress;
@@ -13,7 +13,7 @@ use super::role_map::RoleMap;
 
 /// An audit trail stored on-chain.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct AuditTrail<D = super::record::RecordData> {
+pub struct AuditTrail<D = super::record::Data> {
     pub id: UID,
     pub creator: IotaAddress,
     pub created_at: u64,
