@@ -11,7 +11,7 @@ use audit_trail::{
     locking::{Self, LockingConfig, LockingWindow, set_delete_record_lock},
     permission::{Self, Permission},
     record::{Self, Record},
-    record_correction,
+    record_correction
 };
 use iota::{clock::{Self, Clock}, event, linked_table::{Self, LinkedTable}};
 use std::string::String;
@@ -78,7 +78,6 @@ public struct AuditTrailCreated has copy, drop {
     trail_id: ID,
     creator: address,
     timestamp: u64,
-    has_initial_record: bool,
 }
 
 /// Emitted when the audit trail is deleted
@@ -146,7 +145,6 @@ public fun create<D: store + copy>(
 
     let mut records = linked_table::new<u64, Record<D>>(ctx);
     let mut sequence_number = 0;
-    let has_initial_record = initial_data.is_some();
 
     if (initial_data.is_some()) {
         let record = record::new(
@@ -210,7 +208,6 @@ public fun create<D: store + copy>(
         trail_id,
         creator,
         timestamp,
-        has_initial_record,
     });
 
     (admin_cap, trail_id)

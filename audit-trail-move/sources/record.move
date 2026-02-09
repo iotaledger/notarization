@@ -13,9 +13,9 @@ use std::string::String;
 /// A single record in the audit trail
 public struct Record<D: store + copy> has store {
     /// Arbitrary data stored on-chain
-    stored_data: D,
+    data: D,
     /// Optional metadata for this specific record
-    record_metadata: Option<String>,
+    metadata: Option<String>,
     /// Position in the trail (0-indexed, never reused)
     sequence_number: u64,
     /// Who added this record
@@ -30,16 +30,16 @@ public struct Record<D: store + copy> has store {
 
 /// Create a new record
 public(package) fun new<D: store + copy>(
-    stored_data: D,
-    record_metadata: Option<String>,
+    data: D,
+    metadata: Option<String>,
     sequence_number: u64,
     added_by: address,
     added_at: u64,
     correction: RecordCorrection,
 ): Record<D> {
     Record {
-        stored_data,
-        record_metadata,
+        data,
+        metadata,
         sequence_number,
         added_by,
         added_at,
@@ -51,12 +51,12 @@ public(package) fun new<D: store + copy>(
 
 /// Get the stored data from a record
 public fun data<D: store + copy>(record: &Record<D>): &D {
-    &record.stored_data
+    &record.data
 }
 
 /// Get the record metadata
 public fun metadata<D: store + copy>(record: &Record<D>): &Option<String> {
-    &record.record_metadata
+    &record.metadata
 }
 
 /// Get the record sequence number
@@ -82,8 +82,8 @@ public fun correction<D: store + copy>(record: &Record<D>): &RecordCorrection {
 /// Destroy a record
 public(package) fun destroy<D: store + copy + drop>(record: Record<D>) {
     let Record {
-        stored_data: _,
-        record_metadata: _,
+        data: _,
+        metadata: _,
         sequence_number: _,
         added_by: _,
         added_at: _,
