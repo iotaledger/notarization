@@ -24,12 +24,7 @@ impl<'a, C> TrailRoles<'a, C> {
     }
 
     /// Creates a new role with the provided permissions.
-    pub async fn create(
-        &self,
-        _cap_id: ObjectID,
-        _name: impl Into<String>,
-        _permissions: PermissionSet,
-    ) -> Result<(), Error>
+    pub async fn create(&self, _name: impl Into<String>, _permissions: PermissionSet) -> Result<(), Error>
     where
         C: AuditTrailFull,
     {
@@ -37,12 +32,7 @@ impl<'a, C> TrailRoles<'a, C> {
     }
 
     /// Updates permissions for an existing role.
-    pub async fn update(
-        &self,
-        _cap_id: ObjectID,
-        _name: impl Into<String>,
-        _permissions: PermissionSet,
-    ) -> Result<(), Error>
+    pub async fn update(&self, _name: impl Into<String>, _permissions: PermissionSet) -> Result<(), Error>
     where
         C: AuditTrailFull,
     {
@@ -50,7 +40,7 @@ impl<'a, C> TrailRoles<'a, C> {
     }
 
     /// Deletes an existing role.
-    pub async fn delete(&self, _cap_id: ObjectID, _name: impl Into<String>) -> Result<(), Error>
+    pub async fn delete(&self, _name: impl Into<String>) -> Result<(), Error>
     where
         C: AuditTrailFull,
     {
@@ -67,11 +57,7 @@ pub struct RoleHandle<'a, C> {
 
 impl<'a, C> RoleHandle<'a, C> {
     pub(crate) fn new(client: &'a C, trail_id: ObjectID, name: String) -> Self {
-        Self {
-            client,
-            trail_id,
-            name,
-        }
+        Self { client, trail_id, name }
     }
 
     pub fn name(&self) -> &str {
@@ -79,7 +65,7 @@ impl<'a, C> RoleHandle<'a, C> {
     }
 
     /// Updates permissions for this role.
-    pub async fn update_permissions(&self, _cap_id: ObjectID, _permissions: PermissionSet) -> Result<(), Error>
+    pub async fn update_permissions(&self, _permissions: PermissionSet) -> Result<(), Error>
     where
         C: AuditTrailFull,
     {
@@ -87,7 +73,7 @@ impl<'a, C> RoleHandle<'a, C> {
     }
 
     /// Deletes this role.
-    pub async fn delete(&self, _cap_id: ObjectID) -> Result<(), Error>
+    pub async fn delete(&self) -> Result<(), Error>
     where
         C: AuditTrailFull,
     {

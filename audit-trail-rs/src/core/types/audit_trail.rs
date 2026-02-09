@@ -5,6 +5,8 @@ use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::id::UID;
 use serde::{Deserialize, Serialize};
 
+use crate::core::types::Data;
+
 use super::locking::LockingConfig;
 use super::metadata::ImmutableMetadata;
 use super::permission::Permission;
@@ -13,7 +15,7 @@ use super::role_map::RoleMap;
 
 /// An audit trail stored on-chain.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct AuditTrail<D = super::record::Data> {
+pub struct AuditTrail<D = Data> {
     pub id: UID,
     pub creator: IotaAddress,
     pub created_at: u64,

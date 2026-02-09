@@ -92,13 +92,7 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
         )))
     }
 
-    pub async fn correct(
-        &self,
-        _cap_id: ObjectID,
-        _replaces: Vec<u64>,
-        _data: D,
-        _metadata: Option<String>,
-    ) -> Result<(), Error>
+    pub async fn correct(&self, _replaces: Vec<u64>, _data: D, _metadata: Option<String>) -> Result<(), Error>
     where
         C: AuditTrailFull,
     {

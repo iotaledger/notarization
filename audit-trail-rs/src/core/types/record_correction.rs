@@ -6,20 +6,13 @@ use std::collections::HashSet;
 use serde::{Deserialize, Serialize};
 
 /// Bidirectional correction tracking for audit records.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct RecordCorrection {
     pub replaces: HashSet<u64>,
     pub is_replaced_by: Option<u64>,
 }
 
 impl RecordCorrection {
-    pub fn new() -> Self {
-        Self {
-            replaces: HashSet::new(),
-            is_replaced_by: None,
-        }
-    }
-
     pub fn with_replaces(replaces: HashSet<u64>) -> Self {
         Self {
             replaces,

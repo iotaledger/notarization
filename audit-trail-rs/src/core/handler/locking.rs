@@ -18,14 +18,14 @@ impl<'a, C> TrailLocking<'a, C> {
         Self { client, trail_id }
     }
 
-    pub async fn update(&self, _cap_id: ObjectID, _config: LockingConfig) -> Result<(), Error>
+    pub async fn update(&self, _config: LockingConfig) -> Result<(), Error>
     where
         C: AuditTrailFull,
     {
         Err(Error::NotImplemented("TrailLocking::update"))
     }
 
-    pub async fn update_delete_record_window(&self, _cap_id: ObjectID, _window: LockingWindow) -> Result<(), Error>
+    pub async fn update_delete_record_window(&self, _window: LockingWindow) -> Result<(), Error>
     where
         C: AuditTrailFull,
     {

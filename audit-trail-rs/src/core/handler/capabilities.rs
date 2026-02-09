@@ -17,14 +17,14 @@ impl<'a, C> TrailCapabilities<'a, C> {
         Self { client, trail_id }
     }
 
-    pub async fn issue(&self, _cap_id: ObjectID, _role: String) -> Result<(), Error>
+    pub async fn issue(&self, _role: String) -> Result<(), Error>
     where
         C: AuditTrailFull,
     {
         Err(Error::NotImplemented("TrailCapabilities::issue"))
     }
 
-    pub async fn revoke(&self, _cap_id: ObjectID, _capability_id: ObjectID) -> Result<(), Error>
+    pub async fn revoke(&self, _capability_id: ObjectID) -> Result<(), Error>
     where
         C: AuditTrailFull,
     {
