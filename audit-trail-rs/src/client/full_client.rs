@@ -143,7 +143,7 @@ impl<S> AuditTrailClient<S> {
 
     /// Creates a builder for an audit trail.
     pub fn create_trail(&self) -> AuditTrailBuilder {
-        AuditTrailBuilder::new()
+        AuditTrailBuilder::default()
     }
 
     pub async fn migrate(&self, _trail_id: ObjectID) -> Result<(), Error> {

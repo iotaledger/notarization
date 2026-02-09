@@ -4,7 +4,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Defines a locking window (time or count based).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct LockingWindow {
     pub time_window_seconds: Option<u64>,
     pub count_window: Option<u64>,
@@ -34,7 +34,7 @@ impl LockingWindow {
 }
 
 /// Locking configuration for the audit trail.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct LockingConfig {
     pub delete_record_lock: LockingWindow,
 }

@@ -10,7 +10,7 @@ use super::types::{Data, ImmutableMetadata, LockingConfig};
 use crate::error::Error;
 
 /// Builder for creating an audit trail.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct AuditTrailBuilder {
     pub initial_data: Option<Data>,
     pub initial_record_metadata: Option<String>,
@@ -20,17 +20,6 @@ pub struct AuditTrailBuilder {
 }
 
 impl AuditTrailBuilder {
-    /// Creates a new builder.
-    pub fn new() -> Self {
-        Self {
-            initial_data: None,
-            initial_record_metadata: None,
-            locking_config: LockingConfig::none(),
-            trail_metadata: None,
-            updatable_metadata: None,
-        }
-    }
-
     /// Sets the initial record data and optional record metadata.
     pub fn with_initial_record(mut self, data: Data, metadata: Option<String>) -> Self {
         self.initial_data = Some(data);

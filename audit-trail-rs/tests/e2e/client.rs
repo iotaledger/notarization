@@ -5,8 +5,7 @@ use std::ops::Deref;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use audit_trails::{AuditTrailClient, AuditTrailClientReadOnly};
-use audit_trails::core::types::Data;
+use audit_trails::AuditTrailClient;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::crypto::PublicKey;
 use iota_interaction::{IOTA_LOCAL_NETWORK_URL, IotaClientBuilder, KeytoolSigner};
@@ -18,7 +17,6 @@ use product_common::test_utils::{
 };
 
 pub const ENV_PACKAGE_ID: &str = "AUDIT_TRAIL_PACKAGE_ID";
-pub const ENV_RECORD_TYPE: &str = "AUDIT_TRAIL_RECORD_TYPE";
 
 /// Script file for publishing the package.
 pub const PUBLISH_SCRIPT_FILE: &str = concat!(
@@ -61,9 +59,9 @@ impl TestClient {
             request_funds(&address).await?;
         }
 
-        let read_client = AuditTrailClientReadOnly::new_with_pkg_id(client, package_id).await?;
         let signer = KeytoolSigner::builder().build()?;
-        let client = AuditTrailClient::new(read_client, signer).await?;
+        let client = AuditTrailClient::from_iota_client(client.clone(), Some(package_id)).await?;
+        let client = client.with_signer(signer).await?;
 
         Ok(TestClient {
             client: Arc::new(client),
@@ -96,16 +94,5 @@ impl CoreClient<KeytoolSigner> for TestClient {
 
     fn sender_public_key(&self) -> &PublicKey {
         self.client.sender_public_key()
-    }
-}
-
-pub fn record_data_from_env() -> Data {
-    match std::env::var(ENV_RECORD_TYPE).as_deref() {
-        Ok("bytes") => Data::bytes(b"audit-trail-test".to_vec()),
-        Ok("text") | Err(_) => Data::text("audit-trail-test"),
-        Ok(other) => {
-            eprintln!("Unknown {ENV_RECORD_TYPE} value '{other}', defaulting to text.");
-            Data::text("audit-trail-test")
-        }
     }
 }
