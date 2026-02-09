@@ -5,7 +5,7 @@ use iota_interaction::ident_str;
 use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::types::transaction::ProgrammableTransaction;
 
-use crate::core::move_utils;
+use crate::core::utils;
 use crate::core::types::{Data, ImmutableMetadata, LockingConfig};
 use crate::error::Error;
 
@@ -23,19 +23,19 @@ impl CreateOps {
         let mut ptb = iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder::new();
 
         let initial_data_arg = match initial_data {
-            Some(data) => move_utils::ptb_pure(&mut ptb, "initial_data", Some(data))?,
-            None => move_utils::ptb_pure::<Option<Data>>(&mut ptb, "initial_data", None)?,
+            Some(data) => utils::ptb_pure(&mut ptb, "initial_data", Some(data))?,
+            None => utils::ptb_pure::<Option<Data>>(&mut ptb, "initial_data", None)?,
         };
 
         let initial_record_metadata =
-            move_utils::ptb_pure(&mut ptb, "initial_record_metadata", initial_record_metadata)?;
-        let locking_config = move_utils::ptb_pure(&mut ptb, "locking_config", locking_config)?;
+            utils::ptb_pure(&mut ptb, "initial_record_metadata", initial_record_metadata)?;
+        let locking_config = utils::ptb_pure(&mut ptb, "locking_config", locking_config)?;
         let trail_metadata = match trail_metadata {
-            Some(metadata) => move_utils::ptb_pure(&mut ptb, "trail_metadata", Some(metadata))?,
-            None => move_utils::ptb_pure::<Option<ImmutableMetadata>>(&mut ptb, "trail_metadata", None)?,
+            Some(metadata) => utils::ptb_pure(&mut ptb, "trail_metadata", Some(metadata))?,
+            None => utils::ptb_pure::<Option<ImmutableMetadata>>(&mut ptb, "trail_metadata", None)?,
         };
-        let updatable_metadata = move_utils::ptb_pure(&mut ptb, "updatable_metadata", updatable_metadata)?;
-        let clock = move_utils::get_clock_ref(&mut ptb);
+        let updatable_metadata = utils::ptb_pure(&mut ptb, "updatable_metadata", updatable_metadata)?;
+        let clock = utils::get_clock_ref(&mut ptb);
 
         ptb.programmable_move_call(
             package_id,

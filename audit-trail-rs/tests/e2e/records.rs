@@ -18,10 +18,6 @@ async fn add_and_fetch_record_roundtrip() -> anyhow::Result<()> {
         .output;
 
     let trail_id = created.trail_id;
-    assert!(
-        created.admin_capability_id.is_some(),
-        "admin capability id should be returned"
-    );
 
     let output = client
         .trail(trail_id)

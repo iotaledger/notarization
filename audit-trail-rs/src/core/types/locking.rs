@@ -3,6 +3,32 @@
 
 use serde::{Deserialize, Serialize};
 
+/// Locking configuration for the audit trail.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct LockingConfig {
+    pub delete_record_lock: LockingWindow,
+}
+
+impl LockingConfig {
+    pub fn none() -> Self {
+        Self {
+            delete_record_lock: LockingWindow::none(),
+        }
+    }
+
+    pub fn time_based(seconds: u64) -> Self {
+        Self {
+            delete_record_lock: LockingWindow::time_based(seconds),
+        }
+    }
+
+    pub fn count_based(count: u64) -> Self {
+        Self {
+            delete_record_lock: LockingWindow::count_based(count),
+        }
+    }
+}
+
 /// Defines a locking window (time or count based).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct LockingWindow {
@@ -29,32 +55,6 @@ impl LockingWindow {
         Self {
             time_window_seconds: None,
             count_window: Some(count),
-        }
-    }
-}
-
-/// Locking configuration for the audit trail.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
-pub struct LockingConfig {
-    pub delete_record_lock: LockingWindow,
-}
-
-impl LockingConfig {
-    pub fn none() -> Self {
-        Self {
-            delete_record_lock: LockingWindow::none(),
-        }
-    }
-
-    pub fn time_based(seconds: u64) -> Self {
-        Self {
-            delete_record_lock: LockingWindow::time_based(seconds),
-        }
-    }
-
-    pub fn count_based(count: u64) -> Self {
-        Self {
-            delete_record_lock: LockingWindow::count_based(count),
         }
     }
 }

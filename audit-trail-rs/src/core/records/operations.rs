@@ -9,7 +9,7 @@ use iota_interaction::types::transaction::{Argument, ObjectArg, ProgrammableTran
 use iota_interaction::{OptionalSync, ident_str};
 use product_common::core_client::CoreClientReadOnly;
 
-use crate::core::move_utils;
+use crate::core::utils;
 use crate::core::types::{Capability, Data};
 use crate::error::Error;
 
@@ -28,11 +28,11 @@ impl RecordsOps {
     {
         Self::build_trail_transaction_for_owner(client, trail_id, owner, "add_record", |ptb| {
             let data_arg = match data {
-                Data::Bytes(bytes) => move_utils::ptb_pure(ptb, "stored_data", bytes)?,
-                Data::Text(text) => move_utils::ptb_pure(ptb, "stored_data", text)?,
+                Data::Bytes(bytes) => utils::ptb_pure(ptb, "stored_data", bytes)?,
+                Data::Text(text) => utils::ptb_pure(ptb, "stored_data", text)?,
             };
-            let metadata = move_utils::ptb_pure(ptb, "record_metadata", record_metadata)?;
-            let clock = move_utils::get_clock_ref(ptb);
+            let metadata = utils::ptb_pure(ptb, "record_metadata", record_metadata)?;
+            let clock = utils::get_clock_ref(ptb);
             Ok(vec![data_arg, metadata, clock])
         })
         .await
@@ -48,8 +48,8 @@ impl RecordsOps {
         C: CoreClientReadOnly + OptionalSync,
     {
         Self::build_trail_transaction_for_owner(client, trail_id, owner, "delete_record", |ptb| {
-            let seq = move_utils::ptb_pure(ptb, "sequence_number", sequence_number)?;
-            let clock = move_utils::get_clock_ref(ptb);
+            let seq = utils::ptb_pure(ptb, "sequence_number", sequence_number)?;
+            let clock = utils::get_clock_ref(ptb);
             Ok(vec![seq, clock])
         })
         .await
@@ -64,7 +64,7 @@ impl RecordsOps {
         C: CoreClientReadOnly + OptionalSync,
     {
         Self::build_read_only_transaction(client, trail_id, "get_record", |ptb| {
-            let seq = move_utils::ptb_pure(ptb, "sequence_number", sequence_number)?;
+            let seq = utils::ptb_pure(ptb, "sequence_number", sequence_number)?;
             Ok(vec![seq])
         })
         .await
@@ -79,7 +79,7 @@ impl RecordsOps {
         C: CoreClientReadOnly + OptionalSync,
     {
         Self::build_read_only_transaction(client, trail_id, "has_record", |ptb| {
-            let seq = move_utils::ptb_pure(ptb, "sequence_number", sequence_number)?;
+            let seq = utils::ptb_pure(ptb, "sequence_number", sequence_number)?;
             Ok(vec![seq])
         })
         .await
@@ -134,8 +134,8 @@ impl RecordsOps {
     {
         let mut ptb = ProgrammableTransactionBuilder::new();
 
-        let tag = vec![move_utils::get_type_tag(client, &trail_id).await?];
-        let trail_arg = move_utils::get_shared_object_arg(client, &trail_id, true).await?;
+        let tag = vec![utils::get_type_tag(client, &trail_id).await?];
+        let trail_arg = utils::get_shared_object_arg(client, &trail_id, true).await?;
 
         let mut args = vec![
             ptb.obj(trail_arg)
@@ -167,7 +167,7 @@ impl RecordsOps {
             })?;
 
         let object_id = *cap.id.object_id();
-        move_utils::get_object_ref_by_id(client, &object_id).await
+        utils::get_object_ref_by_id(client, &object_id).await
     }
 
     async fn build_read_only_transaction<C, F>(
@@ -182,8 +182,8 @@ impl RecordsOps {
     {
         let mut ptb = ProgrammableTransactionBuilder::new();
 
-        let tag = vec![move_utils::get_type_tag(client, &trail_id).await?];
-        let trail_arg = move_utils::get_shared_object_arg(client, &trail_id, false).await?;
+        let tag = vec![utils::get_type_tag(client, &trail_id).await?];
+        let trail_arg = utils::get_shared_object_arg(client, &trail_id, false).await?;
 
         let mut args = vec![
             ptb.obj(trail_arg)

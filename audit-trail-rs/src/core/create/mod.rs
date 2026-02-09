@@ -8,12 +8,13 @@ use iota_interaction::rpc_types::{
 };
 use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::types::transaction::ProgrammableTransaction;
+use iota_sdk::types::base_types::IotaAddress;
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;
 
 use crate::core::builder::AuditTrailBuilder;
-use crate::core::types::{AuditTrailCreated, Capability, Event};
+use crate::core::types::{AuditTrailCreated, Event, OnChainAuditTrail};
 use crate::error::Error;
 
 mod operations;
@@ -23,10 +24,20 @@ use self::operations::CreateOps;
 #[derive(Debug, Clone)]
 pub struct TrailCreated {
     pub trail_id: ObjectID,
-    pub admin_capability_id: Option<ObjectID>,
-    pub creator: iota_interaction::types::base_types::IotaAddress,
+    pub creator: IotaAddress,
     pub timestamp: u64,
-    pub has_initial_record: bool,
+}
+
+impl TrailCreated {
+    pub async fn load_on_chain<C>(&self, client: &C) -> Result<OnChainAuditTrail, Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        client
+            .get_object_by_id(self.trail_id)
+            .await
+            .map_err(|e| Error::UnexpectedApiResponse(format!("failed to load trail {}; {e}", self.trail_id)))
+    }
 }
 
 /// A transaction that creates a new audit trail.
@@ -96,21 +107,10 @@ impl Transaction for CreateTrail {
             .find_map(|data| serde_json::from_value::<Event<AuditTrailCreated>>(data.parsed_json.clone()).ok())
             .ok_or_else(|| Error::UnexpectedApiResponse("AuditTrailCreated event not found".to_string()))?;
 
-        let mut admin_capability_id = None;
-        for created in effects.created() {
-            let object_id = created.object_id();
-            if let Ok(capability) = client.get_object_by_id::<Capability>(object_id).await {
-                admin_capability_id = Some(*capability.id.object_id());
-                break;
-            }
-        }
-
         Ok(TrailCreated {
             trail_id: event.data.trail_id,
-            admin_capability_id,
             creator: event.data.creator,
             timestamp: event.data.timestamp,
-            has_initial_record: event.data.has_initial_record,
         })
     }
 

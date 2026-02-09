@@ -1,19 +1,26 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 
+use crate::error::Error;
 use iota_interaction::rpc_types::IotaObjectDataOptions;
+use iota_interaction::types::MOVE_STDLIB_PACKAGE_ID;
+use iota_interaction::types::base_types::STD_OPTION_MODULE_NAME;
 use iota_interaction::types::base_types::{ObjectID, ObjectRef};
+use iota_interaction::types::collection_types::{VecMap, VecSet};
 use iota_interaction::types::object::Owner;
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
+use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use iota_interaction::types::transaction::{Argument, ObjectArg};
 use iota_interaction::types::{IOTA_CLOCK_OBJECT_ID, IOTA_CLOCK_OBJECT_SHARED_VERSION, TypeTag};
-use iota_interaction::{IotaClientTrait, OptionalSync};
+use iota_interaction::{IotaClientTrait, OptionalSync, ident_str};
 use product_common::core_client::CoreClientReadOnly;
 use serde::Serialize;
-
-use crate::error::Error;
+use serde::{Deserialize, Deserializer};
+use std::fmt::Debug;
+use std::hash::Hash;
 
 /// Adds a reference to the on-chain clock to `ptb`'s arguments.
 pub(crate) fn get_clock_ref(ptb: &mut Ptb) -> Argument {
@@ -118,4 +125,56 @@ pub(crate) async fn get_shared_object_arg(
         }),
         _ => Err(Error::InvalidArgument("object is not shared".to_string())),
     }
+}
+
+/// Deserialize a [`VecMap`] into a [`HashMap`]
+pub(crate) fn deserialize_vec_map<'de, D, K, V>(deserializer: D) -> Result<HashMap<K, V>, D::Error>
+where
+    D: Deserializer<'de>,
+    K: Deserialize<'de> + Eq + Hash + Debug,
+    V: Deserialize<'de> + Debug,
+{
+    let vec_map = VecMap::<K, V>::deserialize(deserializer)?;
+    Ok(vec_map
+        .contents
+        .into_iter()
+        .map(|entry| (entry.key, entry.value))
+        .collect())
+}
+
+/// Deserialize a [`VecSet`] into a [`HashSet`]
+pub(crate) fn deserialize_vec_set<'de, D, T>(deserializer: D) -> Result<HashSet<T>, D::Error>
+where
+    D: Deserializer<'de>,
+    T: Deserialize<'de> + Eq + Hash,
+{
+    let vec_set = VecSet::<T>::deserialize(deserializer)?;
+    Ok(vec_set.contents.into_iter().collect())
+}
+
+/// Convert an option value into a [`ProgrammableMoveCall`] argument
+pub(crate) fn option_to_move(
+    option: Option<Argument>,
+    tag: TypeTag,
+    ptb: &mut ProgrammableTransactionBuilder,
+) -> Result<Argument, anyhow::Error> {
+    let arg = if let Some(t) = option {
+        ptb.programmable_move_call(
+            MOVE_STDLIB_PACKAGE_ID,
+            STD_OPTION_MODULE_NAME.into(),
+            ident_str!("some").into(),
+            vec![tag],
+            vec![t],
+        )
+    } else {
+        ptb.programmable_move_call(
+            MOVE_STDLIB_PACKAGE_ID,
+            STD_OPTION_MODULE_NAME.into(),
+            ident_str!("none").into(),
+            vec![tag],
+            vec![],
+        )
+    };
+
+    Ok(arg)
 }

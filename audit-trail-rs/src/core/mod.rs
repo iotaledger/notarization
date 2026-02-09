@@ -8,7 +8,7 @@ pub mod capabilities;
 pub mod create;
 pub mod locking;
 pub mod metadata;
-pub(crate) mod move_utils;
+pub(crate) mod utils;
 pub mod records;
 pub mod roles;
 pub mod trail;

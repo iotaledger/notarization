@@ -33,50 +33,54 @@ impl PermissionSet {
         Self { permissions: vec![] }
     }
 
-    pub fn from_vec(permissions: Vec<Permission>) -> Self {
-        Self { permissions }
-    }
-
     pub fn admin_permissions() -> Self {
-        Self::from_vec(vec![
-            Permission::DeleteAuditTrail,
-            Permission::AddCapabilities,
-            Permission::RevokeCapabilities,
-            Permission::AddRoles,
-            Permission::UpdateRoles,
-            Permission::DeleteRoles,
-        ])
+        Self {
+            permissions: vec![
+                Permission::DeleteAuditTrail,
+                Permission::AddCapabilities,
+                Permission::RevokeCapabilities,
+                Permission::AddRoles,
+                Permission::UpdateRoles,
+                Permission::DeleteRoles,
+            ],
+        }
     }
 
     pub fn record_admin_permissions() -> Self {
-        Self::from_vec(vec![
-            Permission::AddRecord,
-            Permission::DeleteRecord,
-            Permission::CorrectRecord,
-        ])
+        Self {
+            permissions: vec![
+                Permission::AddRecord,
+                Permission::DeleteRecord,
+                Permission::CorrectRecord,
+            ],
+        }
     }
 
     pub fn locking_admin_permissions() -> Self {
-        Self::from_vec(vec![
-            Permission::UpdateLockingConfig,
-            Permission::UpdateLockingConfigForDeleteTrail,
-            Permission::UpdateLockingConfigForDeleteRecord,
-        ])
+        Self {
+            permissions: vec![
+                Permission::UpdateLockingConfig,
+                Permission::UpdateLockingConfigForDeleteTrail,
+                Permission::UpdateLockingConfigForDeleteRecord,
+            ],
+        }
     }
 
     pub fn role_admin_permissions() -> Self {
-        Self::from_vec(vec![
-            Permission::AddRoles,
-            Permission::UpdateRoles,
-            Permission::DeleteRoles,
-        ])
+        Self {
+            permissions: vec![Permission::AddRoles, Permission::UpdateRoles, Permission::DeleteRoles],
+        }
     }
 
     pub fn cap_admin_permissions() -> Self {
-        Self::from_vec(vec![Permission::AddCapabilities, Permission::RevokeCapabilities])
+        Self {
+            permissions: vec![Permission::AddCapabilities, Permission::RevokeCapabilities],
+        }
     }
 
     pub fn metadata_admin_permissions() -> Self {
-        Self::from_vec(vec![Permission::UpdateMetadata, Permission::DeleteMetadata])
+        Self {
+            permissions: vec![Permission::UpdateMetadata, Permission::DeleteMetadata],
+        }
     }
 }
