@@ -5,8 +5,8 @@
 
 use product_common::transaction::transaction_builder::TransactionBuilder;
 
-use super::create::CreateTrail;
 use super::types::{Data, ImmutableMetadata, LockingConfig};
+use crate::core::create::CreateTrail;
 use crate::error::Error;
 
 /// Builder for creating an audit trail.
