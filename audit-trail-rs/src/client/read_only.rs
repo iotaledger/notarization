@@ -115,8 +115,9 @@ impl AuditTrailClientReadOnly {
 
     /// Creates a new [`AuditTrailClientReadOnly`] with a specific audit trail package ID.
     ///
-    /// This function allows overriding the package ID lookup from the registry, which is useful
-    /// for connecting to networks where the package ID is known but not yet registered.
+    /// This function allows overriding the package ID lookup from the
+    /// registry, which is useful for connecting to networks where the package
+    /// ID is known but not yet registered, or for testing with custom deployments.
     pub async fn new_with_pkg_id(
         #[cfg(target_arch = "wasm32")] iota_client: WasmIotaClient,
         #[cfg(not(target_arch = "wasm32"))] iota_client: IotaClient,
