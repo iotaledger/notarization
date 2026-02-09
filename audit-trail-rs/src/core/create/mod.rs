@@ -68,7 +68,7 @@ impl CreateTrail {
             updatable_metadata,
         } = self.builder.clone();
 
-        CreateOps::create_trail_tx(
+        CreateOps::create_trail(
             client.package_id(),
             initial_data,
             initial_record_metadata,

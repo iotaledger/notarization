@@ -1,18 +1,19 @@
 use std::collections::HashMap;
 
+use iota_interaction::ident_str;
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
-use iota_interaction::types::base_types::IotaAddress;
+use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::collection_types::LinkedTable;
 use iota_interaction::types::id::UID;
+use iota_interaction::types::transaction::Argument;
 use serde::{Deserialize, Serialize};
 
-use crate::core::types::Data;
-
 use super::locking::LockingConfig;
-use super::metadata::ImmutableMetadata;
-use super::record::Record;
 use super::role_map::RoleMap;
+use crate::core::utils;
+use crate::error::Error;
+use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
 
 /// An audit trail stored on-chain.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -27,4 +28,33 @@ pub struct OnChainAuditTrail {
     pub immutable_metadata: Option<ImmutableMetadata>,
     pub updatable_metadata: Option<String>,
     pub version: u64,
+}
+
+/// Metadata set at trail creation and never updated.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ImmutableMetadata {
+    pub name: String,
+    pub description: Option<String>,
+}
+
+impl ImmutableMetadata {
+    pub fn new(name: String, description: Option<String>) -> Self {
+        Self { name, description }
+    }
+
+    /// Creates a new `Argument` from the `ImmutableMetadata`.
+    ///
+    /// To be used when creating a new `ImmutableMetadata` object on the ledger.
+    pub(in crate::core) fn to_ptb(&self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
+        let name = utils::ptb_pure(ptb, "name", &self.name)?;
+        let description = utils::ptb_pure(ptb, "description", &self.description)?;
+
+        Ok(ptb.programmable_move_call(
+            package_id,
+            ident_str!("main").into(),
+            ident_str!("new_trail_metadata").into(),
+            vec![],
+            vec![name, description],
+        ))
+    }
 }
