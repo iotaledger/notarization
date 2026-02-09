@@ -9,7 +9,7 @@ use std::ops::Deref;
 
 use crate::client::read_only::AuditTrailClientReadOnly;
 use crate::core::builder::AuditTrailBuilder;
-use crate::core::handler::{AuditTrailFull, AuditTrailHandle, AuditTrailReadOnly};
+use crate::core::trail::{AuditTrailFull, AuditTrailHandle, AuditTrailReadOnly};
 use crate::error::Error;
 use async_trait::async_trait;
 use iota_interaction::types::base_types::ObjectID;

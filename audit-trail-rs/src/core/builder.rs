@@ -5,7 +5,7 @@
 
 use product_common::transaction::transaction_builder::TransactionBuilder;
 
-use super::transactions::CreateTrail;
+use super::create::CreateTrail;
 use super::types::{Data, ImmutableMetadata, LockingConfig};
 use crate::error::Error;
 

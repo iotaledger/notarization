@@ -18,7 +18,7 @@ use product_common::package_registry::Env;
 use serde::de::DeserializeOwned;
 
 use super::network_id;
-use crate::core::handler::{AuditTrailHandle, AuditTrailReadOnly};
+use crate::core::trail::{AuditTrailHandle, AuditTrailReadOnly};
 use crate::error::Error;
 use crate::iota_interaction_adapter::IotaClientAdapter;
 use crate::package;

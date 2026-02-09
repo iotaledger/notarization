@@ -1,8 +1,6 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-//! Audit trail operations for building Move transactions.
-
 use std::str::FromStr;
 
 use iota_interaction::types::base_types::{IotaAddress, ObjectID, ObjectRef};
@@ -12,32 +10,100 @@ use iota_interaction::{OptionalSync, ident_str};
 use product_common::core_client::CoreClientReadOnly;
 
 use crate::core::move_utils;
-use crate::core::types::Capability;
+use crate::core::types::{Capability, Data};
 use crate::error::Error;
 
-pub(crate) mod create;
-pub(crate) mod locking;
-pub(crate) mod metadata;
-pub(crate) mod migrate;
-pub(crate) mod records;
+pub(super) struct RecordsOps;
 
-#[derive(Debug, Clone)]
-pub(crate) struct AuditTrailImpl;
-
-impl AuditTrailImpl {
-    async fn build_trail_transaction<C, F>(
+impl RecordsOps {
+    pub(super) async fn add_record_tx<C>(
         client: &C,
         trail_id: ObjectID,
-        cap_id: ObjectID,
-        method: impl AsRef<str>,
-        additional_args: F,
+        owner: IotaAddress,
+        data: Data,
+        record_metadata: Option<String>,
     ) -> Result<ProgrammableTransaction, Error>
     where
-        F: FnOnce(&mut ProgrammableTransactionBuilder) -> Result<Vec<Argument>, Error>,
         C: CoreClientReadOnly + OptionalSync,
     {
-        let cap_ref = move_utils::get_object_ref_by_id(client, &cap_id).await?;
-        Self::build_trail_transaction_with_cap_ref(client, trail_id, cap_ref, method, additional_args).await
+        Self::build_trail_transaction_for_owner(client, trail_id, owner, "add_record", |ptb| {
+            let data_arg = match data {
+                Data::Bytes(bytes) => move_utils::ptb_pure(ptb, "stored_data", bytes)?,
+                Data::Text(text) => move_utils::ptb_pure(ptb, "stored_data", text)?,
+            };
+            let metadata = move_utils::ptb_pure(ptb, "record_metadata", record_metadata)?;
+            let clock = move_utils::get_clock_ref(ptb);
+            Ok(vec![data_arg, metadata, clock])
+        })
+        .await
+    }
+
+    pub(super) async fn delete_record_tx<C>(
+        client: &C,
+        trail_id: ObjectID,
+        owner: IotaAddress,
+        sequence_number: u64,
+    ) -> Result<ProgrammableTransaction, Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        Self::build_trail_transaction_for_owner(client, trail_id, owner, "delete_record", |ptb| {
+            let seq = move_utils::ptb_pure(ptb, "sequence_number", sequence_number)?;
+            let clock = move_utils::get_clock_ref(ptb);
+            Ok(vec![seq, clock])
+        })
+        .await
+    }
+
+    pub(super) async fn get_record_tx<C>(
+        client: &C,
+        trail_id: ObjectID,
+        sequence_number: u64,
+    ) -> Result<ProgrammableTransaction, Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        Self::build_read_only_transaction(client, trail_id, "get_record", |ptb| {
+            let seq = move_utils::ptb_pure(ptb, "sequence_number", sequence_number)?;
+            Ok(vec![seq])
+        })
+        .await
+    }
+
+    pub(super) async fn has_record_tx<C>(
+        client: &C,
+        trail_id: ObjectID,
+        sequence_number: u64,
+    ) -> Result<ProgrammableTransaction, Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        Self::build_read_only_transaction(client, trail_id, "has_record", |ptb| {
+            let seq = move_utils::ptb_pure(ptb, "sequence_number", sequence_number)?;
+            Ok(vec![seq])
+        })
+        .await
+    }
+
+    pub(super) async fn record_count_tx<C>(client: &C, trail_id: ObjectID) -> Result<ProgrammableTransaction, Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        Self::build_read_only_transaction(client, trail_id, "record_count", |_| Ok(vec![])).await
+    }
+
+    pub(super) async fn first_sequence_tx<C>(client: &C, trail_id: ObjectID) -> Result<ProgrammableTransaction, Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        Self::build_read_only_transaction(client, trail_id, "first_sequence", |_| Ok(vec![])).await
+    }
+
+    pub(super) async fn last_sequence_tx<C>(client: &C, trail_id: ObjectID) -> Result<ProgrammableTransaction, Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        Self::build_read_only_transaction(client, trail_id, "last_sequence", |_| Ok(vec![])).await
     }
 
     async fn build_trail_transaction_for_owner<C, F>(

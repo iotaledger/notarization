@@ -1,16 +1,31 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-//! Typed handle wrappers bound to a specific trail id and client reference.
-
+use iota_interaction::OptionalSync;
 use iota_interaction::types::base_types::ObjectID;
+use iota_interaction::types::transaction::ProgrammableTransaction;
+use product_common::core_client::CoreClientReadOnly;
+use serde::de::DeserializeOwned;
 
-use super::capabilities::TrailCapabilities;
-use super::locking::TrailLocking;
-use super::metadata::TrailMetadata;
-use super::records::TrailRecords;
-use super::roles::TrailRoles;
+use crate::core::capabilities::TrailCapabilities;
+use crate::core::locking::TrailLocking;
+use crate::core::metadata::TrailMetadata;
+use crate::core::records::TrailRecords;
+use crate::core::roles::TrailRoles;
 use crate::core::types::Data;
+use crate::error::Error;
+
+/// Marker trait for read-only audit trail clients.
+#[doc(hidden)]
+#[async_trait::async_trait]
+pub trait AuditTrailReadOnly: CoreClientReadOnly + OptionalSync {
+    async fn execute_read_only_transaction<T: DeserializeOwned>(&self, tx: ProgrammableTransaction)
+    -> Result<T, Error>;
+}
+
+/// Marker trait for full (read-write) audit trail clients.
+#[doc(hidden)]
+pub trait AuditTrailFull: AuditTrailReadOnly {}
 
 /// A typed handle bound to a specific audit trail and client.
 #[derive(Debug, Clone)]

@@ -5,13 +5,14 @@ use iota_interaction::ident_str;
 use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::types::transaction::ProgrammableTransaction;
 
-use super::AuditTrailImpl;
 use crate::core::move_utils;
 use crate::core::types::{Data, ImmutableMetadata, LockingConfig};
 use crate::error::Error;
 
-impl AuditTrailImpl {
-    pub(crate) fn create_trail(
+pub(super) struct CreateOps;
+
+impl CreateOps {
+    pub(super) fn create_trail_tx(
         package_id: ObjectID,
         initial_data: Option<Data>,
         initial_record_metadata: Option<String>,
@@ -40,7 +41,7 @@ impl AuditTrailImpl {
             package_id,
             ident_str!("main").into(),
             ident_str!("create").into(),
-            vec![], // TODO: Add type tag for initial data
+            vec![],
             vec![
                 initial_data_arg,
                 initial_record_metadata,

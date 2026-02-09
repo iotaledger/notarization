@@ -3,7 +3,7 @@
 
 use iota_interaction::types::base_types::ObjectID;
 
-use super::{AuditTrailFull, AuditTrailReadOnly};
+use crate::core::trail::{AuditTrailFull, AuditTrailReadOnly};
 use crate::core::types::{LockingConfig, LockingWindow};
 use crate::error::Error;
 

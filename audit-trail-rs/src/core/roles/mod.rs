@@ -3,7 +3,7 @@
 
 use iota_interaction::types::base_types::ObjectID;
 
-use super::AuditTrailFull;
+use crate::core::trail::AuditTrailFull;
 use crate::core::types::PermissionSet;
 use crate::error::Error;
 

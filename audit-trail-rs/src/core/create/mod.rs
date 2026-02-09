@@ -13,9 +13,11 @@ use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;
 
 use crate::core::builder::AuditTrailBuilder;
-use crate::core::operations::AuditTrailImpl;
 use crate::core::types::{AuditTrailCreated, Capability, Event};
 use crate::error::Error;
+
+mod operations;
+use self::operations::CreateOps;
 
 /// Output of a create trail transaction.
 #[derive(Debug, Clone)]
@@ -55,7 +57,7 @@ impl CreateTrail {
             updatable_metadata,
         } = self.builder.clone();
 
-        AuditTrailImpl::create_trail(
+        CreateOps::create_trail_tx(
             client.package_id(),
             initial_data,
             initial_record_metadata,
