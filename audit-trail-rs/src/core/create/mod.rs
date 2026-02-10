@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use async_trait::async_trait;
+use iota_interaction::IotaClientTrait;
 use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::{
-    IotaTransactionBlockEffects, IotaTransactionBlockEffectsAPI, IotaTransactionBlockEvents,
+    IotaData as _, IotaObjectDataOptions, IotaTransactionBlockEffects, IotaTransactionBlockEvents,
 };
 use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::types::transaction::ProgrammableTransaction;
@@ -33,10 +34,25 @@ impl TrailCreated {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        client
-            .get_object_by_id(self.trail_id)
+        let data = client
+            .client_adapter()
+            .read_api()
+            .get_object_with_options(self.trail_id, IotaObjectDataOptions::bcs_lossless())
             .await
-            .map_err(|e| Error::UnexpectedApiResponse(format!("failed to load trail {}; {e}", self.trail_id)))
+            .map_err(|e| Error::UnexpectedApiResponse(format!("failed to fetch trail {} object; {e}", self.trail_id)))?
+            .data
+            .ok_or_else(|| Error::UnexpectedApiResponse(format!("trail {} data not found", self.trail_id)))?;
+
+        data.bcs
+            .ok_or_else(|| Error::UnexpectedApiResponse(format!("trail {} missing bcs object content", self.trail_id)))?
+            .try_into_move()
+            .ok_or_else(|| {
+                Error::UnexpectedApiResponse(format!("trail {} bcs content is not a move object", self.trail_id))
+            })?
+            .deserialize()
+            .map_err(|e| {
+                Error::UnexpectedApiResponse(format!("failed to decode trail {} bcs data; {e}", self.trail_id))
+            })
     }
 }
 
@@ -61,6 +77,7 @@ impl CreateTrail {
         C: CoreClientReadOnly + OptionalSync,
     {
         let AuditTrailBuilder {
+            admin,
             initial_data,
             initial_record_metadata,
             locking_config,
@@ -68,8 +85,16 @@ impl CreateTrail {
             updatable_metadata,
         } = self.builder.clone();
 
+        let admin = admin.ok_or_else(|| {
+            Error::InvalidArgument(
+                "admin address is required; use `client.create_trail()` with signer or call `with_admin(...)`"
+                    .to_string(),
+            )
+        })?;
+
         CreateOps::create_trail(
             client.package_id(),
+            admin,
             initial_data,
             initial_record_metadata,
             locking_config,
@@ -94,9 +119,9 @@ impl Transaction for CreateTrail {
 
     async fn apply_with_events<C>(
         mut self,
-        effects: &mut IotaTransactionBlockEffects,
+        _: &mut IotaTransactionBlockEffects,
         events: &mut IotaTransactionBlockEvents,
-        client: &C,
+        _: &C,
     ) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,

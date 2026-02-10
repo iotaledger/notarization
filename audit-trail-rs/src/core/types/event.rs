@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
-use serde::{Deserialize, Serialize};
-
+use serde::{Deserialize, Serialize, ser};
+use serde_aux::field_attributes::{deserialize_number_from_string, deserialize_option_number_from_string};
 /// Generic wrapper for audit trail events.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Event<D> {
@@ -15,54 +15,63 @@ pub struct Event<D> {
 pub struct AuditTrailCreated {
     pub trail_id: ObjectID,
     pub creator: IotaAddress,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
     pub timestamp: u64,
-    pub has_initial_record: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AuditTrailDeleted {
     pub trail_id: ObjectID,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
     pub timestamp: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RecordAdded {
     pub trail_id: ObjectID,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
     pub sequence_number: u64,
     pub added_by: IotaAddress,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
     pub timestamp: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RecordDeleted {
     pub trail_id: ObjectID,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
     pub sequence_number: u64,
     pub deleted_by: IotaAddress,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
     pub timestamp: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CapabilityIssued {
-    pub security_vault_id: ObjectID,
+    pub target_key: ObjectID,
     pub capability_id: ObjectID,
     pub role: String,
     pub issued_to: Option<IotaAddress>,
+    #[serde(deserialize_with = "deserialize_option_number_from_string")]
     pub valid_from: Option<u64>,
+    #[serde(deserialize_with = "deserialize_option_number_from_string")]
     pub valid_until: Option<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CapabilityDestroyed {
-    pub security_vault_id: ObjectID,
+    pub target_key: ObjectID,
     pub capability_id: ObjectID,
     pub role: String,
     pub issued_to: Option<IotaAddress>,
+    #[serde(deserialize_with = "deserialize_option_number_from_string")]
     pub valid_from: Option<u64>,
+    #[serde(deserialize_with = "deserialize_option_number_from_string")]
     pub valid_until: Option<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CapabilityRevoked {
-    pub security_vault_id: ObjectID,
+    pub target_key: ObjectID,
     pub capability_id: ObjectID,
 }

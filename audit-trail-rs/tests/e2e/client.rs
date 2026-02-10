@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use std::ops::Deref;
-use std::str::FromStr;
 use std::sync::Arc;
+use std::sync::OnceLock;
 
 use audit_trails::AuditTrailClient;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
@@ -15,8 +15,10 @@ use product_common::network_name::NetworkName;
 use product_common::test_utils::{
     TEST_GAS_BUDGET, get_active_address, get_balance, init_product_package, request_funds,
 };
+use tokio::sync::{Mutex, MutexGuard, OnceCell};
 
-pub const ENV_PACKAGE_ID: &str = "AUDIT_TRAIL_PACKAGE_ID";
+static PACKAGE_ID: OnceCell<ObjectID> = OnceCell::const_new();
+static E2E_MUTEX: OnceLock<Mutex<()>> = OnceLock::new();
 
 /// Script file for publishing the package.
 pub const PUBLISH_SCRIPT_FILE: &str = concat!(
@@ -26,6 +28,10 @@ pub const PUBLISH_SCRIPT_FILE: &str = concat!(
 
 pub async fn get_funded_test_client() -> anyhow::Result<TestClient> {
     TestClient::new().await
+}
+
+pub async fn e2e_test_guard() -> MutexGuard<'static, ()> {
+    E2E_MUTEX.get_or_init(|| Mutex::new(())).lock().await
 }
 
 #[derive(Clone)]
@@ -49,10 +55,10 @@ impl TestClient {
     pub async fn new_from_address(address: IotaAddress) -> anyhow::Result<Self> {
         let api_endpoint = std::env::var("API_ENDPOINT").unwrap_or_else(|_| IOTA_LOCAL_NETWORK_URL.to_string());
         let client = IotaClientBuilder::default().build(&api_endpoint).await?;
-        let package_id = match std::env::var(ENV_PACKAGE_ID) {
-            Ok(value) => ObjectID::from_str(&value)?,
-            Err(_) => init_product_package(&client, None, Some(PUBLISH_SCRIPT_FILE)).await?,
-        };
+        let package_id = PACKAGE_ID
+            .get_or_try_init(|| init_product_package(&client, None, Some(PUBLISH_SCRIPT_FILE)))
+            .await
+            .copied()?;
 
         let balance = get_balance(address).await?;
         if balance < TEST_GAS_BUDGET {

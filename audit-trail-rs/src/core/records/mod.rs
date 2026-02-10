@@ -46,7 +46,7 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
         C: AuditTrailReadOnly,
         D: DeserializeOwned,
     {
-        let tx = RecordsOps::get_record_tx(self.client, self.trail_id, sequence_number).await?;
+        let tx = RecordsOps::get_record(self.client, self.trail_id, sequence_number).await?;
         self.client.execute_read_only_transaction(tx).await
     }
 
@@ -114,7 +114,7 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
     where
         C: AuditTrailReadOnly,
     {
-        let tx = RecordsOps::has_record_tx(self.client, self.trail_id, sequence_number).await?;
+        let tx = RecordsOps::has_record(self.client, self.trail_id, sequence_number).await?;
         self.client.execute_read_only_transaction(tx).await
     }
 
@@ -122,7 +122,7 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
     where
         C: AuditTrailReadOnly,
     {
-        let tx = RecordsOps::first_sequence_tx(self.client, self.trail_id).await?;
+        let tx = RecordsOps::first_sequence(self.client, self.trail_id).await?;
         self.client.execute_read_only_transaction(tx).await
     }
 
@@ -130,7 +130,7 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
     where
         C: AuditTrailReadOnly,
     {
-        let tx = RecordsOps::last_sequence_tx(self.client, self.trail_id).await?;
+        let tx = RecordsOps::last_sequence(self.client, self.trail_id).await?;
         self.client.execute_read_only_transaction(tx).await
     }
 
@@ -138,7 +138,7 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
     where
         C: AuditTrailReadOnly,
     {
-        let tx = RecordsOps::record_count_tx(self.client, self.trail_id).await?;
+        let tx = RecordsOps::record_count(self.client, self.trail_id).await?;
         self.client.execute_read_only_transaction(tx).await
     }
 
@@ -222,7 +222,7 @@ impl AddRecord {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        RecordsOps::add_record_tx(
+        RecordsOps::add_record(
             client,
             self.trail_id,
             self.owner,
@@ -294,7 +294,7 @@ impl DeleteRecord {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        RecordsOps::delete_record_tx(client, self.trail_id, self.owner, self.sequence_number).await
+        RecordsOps::delete_record(client, self.trail_id, self.owner, self.sequence_number).await
     }
 }
 

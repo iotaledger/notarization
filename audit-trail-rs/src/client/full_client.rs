@@ -143,7 +143,10 @@ impl<S> AuditTrailClient<S> {
 
     /// Creates a builder for an audit trail.
     pub fn create_trail(&self) -> AuditTrailBuilder {
-        AuditTrailBuilder::default()
+        AuditTrailBuilder {
+            admin: self.public_key.as_ref().map(IotaAddress::from),
+            ..AuditTrailBuilder::default()
+        }
     }
 
     pub async fn migrate(&self, _trail_id: ObjectID) -> Result<(), Error> {

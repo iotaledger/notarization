@@ -4,9 +4,12 @@
 use std::str::FromStr;
 
 use iota_interaction::types::base_types::IotaAddress;
+use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
+use iota_interaction::types::transaction::Argument;
 use iota_interaction::types::{MOVE_STDLIB_PACKAGE_ID, TypeTag};
 use serde::{Deserialize, Deserializer, Serialize};
 
+use crate::core::utils;
 use crate::error::Error;
 
 use std::collections::{HashMap, HashSet};
@@ -89,6 +92,36 @@ impl Data {
             Data::Bytes(_) => TypeTag::Vector(Box::new(TypeTag::U8)),
             Data::Text(_) => TypeTag::from_str(&format!("{MOVE_STDLIB_PACKAGE_ID}::string::String"))
                 .expect("should be valid type tag"),
+        }
+    }
+
+    /// Creates a PTB argument for `D` where `D` is the concrete Move data type.
+    pub(in crate::core) fn to_ptb(self, ptb: &mut Ptb, name: &str) -> Result<Argument, Error> {
+        match self {
+            Data::Bytes(bytes) => utils::ptb_pure(ptb, name, bytes),
+            Data::Text(text) => utils::ptb_pure(ptb, name, text),
+        }
+    }
+
+    /// Creates a PTB argument for `Option<D>` where `D` is the concrete Move data type.
+    pub(in crate::core) fn to_option_ptb(self, ptb: &mut Ptb, name: &str) -> Result<Argument, Error> {
+        match self {
+            Data::Bytes(bytes) => utils::ptb_pure(ptb, name, Some(bytes)),
+            Data::Text(text) => utils::ptb_pure(ptb, name, Some(text)),
+        }
+    }
+
+    /// Validates that this data payload matches the on-chain trail data type.
+    pub(in crate::core) fn ensure_matches_tag(&self, expected: &TypeTag) -> Result<(), Error> {
+        let actual = self.tag();
+
+        if &actual == expected {
+            Ok(())
+        } else {
+            Err(Error::InvalidArgument(format!(
+                "record data type mismatch: provided {:?}, trail expects {:?}",
+                actual, expected
+            )))
         }
     }
 

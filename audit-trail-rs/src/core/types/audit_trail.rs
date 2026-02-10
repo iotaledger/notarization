@@ -1,8 +1,10 @@
 use std::collections::HashMap;
+use std::str::FromStr;
 
 use iota_interaction::ident_str;
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
+use iota_interaction::types::TypeTag;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::collection_types::LinkedTable;
 use iota_interaction::types::id::UID;
@@ -40,6 +42,11 @@ pub struct ImmutableMetadata {
 impl ImmutableMetadata {
     pub fn new(name: String, description: Option<String>) -> Self {
         Self { name, description }
+    }
+
+    pub(in crate::core) fn tag(package_id: ObjectID) -> TypeTag {
+        TypeTag::from_str(&format!("{package_id}::main::ImmutableMetadata"))
+            .expect("invalid TypeTag for ImmutableMetadata")
     }
 
     /// Creates a new `Argument` from the `ImmutableMetadata`.
