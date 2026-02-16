@@ -7,7 +7,6 @@ use iota_interaction::types::transaction::ProgrammableTransaction;
 use product_common::core_client::CoreClientReadOnly;
 use serde::de::DeserializeOwned;
 
-use crate::core::capabilities::TrailCapabilities;
 use crate::core::locking::TrailLocking;
 use crate::core::metadata::TrailMetadata;
 use crate::core::records::TrailRecords;
@@ -59,7 +58,4 @@ impl<'a, C> AuditTrailHandle<'a, C> {
         TrailRoles::new(self.client, self.trail_id)
     }
 
-    pub fn capabilities(&self) -> TrailCapabilities<'a, C> {
-        TrailCapabilities::new(self.client, self.trail_id)
-    }
 }

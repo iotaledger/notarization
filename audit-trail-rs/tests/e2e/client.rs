@@ -3,22 +3,20 @@
 
 use std::ops::Deref;
 use std::sync::Arc;
-use std::sync::OnceLock;
 
 use audit_trails::AuditTrailClient;
+use audit_trails::core::types::Capability;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::crypto::PublicKey;
-use iota_interaction::{IOTA_LOCAL_NETWORK_URL, IotaClientBuilder, KeytoolSigner};
+use iota_interaction::{IOTA_LOCAL_NETWORK_URL, IotaClientBuilder};
 use iota_interaction_rust::IotaClientAdapter;
+use iota_sdk::types::base_types::ObjectRef;
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use product_common::network_name::NetworkName;
-use product_common::test_utils::{
-    TEST_GAS_BUDGET, get_active_address, get_balance, init_product_package, request_funds,
-};
-use tokio::sync::{Mutex, MutexGuard, OnceCell};
+use product_common::test_utils::{InMemSigner, init_product_package, request_funds};
+use tokio::sync::OnceCell;
 
 static PACKAGE_ID: OnceCell<ObjectID> = OnceCell::const_new();
-static E2E_MUTEX: OnceLock<Mutex<()>> = OnceLock::new();
 
 /// Script file for publishing the package.
 pub const PUBLISH_SCRIPT_FILE: &str = concat!(
@@ -30,17 +28,13 @@ pub async fn get_funded_test_client() -> anyhow::Result<TestClient> {
     TestClient::new().await
 }
 
-pub async fn e2e_test_guard() -> MutexGuard<'static, ()> {
-    E2E_MUTEX.get_or_init(|| Mutex::new(())).lock().await
-}
-
 #[derive(Clone)]
 pub struct TestClient {
-    client: Arc<AuditTrailClient<KeytoolSigner>>,
+    client: Arc<AuditTrailClient<InMemSigner>>,
 }
 
 impl Deref for TestClient {
-    type Target = AuditTrailClient<KeytoolSigner>;
+    type Target = AuditTrailClient<InMemSigner>;
     fn deref(&self) -> &Self::Target {
         &self.client
     }
@@ -48,30 +42,43 @@ impl Deref for TestClient {
 
 impl TestClient {
     pub async fn new() -> anyhow::Result<Self> {
-        let active_address = get_active_address().await?;
-        Self::new_from_address(active_address).await
-    }
-
-    pub async fn new_from_address(address: IotaAddress) -> anyhow::Result<Self> {
         let api_endpoint = std::env::var("API_ENDPOINT").unwrap_or_else(|_| IOTA_LOCAL_NETWORK_URL.to_string());
-        let client = IotaClientBuilder::default().build(&api_endpoint).await?;
+        let iota_client = IotaClientBuilder::default().build(&api_endpoint).await?;
         let package_id = PACKAGE_ID
-            .get_or_try_init(|| init_product_package(&client, None, Some(PUBLISH_SCRIPT_FILE)))
+            .get_or_try_init(|| init_product_package(&iota_client, None, Some(PUBLISH_SCRIPT_FILE)))
             .await
             .copied()?;
 
-        let balance = get_balance(address).await?;
-        if balance < TEST_GAS_BUDGET {
-            request_funds(&address).await?;
-        }
+        // Use a dedicated ephemeral signer per test to avoid object-lock contention.
+        let signer = InMemSigner::new();
+        let signer_address = signer.get_address().await?;
+        request_funds(&signer_address).await?;
 
-        let signer = KeytoolSigner::builder().build()?;
-        let client = AuditTrailClient::from_iota_client(client.clone(), Some(package_id)).await?;
+        let client = AuditTrailClient::from_iota_client(iota_client.clone(), Some(package_id)).await?;
         let client = client.with_signer(signer).await?;
 
         Ok(TestClient {
             client: Arc::new(client),
         })
+    }
+
+    pub(crate) async fn get_cap(&self, owner: IotaAddress, trail_id: ObjectID) -> anyhow::Result<ObjectRef> {
+        let cap: Capability = self
+            .client
+            .find_object_for_address(owner, |cap: &Capability| cap.target_key == trail_id)
+            .await
+            .map_err(|e| anyhow::anyhow!("Failed to find accredit cap for owner {owner} and trail {trail_id}: {e}"))?
+            .ok_or_else(|| anyhow::anyhow!("No accredit capability found for owner {owner} and trail {trail_id}"))?;
+
+        let object_id = *cap.id.object_id();
+
+        Ok(self
+            .client
+            .get_object_ref_by_id(object_id)
+            .await
+            .map_err(|e| anyhow::anyhow!("Failed to get object ref for accredit cap: {e}"))?
+            .map(|owned_ref| owned_ref.reference.to_object_ref())
+            .unwrap())
     }
 }
 
@@ -89,8 +96,8 @@ impl CoreClientReadOnly for TestClient {
     }
 }
 
-impl CoreClient<KeytoolSigner> for TestClient {
-    fn signer(&self) -> &KeytoolSigner {
+impl CoreClient<InMemSigner> for TestClient {
+    fn signer(&self) -> &InMemSigner {
         self.client.signer()
     }
 

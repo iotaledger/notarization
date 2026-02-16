@@ -4,3 +4,4 @@
 mod client;
 mod audit_trail_creations;
 mod records;
+mod roles;

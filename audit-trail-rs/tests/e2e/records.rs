@@ -1,12 +1,11 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::client::{e2e_test_guard, get_funded_test_client};
+use crate::client::get_funded_test_client;
 use audit_trails::core::types::Data;
 
 #[tokio::test]
 async fn add_and_fetch_record_roundtrip() -> anyhow::Result<()> {
-    let _guard = e2e_test_guard().await;
     let client = get_funded_test_client().await?;
     let metadata = Some("audit-trail-e2e".to_string());
 
