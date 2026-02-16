@@ -2,7 +2,7 @@
 
 [move]
 version = 3
-manifest_digest = "7FAADB221F87213D4EB687B179D501CAD603866603B43FD12199C657A3C68FE9"
+manifest_digest = "F2B4163DBAC14E8E7B58437714EE2902F08812C1A053496961F3557F0DD54E86"
 deps_digest = "397E6A9F7A624706DBDFEE056CE88391A15876868FD18A88504DA74EB458D697"
 dependencies = [
   { id = "Iota", name = "Iota" },
@@ -44,7 +44,7 @@ dependencies = [
 
 [[move.package]]
 id = "TfComponents"
-source = { git = "https://github.com/iotaledger/product-core.git", rev = "feat/role-map", subdir = "components_move" }
+source = { git = "https://github.com/iotaledger/product-core.git", rev = "feat/emit-events-for-capabilities", subdir = "components_move" }
 
 dependencies = [
   { id = "Iota", name = "Iota" },
@@ -54,7 +54,7 @@ dependencies = [
 ]
 
 [move.toolchain-version]
-compiler-version = "1.16.2-rc"
+compiler-version = "1.16.2"
 edition = "2024.beta"
 flavor = "iota"
 

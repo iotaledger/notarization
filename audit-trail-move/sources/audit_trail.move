@@ -248,7 +248,7 @@ entry fun migrate<D: store + copy>(
     trail: &mut AuditTrail<D>,
     cap: &Capability,
     clock: &Clock,
-    ctx: &TxContext,
+    ctx: &mut TxContext,
 ) {
     assert!(trail.version < PACKAGE_VERSION, EPackageVersionMismatch);
     assert!(
@@ -458,7 +458,7 @@ public fun create_role<D: store + copy>(
     role: String,
     permissions: VecSet<Permission>,
     clock: &Clock,
-    ctx: &TxContext,
+    ctx: &mut TxContext,
 ) {
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     role_map::create_role(trail.roles_mut(), cap, role, permissions, clock, ctx);
@@ -478,7 +478,7 @@ public fun update_role_permissions<D: store + copy>(
     role: String,
     new_permissions: VecSet<Permission>,
     clock: &Clock,
-    ctx: &TxContext,
+    ctx: &mut TxContext,
 ) {
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     role_map::update_role_permissions(trail.roles_mut(), cap, &role, new_permissions, clock, ctx);
@@ -497,7 +497,7 @@ public fun delete_role<D: store + copy>(
     cap: &Capability,
     role: String,
     clock: &Clock,
-    ctx: &TxContext,
+    ctx: &mut TxContext,
 ) {
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     role_map::delete_role(trail.roles_mut(), cap, &role, clock, ctx);
@@ -550,7 +550,7 @@ public fun revoke_capability<D: store + copy>(
     cap: &Capability,
     capability_id: ID,
     clock: &Clock,
-    ctx: &TxContext,
+    ctx: &mut TxContext,
 ) {
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     role_map::revoke_capability(trail.roles_mut(), cap, capability_id, clock, ctx);
@@ -564,7 +564,7 @@ public fun destroy_capability<D: store + copy>(
     cap: &Capability,
     cap_to_destroy: Capability,
     clock: &Clock,
-    ctx: &TxContext,
+    ctx: &mut TxContext,
 ) {
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     assert!(
@@ -579,6 +579,38 @@ public fun destroy_capability<D: store + copy>(
         EPermissionDenied,
     );
     role_map::destroy_capability(trail.roles_mut(), cap_to_destroy);
+}
+
+/// Destroys an initial admin capability.
+///
+/// Self-service: the owner passes in their own initial admin capability to destroy it.
+/// No additional authorization is required.
+///
+/// WARNING: If all initial admin capabilities are destroyed, the trail will be permanently
+/// sealed with no admin access possible.
+public fun destroy_initial_admin_capability<D: store + copy>(
+    trail: &mut AuditTrail<D>,
+    cap_to_destroy: Capability,
+) {
+    assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
+    role_map::destroy_initial_admin_capability(trail.roles_mut(), cap_to_destroy);
+}
+
+/// Revokes an initial admin capability by ID.
+///
+/// Requires a capability with `RevokeCapabilities` permission.
+///
+/// WARNING: If all initial admin capabilities are revoked, the trail will be permanently
+/// sealed with no admin access possible.
+public fun revoke_initial_admin_capability<D: store + copy>(
+    trail: &mut AuditTrail<D>,
+    cap: &Capability,
+    capability_id: ID,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
+    assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
+    role_map::revoke_initial_admin_capability(trail.roles_mut(), cap, capability_id, clock, ctx);
 }
 
 // ===== Trail Query Functions =====

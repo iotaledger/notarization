@@ -42,10 +42,6 @@ impl<'a, C> AuditTrailHandle<'a, C> {
         TrailRecords::new(self.client, self.trail_id)
     }
 
-    pub fn records_as<D>(&self) -> TrailRecords<'a, C, D> {
-        TrailRecords::new(self.client, self.trail_id)
-    }
-
     pub fn locking(&self) -> TrailLocking<'a, C> {
         TrailLocking::new(self.client, self.trail_id)
     }
@@ -57,5 +53,4 @@ impl<'a, C> AuditTrailHandle<'a, C> {
     pub fn roles(&self) -> TrailRoles<'a, C> {
         TrailRoles::new(self.client, self.trail_id)
     }
-
 }

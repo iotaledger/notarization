@@ -12,7 +12,7 @@ async fn add_and_fetch_record_roundtrip() -> anyhow::Result<()> {
     let created = client
         .create_trail()
         .with_initial_record(Data::text("audit-trail-e2e"), metadata.clone())
-        .finish()?
+        .finish()
         .build_and_execute(&client)
         .await?
         .output;

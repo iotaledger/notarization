@@ -197,6 +197,50 @@ impl RolesOps {
         .await
     }
 
+    pub(super) async fn destroy_initial_admin_capability<C>(
+        client: &C,
+        trail_id: ObjectID,
+        capability_id: ObjectID,
+    ) -> Result<ProgrammableTransaction, Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        let cap_ref = utils::get_object_ref_by_id(client, &capability_id).await?;
+        operations::build_trail_transaction_with_cap_ref(
+            client,
+            trail_id,
+            cap_ref,
+            "destroy_initial_admin_capability",
+            |_, _| Ok(vec![]),
+        )
+        .await
+    }
+
+    pub(super) async fn revoke_initial_admin_capability<C>(
+        client: &C,
+        trail_id: ObjectID,
+        owner: IotaAddress,
+        capability_id: ObjectID,
+    ) -> Result<ProgrammableTransaction, Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        let admin_cap_ref = Self::get_admin_capability_ref(client, owner, trail_id).await?;
+        operations::build_trail_transaction_with_cap_ref(
+            client,
+            trail_id,
+            admin_cap_ref,
+            "revoke_initial_admin_capability",
+            |ptb, _| {
+                let cap = utils::ptb_pure(ptb, "capability_id", capability_id)?;
+                let clock = utils::get_clock_ref(ptb);
+
+                Ok(vec![cap, clock])
+            },
+        )
+        .await
+    }
+
     async fn get_admin_capability_ref<C>(
         client: &C,
         owner: IotaAddress,

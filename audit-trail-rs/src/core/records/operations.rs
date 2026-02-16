@@ -67,39 +67,10 @@ impl RecordsOps {
         .await
     }
 
-    pub(super) async fn has_record<C>(
-        client: &C,
-        trail_id: ObjectID,
-        sequence_number: u64,
-    ) -> Result<ProgrammableTransaction, Error>
-    where
-        C: CoreClientReadOnly + OptionalSync,
-    {
-        operations::build_read_only_transaction(client, trail_id, "has_record", |ptb| {
-            let seq = utils::ptb_pure(ptb, "sequence_number", sequence_number)?;
-            Ok(vec![seq])
-        })
-        .await
-    }
-
     pub(super) async fn record_count<C>(client: &C, trail_id: ObjectID) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
         operations::build_read_only_transaction(client, trail_id, "record_count", |_| Ok(vec![])).await
-    }
-
-    pub(super) async fn first_sequence<C>(client: &C, trail_id: ObjectID) -> Result<ProgrammableTransaction, Error>
-    where
-        C: CoreClientReadOnly + OptionalSync,
-    {
-        operations::build_read_only_transaction(client, trail_id, "first_sequence", |_| Ok(vec![])).await
-    }
-
-    pub(super) async fn last_sequence<C>(client: &C, trail_id: ObjectID) -> Result<ProgrammableTransaction, Error>
-    where
-        C: CoreClientReadOnly + OptionalSync,
-    {
-        operations::build_read_only_transaction(client, trail_id, "last_sequence", |_| Ok(vec![])).await
     }
 }

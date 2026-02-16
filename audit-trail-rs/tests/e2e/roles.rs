@@ -4,13 +4,14 @@
 use crate::client::get_funded_test_client;
 use audit_trails::core::types::{CapabilityIssueOptions, Data, Permission, PermissionSet, RoleCreated};
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use product_common::core_client::CoreClient;
 use std::collections::HashSet;
 
 async fn create_trail(client: &crate::client::TestClient) -> anyhow::Result<ObjectID> {
     let created = client
         .create_trail()
         .with_initial_record(Data::text("roles-e2e"), None)
-        .finish()?
+        .finish()
         .build_and_execute(client)
         .await?
         .output;
@@ -27,10 +28,8 @@ async fn create_role_with_permissions(
     let created = client
         .trail(trail_id)
         .roles()
-        .create(
-            role_name.to_string(),
-            PermissionSet { permissions },
-        )?
+        .for_role(role_name)
+        .create(PermissionSet { permissions })
         .build_and_execute(client)
         .await?
         .output;
@@ -54,7 +53,7 @@ async fn create_role_then_issue_capability_default_options() -> anyhow::Result<(
 
     let issued = roles
         .for_role(role_name)
-        .issue_capability(CapabilityIssueOptions::default())?
+        .issue_capability(CapabilityIssueOptions::default())
         .build_and_execute(&client)
         .await?
         .output;
@@ -78,12 +77,10 @@ async fn update_role_permissions_then_issue_capability() -> anyhow::Result<()> {
     create_role_with_permissions(&client, trail_id, role_name, vec![Permission::AddRecord]).await?;
 
     let updated = roles
-        .update(
-            role_name.to_string(),
-            PermissionSet {
-                permissions: vec![Permission::AddRecord, Permission::DeleteRecord],
-            },
-        )?
+        .for_role(role_name)
+        .update_permissions(PermissionSet {
+            permissions: vec![Permission::AddRecord, Permission::DeleteRecord],
+        })
         .build_and_execute(&client)
         .await?
         .output;
@@ -99,7 +96,7 @@ async fn update_role_permissions_then_issue_capability() -> anyhow::Result<()> {
 
     let issued = roles
         .for_role(role_name)
-        .issue_capability(CapabilityIssueOptions::default())?
+        .issue_capability(CapabilityIssueOptions::default())
         .build_and_execute(&client)
         .await?
         .output;
@@ -118,7 +115,8 @@ async fn delete_role_prevents_new_capability_issuance() -> anyhow::Result<()> {
 
     create_role_with_permissions(&client, trail_id, role_name, vec![Permission::AddRecord]).await?;
     let deleted = roles
-        .delete(role_name.to_string())?
+        .for_role(role_name)
+        .delete()
         .build_and_execute(&client)
         .await?
         .output;
@@ -128,7 +126,7 @@ async fn delete_role_prevents_new_capability_issuance() -> anyhow::Result<()> {
 
     let issue_tx = roles
         .for_role(role_name)
-        .issue_capability(CapabilityIssueOptions::default())?;
+        .issue_capability(CapabilityIssueOptions::default());
     let issue_after_delete = issue_tx.build_and_execute(&client).await;
     assert!(
         issue_after_delete.is_err(),
@@ -155,7 +153,7 @@ async fn issue_capability_with_constraints() -> anyhow::Result<()> {
 
     let issued = roles
         .for_role(role_name)
-        .issue_capability(constrained.clone())?
+        .issue_capability(constrained.clone())
         .build_and_execute(&client)
         .await?
         .output;
@@ -180,13 +178,13 @@ async fn revoke_capability_emits_expected_event_data() -> anyhow::Result<()> {
 
     let issued = roles
         .for_role(role_name)
-        .issue_capability(CapabilityIssueOptions::default())?
+        .issue_capability(CapabilityIssueOptions::default())
         .build_and_execute(&client)
         .await?
         .output;
 
     let revoked = roles
-        .revoke_capability(issued.capability_id)?
+        .revoke_capability(issued.capability_id)
         .build_and_execute(&client)
         .await?
         .output;
@@ -207,13 +205,13 @@ async fn destroy_capability_emits_expected_event_data() -> anyhow::Result<()> {
 
     let issued_for_destroy = roles
         .for_role(role_name)
-        .issue_capability(CapabilityIssueOptions::default())?
+        .issue_capability(CapabilityIssueOptions::default())
         .build_and_execute(&client)
         .await?
         .output;
 
     let destroyed = roles
-        .destroy_capability(issued_for_destroy.capability_id)?
+        .destroy_capability(issued_for_destroy.capability_id)
         .build_and_execute(&client)
         .await?
         .output;
@@ -224,6 +222,101 @@ async fn destroy_capability_emits_expected_event_data() -> anyhow::Result<()> {
     assert_eq!(destroyed.issued_to, None);
     assert_eq!(destroyed.valid_from, None);
     assert_eq!(destroyed.valid_until, None);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn destroy_initial_admin_capability_emits_expected_event() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let trail_id = create_trail(&client).await?;
+    let roles = client.trail(trail_id).roles();
+
+    let admin_cap_ref = client.get_cap(client.sender_address(), trail_id).await?;
+    let admin_cap_id = ObjectID::from(admin_cap_ref.0);
+
+    let destroyed = roles
+        .destroy_initial_admin_capability(admin_cap_id)
+        .build_and_execute(&client)
+        .await?
+        .output;
+
+    assert_eq!(destroyed.target_key, trail_id);
+    assert_eq!(destroyed.capability_id, admin_cap_id);
+    assert_eq!(destroyed.role, "Admin".to_string());
+    assert_eq!(destroyed.issued_to, None);
+    assert_eq!(destroyed.valid_from, None);
+    assert_eq!(destroyed.valid_until, None);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn revoke_initial_admin_capability_emits_expected_event() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let trail_id = create_trail(&client).await?;
+    let roles = client.trail(trail_id).roles();
+
+    // Issue a second admin capability so we can use the original to revoke it
+    let second_admin = roles
+        .for_role("Admin")
+        .issue_capability(CapabilityIssueOptions::default())
+        .build_and_execute(&client)
+        .await?
+        .output;
+
+    let revoked = roles
+        .revoke_initial_admin_capability(second_admin.capability_id)
+        .build_and_execute(&client)
+        .await?
+        .output;
+
+    assert_eq!(revoked.target_key, trail_id);
+    assert_eq!(revoked.capability_id, second_admin.capability_id);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn regular_destroy_rejects_initial_admin_capability() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let trail_id = create_trail(&client).await?;
+    let roles = client.trail(trail_id).roles();
+
+    let admin_cap_ref = client.get_cap(client.sender_address(), trail_id).await?;
+    let admin_cap_id = ObjectID::from(admin_cap_ref.0);
+
+    let result = roles
+        .destroy_capability(admin_cap_id)
+        .build_and_execute(&client)
+        .await;
+
+    assert!(
+        result.is_err(),
+        "destroying an initial admin cap via regular destroy_capability must fail"
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn regular_revoke_rejects_initial_admin_capability() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let trail_id = create_trail(&client).await?;
+    let roles = client.trail(trail_id).roles();
+
+    let admin_cap_ref = client.get_cap(client.sender_address(), trail_id).await?;
+    let admin_cap_id = ObjectID::from(admin_cap_ref.0);
+
+    let result = roles
+        .revoke_capability(admin_cap_id)
+        .build_and_execute(&client)
+        .await;
+
+    assert!(
+        result.is_err(),
+        "revoking an initial admin cap via regular revoke_capability must fail"
+    );
 
     Ok(())
 }

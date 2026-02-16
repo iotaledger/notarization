@@ -8,7 +8,6 @@ use product_common::transaction::transaction_builder::TransactionBuilder;
 
 use super::types::{Data, ImmutableMetadata, LockingConfig};
 use crate::core::create::CreateTrail;
-use crate::error::Error;
 
 /// Builder for creating an audit trail.
 #[derive(Debug, Clone, Default)]
@@ -63,7 +62,7 @@ impl AuditTrailBuilder {
     }
 
     /// Finalizes the builder and creates a transaction builder.
-    pub fn finish(self) -> Result<TransactionBuilder<CreateTrail>, Error> {
-        Ok(TransactionBuilder::new(CreateTrail::new(self)))
+    pub fn finish(self) -> TransactionBuilder<CreateTrail> {
+        TransactionBuilder::new(CreateTrail::new(self))
     }
 }

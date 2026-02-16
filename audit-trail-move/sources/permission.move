@@ -17,7 +17,7 @@ public enum Permission has copy, drop, store {
     /// Delete records from the trail
     DeleteRecord,
     /// Correct existing records in the trail
-    CorrectRecord, // TODO: Clarify if needed for MVP
+    CorrectRecord,
     // --- Locking Config - Proposed role: `LockingAdmin` ---
     /// Update the whole locking configuration
     UpdateLockingConfig,

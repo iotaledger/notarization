@@ -16,6 +16,17 @@ use crate::core::utils::deserialize_vec_set;
 
 use super::permission::Permission;
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RoleMap {
+    pub target_key: ObjectID,
+    #[serde(deserialize_with = "deserialize_vec_map")]
+    pub roles: HashMap<String, HashSet<Permission>>,
+    #[serde(deserialize_with = "deserialize_vec_set")]
+    pub issued_capabilities: HashSet<ObjectID>,
+    pub role_admin_permissions: RoleAdminPermissions,
+    pub capability_admin_permissions: CapabilityAdminPermissions,
+}
+
 /// Defines the permissions required to administer roles in this RoleMap.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RoleAdminPermissions {
@@ -54,19 +65,4 @@ impl MoveType for Capability {
     fn move_type(package: ObjectID) -> TypeTag {
         TypeTag::from_str(format!("{package}::capability::Capability").as_str()).expect("failed to create type tag")
     }
-}
-
-/// A simplified Rust representation of the on-chain RoleMap.
-///
-/// Note: The Move type uses VecMap/VecSet; this struct represents those
-/// collections as Rust vectors for convenience.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RoleMap {
-    pub target_key: ObjectID,
-    #[serde(deserialize_with = "deserialize_vec_map")]
-    pub roles: HashMap<String, HashSet<Permission>>,
-    #[serde(deserialize_with = "deserialize_vec_set")]
-    pub issued_capabilities: HashSet<ObjectID>,
-    pub role_admin_permissions: RoleAdminPermissions,
-    pub capability_admin_permissions: CapabilityAdminPermissions,
 }

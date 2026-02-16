@@ -13,7 +13,7 @@ async fn create_trail_with_default_builder_settings() -> anyhow::Result<()> {
     let created = client
         .create_trail()
         .with_initial_record(Data::text("audit-trail-create-default"), None)
-        .finish()?
+        .finish()
         .build_and_execute(&client)
         .await?
         .output;
@@ -47,7 +47,7 @@ async fn create_trail_with_metadata_and_time_lock() -> anyhow::Result<()> {
         .with_locking_config(LockingConfig::time_based(300))
         .with_trail_metadata(immutable_metadata.clone())
         .with_updatable_metadata("updatable metadata")
-        .finish()?
+        .finish()
         .build_and_execute(&client)
         .await?
         .output;
@@ -72,7 +72,7 @@ async fn create_trail_with_bytes_and_count_lock() -> anyhow::Result<()> {
         )
         .with_locking_config(LockingConfig::count_based(3))
         .with_trail_metadata_parts("Trail Count Lock", Some("count lock description".to_string()))
-        .finish()?
+        .finish()
         .build_and_execute(&client)
         .await?
         .output;
@@ -93,7 +93,7 @@ async fn create_trail_with_custom_admin_address() -> anyhow::Result<()> {
         .create_trail()
         .with_admin(custom_admin)
         .with_initial_record(Data::text("audit-trail-custom-admin"), None)
-        .finish()?
+        .finish()
         .build_and_execute(&client)
         .await?
         .output;
