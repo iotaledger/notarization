@@ -1,6 +1,8 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+use std::collections::HashMap;
+
 use iota_interaction::move_types::annotated_value::MoveValue;
 use iota_interaction::rpc_types::IotaMoveValue;
 use iota_interaction::types::TypeTag;
@@ -11,8 +13,8 @@ use iota_interaction::{IotaClientTrait, IotaKeySignature, OptionalSync};
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use product_common::transaction::transaction_builder::TransactionBuilder;
 use secret_storage::Signer;
-use serde::{Deserialize, de::DeserializeOwned};
-use std::collections::HashMap;
+use serde::Deserialize;
+use serde::de::DeserializeOwned;
 
 use crate::core::trail::{AuditTrailFull, AuditTrailReadOnly};
 use crate::core::types::{Data, OnChainAuditTrail, PaginatedRecord, Record};
@@ -21,8 +23,9 @@ use crate::error::Error;
 mod operations;
 mod transactions;
 
-use self::operations::RecordsOps;
 pub use transactions::{AddRecord, DeleteRecord};
+
+use self::operations::RecordsOps;
 
 #[derive(Debug, Clone)]
 pub struct TrailRecords<'a, C, D = Data> {
@@ -56,12 +59,7 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
         D: Into<Data>,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(AddRecord::new(
-            self.trail_id,
-            owner,
-            data.into(),
-            metadata,
-        ))
+        TransactionBuilder::new(AddRecord::new(self.trail_id, owner, data.into(), metadata))
     }
 
     pub fn delete<S>(&self, sequence_number: u64) -> TransactionBuilder<DeleteRecord>
@@ -70,11 +68,7 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
         S: Signer<IotaKeySignature> + OptionalSync,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(DeleteRecord::new(
-            self.trail_id,
-            owner,
-            sequence_number,
-        ))
+        TransactionBuilder::new(DeleteRecord::new(self.trail_id, owner, sequence_number))
     }
 
     pub async fn correct(&self, _replaces: Vec<u64>, _data: D, _metadata: Option<String>) -> Result<(), Error>

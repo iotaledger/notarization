@@ -1,14 +1,13 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+use iota_interaction::OptionalSync;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::transaction::ProgrammableTransaction;
-use iota_interaction::OptionalSync;
 use product_common::core_client::CoreClientReadOnly;
 
-use crate::core::operations;
-use crate::core::types::Data;
-use crate::core::utils;
+use crate::core::types::{Data, Permission};
+use crate::core::{operations, utils};
 use crate::error::Error;
 
 pub(super) struct RecordsOps;
@@ -24,14 +23,21 @@ impl RecordsOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        operations::build_trail_transaction_for_owner(client, trail_id, owner, "add_record", |ptb, trail_tag| {
-            data.ensure_matches_tag(trail_tag)?;
+        operations::build_trail_transaction(
+            client,
+            trail_id,
+            owner,
+            Permission::AddRecord,
+            "add_record",
+            |ptb, trail_tag| {
+                data.ensure_matches_tag(trail_tag)?;
 
-            let data_arg = data.to_ptb(ptb, "stored_data")?;
-            let metadata = utils::ptb_pure(ptb, "record_metadata", record_metadata)?;
-            let clock = utils::get_clock_ref(ptb);
-            Ok(vec![data_arg, metadata, clock])
-        })
+                let data_arg = data.to_ptb(ptb, "stored_data")?;
+                let metadata = utils::ptb_pure(ptb, "record_metadata", record_metadata)?;
+                let clock = utils::get_clock_ref(ptb);
+                Ok(vec![data_arg, metadata, clock])
+            },
+        )
         .await
     }
 
@@ -44,11 +50,18 @@ impl RecordsOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        operations::build_trail_transaction_for_owner(client, trail_id, owner, "delete_record", |ptb, _| {
-            let seq = utils::ptb_pure(ptb, "sequence_number", sequence_number)?;
-            let clock = utils::get_clock_ref(ptb);
-            Ok(vec![seq, clock])
-        })
+        operations::build_trail_transaction(
+            client,
+            trail_id,
+            owner,
+            Permission::DeleteRecord,
+            "delete_record",
+            |ptb, _| {
+                let seq = utils::ptb_pure(ptb, "sequence_number", sequence_number)?;
+                let clock = utils::get_clock_ref(ptb);
+                Ok(vec![seq, clock])
+            },
+        )
         .await
     }
 

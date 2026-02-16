@@ -22,6 +22,28 @@ pub enum Permission {
     DeleteMetadata,
 }
 
+impl Permission {
+    /// Returns the Move constructor function name for this permission variant.
+    pub(crate) fn move_function_name(&self) -> &'static str {
+        match self {
+            Self::DeleteAuditTrail => "delete_audit_trail",
+            Self::AddRecord => "add_record",
+            Self::DeleteRecord => "delete_record",
+            Self::CorrectRecord => "correct_record",
+            Self::UpdateLockingConfig => "update_locking_config",
+            Self::UpdateLockingConfigForDeleteRecord => "update_locking_config_for_delete_record",
+            Self::UpdateLockingConfigForDeleteTrail => "update_locking_config_for_delete_trail",
+            Self::AddRoles => "add_roles",
+            Self::UpdateRoles => "update_roles",
+            Self::DeleteRoles => "delete_roles",
+            Self::AddCapabilities => "add_capabilities",
+            Self::RevokeCapabilities => "revoke_capabilities",
+            Self::UpdateMetadata => "update_metadata",
+            Self::DeleteMetadata => "delete_metadata",
+        }
+    }
+}
+
 /// Convenience wrapper for permission sets.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PermissionSet {

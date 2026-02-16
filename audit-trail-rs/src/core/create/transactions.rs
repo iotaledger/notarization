@@ -2,23 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use async_trait::async_trait;
-use iota_interaction::IotaClientTrait;
-use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::{
     IotaData as _, IotaObjectDataOptions, IotaTransactionBlockEffects, IotaTransactionBlockEvents,
 };
 use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::types::transaction::ProgrammableTransaction;
+use iota_interaction::{IotaClientTrait, OptionalSync};
 use iota_sdk::types::base_types::IotaAddress;
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;
 
+use super::operations::CreateOps;
 use crate::core::builder::AuditTrailBuilder;
 use crate::core::types::{AuditTrailCreated, Event, OnChainAuditTrail};
 use crate::error::Error;
-
-use super::operations::CreateOps;
 
 /// Output of a create trail transaction.
 #[derive(Debug, Clone)]

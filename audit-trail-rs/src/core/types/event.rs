@@ -1,14 +1,14 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+use std::collections::HashSet;
+
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use serde::{Deserialize, Serialize};
 use serde_aux::field_attributes::{deserialize_number_from_string, deserialize_option_number_from_string};
-use std::collections::HashSet;
-
-use crate::core::utils::deserialize_vec_set;
 
 use super::permission::Permission;
+use crate::core::utils::deserialize_vec_set;
 /// Generic wrapper for audit trail events.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Event<D> {
@@ -83,13 +83,9 @@ pub struct CapabilityRevoked {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RoleCreated {
+    #[serde(rename = "target_key")]
     pub trail_id: ObjectID,
     pub role: String,
-    #[serde(deserialize_with = "deserialize_vec_set")]
-    pub permissions: HashSet<Permission>,
-    pub created_by: IotaAddress,
-    #[serde(deserialize_with = "deserialize_number_from_string")]
-    pub timestamp: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

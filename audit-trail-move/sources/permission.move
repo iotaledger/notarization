@@ -128,7 +128,7 @@ public fun metadata_admin_permissions(): VecSet<Permission> {
     perms
 }
 
-// --------------------------- Constructor functions for all Permission variants ---------------------------
+// ------- Constructor functions for all Permission variants -------------
 
 /// Returns a permission allowing to destroy the whole Audit Trail object
 public fun delete_audit_trail(): Permission {

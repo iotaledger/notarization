@@ -8,6 +8,7 @@ use iota_interaction::types::TypeTag;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::collection_types::LinkedTable;
 use iota_interaction::types::id::UID;
+use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
 use iota_interaction::types::transaction::Argument;
 use serde::{Deserialize, Serialize};
 
@@ -15,7 +16,6 @@ use super::locking::LockingConfig;
 use super::role_map::RoleMap;
 use crate::core::utils;
 use crate::error::Error;
-use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
 
 /// An audit trail stored on-chain.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -1,8 +1,9 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::client::get_funded_test_client;
 use audit_trails::core::types::Data;
+
+use crate::client::get_funded_test_client;
 
 #[tokio::test]
 async fn add_and_fetch_record_roundtrip() -> anyhow::Result<()> {

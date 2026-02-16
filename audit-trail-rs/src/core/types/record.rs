@@ -1,6 +1,7 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 
 use iota_interaction::types::base_types::IotaAddress;
@@ -11,8 +12,6 @@ use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::core::utils;
 use crate::error::Error;
-
-use std::collections::{HashMap, HashSet};
 
 /// Page of records loaded through linked-table traversal.
 #[derive(Debug, Clone)]

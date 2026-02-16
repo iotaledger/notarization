@@ -6,23 +6,23 @@ use std::str::FromStr;
 
 use iota_interaction::MoveType;
 use iota_interaction::types::TypeTag;
-use iota_interaction::types::base_types::IotaAddress;
-use iota_interaction::types::base_types::ObjectID;
+use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::id::UID;
 use serde::{Deserialize, Serialize};
 
-use crate::core::utils::deserialize_vec_map;
-use crate::core::utils::deserialize_vec_set;
-
 use super::permission::Permission;
+use crate::core::utils::{deserialize_vec_map, deserialize_vec_set};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RoleMap {
     pub target_key: ObjectID,
     #[serde(deserialize_with = "deserialize_vec_map")]
     pub roles: HashMap<String, HashSet<Permission>>,
+    pub initial_admin_role_name: String,
     #[serde(deserialize_with = "deserialize_vec_set")]
     pub issued_capabilities: HashSet<ObjectID>,
+    #[serde(deserialize_with = "deserialize_vec_set")]
+    pub initial_admin_cap_ids: HashSet<ObjectID>,
     pub role_admin_permissions: RoleAdminPermissions,
     pub capability_admin_permissions: CapabilityAdminPermissions,
 }

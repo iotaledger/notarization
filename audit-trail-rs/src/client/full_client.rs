@@ -7,15 +7,15 @@
 
 use std::ops::Deref;
 
-use crate::client::read_only::AuditTrailClientReadOnly;
-use crate::core::builder::AuditTrailBuilder;
-use crate::core::trail::{AuditTrailFull, AuditTrailHandle, AuditTrailReadOnly};
-use crate::error::Error;
 use async_trait::async_trait;
+#[cfg(not(target_arch = "wasm32"))]
+use iota_interaction::IotaClient;
 use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::types::transaction::ProgrammableTransaction;
 use iota_interaction::{IotaKeySignature, OptionalSync};
 use iota_interaction_rust::IotaClientAdapter;
+#[cfg(target_arch = "wasm32")]
+use iota_interaction_ts::bindings::WasmIotaClient as IotaClient;
 use iota_sdk::types::base_types::IotaAddress;
 use iota_sdk::types::crypto::PublicKey;
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
@@ -23,10 +23,10 @@ use product_common::network_name::NetworkName;
 use secret_storage::Signer;
 use serde::de::DeserializeOwned;
 
-#[cfg(not(target_arch = "wasm32"))]
-use iota_interaction::IotaClient;
-#[cfg(target_arch = "wasm32")]
-use iota_interaction_ts::bindings::WasmIotaClient as IotaClient;
+use crate::client::read_only::AuditTrailClientReadOnly;
+use crate::core::builder::AuditTrailBuilder;
+use crate::core::trail::{AuditTrailFull, AuditTrailHandle, AuditTrailReadOnly};
+use crate::error::Error;
 
 /// A marker type indicating the absence of a signer.
 #[derive(Debug, Clone, Copy)]
@@ -88,8 +88,8 @@ impl AuditTrailClient<NoSigner> {
     /// # #[tokio::main]
     /// # async fn main() -> anyhow::Result<()> {
     /// let iota_client = iota_sdk::IotaClientBuilder::default()
-    ///   .build_testnet()
-    ///   .await?;
+    ///     .build_testnet()
+    ///     .await?;
     /// // No package ID is required since we are connecting to an official IOTA network.
     /// let audit_trail_client = AuditTrailClient::from_iota_client(iota_client, None).await?;
     /// # Ok(())

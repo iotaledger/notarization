@@ -41,11 +41,7 @@ impl<'a, C> TrailRoles<'a, C> {
         S: Signer<IotaKeySignature> + OptionalSync,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(RevokeCapability::new(
-            self.trail_id,
-            owner,
-            capability_id,
-        ))
+        TransactionBuilder::new(RevokeCapability::new(self.trail_id, owner, capability_id))
     }
 
     /// Destroys a capability object.
@@ -55,11 +51,7 @@ impl<'a, C> TrailRoles<'a, C> {
         S: Signer<IotaKeySignature> + OptionalSync,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(DestroyCapability::new(
-            self.trail_id,
-            owner,
-            capability_id,
-        ))
+        TransactionBuilder::new(DestroyCapability::new(self.trail_id, owner, capability_id))
     }
 
     /// Destroys an initial admin capability (self-service, no auth cap required).
@@ -71,10 +63,7 @@ impl<'a, C> TrailRoles<'a, C> {
         C: AuditTrailFull + CoreClient<S>,
         S: Signer<IotaKeySignature> + OptionalSync,
     {
-        TransactionBuilder::new(DestroyInitialAdminCapability::new(
-            self.trail_id,
-            capability_id,
-        ))
+        TransactionBuilder::new(DestroyInitialAdminCapability::new(self.trail_id, capability_id))
     }
 
     /// Revokes an initial admin capability by ID.
@@ -87,11 +76,7 @@ impl<'a, C> TrailRoles<'a, C> {
         S: Signer<IotaKeySignature> + OptionalSync,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(RevokeInitialAdminCapability::new(
-            self.trail_id,
-            owner,
-            capability_id,
-        ))
+        TransactionBuilder::new(RevokeInitialAdminCapability::new(self.trail_id, owner, capability_id))
     }
 }
 
@@ -118,30 +103,17 @@ impl<'a, C> RoleHandle<'a, C> {
         S: Signer<IotaKeySignature> + OptionalSync,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(CreateRole::new(
-            self.trail_id,
-            owner,
-            self.name.clone(),
-            permissions,
-        ))
+        TransactionBuilder::new(CreateRole::new(self.trail_id, owner, self.name.clone(), permissions))
     }
 
     /// Issues a capability for this role using optional restrictions.
-    pub fn issue_capability<S>(
-        &self,
-        options: CapabilityIssueOptions,
-    ) -> TransactionBuilder<IssueCapability>
+    pub fn issue_capability<S>(&self, options: CapabilityIssueOptions) -> TransactionBuilder<IssueCapability>
     where
         C: AuditTrailFull + CoreClient<S>,
         S: Signer<IotaKeySignature> + OptionalSync,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(IssueCapability::new(
-            self.trail_id,
-            owner,
-            self.name.clone(),
-            options,
-        ))
+        TransactionBuilder::new(IssueCapability::new(self.trail_id, owner, self.name.clone(), options))
     }
 
     /// Updates permissions for this role.
@@ -151,12 +123,7 @@ impl<'a, C> RoleHandle<'a, C> {
         S: Signer<IotaKeySignature> + OptionalSync,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(UpdateRole::new(
-            self.trail_id,
-            owner,
-            self.name.clone(),
-            permissions,
-        ))
+        TransactionBuilder::new(UpdateRole::new(self.trail_id, owner, self.name.clone(), permissions))
     }
 
     /// Deletes this role.
@@ -166,10 +133,6 @@ impl<'a, C> RoleHandle<'a, C> {
         S: Signer<IotaKeySignature> + OptionalSync,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(DeleteRole::new(
-            self.trail_id,
-            owner,
-            self.name.clone(),
-        ))
+        TransactionBuilder::new(DeleteRole::new(self.trail_id, owner, self.name.clone()))
     }
 }

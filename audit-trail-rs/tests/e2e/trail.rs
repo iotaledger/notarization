@@ -1,17 +1,18 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::client::get_funded_test_client;
 use audit_trails::core::types::{
     CapabilityIssueOptions, Data, ImmutableMetadata, LockingConfig, Permission, PermissionSet,
 };
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use product_common::core_client::CoreClient;
 
+use crate::client::{TestClient, get_funded_test_client};
+
 /// Creates a trail and issues a MetadataAdmin capability with `UpdateMetadata`
 /// permission so the owner can call `update_metadata`.
 async fn create_trail_with_metadata_role(
-    client: &crate::client::TestClient,
+    client: &TestClient,
     initial_record: Data,
     updatable_metadata: Option<&str>,
     immutable_metadata: Option<ImmutableMetadata>,
@@ -47,8 +48,6 @@ async fn create_trail_with_metadata_role(
 
     Ok(trail_id)
 }
-
-// ===== Creation =====
 
 #[tokio::test]
 async fn create_trail_with_default_builder_settings() -> anyhow::Result<()> {
@@ -146,15 +145,12 @@ async fn create_trail_with_custom_admin_address() -> anyhow::Result<()> {
 
     println!("Owned objects for custom admin {custom_admin}:");
     match cap {
-        Ok(cap_ref) => println!("Found accredit capability with ID: {}", cap_ref.0),
-        Err(e) => println!("Error finding accredit capability for custom admin: {e}"),
+        Ok(cap_ref) => println!("Found admin capability with ID: {}", cap_ref.0),
+        Err(e) => println!("Error finding admin capability for custom admin: {e}"),
     }
-    // assert!(has_admin_capability, "custom admin did not receive admin capability");
 
     Ok(())
 }
-
-// ===== Get =====
 
 #[tokio::test]
 async fn get_returns_on_chain_trail() -> anyhow::Result<()> {
@@ -207,8 +203,6 @@ async fn get_trail_without_metadata() -> anyhow::Result<()> {
 
     Ok(())
 }
-
-// ===== Update Metadata =====
 
 #[tokio::test]
 async fn update_metadata_roundtrip() -> anyhow::Result<()> {

@@ -2,21 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use async_trait::async_trait;
+use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::{IotaTransactionBlockEffects, IotaTransactionBlockEvents};
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::transaction::ProgrammableTransaction;
-use iota_interaction::OptionalSync;
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;
 
+use super::operations::RolesOps;
 use crate::core::types::{
     CapabilityDestroyed, CapabilityIssueOptions, CapabilityIssued, CapabilityRevoked, Event, PermissionSet,
     RoleCreated, RoleDeleted, RoleUpdated,
 };
 use crate::error::Error;
-
-use super::operations::RolesOps;
 
 // ===== CreateRole =====
 
@@ -77,13 +76,13 @@ impl Transaction for CreateRole {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        for data in &events.data {
-            if let Ok(event) = serde_json::from_value::<Event<RoleCreated>>(data.parsed_json.clone()) {
-                return Ok(event.data);
-            }
-        }
+        let event = events
+            .data
+            .iter()
+            .find_map(|data| serde_json::from_value::<Event<RoleCreated>>(data.parsed_json.clone()).ok())
+            .ok_or_else(|| Error::UnexpectedApiResponse("RoleCreated event not found".to_string()))?;
 
-        Err(Error::UnexpectedApiResponse("RoleCreated event not found".to_string()))
+        Ok(event.data)
     }
 
     async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
@@ -233,11 +232,7 @@ impl Transaction for DeleteRole {
         Err(Error::UnexpectedApiResponse("RoleDeleted event not found".to_string()))
     }
 
-    async fn apply<C>(
-        mut self,
-        _: &mut IotaTransactionBlockEffects,
-        _: &C,
-    ) -> Result<Self::Output, Self::Error>
+    async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
@@ -317,11 +312,7 @@ impl Transaction for IssueCapability {
         ))
     }
 
-    async fn apply<C>(
-        mut self,
-        _: &mut IotaTransactionBlockEffects,
-        _: &C,
-    ) -> Result<Self::Output, Self::Error>
+    async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
@@ -392,11 +383,7 @@ impl Transaction for RevokeCapability {
         ))
     }
 
-    async fn apply<C>(
-        mut self,
-        _: &mut IotaTransactionBlockEffects,
-        _: &C,
-    ) -> Result<Self::Output, Self::Error>
+    async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
@@ -467,11 +454,7 @@ impl Transaction for DestroyCapability {
         ))
     }
 
-    async fn apply<C>(
-        mut self,
-        _: &mut IotaTransactionBlockEffects,
-        _: &C,
-    ) -> Result<Self::Output, Self::Error>
+    async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
@@ -540,11 +523,7 @@ impl Transaction for DestroyInitialAdminCapability {
         ))
     }
 
-    async fn apply<C>(
-        mut self,
-        _: &mut IotaTransactionBlockEffects,
-        _: &C,
-    ) -> Result<Self::Output, Self::Error>
+    async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
@@ -615,11 +594,7 @@ impl Transaction for RevokeInitialAdminCapability {
         ))
     }
 
-    async fn apply<C>(
-        mut self,
-        _: &mut IotaTransactionBlockEffects,
-        _: &C,
-    ) -> Result<Self::Output, Self::Error>
+    async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {

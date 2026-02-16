@@ -1,9 +1,12 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use iota_interaction::{IotaKeySignature, OptionalSync};
+use iota_interaction::rpc_types::{
+    IotaData as _, IotaObjectDataOptions, IotaTransactionBlockEffects, IotaTransactionBlockEvents,
+};
 use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::types::transaction::ProgrammableTransaction;
+use iota_interaction::{IotaClientTrait, IotaKeySignature, OptionalSync};
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use product_common::transaction::transaction_builder::TransactionBuilder;
 use secret_storage::Signer;
@@ -49,12 +52,26 @@ impl<'a, C> AuditTrailHandle<'a, C> {
     where
         C: AuditTrailReadOnly,
     {
-        self.client.get_object_by_id(self.trail_id).await.map_err(|err| {
-            Error::UnexpectedApiResponse(format!(
-                "failed to load on-chain trail {}; {err}",
-                self.trail_id
-            ))
-        })
+        let data = self
+            .client
+            .client_adapter()
+            .read_api()
+            .get_object_with_options(self.trail_id, IotaObjectDataOptions::bcs_lossless())
+            .await
+            .map_err(|e| Error::UnexpectedApiResponse(format!("failed to fetch trail {} object; {e}", self.trail_id)))?
+            .data
+            .ok_or_else(|| Error::UnexpectedApiResponse(format!("trail {} data not found", self.trail_id)))?;
+
+        data.bcs
+            .ok_or_else(|| Error::UnexpectedApiResponse(format!("trail {} missing bcs object content", self.trail_id)))?
+            .try_into_move()
+            .ok_or_else(|| {
+                Error::UnexpectedApiResponse(format!("trail {} bcs content is not a move object", self.trail_id))
+            })?
+            .deserialize()
+            .map_err(|e| {
+                Error::UnexpectedApiResponse(format!("failed to decode trail {} bcs data; {e}", self.trail_id))
+            })
     }
 
     /// Updates the trail's updatable metadata.
@@ -64,11 +81,7 @@ impl<'a, C> AuditTrailHandle<'a, C> {
         S: Signer<IotaKeySignature> + OptionalSync,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(UpdateMetadata::new(
-            self.trail_id,
-            owner,
-            metadata,
-        ))
+        TransactionBuilder::new(UpdateMetadata::new(self.trail_id, owner, metadata))
     }
 
     pub fn records(&self) -> TrailRecords<'a, C, Data> {

@@ -10,10 +10,9 @@ use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;
 
+use super::operations::RecordsOps;
 use crate::core::types::{Data, Event, RecordAdded, RecordDeleted};
 use crate::error::Error;
-
-use super::operations::RecordsOps;
 
 // ===== AddRecord =====
 
