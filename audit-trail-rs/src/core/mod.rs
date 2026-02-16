@@ -6,7 +6,6 @@
 pub mod builder;
 pub mod create;
 pub mod locking;
-pub mod metadata;
 pub(crate) mod operations;
 pub(crate) mod utils;
 pub mod records;
