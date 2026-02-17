@@ -1,7 +1,7 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashSet};
 use std::str::FromStr;
 
 use iota_interaction::types::base_types::IotaAddress;
@@ -16,7 +16,7 @@ use crate::error::Error;
 /// Page of records loaded through linked-table traversal.
 #[derive(Debug, Clone)]
 pub struct PaginatedRecord<D = Data> {
-    pub records: HashMap<u64, Record<D>>,
+    pub records: BTreeMap<u64, Record<D>>,
     pub next_cursor: Option<u64>,
     pub has_next_page: bool,
 }

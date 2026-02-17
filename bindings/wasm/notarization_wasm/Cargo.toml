@@ -21,8 +21,8 @@ async-trait = { version = "0.1", default-features = false }
 bcs = "0.1.6"
 console_error_panic_hook = { version = "0.1" }
 fastcrypto = { git = "https://github.com/MystenLabs/fastcrypto", rev = "69d496c71fb37e3d22fe85e5bbfd4256d61422b9", package = "fastcrypto" }
-iota_interaction = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.10", package = "iota_interaction", default-features = false }
-iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.10", package = "iota_interaction_ts" }
+iota_interaction = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/emit-events-for-capabilities", package = "iota_interaction", default-features = false }
+iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/emit-events-for-capabilities", package = "iota_interaction_ts" }
 js-sys = { version = "0.3.61" }
 prefix-hex = { version = "0.7", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
@@ -37,9 +37,16 @@ wasm-bindgen-futures = { version = "0.4", default-features = false }
 
 [dependencies.product_common]
 git = "https://github.com/iotaledger/product-core.git"
-tag = "v0.8.10"
+branch = "feat/emit-events-for-capabilities"
 package = "product_common"
-features = ["core-client", "transaction", "bindings", "binding-utils", "gas-station", "default-http-client"]
+features = [
+    "core-client",
+    "transaction",
+    "bindings",
+    "binding-utils",
+    "gas-station",
+    "default-http-client",
+]
 
 [dependencies.notarization]
 path = "../../../notarization-rs"
@@ -47,7 +54,9 @@ default-features = false
 features = ["gas-station", "default-http-client", "irl"]
 
 [target.'cfg(all(target_arch = "wasm32", not(target_os = "wasi")))'.dependencies]
-getrandom = { version = "0.3", default-features = false, features = ["wasm_js"] }
+getrandom = { version = "0.3", default-features = false, features = [
+    "wasm_js",
+] }
 
 [profile.release]
 opt-level = 's'
@@ -65,4 +74,6 @@ empty_docs = "allow"
 
 [lints.rust]
 # required for current wasm_bindgen version
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(wasm_bindgen_unstable_test_coverage)'] }
+unexpected_cfgs = { level = "warn", check-cfg = [
+    'cfg(wasm_bindgen_unstable_test_coverage)',
+] }

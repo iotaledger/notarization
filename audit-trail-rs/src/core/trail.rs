@@ -52,26 +52,7 @@ impl<'a, C> AuditTrailHandle<'a, C> {
     where
         C: AuditTrailReadOnly,
     {
-        let data = self
-            .client
-            .client_adapter()
-            .read_api()
-            .get_object_with_options(self.trail_id, IotaObjectDataOptions::bcs_lossless())
-            .await
-            .map_err(|e| Error::UnexpectedApiResponse(format!("failed to fetch trail {} object; {e}", self.trail_id)))?
-            .data
-            .ok_or_else(|| Error::UnexpectedApiResponse(format!("trail {} data not found", self.trail_id)))?;
-
-        data.bcs
-            .ok_or_else(|| Error::UnexpectedApiResponse(format!("trail {} missing bcs object content", self.trail_id)))?
-            .try_into_move()
-            .ok_or_else(|| {
-                Error::UnexpectedApiResponse(format!("trail {} bcs content is not a move object", self.trail_id))
-            })?
-            .deserialize()
-            .map_err(|e| {
-                Error::UnexpectedApiResponse(format!("failed to decode trail {} bcs data; {e}", self.trail_id))
-            })
+        crate::core::operations::get_audit_trail(self.trail_id, self.client).await
     }
 
     /// Updates the trail's updatable metadata.

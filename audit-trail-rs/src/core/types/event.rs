@@ -90,13 +90,9 @@ pub struct RoleCreated {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RoleUpdated {
+    #[serde(rename = "target_key")]
     pub trail_id: ObjectID,
     pub role: String,
-    #[serde(deserialize_with = "deserialize_vec_set")]
-    pub new_permissions: HashSet<Permission>,
-    pub updated_by: IotaAddress,
-    #[serde(deserialize_with = "deserialize_number_from_string")]
-    pub timestamp: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

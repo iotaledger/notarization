@@ -1,11 +1,8 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use std::str::FromStr;
-
-use iota_interaction::types::TypeTag;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
-use iota_interaction::types::transaction::{Command, ObjectArg, ProgrammableTransaction};
+use iota_interaction::types::transaction::{Argument, Command, ObjectArg, ProgrammableTransaction};
 use iota_interaction::{OptionalSync, ident_str};
 use product_common::core_client::CoreClientReadOnly;
 
@@ -34,7 +31,7 @@ impl RolesOps {
             "create_role",
             |ptb, _| {
                 let role = utils::ptb_pure(ptb, "role", name)?;
-                let perms_vec = Self::permissions_to_vec(ptb, client.package_id(), permissions.permissions);
+                let perms_vec = permissions.to_move_vec(client.package_id(), ptb)?;
                 let perms = ptb.programmable_move_call(
                     client.package_id(),
                     ident_str!("permission").into(),
@@ -68,7 +65,8 @@ impl RolesOps {
             "update_role_permissions",
             |ptb, _| {
                 let role = utils::ptb_pure(ptb, "role", name)?;
-                let perms_vec = Self::permissions_to_vec(ptb, client.package_id(), permissions.permissions);
+                let perms_vec = permissions.to_move_vec(client.package_id(), ptb)?;
+
                 let perms = ptb.programmable_move_call(
                     client.package_id(),
                     ident_str!("permission").into(),
@@ -76,36 +74,13 @@ impl RolesOps {
                     vec![],
                     vec![perms_vec],
                 );
+
                 let clock = utils::get_clock_ref(ptb);
 
                 Ok(vec![role, perms, clock])
             },
         )
         .await
-    }
-
-    fn permissions_to_vec(
-        ptb: &mut iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder,
-        package_id: ObjectID,
-        permissions: Vec<Permission>,
-    ) -> iota_interaction::types::transaction::Argument {
-        let permission_type = TypeTag::from_str(format!("{package_id}::permission::Permission").as_str())
-            .expect("invalid TypeTag for Permission");
-        let permission_args = permissions
-            .into_iter()
-            .map(|permission| Self::permission_to_argument(ptb, package_id, permission))
-            .collect::<Vec<_>>();
-        ptb.command(Command::MakeMoveVec(Some(permission_type.into()), permission_args))
-    }
-
-    fn permission_to_argument(
-        ptb: &mut iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder,
-        package_id: ObjectID,
-        permission: Permission,
-    ) -> iota_interaction::types::transaction::Argument {
-        let function = iota_interaction::types::Identifier::from_str(permission.move_function_name())
-            .expect("invalid permission function name");
-        ptb.programmable_move_call(package_id, ident_str!("permission").into(), function, vec![], vec![])
     }
 
     pub(super) async fn delete_role<C>(

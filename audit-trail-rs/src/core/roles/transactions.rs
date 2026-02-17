@@ -89,13 +89,9 @@ impl Transaction for CreateRole {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        Err(Error::UnexpectedApiResponse(
-            "RoleCreated output requires transaction events".to_string(),
-        ))
+        unreachable!("RoleCreated output requires transaction events")
     }
 }
-
-// ===== UpdateRole =====
 
 #[derive(Debug, Clone)]
 pub struct UpdateRole {
@@ -154,13 +150,13 @@ impl Transaction for UpdateRole {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        for data in &events.data {
-            if let Ok(event) = serde_json::from_value::<Event<RoleUpdated>>(data.parsed_json.clone()) {
-                return Ok(event.data);
-            }
-        }
+        let event = events
+            .data
+            .iter()
+            .find_map(|data| serde_json::from_value::<Event<RoleUpdated>>(data.parsed_json.clone()).ok())
+            .ok_or_else(|| Error::UnexpectedApiResponse("RoleUpdated event not found".to_string()))?;
 
-        Err(Error::UnexpectedApiResponse("RoleUpdated event not found".to_string()))
+        Ok(event.data)
     }
 
     async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>

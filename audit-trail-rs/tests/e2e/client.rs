@@ -1,11 +1,14 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+use std::collections::HashSet;
 use std::ops::Deref;
 use std::sync::Arc;
 
 use audit_trails::AuditTrailClient;
-use audit_trails::core::types::Capability;
+use audit_trails::core::types::{
+    Capability, CapabilityIssueOptions, CapabilityIssued, Data, Permission, PermissionSet, RoleCreated,
+};
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::crypto::PublicKey;
 use iota_interaction::{IOTA_LOCAL_NETWORK_URL, IotaClientBuilder};
@@ -79,6 +82,56 @@ impl TestClient {
             .map_err(|e| anyhow::anyhow!("Failed to get object ref for accredit cap: {e}"))?
             .map(|owned_ref| owned_ref.reference.to_object_ref())
             .unwrap())
+    }
+
+    /// Creates a trail with the given initial record data and returns its ObjectID.
+    pub(crate) async fn create_test_trail(&self, data: Data) -> anyhow::Result<ObjectID> {
+        let created = self
+            .create_trail()
+            .with_initial_record(data, None)
+            .finish()
+            .build_and_execute(self)
+            .await?
+            .output;
+        Ok(created.trail_id)
+    }
+
+    /// Creates a role on the given trail with the specified permissions.
+    pub(crate) async fn create_role(
+        &self,
+        trail_id: ObjectID,
+        role_name: &str,
+        permissions: impl IntoIterator<Item = Permission>,
+    ) -> anyhow::Result<RoleCreated> {
+        let created = self
+            .trail(trail_id)
+            .roles()
+            .for_role(role_name)
+            .create(PermissionSet {
+                permissions: permissions.into_iter().collect::<HashSet<_>>(),
+            })
+            .build_and_execute(self)
+            .await?
+            .output;
+        Ok(created)
+    }
+
+    /// Issues a capability for the given role on the trail.
+    pub(crate) async fn issue_cap(
+        &self,
+        trail_id: ObjectID,
+        role_name: &str,
+        options: CapabilityIssueOptions,
+    ) -> anyhow::Result<CapabilityIssued> {
+        let issued = self
+            .trail(trail_id)
+            .roles()
+            .for_role(role_name)
+            .issue_capability(options)
+            .build_and_execute(self)
+            .await?
+            .output;
+        Ok(issued)
     }
 }
 

@@ -1,53 +1,11 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use audit_trails::core::types::{
-    CapabilityIssueOptions, Data, ImmutableMetadata, LockingConfig, Permission, PermissionSet,
-};
-use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use audit_trails::core::types::{CapabilityIssueOptions, Data, ImmutableMetadata, LockingConfig, Permission};
+use iota_interaction::types::base_types::IotaAddress;
 use product_common::core_client::CoreClient;
 
-use crate::client::{TestClient, get_funded_test_client};
-
-/// Creates a trail and issues a MetadataAdmin capability with `UpdateMetadata`
-/// permission so the owner can call `update_metadata`.
-async fn create_trail_with_metadata_role(
-    client: &TestClient,
-    initial_record: Data,
-    updatable_metadata: Option<&str>,
-    immutable_metadata: Option<ImmutableMetadata>,
-) -> anyhow::Result<ObjectID> {
-    let mut builder = client.create_trail().with_initial_record(initial_record, None);
-
-    if let Some(meta) = updatable_metadata {
-        builder = builder.with_updatable_metadata(meta);
-    }
-    if let Some(imm) = immutable_metadata {
-        builder = builder.with_trail_metadata(imm);
-    }
-
-    let created = builder.finish().build_and_execute(client).await?.output;
-    let trail_id = created.trail_id;
-    let roles = client.trail(trail_id).roles();
-
-    // Create a dedicated MetadataAdmin role
-    roles
-        .for_role("MetadataAdmin")
-        .create(PermissionSet {
-            permissions: vec![Permission::UpdateMetadata],
-        })
-        .build_and_execute(client)
-        .await?;
-
-    // Issue a capability for it to the current signer
-    roles
-        .for_role("MetadataAdmin")
-        .issue_capability(CapabilityIssueOptions::default())
-        .build_and_execute(client)
-        .await?;
-
-    Ok(trail_id)
-}
+use crate::client::get_funded_test_client;
 
 #[tokio::test]
 async fn create_trail_with_default_builder_settings() -> anyhow::Result<()> {
@@ -207,12 +165,23 @@ async fn get_trail_without_metadata() -> anyhow::Result<()> {
 #[tokio::test]
 async fn update_metadata_roundtrip() -> anyhow::Result<()> {
     let client = get_funded_test_client().await?;
-    let trail_id =
-        create_trail_with_metadata_role(&client, Data::text("trail-update-meta-e2e"), Some("before"), None).await?;
+
+    let trail_id = client.create_test_trail(Data::text("trail-update-meta-e2e")).await?;
+    // Set initial updatable metadata via update_metadata
+    client
+        .create_role(trail_id, "MetadataAdmin", vec![Permission::UpdateMetadata])
+        .await?;
+    client
+        .issue_cap(trail_id, "MetadataAdmin", CapabilityIssueOptions::default())
+        .await?;
 
     let trail = client.trail(trail_id);
 
-    // Verify initial value
+    trail
+        .update_metadata(Some("before".to_string()))
+        .build_and_execute(&client)
+        .await?;
+
     let before = trail.get().await?;
     assert_eq!(before.updatable_metadata, Some("before".to_string()));
 
@@ -231,11 +200,21 @@ async fn update_metadata_roundtrip() -> anyhow::Result<()> {
 #[tokio::test]
 async fn update_metadata_to_none_clears_value() -> anyhow::Result<()> {
     let client = get_funded_test_client().await?;
-    let trail_id =
-        create_trail_with_metadata_role(&client, Data::text("trail-clear-meta-e2e"), Some("to-be-cleared"), None)
-            .await?;
+
+    let trail_id = client.create_test_trail(Data::text("trail-clear-meta-e2e")).await?;
+    client
+        .create_role(trail_id, "MetadataAdmin", vec![Permission::UpdateMetadata])
+        .await?;
+    client
+        .issue_cap(trail_id, "MetadataAdmin", CapabilityIssueOptions::default())
+        .await?;
 
     let trail = client.trail(trail_id);
+
+    trail
+        .update_metadata(Some("to-be-cleared".to_string()))
+        .build_and_execute(&client)
+        .await?;
 
     trail.update_metadata(None).build_and_execute(&client).await?;
 
@@ -248,7 +227,14 @@ async fn update_metadata_to_none_clears_value() -> anyhow::Result<()> {
 #[tokio::test]
 async fn update_metadata_multiple_times() -> anyhow::Result<()> {
     let client = get_funded_test_client().await?;
-    let trail_id = create_trail_with_metadata_role(&client, Data::text("trail-multi-meta-e2e"), None, None).await?;
+
+    let trail_id = client.create_test_trail(Data::text("trail-multi-meta-e2e")).await?;
+    client
+        .create_role(trail_id, "MetadataAdmin", vec![Permission::UpdateMetadata])
+        .await?;
+    client
+        .issue_cap(trail_id, "MetadataAdmin", CapabilityIssueOptions::default())
+        .await?;
 
     let trail = client.trail(trail_id);
 
@@ -276,13 +262,23 @@ async fn update_metadata_does_not_affect_immutable_metadata() -> anyhow::Result<
     let client = get_funded_test_client().await?;
     let immutable = ImmutableMetadata::new("Immutable Name".to_string(), Some("frozen".to_string()));
 
-    let trail_id = create_trail_with_metadata_role(
-        &client,
-        Data::text("trail-immutable-check-e2e"),
-        Some("mutable"),
-        Some(immutable.clone()),
-    )
-    .await?;
+    let created = client
+        .create_trail()
+        .with_initial_record(Data::text("trail-immutable-check-e2e"), None)
+        .with_trail_metadata(immutable.clone())
+        .with_updatable_metadata("mutable")
+        .finish()
+        .build_and_execute(&client)
+        .await?
+        .output;
+
+    let trail_id = created.trail_id;
+    client
+        .create_role(trail_id, "MetadataAdmin", vec![Permission::UpdateMetadata])
+        .await?;
+    client
+        .issue_cap(trail_id, "MetadataAdmin", CapabilityIssueOptions::default())
+        .await?;
 
     let trail = client.trail(trail_id);
 

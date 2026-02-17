@@ -1,23 +1,22 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use iota_interaction::move_types::annotated_value::MoveValue;
-use iota_interaction::rpc_types::IotaMoveValue;
+use iota_interaction::rpc_types::{IotaData as _, IotaMoveValue, IotaObjectDataOptions};
 use iota_interaction::types::TypeTag;
 use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::types::collection_types::{LinkedTable, LinkedTableNode};
-use iota_interaction::types::dynamic_field::DynamicFieldName;
+use iota_interaction::types::dynamic_field::{DynamicFieldName, Field};
 use iota_interaction::{IotaClientTrait, IotaKeySignature, OptionalSync};
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use product_common::transaction::transaction_builder::TransactionBuilder;
 use secret_storage::Signer;
-use serde::Deserialize;
 use serde::de::DeserializeOwned;
 
 use crate::core::trail::{AuditTrailFull, AuditTrailReadOnly};
-use crate::core::types::{Data, OnChainAuditTrail, PaginatedRecord, Record};
+use crate::core::types::{Data, PaginatedRecord, Record};
 use crate::error::Error;
 
 mod operations;
@@ -26,6 +25,8 @@ mod transactions;
 pub use transactions::{AddRecord, DeleteRecord};
 
 use self::operations::RecordsOps;
+
+const MAX_LIST_PAGE_LIMIT: usize = 1_000;
 
 #[derive(Debug, Clone)]
 pub struct TrailRecords<'a, C, D = Data> {
@@ -117,6 +118,12 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
         C: AuditTrailReadOnly,
         D: DeserializeOwned,
     {
+        if limit > MAX_LIST_PAGE_LIMIT {
+            return Err(Error::InvalidArgument(format!(
+                "page limit {limit} exceeds max supported page size {MAX_LIST_PAGE_LIMIT}"
+            )));
+        }
+
         let records_table = self.load_records_table().await?;
         let (records, next_cursor) =
             list_linked_table_page::<_, Record<D>>(self.client, &records_table, cursor, limit).await?;
@@ -132,35 +139,28 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
     where
         C: AuditTrailReadOnly,
     {
-        let on_chain_trail: OnChainAuditTrail = self.client.get_object_by_id(self.trail_id).await.map_err(|err| {
-            Error::UnexpectedApiResponse(format!(
-                "failed to load on-chain trail {} for hydration; {err}",
-                self.trail_id
-            ))
-        })?;
-
-        Ok(on_chain_trail.records)
+        crate::core::operations::get_audit_trail(self.trail_id, self.client)
+            .await
+            .map(|on_chain_trail| on_chain_trail.records)
     }
 }
-
-// ===== Linked-table traversal helpers =====
 
 async fn list_linked_table_page<C, V>(
     client: &C,
     table: &LinkedTable<u64>,
     start_key: Option<u64>,
     limit: usize,
-) -> Result<(HashMap<u64, V>, Option<u64>), Error>
+) -> Result<(BTreeMap<u64, V>, Option<u64>), Error>
 where
     C: CoreClientReadOnly + OptionalSync,
     V: DeserializeOwned,
 {
     if limit == 0 {
-        return Ok((HashMap::new(), start_key.or(table.head)));
+        return Ok((BTreeMap::new(), start_key.or(table.head)));
     }
 
     let mut cursor = start_key.or(table.head);
-    let mut items = HashMap::new();
+    let mut items = BTreeMap::new();
 
     for _ in 0..limit {
         let Some(key) = cursor else { break };
@@ -172,38 +172,8 @@ where
             )));
         }
 
-        let name = DynamicFieldName {
-            type_: TypeTag::U64,
-            value: IotaMoveValue::from(MoveValue::U64(key)).to_json_value(),
-        };
+        let node = fetch_linked_table_node::<_, V>(client, table.id, key).await?;
 
-        let response = client
-            .client_adapter()
-            .read_api()
-            .get_dynamic_field_object(table.id, name)
-            .await
-            .map_err(|err| Error::RpcError(err.to_string()))?;
-
-        let node_object_id = response
-            .data
-            .ok_or_else(|| {
-                Error::UnexpectedApiResponse(format!(
-                    "missing dynamic-field object for linked-table id {} and key {key}",
-                    table.id
-                ))
-            })?
-            .object_id;
-
-        #[derive(Debug, Deserialize)]
-        struct DynamicFieldObject<K, V> {
-            value: LinkedTableNode<K, V>,
-        }
-
-        let node: DynamicFieldObject<u64, V> = client.get_object_by_id(node_object_id).await.map_err(|err| {
-            Error::UnexpectedApiResponse(format!("failed to decode linked-table node {node_object_id}; {err}"))
-        })?;
-
-        let node = node.value;
         cursor = node.next;
         items.insert(key, node.value);
     }
@@ -244,5 +214,55 @@ where
         )));
     }
 
-    Ok(entries)
+    Ok(entries.into_iter().collect())
+}
+
+async fn fetch_linked_table_node<C, V>(
+    client: &C,
+    table_id: ObjectID,
+    key: u64,
+) -> Result<LinkedTableNode<u64, V>, Error>
+where
+    C: CoreClientReadOnly + OptionalSync,
+    V: DeserializeOwned,
+{
+    let name = DynamicFieldName {
+        type_: TypeTag::U64,
+        value: IotaMoveValue::from(MoveValue::U64(key)).to_json_value(),
+    };
+
+    let data = client
+        .client_adapter()
+        .read_api()
+        .get_dynamic_field_object_v2(table_id, name, Some(IotaObjectDataOptions::bcs_lossless()))
+        .await
+        .map_err(|err| Error::RpcError(err.to_string()))?
+        .data
+        .ok_or_else(|| {
+            Error::UnexpectedApiResponse(format!(
+                "dynamic-field object not found for linked-table id {table_id} and key {key}"
+            ))
+        })?;
+
+    let field: Field<u64, LinkedTableNode<u64, V>> = data
+        .bcs
+        .ok_or_else(|| {
+            Error::UnexpectedApiResponse(format!(
+                "linked-table node {} missing bcs object content",
+                data.object_id
+            ))
+        })?
+        .try_into_move()
+        .ok_or_else(|| {
+            Error::UnexpectedApiResponse(format!(
+                "linked-table node {} bcs content is not a move object",
+                data.object_id
+            ))
+        })?
+        .deserialize()
+        .map_err(|err| {
+            Error::UnexpectedApiResponse(format!("failed to decode linked-table node {}; {err}", data.object_id))
+        })?;
+
+    Ok(field.value)
 }
