@@ -21,7 +21,7 @@ async fn create_trail_with_default_builder_settings() -> anyhow::Result<()> {
 
     assert_eq!(created.creator, client.sender_address());
 
-    let on_chain = created.load_on_chain(&client).await?;
+    let on_chain = created.fetch_audit_trail(&client).await?;
     assert_eq!(on_chain.id.object_id(), &created.trail_id);
     assert_eq!(on_chain.creator, client.sender_address());
     assert_eq!(on_chain.sequence_number, 1);
@@ -53,7 +53,7 @@ async fn create_trail_with_metadata_and_time_lock() -> anyhow::Result<()> {
         .await?
         .output;
 
-    let on_chain = created.load_on_chain(&client).await?;
+    let on_chain = created.fetch_audit_trail(&client).await?;
     assert_eq!(on_chain.locking_config, LockingConfig::time_based(300));
     assert_eq!(on_chain.immutable_metadata, Some(immutable_metadata));
     assert_eq!(on_chain.updatable_metadata, Some("updatable metadata".to_string()));
@@ -78,7 +78,7 @@ async fn create_trail_with_bytes_and_count_lock() -> anyhow::Result<()> {
         .await?
         .output;
 
-    let on_chain = created.load_on_chain(&client).await?;
+    let on_chain = created.fetch_audit_trail(&client).await?;
     assert_eq!(on_chain.locking_config, LockingConfig::count_based(3));
     assert_eq!(on_chain.sequence_number, 1);
 
@@ -101,7 +101,6 @@ async fn create_trail_with_custom_admin_address() -> anyhow::Result<()> {
 
     let cap = client.get_cap(custom_admin, created.trail_id).await;
 
-    println!("Owned objects for custom admin {custom_admin}:");
     match cap {
         Ok(cap_ref) => println!("Found admin capability with ID: {}", cap_ref.0),
         Err(e) => println!("Error finding admin capability for custom admin: {e}"),
@@ -158,6 +157,21 @@ async fn get_trail_without_metadata() -> anyhow::Result<()> {
 
     assert!(on_chain.immutable_metadata.is_none());
     assert!(on_chain.updatable_metadata.is_none());
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn migrate_is_available_on_trail_handle() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let trail_id = client.create_test_trail(Data::text("trail-migrate-e2e")).await?;
+
+    let handle_migrate = client.trail(trail_id).migrate().build_and_execute(&client).await;
+
+    assert!(
+        handle_migrate.is_err(),
+        "new trails are already on latest package version, migrate should fail"
+    );
 
     Ok(())
 }

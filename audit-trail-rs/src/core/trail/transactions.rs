@@ -3,7 +3,7 @@
 
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
-use iota_interaction::rpc_types::{IotaTransactionBlockEffects, IotaTransactionBlockEvents};
+use iota_interaction::rpc_types::IotaTransactionBlockEffects;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::transaction::ProgrammableTransaction;
 use product_common::core_client::CoreClientReadOnly;
@@ -13,7 +13,50 @@ use tokio::sync::OnceCell;
 use super::operations::TrailOps;
 use crate::error::Error;
 
-// ===== UpdateMetadata =====
+#[derive(Debug, Clone)]
+pub struct Migrate {
+    trail_id: ObjectID,
+    owner: IotaAddress,
+    cached_ptb: OnceCell<ProgrammableTransaction>,
+}
+
+impl Migrate {
+    pub fn new(trail_id: ObjectID, owner: IotaAddress) -> Self {
+        Self {
+            trail_id,
+            owner,
+            cached_ptb: OnceCell::new(),
+        }
+    }
+
+    async fn make_ptb<C>(&self, client: &C) -> Result<ProgrammableTransaction, Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        TrailOps::migrate(client, self.trail_id, self.owner).await
+    }
+}
+
+#[cfg_attr(not(feature = "send-sync"), async_trait(?Send))]
+#[cfg_attr(feature = "send-sync", async_trait)]
+impl Transaction for Migrate {
+    type Error = Error;
+    type Output = ();
+
+    async fn build_programmable_transaction<C>(&self, client: &C) -> Result<ProgrammableTransaction, Self::Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        self.cached_ptb.get_or_try_init(|| self.make_ptb(client)).await.cloned()
+    }
+
+    async fn apply<C>(self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        Ok(())
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct UpdateMetadata {
@@ -59,17 +102,5 @@ impl Transaction for UpdateMetadata {
         C: CoreClientReadOnly + OptionalSync,
     {
         Ok(())
-    }
-
-    async fn apply_with_events<C>(
-        self,
-        effects: &mut IotaTransactionBlockEffects,
-        _events: &mut IotaTransactionBlockEvents,
-        client: &C,
-    ) -> Result<Self::Output, Self::Error>
-    where
-        C: CoreClientReadOnly + OptionalSync,
-    {
-        self.apply(effects, client).await
     }
 }

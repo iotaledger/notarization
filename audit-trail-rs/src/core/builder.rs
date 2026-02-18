@@ -13,8 +13,8 @@ use crate::core::create::CreateTrail;
 #[derive(Debug, Clone, Default)]
 pub struct AuditTrailBuilder {
     pub admin: Option<IotaAddress>,
-    pub initial_data: Option<Data>,
-    pub initial_record_metadata: Option<String>,
+    pub record: Option<Data>,
+    pub record_metadata: Option<String>,
     pub locking_config: LockingConfig,
     pub trail_metadata: Option<ImmutableMetadata>,
     pub updatable_metadata: Option<String>,
@@ -22,9 +22,9 @@ pub struct AuditTrailBuilder {
 
 impl AuditTrailBuilder {
     /// Sets the initial record data and optional record metadata.
-    pub fn with_initial_record(mut self, data: Data, metadata: Option<String>) -> Self {
-        self.initial_data = Some(data);
-        self.initial_record_metadata = metadata;
+    pub fn with_initial_record(mut self, data: impl Into<Data>, metadata: Option<String>) -> Self {
+        self.record = Some(data.into());
+        self.record_metadata = metadata;
         self
     }
 

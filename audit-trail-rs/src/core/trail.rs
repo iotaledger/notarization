@@ -21,7 +21,7 @@ use crate::error::Error;
 mod operations;
 mod transactions;
 
-pub use transactions::UpdateMetadata;
+pub use transactions::{Migrate, UpdateMetadata};
 
 /// Marker trait for read-only audit trail clients.
 #[doc(hidden)]
@@ -63,6 +63,16 @@ impl<'a, C> AuditTrailHandle<'a, C> {
     {
         let owner = self.client.sender_address();
         TransactionBuilder::new(UpdateMetadata::new(self.trail_id, owner, metadata))
+    }
+
+    /// Migrates the trail to the latest package version.
+    pub fn migrate<S>(&self) -> TransactionBuilder<Migrate>
+    where
+        C: AuditTrailFull + CoreClient<S>,
+        S: Signer<IotaKeySignature> + OptionalSync,
+    {
+        let owner = self.client.sender_address();
+        TransactionBuilder::new(Migrate::new(self.trail_id, owner))
     }
 
     pub fn records(&self) -> TrailRecords<'a, C, Data> {

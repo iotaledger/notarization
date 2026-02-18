@@ -149,10 +149,6 @@ impl<S> AuditTrailClient<S> {
         }
     }
 
-    pub async fn migrate(&self, _trail_id: ObjectID) -> Result<(), Error> {
-        Err(Error::NotImplemented("AuditTrailClient::migrate"))
-    }
-
     pub async fn delete_trail(&self, _trail_id: ObjectID) -> Result<(), Error> {
         Err(Error::NotImplemented("AuditTrailClient::delete_trail"))
     }

@@ -13,6 +13,28 @@ use crate::error::Error;
 pub(super) struct TrailOps;
 
 impl TrailOps {
+    pub(super) async fn migrate<C>(
+        client: &C,
+        trail_id: ObjectID,
+        owner: IotaAddress,
+    ) -> Result<ProgrammableTransaction, Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        operations::build_trail_transaction(
+            client,
+            trail_id,
+            owner,
+            Permission::DeleteAuditTrail,
+            "migrate",
+            |ptb, _| {
+                let clock = utils::get_clock_ref(ptb);
+                Ok(vec![clock])
+            },
+        )
+        .await
+    }
+
     pub(super) async fn update_metadata<C>(
         client: &C,
         trail_id: ObjectID,
