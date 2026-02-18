@@ -1,6 +1,9 @@
 /target
 /Cargo.lock
 /.history
+/notarization-move/.history
+
+/notarization-move/examples/hello_notarization/build
 
 .vscode
 *.code-workspace
