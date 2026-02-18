@@ -3,7 +3,7 @@ name = "HelloNotarization"
 edition = "2024.beta"
 
 [dependencies]
-IotaNotarization = { git = "https://github.com/iotaledger/notarization.git", subdir = "notarization-move", rev = "feat/fix-on-chain-incompatibility" }
+IotaNotarization = { git = "https://github.com/iotaledger/notarization.git", subdir = "notarization-move", rev = "main" }
 
 [addresses]
 hello_notarization = "0x0"
