@@ -22,7 +22,7 @@ use crate::error::Error;
 mod operations;
 mod transactions;
 
-pub use transactions::{AddRecord, DeleteRecord};
+pub use transactions::{AddRecord, DeleteRecord, DeleteRecordsBatch};
 
 use self::operations::RecordsOps;
 
@@ -70,6 +70,15 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
     {
         let owner = self.client.sender_address();
         TransactionBuilder::new(DeleteRecord::new(self.trail_id, owner, sequence_number))
+    }
+
+    pub fn delete_records_batch<S>(&self, limit: u64) -> TransactionBuilder<DeleteRecordsBatch>
+    where
+        C: AuditTrailFull + CoreClient<S>,
+        S: Signer<IotaKeySignature> + OptionalSync,
+    {
+        let owner = self.client.sender_address();
+        TransactionBuilder::new(DeleteRecordsBatch::new(self.trail_id, owner, limit))
     }
 
     pub async fn correct(&self, _replaces: Vec<u64>, _data: D, _metadata: Option<String>) -> Result<(), Error>

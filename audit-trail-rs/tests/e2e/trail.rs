@@ -328,3 +328,78 @@ async fn update_metadata_does_not_affect_immutable_metadata() -> anyhow::Result<
 
     Ok(())
 }
+
+#[tokio::test]
+async fn delete_audit_trail_fails_when_records_exist() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let trail_id = client
+        .create_test_trail(Data::text("trail-delete-not-empty-e2e"))
+        .await?;
+    client
+        .create_role(trail_id, "TrailDeleteOnly", vec![Permission::DeleteAuditTrail])
+        .await?;
+    client
+        .issue_cap(trail_id, "TrailDeleteOnly", CapabilityIssueOptions::default())
+        .await?;
+    let trail = client.trail(trail_id);
+
+    let delete_result = trail.delete_audit_trail().build_and_execute(&client).await;
+    assert!(delete_result.is_err(), "deleting a non-empty trail must fail");
+
+    let on_chain = trail.get().await?;
+    assert_eq!(on_chain.id.object_id(), &trail_id);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn delete_records_batch_then_delete_audit_trail_roundtrip() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let created = client
+        .create_trail()
+        .with_initial_record(Data::text("trail-batch-delete-e2e"), None)
+        .with_locking_config(LockingConfig {
+            delete_record: LockingWindow::TimeBased { seconds: 3600 },
+        })
+        .finish()
+        .build_and_execute(&client)
+        .await?
+        .output;
+    client
+        .create_role(
+            created.trail_id,
+            "TrailDeleteMaintenance",
+            vec![Permission::DeleteAllRecords, Permission::DeleteAuditTrail],
+        )
+        .await?;
+    client
+        .issue_cap(
+            created.trail_id,
+            "TrailDeleteMaintenance",
+            CapabilityIssueOptions::default(),
+        )
+        .await?;
+
+    let trail = client.trail(created.trail_id);
+
+    let deleted = trail
+        .records()
+        .delete_records_batch(10)
+        .build_and_execute(&client)
+        .await?
+        .output;
+    assert_eq!(deleted, 1, "initial record should be deleted in batch");
+    assert_eq!(trail.records().record_count().await?, 0);
+
+    let deleted_trail = trail.delete_audit_trail().build_and_execute(&client).await?.output;
+    assert_eq!(deleted_trail.trail_id, created.trail_id);
+    assert!(deleted_trail.timestamp > 0);
+
+    let fetch_deleted = trail.get().await;
+    assert!(
+        fetch_deleted.is_err(),
+        "trail object should no longer be readable after delete"
+    );
+
+    Ok(())
+}

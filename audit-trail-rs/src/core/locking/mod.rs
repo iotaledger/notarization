@@ -38,10 +38,7 @@ impl<'a, C> TrailLocking<'a, C> {
         TransactionBuilder::new(UpdateLockingConfig::new(self.trail_id, owner, config))
     }
 
-    pub fn update_delete_record_window<S>(
-        &self,
-        window: LockingWindow,
-    ) -> TransactionBuilder<UpdateDeleteRecordWindow>
+    pub fn update_delete_record_window<S>(&self, window: LockingWindow) -> TransactionBuilder<UpdateDeleteRecordWindow>
     where
         C: AuditTrailFull + CoreClient<S>,
         S: Signer<IotaKeySignature> + OptionalSync,

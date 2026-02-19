@@ -65,6 +65,30 @@ impl RecordsOps {
         .await
     }
 
+    pub(super) async fn delete_records_batch<C>(
+        client: &C,
+        trail_id: ObjectID,
+        owner: IotaAddress,
+        limit: u64,
+    ) -> Result<ProgrammableTransaction, Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        operations::build_trail_transaction(
+            client,
+            trail_id,
+            owner,
+            Permission::DeleteAllRecords,
+            "delete_records_batch",
+            |ptb, _| {
+                let limit_arg = utils::ptb_pure(ptb, "limit", limit)?;
+                let clock = utils::get_clock_ref(ptb);
+                Ok(vec![limit_arg, clock])
+            },
+        )
+        .await
+    }
+
     pub(super) async fn get_record<C>(
         client: &C,
         trail_id: ObjectID,

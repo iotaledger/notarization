@@ -7,7 +7,7 @@
 /// LinkedTable and addressed by trail_id + sequence_number.
 module audit_trail::record;
 
-use iota::vec_set::{VecSet, Self};
+use iota::vec_set::{Self, VecSet};
 use std::string::String;
 
 /// A single record in the audit trail
@@ -90,7 +90,6 @@ public(package) fun destroy<D: store + copy + drop>(record: Record<D>) {
         correction: _,
     } = record;
 }
-
 
 /// Bidirectional correction tracking for audit records
 public struct RecordCorrection has copy, drop, store {

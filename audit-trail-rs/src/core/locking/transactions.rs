@@ -59,18 +59,6 @@ impl Transaction for UpdateLockingConfig {
     {
         Ok(())
     }
-
-    async fn apply_with_events<C>(
-        self,
-        effects: &mut IotaTransactionBlockEffects,
-        _events: &mut IotaTransactionBlockEvents,
-        client: &C,
-    ) -> Result<Self::Output, Self::Error>
-    where
-        C: CoreClientReadOnly + OptionalSync,
-    {
-        self.apply(effects, client).await
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -117,17 +105,5 @@ impl Transaction for UpdateDeleteRecordWindow {
         C: CoreClientReadOnly + OptionalSync,
     {
         Ok(())
-    }
-
-    async fn apply_with_events<C>(
-        self,
-        effects: &mut IotaTransactionBlockEffects,
-        _events: &mut IotaTransactionBlockEvents,
-        client: &C,
-    ) -> Result<Self::Output, Self::Error>
-    where
-        C: CoreClientReadOnly + OptionalSync,
-    {
-        self.apply(effects, client).await
     }
 }

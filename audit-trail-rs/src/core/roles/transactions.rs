@@ -163,13 +163,9 @@ impl Transaction for UpdateRole {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        Err(Error::UnexpectedApiResponse(
-            "RoleUpdated output requires transaction events".to_string(),
-        ))
+        unreachable!()
     }
 }
-
-// ===== DeleteRole =====
 
 #[derive(Debug, Clone)]
 pub struct DeleteRole {
@@ -232,13 +228,9 @@ impl Transaction for DeleteRole {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        Err(Error::UnexpectedApiResponse(
-            "RoleDeleted output requires transaction events".to_string(),
-        ))
+        unreachable!()
     }
 }
-
-// ===== IssueCapability =====
 
 #[derive(Debug, Clone)]
 pub struct IssueCapability {
@@ -297,28 +289,22 @@ impl Transaction for IssueCapability {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        for data in &events.data {
-            if let Ok(event) = serde_json::from_value::<Event<CapabilityIssued>>(data.parsed_json.clone()) {
-                return Ok(event.data);
-            }
-        }
+        let event = events
+            .data
+            .iter()
+            .find_map(|data| serde_json::from_value::<Event<CapabilityIssued>>(data.parsed_json.clone()).ok())
+            .ok_or_else(|| Error::UnexpectedApiResponse("CapabilityIssued event not found".to_string()))?;
 
-        Err(Error::UnexpectedApiResponse(
-            "CapabilityIssued event not found".to_string(),
-        ))
+        Ok(event.data)
     }
 
     async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        Err(Error::UnexpectedApiResponse(
-            "CapabilityIssued output requires transaction events".to_string(),
-        ))
+        unreachable!()
     }
 }
-
-// ===== RevokeCapability =====
 
 #[derive(Debug, Clone)]
 pub struct RevokeCapability {
@@ -368,28 +354,22 @@ impl Transaction for RevokeCapability {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        for data in &events.data {
-            if let Ok(event) = serde_json::from_value::<Event<CapabilityRevoked>>(data.parsed_json.clone()) {
-                return Ok(event.data);
-            }
-        }
+        let event = events
+            .data
+            .iter()
+            .find_map(|data| serde_json::from_value::<Event<CapabilityRevoked>>(data.parsed_json.clone()).ok())
+            .ok_or_else(|| Error::UnexpectedApiResponse("CapabilityRevoked event not found".to_string()))?;
 
-        Err(Error::UnexpectedApiResponse(
-            "CapabilityRevoked event not found".to_string(),
-        ))
+        Ok(event.data)
     }
 
     async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        Err(Error::UnexpectedApiResponse(
-            "CapabilityRevoked output requires transaction events".to_string(),
-        ))
+        unreachable!()
     }
 }
-
-// ===== DestroyCapability =====
 
 #[derive(Debug, Clone)]
 pub struct DestroyCapability {
@@ -439,24 +419,20 @@ impl Transaction for DestroyCapability {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        for data in &events.data {
-            if let Ok(event) = serde_json::from_value::<Event<CapabilityDestroyed>>(data.parsed_json.clone()) {
-                return Ok(event.data);
-            }
-        }
+        let event = events
+            .data
+            .iter()
+            .find_map(|data| serde_json::from_value::<Event<CapabilityDestroyed>>(data.parsed_json.clone()).ok())
+            .ok_or_else(|| Error::UnexpectedApiResponse("CapabilityDestroyed event not found".to_string()))?;
 
-        Err(Error::UnexpectedApiResponse(
-            "CapabilityDestroyed event not found".to_string(),
-        ))
+        Ok(event.data)
     }
 
     async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        Err(Error::UnexpectedApiResponse(
-            "CapabilityDestroyed output requires transaction events".to_string(),
-        ))
+        unreachable!()
     }
 }
 
@@ -508,24 +484,20 @@ impl Transaction for DestroyInitialAdminCapability {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        for data in &events.data {
-            if let Ok(event) = serde_json::from_value::<Event<CapabilityDestroyed>>(data.parsed_json.clone()) {
-                return Ok(event.data);
-            }
-        }
+        let event = events
+            .data
+            .iter()
+            .find_map(|data| serde_json::from_value::<Event<CapabilityDestroyed>>(data.parsed_json.clone()).ok())
+            .ok_or_else(|| Error::UnexpectedApiResponse("CapabilityDestroyed event not found".to_string()))?;
 
-        Err(Error::UnexpectedApiResponse(
-            "CapabilityDestroyed event not found".to_string(),
-        ))
+        Ok(event.data)
     }
 
     async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        Err(Error::UnexpectedApiResponse(
-            "CapabilityDestroyed output requires transaction events".to_string(),
-        ))
+        unreachable!()
     }
 }
 
@@ -579,23 +551,19 @@ impl Transaction for RevokeInitialAdminCapability {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        for data in &events.data {
-            if let Ok(event) = serde_json::from_value::<Event<CapabilityRevoked>>(data.parsed_json.clone()) {
-                return Ok(event.data);
-            }
-        }
+        let event = events
+            .data
+            .iter()
+            .find_map(|data| serde_json::from_value::<Event<CapabilityRevoked>>(data.parsed_json.clone()).ok())
+            .ok_or_else(|| Error::UnexpectedApiResponse("CapabilityRevoked event not found".to_string()))?;
 
-        Err(Error::UnexpectedApiResponse(
-            "CapabilityRevoked event not found".to_string(),
-        ))
+        Ok(event.data)
     }
 
     async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        Err(Error::UnexpectedApiResponse(
-            "CapabilityRevoked output requires transaction events".to_string(),
-        ))
+        unreachable!()
     }
 }

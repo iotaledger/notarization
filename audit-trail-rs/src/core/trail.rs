@@ -21,7 +21,7 @@ use crate::error::Error;
 mod operations;
 mod transactions;
 
-pub use transactions::{Migrate, UpdateMetadata};
+pub use transactions::{DeleteAuditTrail, Migrate, UpdateMetadata};
 
 /// Marker trait for read-only audit trail clients.
 #[doc(hidden)]
@@ -73,6 +73,18 @@ impl<'a, C> AuditTrailHandle<'a, C> {
     {
         let owner = self.client.sender_address();
         TransactionBuilder::new(Migrate::new(self.trail_id, owner))
+    }
+
+    /// Deletes the audit trail object.
+    ///
+    /// The trail must be empty before deletion.
+    pub fn delete_audit_trail<S>(&self) -> TransactionBuilder<DeleteAuditTrail>
+    where
+        C: AuditTrailFull + CoreClient<S>,
+        S: Signer<IotaKeySignature> + OptionalSync,
+    {
+        let owner = self.client.sender_address();
+        TransactionBuilder::new(DeleteAuditTrail::new(self.trail_id, owner))
     }
 
     pub fn records(&self) -> TrailRecords<'a, C, Data> {

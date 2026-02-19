@@ -51,4 +51,26 @@ impl TrailOps {
         )
         .await
     }
+
+    pub(super) async fn delete_audit_trail<C>(
+        client: &C,
+        trail_id: ObjectID,
+        owner: IotaAddress,
+    ) -> Result<ProgrammableTransaction, Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        operations::build_trail_transaction(
+            client,
+            trail_id,
+            owner,
+            Permission::DeleteAuditTrail,
+            "delete_audit_trail",
+            |ptb, _| {
+                let clock = utils::get_clock_ref(ptb);
+                Ok(vec![clock])
+            },
+        )
+        .await
+    }
 }

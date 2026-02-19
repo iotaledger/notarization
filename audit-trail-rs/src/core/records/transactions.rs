@@ -73,13 +73,13 @@ impl Transaction for AddRecord {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        for data in &events.data {
-            if let Ok(event) = serde_json::from_value::<Event<RecordAdded>>(data.parsed_json.clone()) {
-                return Ok(event.data);
-            }
-        }
+        let event = events
+            .data
+            .iter()
+            .find_map(|data| serde_json::from_value::<Event<RecordAdded>>(data.parsed_json.clone()).ok())
+            .ok_or_else(|| Error::UnexpectedApiResponse("RecordAdded event not found".to_string()))?;
 
-        Err(Error::UnexpectedApiResponse("RecordAdded event not found".to_string()))
+        Ok(event.data)
     }
 
     async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
@@ -140,18 +140,83 @@ impl Transaction for DeleteRecord {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        for data in &events.data {
-            if let Ok(event) = serde_json::from_value::<Event<RecordDeleted>>(data.parsed_json.clone()) {
-                return Ok(event.data);
-            }
-        }
+        let event = events
+            .data
+            .iter()
+            .find_map(|data| serde_json::from_value::<Event<RecordDeleted>>(data.parsed_json.clone()).ok())
+            .ok_or_else(|| Error::UnexpectedApiResponse("RecordDeleted event not found".to_string()))?;
 
-        Err(Error::UnexpectedApiResponse(
-            "RecordDeleted event not found".to_string(),
-        ))
+        Ok(event.data)
     }
 
     async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        unreachable!()
+    }
+}
+
+// ===== DeleteRecordsBatch =====
+
+#[derive(Debug, Clone)]
+pub struct DeleteRecordsBatch {
+    pub trail_id: ObjectID,
+    pub owner: IotaAddress,
+    pub limit: u64,
+    cached_ptb: OnceCell<ProgrammableTransaction>,
+}
+
+impl DeleteRecordsBatch {
+    pub fn new(trail_id: ObjectID, owner: IotaAddress, limit: u64) -> Self {
+        Self {
+            trail_id,
+            owner,
+            limit,
+            cached_ptb: OnceCell::new(),
+        }
+    }
+
+    async fn make_ptb<C>(&self, client: &C) -> Result<ProgrammableTransaction, Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        RecordsOps::delete_records_batch(client, self.trail_id, self.owner, self.limit).await
+    }
+}
+
+#[cfg_attr(not(feature = "send-sync"), async_trait(?Send))]
+#[cfg_attr(feature = "send-sync", async_trait)]
+impl Transaction for DeleteRecordsBatch {
+    type Error = Error;
+    type Output = u64;
+
+    async fn build_programmable_transaction<C>(&self, client: &C) -> Result<ProgrammableTransaction, Self::Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        self.cached_ptb.get_or_try_init(|| self.make_ptb(client)).await.cloned()
+    }
+
+    async fn apply_with_events<C>(
+        self,
+        _: &mut IotaTransactionBlockEffects,
+        events: &mut IotaTransactionBlockEvents,
+        _: &C,
+    ) -> Result<Self::Output, Self::Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        let deleted = events
+            .data
+            .iter()
+            .filter_map(|data| serde_json::from_value::<Event<RecordDeleted>>(data.parsed_json.clone()).ok())
+            .count() as u64;
+
+        Ok(deleted)
+    }
+
+    async fn apply<C>(self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {

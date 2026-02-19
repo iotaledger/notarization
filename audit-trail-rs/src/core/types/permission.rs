@@ -1,22 +1,23 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::error::Error;
-use iota_interaction::ident_str;
-use iota_interaction::types::Identifier;
-use iota_interaction::types::TypeTag;
-use iota_interaction::types::base_types::{IotaAddress, ObjectID};
-use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
-use iota_interaction::types::transaction::Argument;
-use iota_interaction::types::transaction::{Command, ObjectArg, ProgrammableTransaction};
-use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::str::FromStr;
+
+use iota_interaction::ident_str;
+use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
+use iota_interaction::types::transaction::{Argument, Command, ObjectArg, ProgrammableTransaction};
+use iota_interaction::types::{Identifier, TypeTag};
+use serde::{Deserialize, Serialize};
+
+use crate::error::Error;
 
 /// Permission enum matching the Move permission module.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub enum Permission {
     DeleteAuditTrail,
+    DeleteAllRecords,
     AddRecord,
     DeleteRecord,
     CorrectRecord,
@@ -38,6 +39,7 @@ impl Permission {
     pub(crate) fn function_name(&self) -> &'static str {
         match self {
             Self::DeleteAuditTrail => "delete_audit_trail",
+            Self::DeleteAllRecords => "delete_all_records",
             Self::AddRecord => "add_record",
             Self::DeleteRecord => "delete_record",
             Self::CorrectRecord => "correct_record",
@@ -87,7 +89,6 @@ impl PermissionSet {
     pub fn admin_permissions() -> Self {
         Self {
             permissions: HashSet::from([
-                Permission::DeleteAuditTrail,
                 Permission::AddCapabilities,
                 Permission::RevokeCapabilities,
                 Permission::AddRoles,

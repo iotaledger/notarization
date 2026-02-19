@@ -40,12 +40,12 @@ git = "https://github.com/iotaledger/product-core.git"
 branch = "feat/emit-events-for-capabilities"
 package = "product_common"
 features = [
-    "core-client",
-    "transaction",
-    "bindings",
-    "binding-utils",
-    "gas-station",
-    "default-http-client",
+  "core-client",
+  "transaction",
+  "bindings",
+  "binding-utils",
+  "gas-station",
+  "default-http-client",
 ]
 
 [dependencies.notarization]
@@ -54,9 +54,7 @@ default-features = false
 features = ["gas-station", "default-http-client", "irl"]
 
 [target.'cfg(all(target_arch = "wasm32", not(target_os = "wasi")))'.dependencies]
-getrandom = { version = "0.3", default-features = false, features = [
-    "wasm_js",
-] }
+getrandom = { version = "0.3", default-features = false, features = ["wasm_js"] }
 
 [profile.release]
 opt-level = 's'
@@ -74,6 +72,4 @@ empty_docs = "allow"
 
 [lints.rust]
 # required for current wasm_bindgen version
-unexpected_cfgs = { level = "warn", check-cfg = [
-    'cfg(wasm_bindgen_unstable_test_coverage)',
-] }
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(wasm_bindgen_unstable_test_coverage)'] }

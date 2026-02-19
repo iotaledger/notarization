@@ -6,7 +6,7 @@ use audit_trails::error::Error;
 use iota_interaction::types::base_types::ObjectID;
 use product_common::core_client::CoreClient;
 
-use crate::client::{get_funded_test_client, TestClient};
+use crate::client::{TestClient, get_funded_test_client};
 
 async fn grant_role_capability(
     client: &TestClient,
@@ -254,6 +254,70 @@ async fn delete_record_fails_while_count_locked() -> anyhow::Result<()> {
     let delete_locked = records.delete(0).build_and_execute(&client).await;
     assert!(delete_locked.is_err(), "count-locked record deletion must fail");
     assert_eq!(records.record_count().await?, 1);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn delete_records_batch_respects_limit_and_deletes_oldest_first() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let created = client
+        .create_trail()
+        .with_initial_record(Data::text("batch-initial"), None)
+        .with_locking_config(LockingConfig {
+            delete_record: LockingWindow::TimeBased { seconds: 3600 },
+        })
+        .finish()
+        .build_and_execute(&client)
+        .await?
+        .output;
+
+    let trail_id = created.trail_id;
+    let records = client.trail(trail_id).records();
+
+    grant_role_capability(
+        &client,
+        trail_id,
+        "BatchRecordAdmin",
+        [Permission::AddRecord, Permission::DeleteAllRecords],
+    )
+    .await?;
+
+    records
+        .add(Data::text("batch-second"), None)
+        .build_and_execute(&client)
+        .await?;
+    records
+        .add(Data::text("batch-third"), None)
+        .build_and_execute(&client)
+        .await?;
+
+    assert_eq!(records.record_count().await?, 3);
+
+    let deleted_two = records.delete_records_batch(2).build_and_execute(&client).await?.output;
+    assert_eq!(deleted_two, 2, "batch delete should stop at the provided limit");
+    assert_eq!(records.record_count().await?, 1);
+    assert!(records.get(0).await.is_err(), "oldest record should be removed first");
+    assert!(
+        records.get(1).await.is_err(),
+        "second oldest record should also be removed"
+    );
+    assert_text_data(records.get(2).await?.data, "batch-third");
+
+    let deleted_last = records
+        .delete_records_batch(10)
+        .build_and_execute(&client)
+        .await?
+        .output;
+    assert_eq!(deleted_last, 1, "remaining record should be deleted");
+    assert_eq!(records.record_count().await?, 0);
+
+    let deleted_empty = records
+        .delete_records_batch(10)
+        .build_and_execute(&client)
+        .await?
+        .output;
+    assert_eq!(deleted_empty, 0, "deleting from an empty trail should return zero");
 
     Ok(())
 }
