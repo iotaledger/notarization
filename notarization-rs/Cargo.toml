@@ -26,13 +26,13 @@ thiserror.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 iota_interaction_rust = { workspace = true, default-features = false }
-hyper = { workspace = true } # Fix for iota-sdk 1.13 issue with axum-server.
+hyper = { workspace = true }
 iota-sdk = { workspace = true }
 tokio = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 iota_interaction_ts.workspace = true
-tokio = { version = "1.46.1", default-features = false, features = ["sync"] }
+tokio = { version = "1.49.0", default-features = false, features = ["sync"] }
 
 [dev-dependencies]
 async-trait.workspace = true
