@@ -1,12 +1,12 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use audit_trails::core::types::{CapabilityIssueOptions, Data, LockingConfig, Permission};
+use audit_trails::core::types::{CapabilityIssueOptions, Data, LockingConfig, LockingWindow, Permission};
 use audit_trails::error::Error;
 use iota_interaction::types::base_types::ObjectID;
 use product_common::core_client::CoreClient;
 
-use crate::client::{TestClient, get_funded_test_client};
+use crate::client::{get_funded_test_client, TestClient};
 
 async fn grant_role_capability(
     client: &TestClient,
@@ -174,7 +174,9 @@ async fn delete_record_fails_while_time_locked() -> anyhow::Result<()> {
     let created = client
         .create_trail()
         .with_initial_record(Data::text("locked"), None)
-        .with_locking_config(LockingConfig::time_based(3600))
+        .with_locking_config(LockingConfig {
+            delete_record: LockingWindow::TimeBased { seconds: 3600 },
+        })
         .finish()
         .build_and_execute(&client)
         .await?
@@ -237,7 +239,9 @@ async fn delete_record_fails_while_count_locked() -> anyhow::Result<()> {
     let created = client
         .create_trail()
         .with_initial_record(Data::text("count-locked"), None)
-        .with_locking_config(LockingConfig::count_based(5))
+        .with_locking_config(LockingConfig {
+            delete_record: LockingWindow::CountBased { count: 5 },
+        })
         .finish()
         .build_and_execute(&client)
         .await?

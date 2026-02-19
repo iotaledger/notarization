@@ -1,7 +1,9 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use audit_trails::core::types::{CapabilityIssueOptions, Data, ImmutableMetadata, LockingConfig, Permission};
+use audit_trails::core::types::{
+    CapabilityIssueOptions, Data, ImmutableMetadata, LockingConfig, LockingWindow, Permission,
+};
 use iota_interaction::types::base_types::IotaAddress;
 use product_common::core_client::CoreClient;
 
@@ -25,7 +27,12 @@ async fn create_trail_with_default_builder_settings() -> anyhow::Result<()> {
     assert_eq!(on_chain.id.object_id(), &created.trail_id);
     assert_eq!(on_chain.creator, client.sender_address());
     assert_eq!(on_chain.sequence_number, 1);
-    assert_eq!(on_chain.locking_config, LockingConfig::none());
+    assert_eq!(
+        on_chain.locking_config,
+        LockingConfig {
+            delete_record: LockingWindow::None
+        }
+    );
     assert!(on_chain.immutable_metadata.is_none());
     assert!(on_chain.updatable_metadata.is_none());
 
@@ -45,7 +52,9 @@ async fn create_trail_with_metadata_and_time_lock() -> anyhow::Result<()> {
             Data::text("audit-trail-create-time-lock"),
             Some("initial record metadata".to_string()),
         )
-        .with_locking_config(LockingConfig::time_based(300))
+        .with_locking_config(LockingConfig {
+            delete_record: LockingWindow::TimeBased { seconds: 300 },
+        })
         .with_trail_metadata(immutable_metadata.clone())
         .with_updatable_metadata("updatable metadata")
         .finish()
@@ -54,7 +63,12 @@ async fn create_trail_with_metadata_and_time_lock() -> anyhow::Result<()> {
         .output;
 
     let on_chain = created.fetch_audit_trail(&client).await?;
-    assert_eq!(on_chain.locking_config, LockingConfig::time_based(300));
+    assert_eq!(
+        on_chain.locking_config,
+        LockingConfig {
+            delete_record: LockingWindow::TimeBased { seconds: 300 }
+        }
+    );
     assert_eq!(on_chain.immutable_metadata, Some(immutable_metadata));
     assert_eq!(on_chain.updatable_metadata, Some("updatable metadata".to_string()));
 
@@ -71,7 +85,9 @@ async fn create_trail_with_bytes_and_count_lock() -> anyhow::Result<()> {
             Data::bytes(vec![0xAA, 0xBB, 0xCC, 0xDD]),
             Some("bytes metadata".to_string()),
         )
-        .with_locking_config(LockingConfig::count_based(3))
+        .with_locking_config(LockingConfig {
+            delete_record: LockingWindow::CountBased { count: 3 },
+        })
         .with_trail_metadata_parts("Trail Count Lock", Some("count lock description".to_string()))
         .finish()
         .build_and_execute(&client)
@@ -79,7 +95,12 @@ async fn create_trail_with_bytes_and_count_lock() -> anyhow::Result<()> {
         .output;
 
     let on_chain = created.fetch_audit_trail(&client).await?;
-    assert_eq!(on_chain.locking_config, LockingConfig::count_based(3));
+    assert_eq!(
+        on_chain.locking_config,
+        LockingConfig {
+            delete_record: LockingWindow::CountBased { count: 3 }
+        }
+    );
     assert_eq!(on_chain.sequence_number, 1);
 
     Ok(())

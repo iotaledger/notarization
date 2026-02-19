@@ -30,7 +30,7 @@ fun test_time_based_locking_within_window() {
 
     // Create trail with 1 hour time-based locking
     {
-        let locking_config = locking::time_based(3600);
+        let locking_config = locking::new(locking::window_time_based(3600));
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -70,7 +70,7 @@ fun test_time_based_locking_outside_window() {
 
     // Create trail with 1 hour time-based locking
     {
-        let locking_config = locking::time_based(3600);
+        let locking_config = locking::new(locking::window_time_based(3600));
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -108,7 +108,7 @@ fun test_count_based_locking() {
 
     // Create trail with count-based locking (last 2 locked)
     {
-        let locking_config = locking::count_based(2);
+        let locking_config = locking::new(locking::window_count_based(2));
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -190,7 +190,7 @@ fun test_count_based_locking_single_record() {
 
     // Create trail with "last 3 locked" - single record should be locked
     {
-        let locking_config = locking::count_based(3);
+        let locking_config = locking::new(locking::window_count_based(3));
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -222,7 +222,7 @@ fun test_no_locking() {
     let mut scenario = ts::begin(admin);
 
     {
-        let locking_config = locking::none();
+        let locking_config = locking::new(locking::window_none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -256,7 +256,7 @@ fun test_update_locking_config() {
 
     // Create trail with no locking
     {
-        let locking_config = locking::none();
+        let locking_config = locking::new(locking::window_none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -306,7 +306,7 @@ fun test_update_locking_config() {
         // Update to 1 hour time-based locking
         trail.update_locking_config(
             &locking_cap,
-            locking::time_based(3600),
+            locking::new(locking::window_time_based(3600)),
             &clock,
             ts::ctx(&mut scenario),
         );
@@ -328,7 +328,7 @@ fun test_update_locking_config_permission_denied() {
     let mut scenario = ts::begin(admin);
 
     {
-        let locking_config = locking::none();
+        let locking_config = locking::new(locking::window_none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -372,7 +372,7 @@ fun test_update_locking_config_permission_denied() {
 
         trail.update_locking_config(
             &no_locking_cap,
-            locking::time_based(3600),
+            locking::new(locking::window_time_based(3600)),
             &clock,
             ts::ctx(&mut scenario),
         );
@@ -390,7 +390,7 @@ fun test_update_locking_config_for_delete_record() {
 
     // Create trail with no locking
     {
-        let locking_config = locking::none();
+        let locking_config = locking::new(locking::window_none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -465,7 +465,7 @@ fun test_update_locking_config_for_delete_record_permission_denied() {
     let mut scenario = ts::begin(admin);
 
     {
-        let locking_config = locking::none();
+        let locking_config = locking::new(locking::window_none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -528,7 +528,7 @@ fun test_delete_record_after_time_lock_expires() {
 
     // Create trail with 1 hour time-based locking and initial record
     {
-        let locking_config = locking::time_based(3600); // 1 hour = 3600 seconds
+        let locking_config = locking::new(locking::window_time_based(3600)); // 1 hour = 3600 seconds
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -615,7 +615,7 @@ fun test_time_lock_boundary_just_before_expiry() {
 
     // Create trail with 1 hour time-based locking
     {
-        let locking_config = locking::time_based(3600);
+        let locking_config = locking::new(locking::window_time_based(3600));
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -641,18 +641,16 @@ fun test_time_lock_boundary_just_before_expiry() {
     ts::end(scenario);
 }
 
-// ===== Combined Locking Tests =====
+// ===== Variant Locking Tests =====
 
 #[test]
-fun test_combined_time_and_count_locking_both_lock() {
+fun test_time_based_locking_all_recent_records_locked() {
     let admin = @0xAD;
     let mut scenario = ts::begin(admin);
 
-    // Create trail with BOTH time-based (1 hour) and count-based (last 2) locking
+    // Create trail with time-based (1 hour) locking
     {
-        let locking_config = locking::new(
-            locking::new_window(std::option::some(3600), std::option::some(2)),
-        );
+        let locking_config = locking::new(locking::window_time_based(3600));
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -703,14 +701,13 @@ fun test_combined_time_and_count_locking_both_lock() {
         cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
     };
 
-    // Test: Records locked by BOTH time and count
+    // Test: Records locked by time-based window
     ts::next_tx(&mut scenario, admin);
     {
         let trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
         let mut clock = clock::create_for_testing(ts::ctx(&mut scenario));
 
-        // Shortly after creation - all records time-locked
-        // Records 3, 4 also count-locked (last 2)
+        // Shortly after creation - all records are time-locked
         clock.set_for_testing(initial_time_for_testing() + 2000);
 
         // All records should be locked (time lock active for all)
@@ -728,15 +725,13 @@ fun test_combined_time_and_count_locking_both_lock() {
 }
 
 #[test]
-fun test_combined_locking_time_expired_but_count_locked() {
+fun test_count_based_locking_last_records_remain_locked() {
     let admin = @0xAD;
     let mut scenario = ts::begin(admin);
 
-    // Create trail with time-based (1 hour) and count-based (last 2) locking
+    // Create trail with count-based (last 2) locking
     {
-        let locking_config = locking::new(
-            locking::new_window(std::option::some(3600), std::option::some(2)),
-        );
+        let locking_config = locking::new(locking::window_count_based(2));
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -787,16 +782,16 @@ fun test_combined_locking_time_expired_but_count_locked() {
         cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
     };
 
-    // Test: Time lock expired, but count lock still active for last 2 records
+    // Test: Count lock active for last 2 records
     ts::next_tx(&mut scenario, admin);
     {
         let trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
         let mut clock = clock::create_for_testing(ts::ctx(&mut scenario));
 
-        // 2 hours after creation - time lock expired
+        // 2 hours later, count lock behavior should be unchanged
         clock.set_for_testing(initial_time_for_testing() + 7200 * 1000);
 
-        // Records 0, 1, 2 should be unlocked (time expired, not in last 2)
+        // Records 0, 1, 2 should be unlocked (not in last 2)
         assert!(!trail.is_record_locked(0, &clock), 0);
         assert!(!trail.is_record_locked(1, &clock), 1);
         assert!(!trail.is_record_locked(2, &clock), 2);
@@ -813,15 +808,13 @@ fun test_combined_locking_time_expired_but_count_locked() {
 }
 
 #[test]
-fun test_combined_locking_count_satisfied_but_time_locked() {
+fun test_time_based_locking_still_locked_before_expiry() {
     let admin = @0xAD;
     let mut scenario = ts::begin(admin);
 
-    // Create trail with time-based (1 hour) and count-based (last 2) locking
+    // Create trail with time-based (1 hour) locking
     {
-        let locking_config = locking::new(
-            locking::new_window(std::option::some(3600), std::option::some(2)),
-        );
+        let locking_config = locking::new(locking::window_time_based(3600));
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -872,7 +865,7 @@ fun test_combined_locking_count_satisfied_but_time_locked() {
         cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
     };
 
-    // Test: Count lock satisfied (not in last 2), but time lock still active
+    // Test: Time lock still active before expiry
     ts::next_tx(&mut scenario, admin);
     {
         let trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
@@ -881,8 +874,7 @@ fun test_combined_locking_count_satisfied_but_time_locked() {
         // Only 30 minutes after creation - time lock still active
         clock.set_for_testing(initial_time_for_testing() + 1800 * 1000);
 
-        // Record 0 is NOT in last 2 (count satisfied), but still time-locked
-        // Combined locking uses OR logic: locked if EITHER is true
+        // Records are still locked because time window has not expired yet
         assert!(trail.is_record_locked(0, &clock), 0);
         assert!(trail.is_record_locked(1, &clock), 1);
         assert!(trail.is_record_locked(2, &clock), 2);
@@ -895,15 +887,13 @@ fun test_combined_locking_count_satisfied_but_time_locked() {
 }
 
 #[test]
-fun test_combined_locking_both_satisfied_can_delete() {
+fun test_count_based_locking_old_record_can_delete() {
     let admin = @0xAD;
     let mut scenario = ts::begin(admin);
 
-    // Create trail with time-based (1 hour) and count-based (last 2) locking
+    // Create trail with count-based (last 2) locking
     {
-        let locking_config = locking::new(
-            locking::new_window(std::option::some(3600), std::option::some(2)),
-        );
+        let locking_config = locking::new(locking::window_count_based(2));
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -955,7 +945,7 @@ fun test_combined_locking_both_satisfied_can_delete() {
         cleanup_trail_and_clock(trail, clock);
     };
 
-    // Test: Both locks satisfied - can delete
+    // Test: Old record is outside count window and can be deleted
     ts::next_tx(&mut scenario, admin);
     {
         let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
@@ -963,11 +953,10 @@ fun test_combined_locking_both_satisfied_can_delete() {
 
         let mut clock = clock::create_for_testing(ts::ctx(&mut scenario));
 
-        // 2 hours after creation - time lock expired
-        // Record 0 is not in last 2 - count lock satisfied
+        // Record 0 is not in last 2 - count lock condition satisfied
         clock.set_for_testing(initial_time_for_testing() + 7200 * 1000);
 
-        // Verify record 0 is unlocked (both conditions satisfied)
+        // Verify record 0 is unlocked
         assert!(!trail.is_record_locked(0, &clock), 0);
         assert!(trail.has_record(0), 1);
 

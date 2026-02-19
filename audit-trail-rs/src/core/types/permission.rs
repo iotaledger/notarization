@@ -30,6 +30,7 @@ pub enum Permission {
     RevokeCapabilities,
     UpdateMetadata,
     DeleteMetadata,
+    Migrate,
 }
 
 impl Permission {
@@ -50,6 +51,7 @@ impl Permission {
             Self::RevokeCapabilities => "revoke_capabilities",
             Self::UpdateMetadata => "update_metadata",
             Self::DeleteMetadata => "delete_metadata",
+            Self::Migrate => "migrate_audit_trail",
         }
     }
 

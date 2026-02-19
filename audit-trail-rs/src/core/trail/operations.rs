@@ -21,17 +21,10 @@ impl TrailOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        operations::build_trail_transaction(
-            client,
-            trail_id,
-            owner,
-            Permission::DeleteAuditTrail,
-            "migrate",
-            |ptb, _| {
-                let clock = utils::get_clock_ref(ptb);
-                Ok(vec![clock])
-            },
-        )
+        operations::build_trail_transaction(client, trail_id, owner, Permission::Migrate, "migrate", |ptb, _| {
+            let clock = utils::get_clock_ref(ptb);
+            Ok(vec![clock])
+        })
         .await
     }
 

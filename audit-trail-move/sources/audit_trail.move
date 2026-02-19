@@ -8,10 +8,9 @@
 module audit_trail::main;
 
 use audit_trail::{
-    locking::{Self, LockingConfig, LockingWindow, set_delete_record_lock},
+    locking::{Self, LockingConfig, LockingWindow, set_delete_record},
     permission::{Self, Permission},
-    record::{Self, Record},
-    record_correction
+    record::{Self, Record, RecordCorrection},
 };
 use iota::{clock::{Self, Clock}, event, linked_table::{Self, LinkedTable}, vec_set::VecSet};
 use std::string::String;
@@ -179,7 +178,7 @@ public fun create<D: store + copy>(
             0,
             creator,
             timestamp,
-            record_correction::new(),
+                record::new_correction(),
         );
 
         linked_table::push_back(&mut records, 0, record);
@@ -256,7 +255,7 @@ entry fun migrate<D: store + copy>(
             .roles
             .is_capability_valid(
                 cap,
-                &permission::delete_audit_trail(),
+                &permission::migrate_audit_trail(),
                 clock,
                 ctx,
             ),
@@ -302,7 +301,7 @@ public fun add_record<D: store + copy>(
         seq,
         caller,
         timestamp,
-        record_correction::new(),
+        record::new_correction(),
     );
 
     linked_table::push_back(&mut trail.records, seq, record);
@@ -423,7 +422,7 @@ public fun update_locking_config_for_delete_record<D: store + copy>(
             ),
         EPermissionDenied,
     );
-    set_delete_record_lock(&mut trail.locking_config, new_delete_record_lock);
+    set_delete_record(&mut trail.locking_config, new_delete_record_lock);
 }
 
 /// Update the trail's mutable metadata

@@ -42,6 +42,8 @@ public enum Permission has copy, drop, store {
     UpdateMetadata,
     /// Delete the updatable metadata field
     DeleteMetadata,
+    /// Migrate the audit trail to a new version of the contract
+    Migrate,
 }
 
 /// Create an empty permission set
@@ -198,4 +200,9 @@ public fun update_metadata(): Permission {
 /// Returns a permission allowing to delete the updatable_metadata field
 public fun delete_metadata(): Permission {
     Permission::DeleteMetadata
+}
+
+/// Returns a permission allowing to migrate the audit trail to a new version of the contract
+public fun migrate_audit_trail(): Permission {
+    Permission::Migrate
 }
