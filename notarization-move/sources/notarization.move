@@ -7,11 +7,9 @@
 module iota_notarization::notarization;
 
 use iota::{clock::{Self, Clock}, event};
-use iota_notarization::{
-    method::{NotarizationMethod, new_dynamic, new_locked},
-    timelock::{Self, TimeLock}
-};
+use iota_notarization::method::{NotarizationMethod, new_dynamic, new_locked};
 use std::string::String;
+use tf_components::timelock::{Self, TimeLock};
 
 // ===== Constants =====
 /// Cannot update state while notarization is locked for updates

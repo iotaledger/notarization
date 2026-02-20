@@ -6,6 +6,7 @@ name = "IotaNotarization"
 edition = "2024.beta"
 
 [dependencies]
+TfComponents = { git = "https://github.com/iotaledger/product-core.git", subdir = "components_move", rev = "main" }
 
 [addresses]
 iota_notarization = "0x0"
