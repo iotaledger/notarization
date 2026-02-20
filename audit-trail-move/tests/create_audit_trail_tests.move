@@ -33,7 +33,7 @@ fun test_create_without_initial_record() {
 
         // Verify capability was created
         assert!(admin_cap.role() == initial_admin_role_name(), 0);
-        assert!(admin_cap.security_vault_id() == trail_id, 1);
+        assert!(admin_cap.target_key() == trail_id, 1);
 
         // Clean up
         admin_cap.destroy_for_testing();
@@ -71,7 +71,7 @@ fun test_create_with_initial_record() {
 
         // Verify capability
         assert!(admin_cap.role() == initial_admin_role_name(), 0);
-        assert!(admin_cap.security_vault_id() == trail_id, 1);
+        assert!(admin_cap.target_key() == trail_id, 1);
 
         // Clean up
         admin_cap.destroy_for_testing();
@@ -230,7 +230,7 @@ fun test_create_metadata_admin_role() {
 
         // Verify admin capability was created
         assert!(admin_cap.role() == initial_admin_role_name(), 0);
-        assert!(admin_cap.security_vault_id() == trail_id, 1);
+        assert!(admin_cap.target_key() == trail_id, 1);
 
         // Transfer the admin capability to the user
         transfer::public_transfer(admin_cap, user);

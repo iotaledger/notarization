@@ -6,8 +6,9 @@
 module iota_notarization::dynamic_notarization_tests;
 
 use iota::{clock, test_scenario::{Self as ts, ctx}};
-use iota_notarization::{dynamic_notarization, notarization, timelock};
+use iota_notarization::{dynamic_notarization, notarization};
 use std::string;
+use tf_components::timelock;
 
 const ADMIN_ADDRESS: address = @0x01;
 const RECIPIENT_ADDRESS: address = @0x02;

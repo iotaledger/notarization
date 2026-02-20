@@ -2,5 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Core types and builders for audit trails.
-//!
-//! This module is intentionally minimal while the Move contract API is stabilized.
+
+pub mod builder;
+pub mod create;
+pub mod locking;
+pub(crate) mod operations;
+pub mod records;
+pub mod roles;
+pub mod trail;
+pub mod types;
+pub(crate) mod utils;

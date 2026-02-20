@@ -7,6 +7,7 @@ use audit_trail::{
     main::{Self, AuditTrail},
     permission,
     test_utils::{
+        Self,
         TestData,
         setup_test_audit_trail,
         new_test_data,
@@ -30,7 +31,7 @@ fun test_add_record_to_empty_trail() {
 
     // Setup trail
     {
-        let locking_config = locking::none();
+        let locking_config = locking::new(locking::window_none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -54,14 +55,13 @@ fun test_add_record_to_empty_trail() {
                 ts::ctx(&mut scenario),
             );
 
-        let record_cap = trail
-            .roles_mut()
-            .new_capability_without_restrictions(
-                &admin_cap,
-                &string::utf8(b"RecordAdmin"),
-                &clock,
-                ts::ctx(&mut scenario),
-            );
+        let record_cap = test_utils::new_capability_without_restrictions(
+            trail.roles_mut(),
+            &admin_cap,
+            &string::utf8(b"RecordAdmin"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
 
         transfer::public_transfer(record_cap, admin);
         admin_cap.destroy_for_testing();
@@ -105,7 +105,7 @@ fun test_add_multiple_records() {
 
     // Setup trail
     {
-        let locking_config = locking::none();
+        let locking_config = locking::new(locking::window_none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -129,14 +129,13 @@ fun test_add_multiple_records() {
                 ts::ctx(&mut scenario),
             );
 
-        let record_cap = trail
-            .roles_mut()
-            .new_capability_without_restrictions(
-                &admin_cap,
-                &string::utf8(b"RecordAdmin"),
-                &clock,
-                ts::ctx(&mut scenario),
-            );
+        let record_cap = test_utils::new_capability_without_restrictions(
+            trail.roles_mut(),
+            &admin_cap,
+            &string::utf8(b"RecordAdmin"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
 
         transfer::public_transfer(record_cap, admin);
         admin_cap.destroy_for_testing();
@@ -183,7 +182,7 @@ fun test_add_record_permission_denied() {
 
     // Setup trail
     {
-        let locking_config = locking::none();
+        let locking_config = locking::new(locking::window_none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -208,14 +207,13 @@ fun test_add_record_permission_denied() {
                 ts::ctx(&mut scenario),
             );
 
-        let no_add_cap = trail
-            .roles_mut()
-            .new_capability_without_restrictions(
-                &admin_cap,
-                &string::utf8(b"NoAddPerm"),
-                &clock,
-                ts::ctx(&mut scenario),
-            );
+        let no_add_cap = test_utils::new_capability_without_restrictions(
+            trail.roles_mut(),
+            &admin_cap,
+            &string::utf8(b"NoAddPerm"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
 
         transfer::public_transfer(no_add_cap, admin);
         admin_cap.destroy_for_testing();
@@ -252,7 +250,7 @@ fun test_delete_record_success() {
 
     // Setup trail with initial record
     {
-        let locking_config = locking::none();
+        let locking_config = locking::new(locking::window_none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -276,14 +274,13 @@ fun test_delete_record_success() {
                 ts::ctx(&mut scenario),
             );
 
-        let record_cap = trail
-            .roles_mut()
-            .new_capability_without_restrictions(
-                &admin_cap,
-                &string::utf8(b"RecordAdmin"),
-                &clock,
-                ts::ctx(&mut scenario),
-            );
+        let record_cap = test_utils::new_capability_without_restrictions(
+            trail.roles_mut(),
+            &admin_cap,
+            &string::utf8(b"RecordAdmin"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
 
         transfer::public_transfer(record_cap, admin);
         admin_cap.destroy_for_testing();
@@ -322,7 +319,7 @@ fun test_delete_record_permission_denied() {
 
     // Setup trail with initial record
     {
-        let locking_config = locking::none();
+        let locking_config = locking::new(locking::window_none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -347,14 +344,13 @@ fun test_delete_record_permission_denied() {
                 ts::ctx(&mut scenario),
             );
 
-        let no_delete_cap = trail
-            .roles_mut()
-            .new_capability_without_restrictions(
-                &admin_cap,
-                &string::utf8(b"NoDeletePerm"),
-                &clock,
-                ts::ctx(&mut scenario),
-            );
+        let no_delete_cap = test_utils::new_capability_without_restrictions(
+            trail.roles_mut(),
+            &admin_cap,
+            &string::utf8(b"NoDeletePerm"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
 
         transfer::public_transfer(no_delete_cap, admin);
         admin_cap.destroy_for_testing();
@@ -384,7 +380,7 @@ fun test_delete_record_not_found() {
 
     // Setup trail (no initial record)
     {
-        let locking_config = locking::none();
+        let locking_config = locking::new(locking::window_none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -408,14 +404,13 @@ fun test_delete_record_not_found() {
                 ts::ctx(&mut scenario),
             );
 
-        let record_cap = trail
-            .roles_mut()
-            .new_capability_without_restrictions(
-                &admin_cap,
-                &string::utf8(b"RecordAdmin"),
-                &clock,
-                ts::ctx(&mut scenario),
-            );
+        let record_cap = test_utils::new_capability_without_restrictions(
+            trail.roles_mut(),
+            &admin_cap,
+            &string::utf8(b"RecordAdmin"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
 
         transfer::public_transfer(record_cap, admin);
         admin_cap.destroy_for_testing();
@@ -445,7 +440,7 @@ fun test_delete_record_time_locked() {
 
     // Setup trail with time-based locking and initial record
     {
-        let locking_config = locking::time_based(3600); // 1 hour
+        let locking_config = locking::new(locking::window_time_based(3600)); // 1 hour
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -469,14 +464,13 @@ fun test_delete_record_time_locked() {
                 ts::ctx(&mut scenario),
             );
 
-        let record_cap = trail
-            .roles_mut()
-            .new_capability_without_restrictions(
-                &admin_cap,
-                &string::utf8(b"RecordAdmin"),
-                &clock,
-                ts::ctx(&mut scenario),
-            );
+        let record_cap = test_utils::new_capability_without_restrictions(
+            trail.roles_mut(),
+            &admin_cap,
+            &string::utf8(b"RecordAdmin"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
 
         transfer::public_transfer(record_cap, admin);
         admin_cap.destroy_for_testing();
@@ -507,7 +501,7 @@ fun test_delete_record_count_locked() {
 
     // Setup trail with count-based locking and initial record
     {
-        let locking_config = locking::count_based(5); // Last 5 records locked
+        let locking_config = locking::new(locking::window_count_based(5)); // Last 5 records locked
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -531,14 +525,13 @@ fun test_delete_record_count_locked() {
                 ts::ctx(&mut scenario),
             );
 
-        let record_cap = trail
-            .roles_mut()
-            .new_capability_without_restrictions(
-                &admin_cap,
-                &string::utf8(b"RecordAdmin"),
-                &clock,
-                ts::ctx(&mut scenario),
-            );
+        let record_cap = test_utils::new_capability_without_restrictions(
+            trail.roles_mut(),
+            &admin_cap,
+            &string::utf8(b"RecordAdmin"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
 
         transfer::public_transfer(record_cap, admin);
         admin_cap.destroy_for_testing();
@@ -569,7 +562,7 @@ fun test_get_record() {
 
     // Setup trail with initial record
     {
-        let locking_config = locking::none();
+        let locking_config = locking::new(locking::window_none());
         let initial_data = new_test_data(42, b"Test data");
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
@@ -603,7 +596,7 @@ fun test_get_record_not_found() {
 
     // Setup trail (no initial record)
     {
-        let locking_config = locking::none();
+        let locking_config = locking::new(locking::window_none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -632,7 +625,7 @@ fun test_first_last_sequence() {
 
     // Setup trail
     {
-        let locking_config = locking::none();
+        let locking_config = locking::new(locking::window_none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -660,14 +653,13 @@ fun test_first_last_sequence() {
                 ts::ctx(&mut scenario),
             );
 
-        let record_cap = trail
-            .roles_mut()
-            .new_capability_without_restrictions(
-                &admin_cap,
-                &string::utf8(b"RecordAdmin"),
-                &clock,
-                ts::ctx(&mut scenario),
-            );
+        let record_cap = test_utils::new_capability_without_restrictions(
+            trail.roles_mut(),
+            &admin_cap,
+            &string::utf8(b"RecordAdmin"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
 
         clock.set_for_testing(initial_time_for_testing() + 1000);
 
@@ -722,7 +714,7 @@ fun test_is_record_locked_not_found() {
 
     // Setup trail (no initial record)
     {
-        let locking_config = locking::time_based(3600);
+        let locking_config = locking::new(locking::window_time_based(3600));
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,

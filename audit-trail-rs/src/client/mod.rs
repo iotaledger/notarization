@@ -1,11 +1,7 @@
-// Copyright 2020-2025 IOTA Stiftung
+// Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
 //! Client implementations for interacting with audit trails on the IOTA blockchain.
-//!
-//! This module provides two client types:
-//! - [`read_only`]: Read-only access to audit trail data
-//! - [`full_client`]: Full read-write access with transaction capabilities
 
 use iota_interaction::IotaClientTrait;
 use product_common::network_name::NetworkName;

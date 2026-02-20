@@ -8,23 +8,21 @@
 module audit_trail::main;
 
 use audit_trail::{
-    capability::Capability,
-    locking::{Self, LockingConfig, LockingWindow, set_delete_record_lock},
+    locking::{Self, LockingConfig, LockingWindow, set_delete_record},
     permission::{Self, Permission},
-    record::{Self, Record},
-    role_map::{Self, RoleMap}
+    record::{Self, Record}
 };
-use iota::{clock::{Self, Clock}, event, linked_table::{Self, LinkedTable}};
+use iota::{clock::{Self, Clock}, event, linked_table::{Self, LinkedTable}, vec_set::VecSet};
 use std::string::String;
+use tf_components::{capability::Capability, role_map::{Self, RoleMap}};
 
 // ===== Errors =====
 #[error]
 const ERecordNotFound: vector<u8> = b"Record not found at the given sequence number";
 #[error]
-const EPermissionDenied: vector<u8> =
-    b"The role associated with the provided capability does not have the required permission";
-#[error]
 const ERecordLocked: vector<u8> = b"The record is locked and cannot be deleted";
+#[error]
+const ETrailNotEmpty: vector<u8> = b"Audit trail cannot be deleted while records still exist";
 #[error]
 const EPackageVersionMismatch: vector<u8> =
     b"The package version of the trail does not match the expected version";
@@ -78,7 +76,6 @@ public struct AuditTrailCreated has copy, drop {
     trail_id: ID,
     creator: address,
     timestamp: u64,
-    has_initial_record: bool,
 }
 
 /// Emitted when the audit trail is deleted
@@ -99,6 +96,32 @@ public struct RecordAdded has copy, drop {
 public struct RecordDeleted has copy, drop {
     trail_id: ID,
     sequence_number: u64,
+    deleted_by: address,
+    timestamp: u64,
+}
+
+/// Emitted when a role is created
+public struct RoleCreated has copy, drop {
+    trail_id: ID,
+    role: String,
+    permissions: VecSet<Permission>,
+    created_by: address,
+    timestamp: u64,
+}
+
+/// Emitted when a role's permissions are updated
+public struct RoleUpdated has copy, drop {
+    trail_id: ID,
+    role: String,
+    new_permissions: VecSet<Permission>,
+    updated_by: address,
+    timestamp: u64,
+}
+
+/// Emitted when a role is deleted
+public struct RoleDeleted has copy, drop {
+    trail_id: ID,
+    role: String,
     deleted_by: address,
     timestamp: u64,
 }
@@ -130,8 +153,8 @@ public fun new_trail_metadata(name: String, description: Option<String>): Immuta
 ///   roles and issue capabilities to other users.
 /// * Trail ID
 public fun create<D: store + copy>(
-    initial_data: Option<D>,
-    initial_record_metadata: Option<String>,
+    data: Option<D>,
+    record_metadata: Option<String>,
     locking_config: LockingConfig,
     trail_metadata: Option<ImmutableMetadata>,
     updatable_metadata: Option<String>,
@@ -146,15 +169,15 @@ public fun create<D: store + copy>(
 
     let mut records = linked_table::new<u64, Record<D>>(ctx);
     let mut sequence_number = 0;
-    let has_initial_record = initial_data.is_some();
 
-    if (initial_data.is_some()) {
+    if (data.is_some()) {
         let record = record::new(
-            initial_data.destroy_some(),
-            initial_record_metadata,
+            data.destroy_some(),
+            record_metadata,
             0,
             creator,
             timestamp,
+            record::new_correction(),
         );
 
         linked_table::push_back(&mut records, 0, record);
@@ -167,7 +190,7 @@ public fun create<D: store + copy>(
             timestamp,
         });
     } else {
-        initial_data.destroy_none();
+        data.destroy_none();
     };
 
     let role_admin_permissions = role_map::new_role_admin_permissions(
@@ -209,7 +232,6 @@ public fun create<D: store + copy>(
         trail_id,
         creator,
         timestamp,
-        has_initial_record,
     });
 
     (admin_cap, trail_id)
@@ -224,20 +246,17 @@ entry fun migrate<D: store + copy>(
     trail: &mut AuditTrail<D>,
     cap: &Capability,
     clock: &Clock,
-    ctx: &TxContext,
+    ctx: &mut TxContext,
 ) {
     assert!(trail.version < PACKAGE_VERSION, EPackageVersionMismatch);
-    assert!(
-        trail
-            .roles
-            .is_capability_valid(
-                cap,
-                &permission::delete_audit_trail(),
-                clock,
-                ctx,
-            ),
-        EPermissionDenied,
-    );
+    trail
+        .roles
+        .is_capability_valid(
+            cap,
+            &permission::migrate_audit_trail(),
+            clock,
+            ctx,
+        );
     trail.version = PACKAGE_VERSION;
 }
 
@@ -255,17 +274,14 @@ public fun add_record<D: store + copy>(
     ctx: &mut TxContext,
 ) {
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    assert!(
-        trail
-            .roles
-            .is_capability_valid(
-                cap,
-                &permission::add_record(),
-                clock,
-                ctx,
-            ),
-        EPermissionDenied,
-    );
+    trail
+        .roles
+        .is_capability_valid(
+            cap,
+            &permission::add_record(),
+            clock,
+            ctx,
+        );
 
     let caller = ctx.sender();
     let timestamp = clock::timestamp_ms(clock);
@@ -278,6 +294,7 @@ public fun add_record<D: store + copy>(
         seq,
         caller,
         timestamp,
+        record::new_correction(),
     );
 
     linked_table::push_back(&mut trail.records, seq, record);
@@ -303,17 +320,14 @@ public fun delete_record<D: store + copy + drop>(
     ctx: &mut TxContext,
 ) {
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    assert!(
-        trail
-            .roles
-            .is_capability_valid(
-                cap,
-                &permission::delete_record(),
-                clock,
-                ctx,
-            ),
-        EPermissionDenied,
-    );
+    trail
+        .roles
+        .is_capability_valid(
+            cap,
+            &permission::delete_record(),
+            clock,
+            ctx,
+        );
     assert!(linked_table::contains(&trail.records, sequence_number), ERecordNotFound);
     assert!(!trail.is_record_locked(sequence_number, clock), ERecordLocked);
 
@@ -330,6 +344,92 @@ public fun delete_record<D: store + copy + drop>(
         deleted_by: caller,
         timestamp,
     });
+}
+
+/// Delete up to `limit` records from the front of the trail.
+///
+/// Requires `DeleteAllRecords` permission. This operation bypasses record locks.
+/// Returns the number of records deleted in this batch.
+public fun delete_records_batch<D: store + copy + drop>(
+    trail: &mut AuditTrail<D>,
+    cap: &Capability,
+    limit: u64,
+    clock: &Clock,
+    ctx: &mut TxContext,
+): u64 {
+    assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
+    trail
+        .roles
+        .is_capability_valid(
+            cap,
+            &permission::delete_all_records(),
+            clock,
+            ctx,
+        );
+
+    let mut deleted = 0;
+    let caller = ctx.sender();
+    let timestamp = clock.timestamp_ms();
+    let trail_id = trail.id();
+
+    while (deleted < limit && !trail.records.is_empty()) {
+        let (sequence_number, record) = trail.records.pop_front();
+
+        record.destroy();
+
+        event::emit(RecordDeleted {
+            trail_id,
+            sequence_number,
+            deleted_by: caller,
+            timestamp,
+        });
+
+        deleted = deleted + 1;
+    };
+
+    deleted
+}
+
+/// Delete an empty audit trail.
+///
+/// Requires `DeleteAuditTrail` permission and aborts if records still exist.
+public fun delete_audit_trail<D: store + copy>(
+    trail: AuditTrail<D>,
+    cap: &Capability,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
+    assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
+    trail
+        .roles
+        .is_capability_valid(
+            cap,
+            &permission::delete_audit_trail(),
+            clock,
+            ctx,
+        );
+    assert!(linked_table::is_empty(&trail.records), ETrailNotEmpty);
+
+    let trail_id = trail.id();
+    let timestamp = clock::timestamp_ms(clock);
+
+    let AuditTrail {
+        id,
+        creator: _,
+        created_at: _,
+        sequence_number: _,
+        records,
+        locking_config: _,
+        roles: _,
+        immutable_metadata: _,
+        updatable_metadata: _,
+        version: _,
+    } = trail;
+
+    linked_table::destroy_empty(records);
+    object::delete(id);
+
+    event::emit(AuditTrailDeleted { trail_id, timestamp });
 }
 
 // ===== Locking =====
@@ -364,17 +464,14 @@ public fun update_locking_config<D: store + copy>(
     ctx: &mut TxContext,
 ) {
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    assert!(
-        trail
-            .roles
-            .is_capability_valid(
-                cap,
-                &permission::update_locking_config(),
-                clock,
-                ctx,
-            ),
-        EPermissionDenied,
-    );
+    trail
+        .roles
+        .is_capability_valid(
+            cap,
+            &permission::update_locking_config(),
+            clock,
+            ctx,
+        );
     trail.locking_config = new_config;
 }
 
@@ -387,18 +484,15 @@ public fun update_locking_config_for_delete_record<D: store + copy>(
     ctx: &mut TxContext,
 ) {
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    assert!(
-        trail
-            .roles
-            .is_capability_valid(
-                cap,
-                &permission::update_locking_config_for_delete_record(),
-                clock,
-                ctx,
-            ),
-        EPermissionDenied,
-    );
-    set_delete_record_lock(&mut trail.locking_config, new_delete_record_lock);
+    trail
+        .roles
+        .is_capability_valid(
+            cap,
+            &permission::update_locking_config_for_delete_record(),
+            clock,
+            ctx,
+        );
+    set_delete_record(&mut trail.locking_config, new_delete_record_lock);
 }
 
 /// Update the trail's mutable metadata
@@ -410,18 +504,176 @@ public fun update_metadata<D: store + copy>(
     ctx: &mut TxContext,
 ) {
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    assert!(
-        trail
-            .roles
-            .is_capability_valid(
-                cap,
-                &permission::update_metadata(),
-                clock,
-                ctx,
-            ),
-        EPermissionDenied,
-    );
+    trail
+        .roles
+        .is_capability_valid(
+            cap,
+            &permission::update_metadata(),
+            clock,
+            ctx,
+        );
     trail.updatable_metadata = new_metadata;
+}
+
+// ===== Role and Capability Administration =====
+
+/// Creates a new role with the provided permissions.
+public fun create_role<D: store + copy>(
+    trail: &mut AuditTrail<D>,
+    cap: &Capability,
+    role: String,
+    permissions: VecSet<Permission>,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
+    assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
+    role_map::create_role(trail.roles_mut(), cap, role, permissions, clock, ctx);
+    event::emit(RoleCreated {
+        trail_id: trail.id(),
+        role,
+        permissions,
+        created_by: ctx.sender(),
+        timestamp: clock::timestamp_ms(clock),
+    });
+}
+
+/// Updates permissions for an existing role.
+public fun update_role_permissions<D: store + copy>(
+    trail: &mut AuditTrail<D>,
+    cap: &Capability,
+    role: String,
+    new_permissions: VecSet<Permission>,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
+    assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
+    role_map::update_role_permissions(trail.roles_mut(), cap, &role, new_permissions, clock, ctx);
+    event::emit(RoleUpdated {
+        trail_id: trail.id(),
+        role,
+        new_permissions,
+        updated_by: ctx.sender(),
+        timestamp: clock::timestamp_ms(clock),
+    });
+}
+
+/// Deletes an existing role.
+public fun delete_role<D: store + copy>(
+    trail: &mut AuditTrail<D>,
+    cap: &Capability,
+    role: String,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
+    assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
+    role_map::delete_role(trail.roles_mut(), cap, &role, clock, ctx);
+    event::emit(RoleDeleted {
+        trail_id: trail.id(),
+        role,
+        deleted_by: ctx.sender(),
+        timestamp: clock::timestamp_ms(clock),
+    });
+}
+
+/// Issues a new capability for an existing role.
+///
+/// The capability object is transferred to `issued_to` if provided, otherwise to the caller.
+public fun new_capability<D: store + copy>(
+    trail: &mut AuditTrail<D>,
+    cap: &Capability,
+    role: String,
+    issued_to: Option<address>,
+    valid_from: Option<u64>,
+    valid_until: Option<u64>,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
+    assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
+
+    let recipient = if (issued_to.is_some()) {
+        let address_ref = issued_to.borrow();
+        *address_ref
+    } else {
+        ctx.sender()
+    };
+
+    let new_cap = role_map::new_capability(
+        trail.roles_mut(),
+        cap,
+        &role,
+        issued_to,
+        valid_from,
+        valid_until,
+        clock,
+        ctx,
+    );
+    transfer::public_transfer(new_cap, recipient);
+}
+
+/// Revokes an issued capability by ID.
+public fun revoke_capability<D: store + copy>(
+    trail: &mut AuditTrail<D>,
+    cap: &Capability,
+    capability_id: ID,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
+    assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
+    role_map::revoke_capability(trail.roles_mut(), cap, capability_id, clock, ctx);
+}
+
+/// Destroys a capability object.
+///
+/// Requires a capability with `RevokeCapabilities` permission.
+public fun destroy_capability<D: store + copy>(
+    trail: &mut AuditTrail<D>,
+    cap: &Capability,
+    cap_to_destroy: Capability,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
+    assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
+    trail
+        .roles
+        .is_capability_valid(
+            cap,
+            &permission::revoke_capabilities(),
+            clock,
+            ctx,
+        );
+    role_map::destroy_capability(trail.roles_mut(), cap_to_destroy);
+}
+
+/// Destroys an initial admin capability.
+///
+/// Self-service: the owner passes in their own initial admin capability to destroy it.
+/// No additional authorization is required.
+///
+/// WARNING: If all initial admin capabilities are destroyed, the trail will be permanently
+/// sealed with no admin access possible.
+public fun destroy_initial_admin_capability<D: store + copy>(
+    trail: &mut AuditTrail<D>,
+    cap_to_destroy: Capability,
+) {
+    assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
+    role_map::destroy_initial_admin_capability(trail.roles_mut(), cap_to_destroy);
+}
+
+/// Revokes an initial admin capability by ID.
+///
+/// Requires a capability with `RevokeCapabilities` permission.
+///
+/// WARNING: If all initial admin capabilities are revoked, the trail will be permanently
+/// sealed with no admin access possible.
+public fun revoke_initial_admin_capability<D: store + copy>(
+    trail: &mut AuditTrail<D>,
+    cap: &Capability,
+    capability_id: ID,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
+    assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
+    role_map::revoke_initial_admin_capability(trail.roles_mut(), cap, capability_id, clock, ctx);
 }
 
 // ===== Trail Query Functions =====
