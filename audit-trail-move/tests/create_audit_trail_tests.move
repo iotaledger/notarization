@@ -16,6 +16,7 @@ use audit_trail::{
 };
 use iota::{clock, test_scenario as ts};
 use std::string;
+use tf_components::timelock;
 
 #[test]
 fun test_create_without_initial_record() {
@@ -23,7 +24,7 @@ fun test_create_without_initial_record() {
     let mut scenario = ts::begin(user);
 
     {
-        let locking_config = locking::new(locking::window_count_based(0));
+        let locking_config = locking::new(locking::window_count_based(0), timelock::none(), timelock::none());
 
         let (admin_cap, trail_id) = setup_test_audit_trail(
             &mut scenario,
@@ -60,7 +61,7 @@ fun test_create_with_initial_record() {
     let mut scenario = ts::begin(user);
 
     {
-        let locking_config = locking::new(locking::window_time_based(86400)); // 1 day in seconds
+        let locking_config = locking::new(locking::window_time_based(86400), timelock::none(), timelock::none()); // 1 day in seconds
         let initial_data = new_test_data(42, b"Hello, World!");
 
         let (admin_cap, trail_id) = setup_test_audit_trail(
@@ -104,7 +105,7 @@ fun test_create_minimal_metadata() {
         let mut clock = clock::create_for_testing(ts::ctx(&mut scenario));
         clock.set_for_testing(3000);
 
-        let locking_config = locking::new(locking::window_count_based(0));
+        let locking_config = locking::new(locking::window_count_based(0), timelock::none(), timelock::none());
 
         let (admin_cap, _trail_id) = main::create<TestData>(
             option::none(),
@@ -145,7 +146,7 @@ fun test_create_with_locking_enabled() {
     let mut scenario = ts::begin(user);
 
     {
-        let locking_config = locking::new(locking::window_time_based(604800)); // 7 days in seconds
+        let locking_config = locking::new(locking::window_time_based(604800), timelock::none(), timelock::none()); // 7 days in seconds
         let (admin_cap, _trail_id) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -179,7 +180,7 @@ fun test_create_multiple_trails() {
 
     // Create first trail
     {
-        let locking_config = locking::new(locking::window_count_based(0));
+        let locking_config = locking::new(locking::window_count_based(0), timelock::none(), timelock::none());
         let (admin_cap1, trail_id1) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -194,7 +195,7 @@ fun test_create_multiple_trails() {
 
     // Create second trail
     {
-        let locking_config = locking::new(locking::window_count_based(0));
+        let locking_config = locking::new(locking::window_count_based(0), timelock::none(), timelock::none());
         let (admin_cap2, trail_id2) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -220,7 +221,7 @@ fun test_create_metadata_admin_role() {
 
     // Creator creates the audit trail
     {
-        let locking_config = locking::new(locking::window_count_based(0));
+        let locking_config = locking::new(locking::window_count_based(0), timelock::none(), timelock::none());
 
         let (admin_cap, trail_id) = setup_test_audit_trail(
             &mut scenario,

@@ -14,7 +14,8 @@ pub(super) struct CreateOps;
 
 impl CreateOps {
     pub(super) fn create_trail(
-        package_id: ObjectID,
+        audit_trail_package_id: ObjectID,
+        tf_components_package_id: ObjectID,
         admin: IotaAddress,
         initial_data: Option<Data>,
         initial_record_metadata: Option<String>,
@@ -33,13 +34,13 @@ impl CreateOps {
         let initial_data_arg = initial_data.to_option_ptb(&mut ptb, "initial_data")?;
 
         let initial_record_metadata = utils::ptb_pure(&mut ptb, "initial_record_metadata", initial_record_metadata)?;
-        let locking_config = locking_config.to_ptb(&mut ptb, package_id)?;
+        let locking_config = locking_config.to_ptb(&mut ptb, audit_trail_package_id, tf_components_package_id)?;
 
-        let immutable_metadata_tag = ImmutableMetadata::tag(package_id);
+        let immutable_metadata_tag = ImmutableMetadata::tag(audit_trail_package_id);
 
         let trail_metadata = match trail_metadata {
             Some(metadata) => {
-                let metadata_arg = metadata.to_ptb(&mut ptb, package_id)?;
+                let metadata_arg = metadata.to_ptb(&mut ptb, audit_trail_package_id)?;
                 utils::option_to_move(Some(metadata_arg), immutable_metadata_tag, &mut ptb)
                     .map_err(|e| Error::InvalidArgument(format!("failed to build trail_metadata option: {e}")))?
             }
@@ -51,7 +52,7 @@ impl CreateOps {
         let clock = utils::get_clock_ref(&mut ptb);
 
         let result = ptb.programmable_move_call(
-            package_id,
+            audit_trail_package_id,
             ident_str!("main").into(),
             ident_str!("create").into(),
             vec![data_tag],

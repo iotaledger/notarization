@@ -1,7 +1,7 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use audit_trails::core::types::{CapabilityIssueOptions, Data, LockingConfig, LockingWindow, Permission};
+use audit_trails::core::types::{CapabilityIssueOptions, Data, LockingConfig, LockingWindow, Permission, TimeLock};
 use audit_trails::error::Error;
 use iota_interaction::types::base_types::ObjectID;
 use product_common::core_client::CoreClient;
@@ -25,6 +25,14 @@ fn assert_text_data(data: Data, expected: &str) {
     match data {
         Data::Text(actual) => assert_eq!(actual, expected),
         other => panic!("expected text data, got {other:?}"),
+    }
+}
+
+fn config_with_window(delete_record_window: LockingWindow) -> LockingConfig {
+    LockingConfig {
+        delete_record_window,
+        delete_trail_lock: TimeLock::None,
+        write_lock: TimeLock::None,
     }
 }
 
@@ -174,9 +182,7 @@ async fn delete_record_fails_while_time_locked() -> anyhow::Result<()> {
     let created = client
         .create_trail()
         .with_initial_record(Data::text("locked"), None)
-        .with_locking_config(LockingConfig {
-            delete_record: LockingWindow::TimeBased { seconds: 3600 },
-        })
+        .with_locking_config(config_with_window(LockingWindow::TimeBased { seconds: 3600 }))
         .finish()
         .build_and_execute(&client)
         .await?
@@ -239,9 +245,7 @@ async fn delete_record_fails_while_count_locked() -> anyhow::Result<()> {
     let created = client
         .create_trail()
         .with_initial_record(Data::text("count-locked"), None)
-        .with_locking_config(LockingConfig {
-            delete_record: LockingWindow::CountBased { count: 5 },
-        })
+        .with_locking_config(config_with_window(LockingWindow::CountBased { count: 5 }))
         .finish()
         .build_and_execute(&client)
         .await?
@@ -264,9 +268,7 @@ async fn delete_records_batch_respects_limit_and_deletes_oldest_first() -> anyho
     let created = client
         .create_trail()
         .with_initial_record(Data::text("batch-initial"), None)
-        .with_locking_config(LockingConfig {
-            delete_record: LockingWindow::TimeBased { seconds: 3600 },
-        })
+        .with_locking_config(config_with_window(LockingWindow::TimeBased { seconds: 3600 }))
         .finish()
         .build_and_execute(&client)
         .await?

@@ -1,7 +1,7 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use audit_trails::core::types::{CapabilityIssueOptions, Data, LockingConfig, LockingWindow, Permission};
+use audit_trails::core::types::{CapabilityIssueOptions, Data, LockingConfig, LockingWindow, Permission, TimeLock};
 use iota_interaction::types::base_types::ObjectID;
 
 use crate::client::{TestClient, get_funded_test_client};
@@ -19,6 +19,14 @@ async fn grant_role_capability(
     Ok(())
 }
 
+fn config_with_window(delete_record_window: LockingWindow) -> LockingConfig {
+    LockingConfig {
+        delete_record_window,
+        delete_trail_lock: TimeLock::None,
+        write_lock: TimeLock::None,
+    }
+}
+
 #[tokio::test]
 async fn update_locking_config_roundtrip() -> anyhow::Result<()> {
     let client = get_funded_test_client().await?;
@@ -29,18 +37,14 @@ async fn update_locking_config_roundtrip() -> anyhow::Result<()> {
 
     trail
         .locking()
-        .update(LockingConfig {
-            delete_record: LockingWindow::CountBased { count: 2 },
-        })
+        .update(config_with_window(LockingWindow::CountBased { count: 2 }))
         .build_and_execute(&client)
         .await?;
 
     let on_chain = trail.get().await?;
     assert_eq!(
         on_chain.locking_config,
-        LockingConfig {
-            delete_record: LockingWindow::CountBased { count: 2 }
-        }
+        config_with_window(LockingWindow::CountBased { count: 2 })
     );
 
     Ok(())
@@ -52,9 +56,7 @@ async fn update_locking_config_switches_count_to_time_based() -> anyhow::Result<
     let trail_id = client
         .create_trail()
         .with_initial_record(Data::text("trail-switch-count-to-time-e2e"), None)
-        .with_locking_config(LockingConfig {
-            delete_record: LockingWindow::CountBased { count: 3 },
-        })
+        .with_locking_config(config_with_window(LockingWindow::CountBased { count: 3 }))
         .finish()
         .build_and_execute(&client)
         .await?
@@ -67,25 +69,19 @@ async fn update_locking_config_switches_count_to_time_based() -> anyhow::Result<
     let before = trail.get().await?;
     assert_eq!(
         before.locking_config,
-        LockingConfig {
-            delete_record: LockingWindow::CountBased { count: 3 }
-        }
+        config_with_window(LockingWindow::CountBased { count: 3 })
     );
 
     trail
         .locking()
-        .update(LockingConfig {
-            delete_record: LockingWindow::TimeBased { seconds: 300 },
-        })
+        .update(config_with_window(LockingWindow::TimeBased { seconds: 300 }))
         .build_and_execute(&client)
         .await?;
 
     let after = trail.get().await?;
     assert_eq!(
         after.locking_config,
-        LockingConfig {
-            delete_record: LockingWindow::TimeBased { seconds: 300 }
-        }
+        config_with_window(LockingWindow::TimeBased { seconds: 300 })
     );
 
     Ok(())
@@ -116,10 +112,85 @@ async fn update_delete_record_window_roundtrip() -> anyhow::Result<()> {
     let on_chain = trail.get().await?;
     assert_eq!(
         on_chain.locking_config,
+        config_with_window(LockingWindow::TimeBased { seconds: 120 })
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn update_delete_trail_lock_roundtrip() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let trail_id = client
+        .create_test_trail(Data::text("trail-update-delete-trail-lock-e2e"))
+        .await?;
+    let trail = client.trail(trail_id);
+
+    grant_role_capability(
+        &client,
+        trail_id,
+        "DeleteTrailLockAdmin",
+        [Permission::UpdateLockingConfigForDeleteTrail],
+    )
+    .await?;
+
+    trail
+        .locking()
+        .update_delete_trail_lock(TimeLock::Infinite)
+        .build_and_execute(&client)
+        .await?;
+
+    let on_chain = trail.get().await?;
+    assert_eq!(
+        on_chain.locking_config,
         LockingConfig {
-            delete_record: LockingWindow::TimeBased { seconds: 120 }
+            delete_record_window: LockingWindow::None,
+            delete_trail_lock: TimeLock::Infinite,
+            write_lock: TimeLock::None,
         }
     );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn update_write_lock_roundtrip_and_blocks_add_record() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let trail_id = client
+        .create_test_trail(Data::text("trail-update-write-lock-e2e"))
+        .await?;
+    let trail = client.trail(trail_id);
+
+    grant_role_capability(
+        &client,
+        trail_id,
+        "WriteLockAdmin",
+        [Permission::UpdateLockingConfigForWrite, Permission::AddRecord],
+    )
+    .await?;
+
+    trail
+        .locking()
+        .update_write_lock(TimeLock::Infinite)
+        .build_and_execute(&client)
+        .await?;
+
+    let on_chain = trail.get().await?;
+    assert_eq!(
+        on_chain.locking_config,
+        LockingConfig {
+            delete_record_window: LockingWindow::None,
+            delete_trail_lock: TimeLock::None,
+            write_lock: TimeLock::Infinite,
+        }
+    );
+
+    let add_locked = trail
+        .records()
+        .add(Data::text("should-fail-write-locked"), None)
+        .build_and_execute(&client)
+        .await;
+    assert!(add_locked.is_err(), "write lock should block adding new records");
 
     Ok(())
 }
@@ -134,9 +205,7 @@ async fn update_locking_config_requires_permission() -> anyhow::Result<()> {
     let result = client
         .trail(trail_id)
         .locking()
-        .update(LockingConfig {
-            delete_record: LockingWindow::TimeBased { seconds: 60 },
-        })
+        .update(config_with_window(LockingWindow::TimeBased { seconds: 60 }))
         .build_and_execute(&client)
         .await;
 
@@ -149,14 +218,34 @@ async fn update_locking_config_requires_permission() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+async fn update_write_lock_requires_permission() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let trail_id = client
+        .create_test_trail(Data::text("trail-write-lock-permission-e2e"))
+        .await?;
+
+    let update_result = client
+        .trail(trail_id)
+        .locking()
+        .update_write_lock(TimeLock::Infinite)
+        .build_and_execute(&client)
+        .await;
+
+    assert!(
+        update_result.is_err(),
+        "updating write lock without UpdateLockingConfigForWrite permission must fail"
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn is_record_locked_supports_count_window_and_missing_sequence() -> anyhow::Result<()> {
     let client = get_funded_test_client().await?;
     let trail_id = client
         .create_trail()
         .with_initial_record(Data::text("trail-locking-status-e2e"), None)
-        .with_locking_config(LockingConfig {
-            delete_record: LockingWindow::CountBased { count: 2 },
-        })
+        .with_locking_config(config_with_window(LockingWindow::CountBased { count: 2 }))
         .finish()
         .build_and_execute(&client)
         .await?
@@ -217,9 +306,7 @@ async fn delete_window_variants_roundtrip() -> anyhow::Result<()> {
     let on_chain = trail.get().await?;
     assert_eq!(
         on_chain.locking_config,
-        LockingConfig {
-            delete_record: LockingWindow::TimeBased { seconds: 3600 }
-        }
+        config_with_window(LockingWindow::TimeBased { seconds: 3600 })
     );
 
     trail
@@ -231,9 +318,7 @@ async fn delete_window_variants_roundtrip() -> anyhow::Result<()> {
     let on_chain = trail.get().await?;
     assert_eq!(
         on_chain.locking_config,
-        LockingConfig {
-            delete_record: LockingWindow::CountBased { count: 1 }
-        }
+        config_with_window(LockingWindow::CountBased { count: 1 })
     );
 
     trail
@@ -243,12 +328,7 @@ async fn delete_window_variants_roundtrip() -> anyhow::Result<()> {
         .await?;
 
     let on_chain = trail.get().await?;
-    assert_eq!(
-        on_chain.locking_config,
-        LockingConfig {
-            delete_record: LockingWindow::None
-        }
-    );
+    assert_eq!(on_chain.locking_config, config_with_window(LockingWindow::None));
 
     Ok(())
 }
@@ -281,9 +361,7 @@ async fn updated_time_lock_blocks_record_deletion() -> anyhow::Result<()> {
 
     trail
         .locking()
-        .update(LockingConfig {
-            delete_record: LockingWindow::TimeBased { seconds: 3600 },
-        })
+        .update(config_with_window(LockingWindow::TimeBased { seconds: 3600 }))
         .build_and_execute(&client)
         .await?;
 

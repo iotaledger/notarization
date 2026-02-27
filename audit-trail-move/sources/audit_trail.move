@@ -8,13 +8,14 @@
 module audit_trail::main;
 
 use audit_trail::{
-    locking::{Self, LockingConfig, LockingWindow, set_delete_record},
+    locking::{Self, LockingConfig, LockingWindow, set_config, set_delete_record_window, set_delete_trail_lock, set_write_lock},
     permission::{Self, Permission},
     record::{Self, Record}
 };
 use iota::{clock::{Self, Clock}, event, linked_table::{Self, LinkedTable}, vec_set::VecSet};
 use std::string::String;
 use tf_components::{capability::Capability, role_map::{Self, RoleMap}};
+use tf_components::timelock::TimeLock;
 
 // ===== Errors =====
 #[error]
@@ -23,6 +24,10 @@ const ERecordNotFound: vector<u8> = b"Record not found at the given sequence num
 const ERecordLocked: vector<u8> = b"The record is locked and cannot be deleted";
 #[error]
 const ETrailNotEmpty: vector<u8> = b"Audit trail cannot be deleted while records still exist";
+#[error]
+const ETrailDeleteLocked: vector<u8> = b"The audit trail is delete-locked";
+#[error]
+const ETrailWriteLocked: vector<u8> = b"The audit trail is write-locked";
 #[error]
 const EPackageVersionMismatch: vector<u8> =
     b"The package version of the trail does not match the expected version";
@@ -282,6 +287,7 @@ public fun add_record<D: store + copy>(
             clock,
             ctx,
         );
+    assert!(!locking::is_write_locked(&trail.locking_config, clock), ETrailWriteLocked);
 
     let caller = ctx.sender();
     let timestamp = clock::timestamp_ms(clock);
@@ -408,6 +414,7 @@ public fun delete_audit_trail<D: store + copy>(
             clock,
             ctx,
         );
+    assert!(!locking::is_delete_trail_locked(&trail.locking_config, clock), ETrailDeleteLocked);
     assert!(linked_table::is_empty(&trail.records), ETrailNotEmpty);
 
     let trail_id = trail.id();
@@ -446,7 +453,7 @@ public fun is_record_locked<D: store + copy>(
     let record = linked_table::borrow(&trail.records, sequence_number);
     let current_time = clock::timestamp_ms(clock);
 
-    locking::is_locked(
+    locking::is_delete_record_locked(
         &trail.locking_config,
         sequence_number,
         record::added_at(record),
@@ -472,11 +479,11 @@ public fun update_locking_config<D: store + copy>(
             clock,
             ctx,
         );
-    trail.locking_config = new_config;
+    set_config(&mut trail.locking_config, new_config);
 }
 
 /// Update the `delete_record_lock` locking configuration
-public fun update_locking_config_for_delete_record<D: store + copy>(
+public fun update_delete_record_window<D: store + copy>(
     trail: &mut AuditTrail<D>,
     cap: &Capability,
     new_delete_record_lock: LockingWindow,
@@ -492,7 +499,47 @@ public fun update_locking_config_for_delete_record<D: store + copy>(
             clock,
             ctx,
         );
-    set_delete_record(&mut trail.locking_config, new_delete_record_lock);
+    set_delete_record_window(&mut trail.locking_config, new_delete_record_lock);
+}
+
+/// Update the `delete_trail_lock` locking configuration.
+public fun update_delete_trail_lock<D: store + copy>(
+    trail: &mut AuditTrail<D>,
+    cap: &Capability,
+    new_delete_trail_lock: TimeLock,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
+    assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
+    trail
+        .roles
+        .is_capability_valid(
+            cap,
+            &permission::update_locking_config_for_delete_trail(),
+            clock,
+            ctx,
+        );
+    set_delete_trail_lock(&mut trail.locking_config, new_delete_trail_lock);
+}
+
+/// Update the `write_lock` locking configuration.
+public fun update_write_lock<D: store + copy>(
+    trail: &mut AuditTrail<D>,
+    cap: &Capability,
+    new_write_lock: TimeLock,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
+    assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
+    trail
+        .roles
+        .is_capability_valid(
+            cap,
+            &permission::update_locking_config_for_write(),
+            clock,
+            ctx,
+        );
+    set_write_lock(&mut trail.locking_config, new_write_lock);
 }
 
 /// Update the trail's mutable metadata

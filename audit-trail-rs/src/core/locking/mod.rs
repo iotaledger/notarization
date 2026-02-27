@@ -8,13 +8,13 @@ use product_common::transaction::transaction_builder::TransactionBuilder;
 use secret_storage::Signer;
 
 use crate::core::trail::{AuditTrailFull, AuditTrailReadOnly};
-use crate::core::types::{LockingConfig, LockingWindow};
+use crate::core::types::{LockingConfig, LockingWindow, TimeLock};
 use crate::error::Error;
 
 mod operations;
 mod transactions;
 
-pub use transactions::{UpdateDeleteRecordWindow, UpdateLockingConfig};
+pub use transactions::{UpdateDeleteRecordWindow, UpdateDeleteTrailLock, UpdateLockingConfig, UpdateWriteLock};
 
 use self::operations::LockingOps;
 
@@ -45,6 +45,24 @@ impl<'a, C> TrailLocking<'a, C> {
     {
         let owner = self.client.sender_address();
         TransactionBuilder::new(UpdateDeleteRecordWindow::new(self.trail_id, owner, window))
+    }
+
+    pub fn update_delete_trail_lock<S>(&self, lock: TimeLock) -> TransactionBuilder<UpdateDeleteTrailLock>
+    where
+        C: AuditTrailFull + CoreClient<S>,
+        S: Signer<IotaKeySignature> + OptionalSync,
+    {
+        let owner = self.client.sender_address();
+        TransactionBuilder::new(UpdateDeleteTrailLock::new(self.trail_id, owner, lock))
+    }
+
+    pub fn update_write_lock<S>(&self, lock: TimeLock) -> TransactionBuilder<UpdateWriteLock>
+    where
+        C: AuditTrailFull + CoreClient<S>,
+        S: Signer<IotaKeySignature> + OptionalSync,
+    {
+        let owner = self.client.sender_address();
+        TransactionBuilder::new(UpdateWriteLock::new(self.trail_id, owner, lock))
     }
 
     pub async fn is_record_locked(&self, sequence_number: u64) -> Result<bool, Error>

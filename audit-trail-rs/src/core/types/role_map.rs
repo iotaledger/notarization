@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 
 use super::permission::Permission;
 use crate::core::utils::{deserialize_vec_map, deserialize_vec_set};
+use crate::package;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RoleMap {
@@ -62,7 +63,9 @@ pub struct Capability {
 }
 
 impl MoveType for Capability {
-    fn move_type(package: ObjectID) -> TypeTag {
-        TypeTag::from_str(format!("{package}::capability::Capability").as_str()).expect("failed to create type tag")
+    fn move_type(_: ObjectID) -> TypeTag {
+        let tf_components_package_id = package::tf_components_package_id();
+        TypeTag::from_str(format!("{tf_components_package_id}::capability::Capability").as_str())
+            .expect("failed to create type tag")
     }
 }

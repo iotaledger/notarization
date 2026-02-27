@@ -19,7 +19,7 @@ use audit_trail::{
 };
 use iota::{clock, test_scenario as ts};
 use std::string;
-use tf_components::capability::Capability;
+use tf_components::{capability::Capability, timelock};
 
 // ===== Time-Based Locking Tests =====
 
@@ -30,7 +30,7 @@ fun test_time_based_locking_within_window() {
 
     // Create trail with 1 hour time-based locking
     {
-        let locking_config = locking::new(locking::window_time_based(3600));
+        let locking_config = locking::new(locking::window_time_based(3600), timelock::none(), timelock::none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -70,7 +70,7 @@ fun test_time_based_locking_outside_window() {
 
     // Create trail with 1 hour time-based locking
     {
-        let locking_config = locking::new(locking::window_time_based(3600));
+        let locking_config = locking::new(locking::window_time_based(3600), timelock::none(), timelock::none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -108,7 +108,7 @@ fun test_count_based_locking() {
 
     // Create trail with count-based locking (last 2 locked)
     {
-        let locking_config = locking::new(locking::window_count_based(2));
+        let locking_config = locking::new(locking::window_count_based(2), timelock::none(), timelock::none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -190,7 +190,7 @@ fun test_count_based_locking_single_record() {
 
     // Create trail with "last 3 locked" - single record should be locked
     {
-        let locking_config = locking::new(locking::window_count_based(3));
+        let locking_config = locking::new(locking::window_count_based(3), timelock::none(), timelock::none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -222,7 +222,7 @@ fun test_no_locking() {
     let mut scenario = ts::begin(admin);
 
     {
-        let locking_config = locking::new(locking::window_none());
+        let locking_config = locking::new(locking::window_none(), timelock::none(), timelock::none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -256,7 +256,7 @@ fun test_update_locking_config() {
 
     // Create trail with no locking
     {
-        let locking_config = locking::new(locking::window_none());
+        let locking_config = locking::new(locking::window_none(), timelock::none(), timelock::none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -306,7 +306,7 @@ fun test_update_locking_config() {
         // Update to 1 hour time-based locking
         trail.update_locking_config(
             &locking_cap,
-            locking::new(locking::window_time_based(3600)),
+            locking::new(locking::window_time_based(3600), timelock::none(), timelock::none()),
             &clock,
             ts::ctx(&mut scenario),
         );
@@ -328,7 +328,7 @@ fun test_update_locking_config_permission_denied() {
     let mut scenario = ts::begin(admin);
 
     {
-        let locking_config = locking::new(locking::window_none());
+        let locking_config = locking::new(locking::window_none(), timelock::none(), timelock::none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -372,7 +372,7 @@ fun test_update_locking_config_permission_denied() {
 
         trail.update_locking_config(
             &no_locking_cap,
-            locking::new(locking::window_time_based(3600)),
+            locking::new(locking::window_time_based(3600), timelock::none(), timelock::none()),
             &clock,
             ts::ctx(&mut scenario),
         );
@@ -384,13 +384,13 @@ fun test_update_locking_config_permission_denied() {
 }
 
 #[test]
-fun test_update_locking_config_for_delete_record() {
+fun test_update_delete_record_window() {
     let admin = @0xAD;
     let mut scenario = ts::begin(admin);
 
     // Create trail with no locking
     {
-        let locking_config = locking::new(locking::window_none());
+        let locking_config = locking::new(locking::window_none(), timelock::none(), timelock::none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -442,7 +442,7 @@ fun test_update_locking_config_for_delete_record() {
         assert!(!trail.is_record_locked(0, &clock), 0);
 
         // Update to count-based (last 5 locked)
-        trail.update_locking_config_for_delete_record(
+        trail.update_delete_record_window(
             &delete_lock_cap,
             locking::window_count_based(5),
             &clock,
@@ -460,12 +460,12 @@ fun test_update_locking_config_for_delete_record() {
 
 #[test]
 #[expected_failure(abort_code = audit_trail::role_map::ECapabilityPermissionDenied)]
-fun test_update_locking_config_for_delete_record_permission_denied() {
+fun test_update_delete_record_window_permission_denied() {
     let admin = @0xAD;
     let mut scenario = ts::begin(admin);
 
     {
-        let locking_config = locking::new(locking::window_none());
+        let locking_config = locking::new(locking::window_none(), timelock::none(), timelock::none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -508,7 +508,7 @@ fun test_update_locking_config_for_delete_record_permission_denied() {
     {
         let (wrong_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
-        trail.update_locking_config_for_delete_record(
+        trail.update_delete_record_window(
             &wrong_cap,
             locking::window_count_based(5),
             &clock,
@@ -528,7 +528,7 @@ fun test_delete_record_after_time_lock_expires() {
 
     // Create trail with 1 hour time-based locking and initial record
     {
-        let locking_config = locking::new(locking::window_time_based(3600)); // 1 hour = 3600 seconds
+        let locking_config = locking::new(locking::window_time_based(3600), timelock::none(), timelock::none()); // 1 hour = 3600 seconds
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -615,7 +615,7 @@ fun test_time_lock_boundary_just_before_expiry() {
 
     // Create trail with 1 hour time-based locking
     {
-        let locking_config = locking::new(locking::window_time_based(3600));
+        let locking_config = locking::new(locking::window_time_based(3600), timelock::none(), timelock::none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -650,7 +650,7 @@ fun test_time_based_locking_all_recent_records_locked() {
 
     // Create trail with time-based (1 hour) locking
     {
-        let locking_config = locking::new(locking::window_time_based(3600));
+        let locking_config = locking::new(locking::window_time_based(3600), timelock::none(), timelock::none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -731,7 +731,7 @@ fun test_count_based_locking_last_records_remain_locked() {
 
     // Create trail with count-based (last 2) locking
     {
-        let locking_config = locking::new(locking::window_count_based(2));
+        let locking_config = locking::new(locking::window_count_based(2), timelock::none(), timelock::none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -814,7 +814,7 @@ fun test_time_based_locking_still_locked_before_expiry() {
 
     // Create trail with time-based (1 hour) locking
     {
-        let locking_config = locking::new(locking::window_time_based(3600));
+        let locking_config = locking::new(locking::window_time_based(3600), timelock::none(), timelock::none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -893,7 +893,7 @@ fun test_count_based_locking_old_record_can_delete() {
 
     // Create trail with count-based (last 2) locking
     {
-        let locking_config = locking::new(locking::window_count_based(2));
+        let locking_config = locking::new(locking::window_count_based(2), timelock::none(), timelock::none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -981,7 +981,7 @@ fun test_delete_records_batch_bypasses_record_lock() {
 
     // Create trail with 1 hour delete lock and an initial record.
     {
-        let locking_config = locking::new(locking::window_time_based(3600));
+        let locking_config = locking::new(locking::window_time_based(3600), timelock::none(), timelock::none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -1039,7 +1039,7 @@ fun test_delete_records_batch_requires_delete_all_records_permission() {
     let mut scenario = ts::begin(admin);
 
     {
-        let locking_config = locking::new(locking::window_none());
+        let locking_config = locking::new(locking::window_none(), timelock::none(), timelock::none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -1102,7 +1102,7 @@ fun test_delete_audit_trail_fails_while_not_empty() {
     let mut scenario = ts::begin(admin);
 
     {
-        let locking_config = locking::new(locking::window_none());
+        let locking_config = locking::new(locking::window_none(), timelock::none(), timelock::none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -1153,7 +1153,7 @@ fun test_delete_audit_trail_after_batch_cleanup() {
     let mut scenario = ts::begin(admin);
 
     {
-        let locking_config = locking::new(locking::window_none());
+        let locking_config = locking::new(locking::window_none(), timelock::none(), timelock::none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,

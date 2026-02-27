@@ -16,7 +16,7 @@ use audit_trail::{
 };
 use iota::test_scenario::{Self as ts, Scenario};
 use std::string;
-use tf_components::capability::Capability;
+use tf_components::{capability::Capability, timelock};
 
 /// Helper function to setup an audit trail with a RecordAdmin role and a capability
 /// with a time window restriction transferred to the record_user.
@@ -65,7 +65,7 @@ fun setup_trail_with_record_admin_capability_and_time_window_restriction(
 fun setup_trail_with_record_admin_role(scenario: &mut Scenario, admin_user: address): ID {
     // Setup: Create audit trail with admin capability
     let trail_id = {
-        let locking_config = locking::new(locking::window_count_based(0));
+        let locking_config = locking::new(locking::window_count_based(0), timelock::none(), timelock::none());
 
         let (admin_cap, trail_id) = setup_test_audit_trail(
             scenario,
@@ -112,7 +112,7 @@ fun test_new_capability() {
     let mut scenario = ts::begin(admin_user);
 
     let trail_id = {
-        let locking_config = locking::new(locking::window_count_based(0));
+        let locking_config = locking::new(locking::window_count_based(0), timelock::none(), timelock::none());
         let (admin_cap, trail_id) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -634,7 +634,7 @@ fun test_revoked_capability_cannot_be_used() {
     let mut scenario = ts::begin(admin_user);
 
     {
-        let locking_config = locking::new(locking::window_count_based(0));
+        let locking_config = locking::new(locking::window_count_based(0), timelock::none(), timelock::none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -713,7 +713,7 @@ fun test_new_capability_for_nonexistent_role() {
     let mut scenario = ts::begin(admin_user);
 
     {
-        let locking_config = locking::new(locking::window_count_based(0));
+        let locking_config = locking::new(locking::window_count_based(0), timelock::none(), timelock::none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -751,7 +751,7 @@ fun test_revoke_capability_permission_denied() {
     let mut scenario = ts::begin(admin_user);
 
     {
-        let locking_config = locking::new(locking::window_count_based(0));
+        let locking_config = locking::new(locking::window_count_based(0), timelock::none(), timelock::none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -837,7 +837,7 @@ fun test_new_capability_permission_denied() {
     let mut scenario = ts::begin(admin_user);
 
     {
-        let locking_config = locking::new(locking::window_count_based(0));
+        let locking_config = locking::new(locking::window_count_based(0), timelock::none(), timelock::none());
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
