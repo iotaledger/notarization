@@ -51,7 +51,6 @@ path = "real-world/02_legal_contract.rs"
 [dependencies]
 anyhow.workspace = true
 chrono = { workspace = true }
-hyper = { workspace = true } # Fix for iota-sdk 1.13 issue with axum-server.
 iota-sdk = { workspace = true }
 notarization = { path = "../notarization-rs" }
 product_common = { workspace = true, features = ["core-client", "test-utils", "transaction"] }
