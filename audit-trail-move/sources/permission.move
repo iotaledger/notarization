@@ -27,6 +27,8 @@ public enum Permission has copy, drop, store {
     UpdateLockingConfigForDeleteRecord,
     /// Update the delete_lock configuration for the whole Audit Trail
     UpdateLockingConfigForDeleteTrail,
+    /// Update the write_lock configuration for the whole Audit Trail
+    UpdateLockingConfigForWrite,
     // --- Role Management - Proposed role: `RoleAdmin` ---
     /// Add new roles with associated permissions
     AddRoles,
@@ -103,6 +105,7 @@ public fun locking_admin_permissions(): VecSet<Permission> {
     perms.insert(update_locking_config());
     perms.insert(update_locking_config_for_delete_trail());
     perms.insert(update_locking_config_for_delete_record());
+    perms.insert(update_locking_config_for_write());
     perms
 }
 
@@ -171,6 +174,11 @@ public fun update_locking_config_for_delete_record(): Permission {
 /// Returns a permission allowing to update the delete_lock configuration for the whole Audit Trail
 public fun update_locking_config_for_delete_trail(): Permission {
     Permission::UpdateLockingConfigForDeleteTrail
+}
+
+/// Returns a permission allowing to update the write_lock configuration for the whole Audit Trail
+public fun update_locking_config_for_write(): Permission {
+    Permission::UpdateLockingConfigForWrite
 }
 
 /// Returns a permission allowing to add new roles with associated permissions

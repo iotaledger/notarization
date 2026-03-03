@@ -24,6 +24,7 @@ pub enum Permission {
     UpdateLockingConfig,
     UpdateLockingConfigForDeleteRecord,
     UpdateLockingConfigForDeleteTrail,
+    UpdateLockingConfigForWrite,
     AddRoles,
     UpdateRoles,
     DeleteRoles,
@@ -46,6 +47,7 @@ impl Permission {
             Self::UpdateLockingConfig => "update_locking_config",
             Self::UpdateLockingConfigForDeleteRecord => "update_locking_config_for_delete_record",
             Self::UpdateLockingConfigForDeleteTrail => "update_locking_config_for_delete_trail",
+            Self::UpdateLockingConfigForWrite => "update_locking_config_for_write",
             Self::AddRoles => "add_roles",
             Self::UpdateRoles => "update_roles",
             Self::DeleteRoles => "delete_roles",
@@ -114,6 +116,7 @@ impl PermissionSet {
                 Permission::UpdateLockingConfig,
                 Permission::UpdateLockingConfigForDeleteTrail,
                 Permission::UpdateLockingConfigForDeleteRecord,
+                Permission::UpdateLockingConfigForWrite,
             ]),
         }
     }

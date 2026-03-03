@@ -4,9 +4,7 @@
 use std::collections::HashSet;
 use std::str::FromStr;
 
-use iota_interaction::rpc_types::{
-    IotaData as _, IotaObjectDataOptions, IotaTransactionBlockEffects, IotaTransactionBlockEvents,
-};
+use iota_interaction::rpc_types::{IotaData as _, IotaObjectDataOptions};
 use iota_interaction::types::base_types::{IotaAddress, ObjectID, ObjectRef};
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use iota_interaction::types::transaction::{Argument, ObjectArg, ProgrammableTransaction};

@@ -8,13 +8,14 @@
 module audit_trail::main;
 
 use audit_trail::{
-    locking::{Self, LockingConfig, LockingWindow, set_delete_record},
+    locking::{Self, LockingConfig, LockingWindow, set_config, set_delete_record_window, set_delete_trail_lock, set_write_lock},
     permission::{Self, Permission},
     record::{Self, Record}
 };
 use iota::{clock::{Self, Clock}, event, linked_table::{Self, LinkedTable}, vec_set::VecSet};
 use std::string::String;
 use tf_components::{capability::Capability, role_map::{Self, RoleMap}};
+use tf_components::timelock::TimeLock;
 
 // ===== Errors =====
 #[error]
@@ -23,6 +24,10 @@ const ERecordNotFound: vector<u8> = b"Record not found at the given sequence num
 const ERecordLocked: vector<u8> = b"The record is locked and cannot be deleted";
 #[error]
 const ETrailNotEmpty: vector<u8> = b"Audit trail cannot be deleted while records still exist";
+#[error]
+const ETrailDeleteLocked: vector<u8> = b"The audit trail is delete-locked";
+#[error]
+const ETrailWriteLocked: vector<u8> = b"The audit trail is write-locked";
 #[error]
 const EPackageVersionMismatch: vector<u8> =
     b"The package version of the trail does not match the expected version";
@@ -96,32 +101,6 @@ public struct RecordAdded has copy, drop {
 public struct RecordDeleted has copy, drop {
     trail_id: ID,
     sequence_number: u64,
-    deleted_by: address,
-    timestamp: u64,
-}
-
-/// Emitted when a role is created
-public struct RoleCreated has copy, drop {
-    trail_id: ID,
-    role: String,
-    permissions: VecSet<Permission>,
-    created_by: address,
-    timestamp: u64,
-}
-
-/// Emitted when a role's permissions are updated
-public struct RoleUpdated has copy, drop {
-    trail_id: ID,
-    role: String,
-    new_permissions: VecSet<Permission>,
-    updated_by: address,
-    timestamp: u64,
-}
-
-/// Emitted when a role is deleted
-public struct RoleDeleted has copy, drop {
-    trail_id: ID,
-    role: String,
     deleted_by: address,
     timestamp: u64,
 }
@@ -246,12 +225,12 @@ entry fun migrate<D: store + copy>(
     trail: &mut AuditTrail<D>,
     cap: &Capability,
     clock: &Clock,
-    ctx: &mut TxContext,
+    ctx: &TxContext,
 ) {
     assert!(trail.version < PACKAGE_VERSION, EPackageVersionMismatch);
     trail
         .roles
-        .is_capability_valid(
+        .assert_capability_valid(
             cap,
             &permission::migrate_audit_trail(),
             clock,
@@ -276,12 +255,13 @@ public fun add_record<D: store + copy>(
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     trail
         .roles
-        .is_capability_valid(
+        .assert_capability_valid(
             cap,
             &permission::add_record(),
             clock,
             ctx,
         );
+    assert!(!locking::is_write_locked(&trail.locking_config, clock), ETrailWriteLocked);
 
     let caller = ctx.sender();
     let timestamp = clock::timestamp_ms(clock);
@@ -322,7 +302,7 @@ public fun delete_record<D: store + copy + drop>(
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     trail
         .roles
-        .is_capability_valid(
+        .assert_capability_valid(
             cap,
             &permission::delete_record(),
             clock,
@@ -360,7 +340,7 @@ public fun delete_records_batch<D: store + copy + drop>(
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     trail
         .roles
-        .is_capability_valid(
+        .assert_capability_valid(
             cap,
             &permission::delete_all_records(),
             clock,
@@ -402,12 +382,13 @@ public fun delete_audit_trail<D: store + copy>(
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     trail
         .roles
-        .is_capability_valid(
+        .assert_capability_valid(
             cap,
             &permission::delete_audit_trail(),
             clock,
             ctx,
         );
+    assert!(!locking::is_delete_trail_locked(&trail.locking_config, clock), ETrailDeleteLocked);
     assert!(linked_table::is_empty(&trail.records), ETrailNotEmpty);
 
     let trail_id = trail.id();
@@ -446,7 +427,7 @@ public fun is_record_locked<D: store + copy>(
     let record = linked_table::borrow(&trail.records, sequence_number);
     let current_time = clock::timestamp_ms(clock);
 
-    locking::is_locked(
+    locking::is_delete_record_locked(
         &trail.locking_config,
         sequence_number,
         record::added_at(record),
@@ -466,17 +447,17 @@ public fun update_locking_config<D: store + copy>(
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     trail
         .roles
-        .is_capability_valid(
+        .assert_capability_valid(
             cap,
             &permission::update_locking_config(),
             clock,
             ctx,
         );
-    trail.locking_config = new_config;
+    set_config(&mut trail.locking_config, new_config);
 }
 
 /// Update the `delete_record_lock` locking configuration
-public fun update_locking_config_for_delete_record<D: store + copy>(
+public fun update_delete_record_window<D: store + copy>(
     trail: &mut AuditTrail<D>,
     cap: &Capability,
     new_delete_record_lock: LockingWindow,
@@ -486,13 +467,53 @@ public fun update_locking_config_for_delete_record<D: store + copy>(
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     trail
         .roles
-        .is_capability_valid(
+        .assert_capability_valid(
             cap,
             &permission::update_locking_config_for_delete_record(),
             clock,
             ctx,
         );
-    set_delete_record(&mut trail.locking_config, new_delete_record_lock);
+    set_delete_record_window(&mut trail.locking_config, new_delete_record_lock);
+}
+
+/// Update the `delete_trail_lock` locking configuration.
+public fun update_delete_trail_lock<D: store + copy>(
+    trail: &mut AuditTrail<D>,
+    cap: &Capability,
+    new_delete_trail_lock: TimeLock,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
+    assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
+    trail
+        .roles
+        .assert_capability_valid(
+            cap,
+            &permission::update_locking_config_for_delete_trail(),
+            clock,
+            ctx,
+        );
+    set_delete_trail_lock(&mut trail.locking_config, new_delete_trail_lock);
+}
+
+/// Update the `write_lock` locking configuration.
+public fun update_write_lock<D: store + copy>(
+    trail: &mut AuditTrail<D>,
+    cap: &Capability,
+    new_write_lock: TimeLock,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
+    assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
+    trail
+        .roles
+        .assert_capability_valid(
+            cap,
+            &permission::update_locking_config_for_write(),
+            clock,
+            ctx,
+        );
+    set_write_lock(&mut trail.locking_config, new_write_lock);
 }
 
 /// Update the trail's mutable metadata
@@ -506,7 +527,7 @@ public fun update_metadata<D: store + copy>(
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     trail
         .roles
-        .is_capability_valid(
+        .assert_capability_valid(
             cap,
             &permission::update_metadata(),
             clock,
@@ -528,13 +549,6 @@ public fun create_role<D: store + copy>(
 ) {
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     role_map::create_role(trail.roles_mut(), cap, role, permissions, clock, ctx);
-    event::emit(RoleCreated {
-        trail_id: trail.id(),
-        role,
-        permissions,
-        created_by: ctx.sender(),
-        timestamp: clock::timestamp_ms(clock),
-    });
 }
 
 /// Updates permissions for an existing role.
@@ -548,13 +562,6 @@ public fun update_role_permissions<D: store + copy>(
 ) {
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     role_map::update_role_permissions(trail.roles_mut(), cap, &role, new_permissions, clock, ctx);
-    event::emit(RoleUpdated {
-        trail_id: trail.id(),
-        role,
-        new_permissions,
-        updated_by: ctx.sender(),
-        timestamp: clock::timestamp_ms(clock),
-    });
 }
 
 /// Deletes an existing role.
@@ -567,12 +574,6 @@ public fun delete_role<D: store + copy>(
 ) {
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     role_map::delete_role(trail.roles_mut(), cap, &role, clock, ctx);
-    event::emit(RoleDeleted {
-        trail_id: trail.id(),
-        role,
-        deleted_by: ctx.sender(),
-        timestamp: clock::timestamp_ms(clock),
-    });
 }
 
 /// Issues a new capability for an existing role.
@@ -635,7 +636,7 @@ public fun destroy_capability<D: store + copy>(
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     trail
         .roles
-        .is_capability_valid(
+        .assert_capability_valid(
             cap,
             &permission::revoke_capabilities(),
             clock,

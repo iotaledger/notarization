@@ -81,7 +81,6 @@ async fn delete_role_prevents_new_capability_issuance() -> anyhow::Result<()> {
         .output;
     assert_eq!(deleted.trail_id, trail_id);
     assert_eq!(deleted.role, role_name.to_string());
-    assert!(deleted.timestamp > 0);
 
     let issue_tx = roles
         .for_role(role_name)
@@ -171,10 +170,6 @@ async fn destroy_capability_emits_expected_event_data() -> anyhow::Result<()> {
 
     assert_eq!(destroyed.target_key, trail_id);
     assert_eq!(destroyed.capability_id, issued.capability_id);
-    assert_eq!(destroyed.role, role_name.to_string());
-    assert_eq!(destroyed.issued_to, None);
-    assert_eq!(destroyed.valid_from, None);
-    assert_eq!(destroyed.valid_until, None);
 
     Ok(())
 }
@@ -196,10 +191,6 @@ async fn destroy_initial_admin_capability_emits_expected_event() -> anyhow::Resu
 
     assert_eq!(destroyed.target_key, trail_id);
     assert_eq!(destroyed.capability_id, admin_cap_id);
-    assert_eq!(destroyed.role, "Admin".to_string());
-    assert_eq!(destroyed.issued_to, None);
-    assert_eq!(destroyed.valid_from, None);
-    assert_eq!(destroyed.valid_until, None);
 
     Ok(())
 }

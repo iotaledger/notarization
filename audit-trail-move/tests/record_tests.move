@@ -21,6 +21,7 @@ use audit_trail::{
 };
 use iota::{clock, test_scenario as ts};
 use std::string;
+use tf_components::timelock;
 
 // ===== Add Record Tests =====
 
@@ -31,7 +32,11 @@ fun test_add_record_to_empty_trail() {
 
     // Setup trail
     {
-        let locking_config = locking::new(locking::window_none());
+        let locking_config = locking::new(
+            locking::window_none(),
+            timelock::none(),
+            timelock::none(),
+        );
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -105,7 +110,11 @@ fun test_add_multiple_records() {
 
     // Setup trail
     {
-        let locking_config = locking::new(locking::window_none());
+        let locking_config = locking::new(
+            locking::window_none(),
+            timelock::none(),
+            timelock::none(),
+        );
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -182,7 +191,11 @@ fun test_add_record_permission_denied() {
 
     // Setup trail
     {
-        let locking_config = locking::new(locking::window_none());
+        let locking_config = locking::new(
+            locking::window_none(),
+            timelock::none(),
+            timelock::none(),
+        );
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -250,7 +263,11 @@ fun test_delete_record_success() {
 
     // Setup trail with initial record
     {
-        let locking_config = locking::new(locking::window_none());
+        let locking_config = locking::new(
+            locking::window_none(),
+            timelock::none(),
+            timelock::none(),
+        );
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -319,7 +336,11 @@ fun test_delete_record_permission_denied() {
 
     // Setup trail with initial record
     {
-        let locking_config = locking::new(locking::window_none());
+        let locking_config = locking::new(
+            locking::window_none(),
+            timelock::none(),
+            timelock::none(),
+        );
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -380,7 +401,11 @@ fun test_delete_record_not_found() {
 
     // Setup trail (no initial record)
     {
-        let locking_config = locking::new(locking::window_none());
+        let locking_config = locking::new(
+            locking::window_none(),
+            timelock::none(),
+            timelock::none(),
+        );
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -440,7 +465,11 @@ fun test_delete_record_time_locked() {
 
     // Setup trail with time-based locking and initial record
     {
-        let locking_config = locking::new(locking::window_time_based(3600)); // 1 hour
+        let locking_config = locking::new(
+            locking::window_time_based(3600),
+            timelock::none(),
+            timelock::none(),
+        ); // 1 hour
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -501,7 +530,11 @@ fun test_delete_record_count_locked() {
 
     // Setup trail with count-based locking and initial record
     {
-        let locking_config = locking::new(locking::window_count_based(5)); // Last 5 records locked
+        let locking_config = locking::new(
+            locking::window_count_based(5),
+            timelock::none(),
+            timelock::none(),
+        ); // Last 5 records locked
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -562,7 +595,11 @@ fun test_get_record() {
 
     // Setup trail with initial record
     {
-        let locking_config = locking::new(locking::window_none());
+        let locking_config = locking::new(
+            locking::window_none(),
+            timelock::none(),
+            timelock::none(),
+        );
         let initial_data = new_test_data(42, b"Test data");
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
@@ -596,7 +633,11 @@ fun test_get_record_not_found() {
 
     // Setup trail (no initial record)
     {
-        let locking_config = locking::new(locking::window_none());
+        let locking_config = locking::new(
+            locking::window_none(),
+            timelock::none(),
+            timelock::none(),
+        );
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -625,7 +666,11 @@ fun test_first_last_sequence() {
 
     // Setup trail
     {
-        let locking_config = locking::new(locking::window_none());
+        let locking_config = locking::new(
+            locking::window_none(),
+            timelock::none(),
+            timelock::none(),
+        );
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -714,7 +759,11 @@ fun test_is_record_locked_not_found() {
 
     // Setup trail (no initial record)
     {
-        let locking_config = locking::new(locking::window_time_based(3600));
+        let locking_config = locking::new(
+            locking::window_time_based(3600),
+            timelock::none(),
+            timelock::none(),
+        );
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
