@@ -105,32 +105,6 @@ public struct RecordDeleted has copy, drop {
     timestamp: u64,
 }
 
-/// Emitted when a role is created
-public struct RoleCreated has copy, drop {
-    trail_id: ID,
-    role: String,
-    permissions: VecSet<Permission>,
-    created_by: address,
-    timestamp: u64,
-}
-
-/// Emitted when a role's permissions are updated
-public struct RoleUpdated has copy, drop {
-    trail_id: ID,
-    role: String,
-    new_permissions: VecSet<Permission>,
-    updated_by: address,
-    timestamp: u64,
-}
-
-/// Emitted when a role is deleted
-public struct RoleDeleted has copy, drop {
-    trail_id: ID,
-    role: String,
-    deleted_by: address,
-    timestamp: u64,
-}
-
 // ===== Constructors =====
 
 /// Create immutable trail metadata
@@ -575,13 +549,6 @@ public fun create_role<D: store + copy>(
 ) {
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     role_map::create_role(trail.roles_mut(), cap, role, permissions, clock, ctx);
-    event::emit(RoleCreated {
-        trail_id: trail.id(),
-        role,
-        permissions,
-        created_by: ctx.sender(),
-        timestamp: clock::timestamp_ms(clock),
-    });
 }
 
 /// Updates permissions for an existing role.
@@ -595,13 +562,6 @@ public fun update_role_permissions<D: store + copy>(
 ) {
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     role_map::update_role_permissions(trail.roles_mut(), cap, &role, new_permissions, clock, ctx);
-    event::emit(RoleUpdated {
-        trail_id: trail.id(),
-        role,
-        new_permissions,
-        updated_by: ctx.sender(),
-        timestamp: clock::timestamp_ms(clock),
-    });
 }
 
 /// Deletes an existing role.
@@ -614,12 +574,6 @@ public fun delete_role<D: store + copy>(
 ) {
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     role_map::delete_role(trail.roles_mut(), cap, &role, clock, ctx);
-    event::emit(RoleDeleted {
-        trail_id: trail.id(),
-        role,
-        deleted_by: ctx.sender(),
-        timestamp: clock::timestamp_ms(clock),
-    });
 }
 
 /// Issues a new capability for an existing role.

@@ -29,7 +29,11 @@ fun test_role_based_permission_delegation() {
 
     // Step 1: admin_user creates the audit trail
     let trail_id = {
-        let locking_config = locking::new(locking::window_count_based(0), timelock::none(), timelock::none());
+        let locking_config = locking::new(
+            locking::window_count_based(0),
+            timelock::none(),
+            timelock::none(),
+        );
 
         let (admin_cap, trail_id) = setup_test_audit_trail(
             &mut scenario,
@@ -216,7 +220,11 @@ fun test_delete_role_success() {
     let mut scenario = ts::begin(admin_user);
 
     {
-        let locking_config = locking::new(locking::window_count_based(0), timelock::none(), timelock::none());
+        let locking_config = locking::new(
+            locking::window_count_based(0),
+            timelock::none(),
+            timelock::none(),
+        );
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -280,7 +288,11 @@ fun test_create_role_permission_denied() {
 
     // Setup
     {
-        let locking_config = locking::new(locking::window_count_based(0), timelock::none(), timelock::none());
+        let locking_config = locking::new(
+            locking::window_count_based(0),
+            timelock::none(),
+            timelock::none(),
+        );
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -352,7 +364,11 @@ fun test_delete_role_permission_denied() {
 
     // Setup
     {
-        let locking_config = locking::new(locking::window_count_based(0), timelock::none(), timelock::none());
+        let locking_config = locking::new(
+            locking::window_count_based(0),
+            timelock::none(),
+            timelock::none(),
+        );
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -428,7 +444,11 @@ fun test_update_role_permissions_permission_denied() {
 
     // Setup
     {
-        let locking_config = locking::new(locking::window_count_based(0), timelock::none(), timelock::none());
+        let locking_config = locking::new(
+            locking::window_count_based(0),
+            timelock::none(),
+            timelock::none(),
+        );
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -510,7 +530,11 @@ fun test_get_role_permissions_nonexistent() {
     let mut scenario = ts::begin(admin_user);
 
     {
-        let locking_config = locking::new(locking::window_count_based(0), timelock::none(), timelock::none());
+        let locking_config = locking::new(
+            locking::window_count_based(0),
+            timelock::none(),
+            timelock::none(),
+        );
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -539,7 +563,11 @@ fun test_update_role_permissions_success() {
     let mut scenario = ts::begin(admin_user);
 
     {
-        let locking_config = locking::new(locking::window_count_based(0), timelock::none(), timelock::none());
+        let locking_config = locking::new(
+            locking::window_count_based(0),
+            timelock::none(),
+            timelock::none(),
+        );
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -600,7 +628,11 @@ fun test_update_role_permissions_nonexistent() {
     let mut scenario = ts::begin(admin_user);
 
     {
-        let locking_config = locking::new(locking::window_count_based(0), timelock::none(), timelock::none());
+        let locking_config = locking::new(
+            locking::window_count_based(0),
+            timelock::none(),
+            timelock::none(),
+        );
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,

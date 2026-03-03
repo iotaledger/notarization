@@ -27,7 +27,11 @@ fun test_update_metadata_success() {
 
     // Setup: Create audit trail
     {
-        let locking_config = locking::new(locking::window_count_based(0), timelock::none(), timelock::none());
+        let locking_config = locking::new(
+            locking::window_count_based(0),
+            timelock::none(),
+            timelock::none(),
+        );
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -145,7 +149,11 @@ fun test_update_metadata_permission_denied() {
 
     // Setup
     {
-        let locking_config = locking::new(locking::window_count_based(0), timelock::none(), timelock::none());
+        let locking_config = locking::new(
+            locking::window_count_based(0),
+            timelock::none(),
+            timelock::none(),
+        );
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -212,7 +220,11 @@ fun test_update_metadata_revoked_capability() {
 
     // Setup: Create audit trail
     {
-        let locking_config = locking::new(locking::window_count_based(0), timelock::none(), timelock::none());
+        let locking_config = locking::new(
+            locking::window_count_based(0),
+            timelock::none(),
+            timelock::none(),
+        );
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,

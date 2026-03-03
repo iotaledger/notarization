@@ -13,7 +13,7 @@ use tokio::sync::OnceCell;
 use super::operations::RolesOps;
 use crate::core::types::{
     CapabilityDestroyed, CapabilityIssueOptions, CapabilityIssued, CapabilityRevoked, Event, PermissionSet,
-    RoleCreated, RoleDeleted, RoleUpdated,
+    RoleCreated, RoleRemoved, RoleUpdated,
 };
 use crate::error::Error;
 
@@ -197,7 +197,7 @@ impl DeleteRole {
 #[cfg_attr(feature = "send-sync", async_trait)]
 impl Transaction for DeleteRole {
     type Error = Error;
-    type Output = RoleDeleted;
+    type Output = RoleRemoved;
 
     async fn build_programmable_transaction<C>(&self, client: &C) -> Result<ProgrammableTransaction, Self::Error>
     where
@@ -215,13 +215,13 @@ impl Transaction for DeleteRole {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        for data in &events.data {
-            if let Ok(event) = serde_json::from_value::<Event<RoleDeleted>>(data.parsed_json.clone()) {
-                return Ok(event.data);
-            }
-        }
+        let event = events
+            .data
+            .iter()
+            .find_map(|data| serde_json::from_value::<Event<RoleRemoved>>(data.parsed_json.clone()).ok())
+            .ok_or_else(|| Error::UnexpectedApiResponse("RoleRemoved event not found".to_string()))?;
 
-        Err(Error::UnexpectedApiResponse("RoleDeleted event not found".to_string()))
+        Ok(event.data)
     }
 
     async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>

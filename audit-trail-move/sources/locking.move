@@ -110,10 +110,7 @@ public(package) fun set_delete_record_window(config: &mut LockingConfig, window:
 
 /// Set the trail deletion timelock.
 public(package) fun set_delete_trail_lock(config: &mut LockingConfig, lock: TimeLock) {
-    assert!(
-        !timelock::is_until_destroyed(&lock),
-        EUntilDestroyedNotSupportedForDeleteTrail,
-    );
+    assert!(!timelock::is_until_destroyed(&lock), EUntilDestroyedNotSupportedForDeleteTrail);
 
     config.delete_trail_lock = lock;
 }
