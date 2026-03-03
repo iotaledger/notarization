@@ -63,9 +63,7 @@ pub struct Capability {
 }
 
 impl MoveType for Capability {
-    fn move_type(_: ObjectID) -> TypeTag {
-        let tf_components_package_id = package::tf_components_package_id();
-        TypeTag::from_str(format!("{tf_components_package_id}::capability::Capability").as_str())
-            .expect("failed to create type tag")
+    fn move_type(object_id: ObjectID) -> TypeTag {
+        TypeTag::from_str(format!("{object_id}::capability::Capability").as_str()).expect("failed to create type tag")
     }
 }
