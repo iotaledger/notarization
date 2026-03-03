@@ -251,12 +251,12 @@ entry fun migrate<D: store + copy>(
     trail: &mut AuditTrail<D>,
     cap: &Capability,
     clock: &Clock,
-    ctx: &mut TxContext,
+    ctx: &TxContext,
 ) {
     assert!(trail.version < PACKAGE_VERSION, EPackageVersionMismatch);
     trail
         .roles
-        .is_capability_valid(
+        .assert_capability_valid(
             cap,
             &permission::migrate_audit_trail(),
             clock,
@@ -281,7 +281,7 @@ public fun add_record<D: store + copy>(
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     trail
         .roles
-        .is_capability_valid(
+        .assert_capability_valid(
             cap,
             &permission::add_record(),
             clock,
@@ -328,7 +328,7 @@ public fun delete_record<D: store + copy + drop>(
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     trail
         .roles
-        .is_capability_valid(
+        .assert_capability_valid(
             cap,
             &permission::delete_record(),
             clock,
@@ -366,7 +366,7 @@ public fun delete_records_batch<D: store + copy + drop>(
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     trail
         .roles
-        .is_capability_valid(
+        .assert_capability_valid(
             cap,
             &permission::delete_all_records(),
             clock,
@@ -408,7 +408,7 @@ public fun delete_audit_trail<D: store + copy>(
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     trail
         .roles
-        .is_capability_valid(
+        .assert_capability_valid(
             cap,
             &permission::delete_audit_trail(),
             clock,
@@ -473,7 +473,7 @@ public fun update_locking_config<D: store + copy>(
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     trail
         .roles
-        .is_capability_valid(
+        .assert_capability_valid(
             cap,
             &permission::update_locking_config(),
             clock,
@@ -493,7 +493,7 @@ public fun update_delete_record_window<D: store + copy>(
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     trail
         .roles
-        .is_capability_valid(
+        .assert_capability_valid(
             cap,
             &permission::update_locking_config_for_delete_record(),
             clock,
@@ -513,7 +513,7 @@ public fun update_delete_trail_lock<D: store + copy>(
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     trail
         .roles
-        .is_capability_valid(
+        .assert_capability_valid(
             cap,
             &permission::update_locking_config_for_delete_trail(),
             clock,
@@ -533,7 +533,7 @@ public fun update_write_lock<D: store + copy>(
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     trail
         .roles
-        .is_capability_valid(
+        .assert_capability_valid(
             cap,
             &permission::update_locking_config_for_write(),
             clock,
@@ -553,7 +553,7 @@ public fun update_metadata<D: store + copy>(
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     trail
         .roles
-        .is_capability_valid(
+        .assert_capability_valid(
             cap,
             &permission::update_metadata(),
             clock,
@@ -682,7 +682,7 @@ public fun destroy_capability<D: store + copy>(
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     trail
         .roles
-        .is_capability_valid(
+        .assert_capability_valid(
             cap,
             &permission::revoke_capabilities(),
             clock,
