@@ -11,13 +11,15 @@ public enum Permission has copy, drop, store {
     // --- Whole Audit Trail related - Proposed role: `Admin` ---
     /// Destroy the whole Audit Trail object
     DeleteAuditTrail,
+    /// Delete records in batches for cleanup workflows
+    DeleteAllRecords,
     // --- Record Management - Proposed role: `RecordAdmin` ---
     /// Add records to the trail
     AddRecord,
     /// Delete records from the trail
     DeleteRecord,
     /// Correct existing records in the trail
-    CorrectRecord, // TODO: Clarify if needed for MVP
+    CorrectRecord,
     // --- Locking Config - Proposed role: `LockingAdmin` ---
     /// Update the whole locking configuration
     UpdateLockingConfig,
@@ -42,6 +44,8 @@ public enum Permission has copy, drop, store {
     UpdateMetadata,
     /// Delete the updatable metadata field
     DeleteMetadata,
+    /// Migrate the audit trail to a new version of the contract
+    Migrate,
 }
 
 /// Create an empty permission set
@@ -71,12 +75,11 @@ public fun has_permission(set: &VecSet<Permission>, perm: &Permission): bool {
     vec_set::contains(set, perm)
 }
 
-// --------------------------- Functions creating permission sets for often used roles ---------------------------
+// ------Functions creating permission sets for often used roles ---------
 
 /// Create permissions typically used for the `Admin` role
 public fun admin_permissions(): VecSet<Permission> {
     let mut perms = vec_set::empty();
-    perms.insert(delete_audit_trail());
     perms.insert(add_capabilities());
     perms.insert(revoke_capabilities());
     perms.insert(add_roles());
@@ -128,11 +131,16 @@ public fun metadata_admin_permissions(): VecSet<Permission> {
     perms
 }
 
-// --------------------------- Constructor functions for all Permission variants ---------------------------
+// ------- Constructor functions for all Permission variants -------------
 
 /// Returns a permission allowing to destroy the whole Audit Trail object
 public fun delete_audit_trail(): Permission {
     Permission::DeleteAuditTrail
+}
+
+/// Returns a permission allowing to delete records in batches
+public fun delete_all_records(): Permission {
+    Permission::DeleteAllRecords
 }
 
 /// Returns a permission allowing to add records to the trail
@@ -198,4 +206,9 @@ public fun update_metadata(): Permission {
 /// Returns a permission allowing to delete the updatable_metadata field
 public fun delete_metadata(): Permission {
     Permission::DeleteMetadata
+}
+
+/// Returns a permission allowing to migrate the audit trail to a new version of the contract
+public fun migrate_audit_trail(): Permission {
+    Permission::Migrate
 }
