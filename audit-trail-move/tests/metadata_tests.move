@@ -53,6 +53,7 @@ fun test_update_metadata_success() {
                 &admin_cap,
                 string::utf8(b"MetadataAdmin"),
                 metadata_perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -175,6 +176,7 @@ fun test_update_metadata_permission_denied() {
                 &admin_cap,
                 string::utf8(b"NoMetadataPerm"),
                 perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -246,6 +248,7 @@ fun test_update_metadata_revoked_capability() {
                 &admin_cap,
                 string::utf8(b"MetadataAdmin"),
                 metadata_perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );

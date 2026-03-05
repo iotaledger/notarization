@@ -140,6 +140,7 @@ fun test_count_based_locking() {
                 &admin_cap,
                 string::utf8(b"RecordAdmin"),
                 permission::record_admin_permissions(),
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -301,6 +302,7 @@ fun test_update_locking_config() {
                 &admin_cap,
                 string::utf8(b"LockingAdmin"),
                 perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -377,6 +379,7 @@ fun test_update_locking_config_permission_denied() {
                 &admin_cap,
                 string::utf8(b"NoLockingPerm"),
                 perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -445,6 +448,7 @@ fun test_update_delete_record_window() {
                 &admin_cap,
                 string::utf8(b"DeleteLockAdmin"),
                 perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -522,6 +526,7 @@ fun test_update_delete_record_window_permission_denied() {
                 &admin_cap,
                 string::utf8(b"WrongPerm"),
                 perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -588,6 +593,7 @@ fun test_delete_record_after_time_lock_expires() {
                 &admin_cap,
                 string::utf8(b"RecordAdmin"),
                 permission::record_admin_permissions(),
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -718,6 +724,7 @@ fun test_time_based_locking_all_recent_records_locked() {
                 &admin_cap,
                 string::utf8(b"RecordAdmin"),
                 permission::record_admin_permissions(),
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -803,6 +810,7 @@ fun test_count_based_locking_last_records_remain_locked() {
                 &admin_cap,
                 string::utf8(b"RecordAdmin"),
                 permission::record_admin_permissions(),
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -890,6 +898,7 @@ fun test_time_based_locking_still_locked_before_expiry() {
                 &admin_cap,
                 string::utf8(b"RecordAdmin"),
                 permission::record_admin_permissions(),
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -973,6 +982,7 @@ fun test_count_based_locking_old_record_can_delete() {
                 &admin_cap,
                 string::utf8(b"RecordAdmin"),
                 permission::record_admin_permissions(),
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -1066,6 +1076,7 @@ fun test_delete_records_batch_bypasses_record_lock() {
                 &admin_cap,
                 delete_all_role,
                 delete_all_perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -1128,6 +1139,7 @@ fun test_delete_records_batch_requires_delete_all_records_permission() {
                 &admin_cap,
                 string::utf8(b"TrailDeleteOnly"),
                 perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -1197,6 +1209,7 @@ fun test_delete_audit_trail_fails_while_not_empty() {
                 &admin_cap,
                 delete_trail_role,
                 delete_trail_perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -1255,6 +1268,7 @@ fun test_delete_audit_trail_after_batch_cleanup() {
                 &admin_cap,
                 delete_maintenance_role,
                 delete_maintenance_perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
