@@ -95,6 +95,7 @@ fun setup_trail_with_record_admin_role(scenario: &mut Scenario, admin_user: addr
                 &admin_cap,
                 string::utf8(b"RecordAdmin"),
                 record_admin_perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(scenario),
             );
@@ -141,6 +142,7 @@ fun test_new_capability() {
                 &admin_cap,
                 string::utf8(b"RecordAdmin"),
                 permission::record_admin_permissions(),
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -451,6 +453,7 @@ fun test_capability_lifecycle() {
                 &admin_cap,
                 string::utf8(b"RoleAdmin"),
                 permission::role_admin_permissions(),
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -666,6 +669,7 @@ fun test_revoked_capability_cannot_be_used() {
                 &admin_cap,
                 string::utf8(b"RecordAdmin"),
                 permission::record_admin_permissions(),
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -792,6 +796,7 @@ fun test_revoke_capability_permission_denied() {
                 &admin_cap,
                 string::utf8(b"NoRevokePerm"),
                 perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -802,6 +807,7 @@ fun test_revoke_capability_permission_denied() {
                 &admin_cap,
                 string::utf8(b"RecordAdmin"),
                 permission::record_admin_permissions(),
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -882,6 +888,7 @@ fun test_new_capability_permission_denied() {
                 &admin_cap,
                 string::utf8(b"NoCapPerm"),
                 perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -892,6 +899,7 @@ fun test_new_capability_permission_denied() {
                 &admin_cap,
                 string::utf8(b"RecordAdmin"),
                 permission::record_admin_permissions(),
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );

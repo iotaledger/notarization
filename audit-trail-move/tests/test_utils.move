@@ -75,8 +75,8 @@ public(package) fun setup_test_audit_trail(
 /// Errors:
 /// - Aborts with EPermissionDenied if the provided capability does not have the permission specified with `CapabilityAdminPermissions::add`.
 /// - Aborts with ERoleDoesNotExist if the specified role does not exist in the role_map.
-public fun new_capability_without_restrictions<P: copy + drop>(
-    role_map: &mut RoleMap<P>,
+public fun new_capability_without_restrictions<P: copy + drop, D: copy + drop>(
+    role_map: &mut RoleMap<P, D>,
     cap: &Capability,
     role: &string::String,
     clock: &Clock,
@@ -102,8 +102,8 @@ public fun new_capability_without_restrictions<P: copy + drop>(
 /// Errors:
 /// - Aborts with EPermissionDenied if the provided capability does not have the permission specified with `CapabilityAdminPermissions::add`.
 /// - Aborts with ERoleDoesNotExist if the specified role does not exist in the role_map.
-public(package) fun new_capability_valid_until<P: copy + drop>(
-    role_map: &mut RoleMap<P>,
+public(package) fun new_capability_valid_until<P: copy + drop, D: copy + drop>(
+    role_map: &mut RoleMap<P, D>,
     cap: &Capability,
     role: &string::String,
     valid_until: u64,
@@ -131,8 +131,8 @@ public(package) fun new_capability_valid_until<P: copy + drop>(
 /// Errors:
 /// - Aborts with EPermissionDenied if the provided capability does not have the permission specified with `CapabilityAdminPermissions::add`.
 /// - Aborts with ERoleDoesNotExist if the specified role does not exist in the role_map.
-public fun new_capability_for_address<P: copy + drop>(
-    role_map: &mut RoleMap<P>,
+public fun new_capability_for_address<P: copy + drop, D: copy + drop>(
+    role_map: &mut RoleMap<P, D>,
     cap: &Capability,
     role: &string::String,
     issued_to: address,

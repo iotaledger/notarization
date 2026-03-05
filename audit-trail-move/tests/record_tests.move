@@ -56,6 +56,7 @@ fun test_add_record_to_empty_trail() {
                 &admin_cap,
                 string::utf8(b"RecordAdmin"),
                 permission::record_admin_permissions(),
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -134,6 +135,7 @@ fun test_add_multiple_records() {
                 &admin_cap,
                 string::utf8(b"RecordAdmin"),
                 permission::record_admin_permissions(),
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -216,6 +218,7 @@ fun test_add_record_permission_denied() {
                 &admin_cap,
                 string::utf8(b"NoAddPerm"),
                 perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -287,6 +290,7 @@ fun test_delete_record_success() {
                 &admin_cap,
                 string::utf8(b"RecordAdmin"),
                 permission::record_admin_permissions(),
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -361,6 +365,7 @@ fun test_delete_record_permission_denied() {
                 &admin_cap,
                 string::utf8(b"NoDeletePerm"),
                 perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -425,6 +430,7 @@ fun test_delete_record_not_found() {
                 &admin_cap,
                 string::utf8(b"RecordAdmin"),
                 permission::record_admin_permissions(),
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -489,6 +495,7 @@ fun test_delete_record_time_locked() {
                 &admin_cap,
                 string::utf8(b"RecordAdmin"),
                 permission::record_admin_permissions(),
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -554,6 +561,7 @@ fun test_delete_record_count_locked() {
                 &admin_cap,
                 string::utf8(b"RecordAdmin"),
                 permission::record_admin_permissions(),
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -694,6 +702,7 @@ fun test_first_last_sequence() {
                 &admin_cap,
                 string::utf8(b"RecordAdmin"),
                 permission::record_admin_permissions(),
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
