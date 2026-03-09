@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
-use iota_interaction::types::transaction::{Argument, Command, ObjectArg, ProgrammableTransaction};
+use iota_interaction::types::transaction::{ObjectArg, ProgrammableTransaction};
 use iota_interaction::{OptionalSync, ident_str};
 use product_common::core_client::CoreClientReadOnly;
 

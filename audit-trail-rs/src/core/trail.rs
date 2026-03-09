@@ -1,12 +1,9 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use iota_interaction::rpc_types::{
-    IotaData as _, IotaObjectDataOptions, IotaTransactionBlockEffects, IotaTransactionBlockEvents,
-};
 use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::types::transaction::ProgrammableTransaction;
-use iota_interaction::{IotaClientTrait, IotaKeySignature, OptionalSync};
+use iota_interaction::{IotaKeySignature, OptionalSync};
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use product_common::transaction::transaction_builder::TransactionBuilder;
 use secret_storage::Signer;
