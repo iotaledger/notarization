@@ -25,7 +25,8 @@ pub use transactions::{DeleteAuditTrail, Migrate, UpdateMetadata};
 
 /// Marker trait for read-only audit trail clients.
 #[doc(hidden)]
-#[async_trait::async_trait]
+#[cfg_attr(not(feature = "send-sync"), async_trait::async_trait(?Send))]
+#[cfg_attr(feature = "send-sync", async_trait::async_trait)]
 pub trait AuditTrailReadOnly: CoreClientReadOnly + OptionalSync {
     async fn execute_read_only_transaction<T: DeserializeOwned>(&self, tx: ProgrammableTransaction)
     -> Result<T, Error>;

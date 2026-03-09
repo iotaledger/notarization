@@ -41,8 +41,3 @@ pub enum Error {
     #[error("unexpected transaction response: {0}")]
     TransactionUnexpectedResponse(String),
 }
-
-#[cfg(target_arch = "wasm32")]
-use product_common::impl_wasm_error_from;
-#[cfg(target_arch = "wasm32")]
-impl_wasm_error_from!(Error);

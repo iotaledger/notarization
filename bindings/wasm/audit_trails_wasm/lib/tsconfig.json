@@ -1,0 +1,21 @@
+{
+  "extends": "../tsconfig.node.json",
+  "compilerOptions": {
+    "baseUrl": "./",
+    "paths": {
+      "~audit_trails_wasm": [
+        "../node/audit_trails_wasm",
+        "./audit_trails_wasm.js"
+      ],
+      "@iota/iota-interaction-ts/*": [
+        "../node_modules/@iota/iota-interaction-ts/node/*",
+        "@iota/iota-interaction-ts/node/"
+      ],
+      "../lib": [
+        "."
+      ]
+    },
+    "outDir": "../node",
+    "declarationDir": "../node"
+  }
+}

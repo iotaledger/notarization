@@ -8,14 +8,21 @@
 module audit_trail::main;
 
 use audit_trail::{
-    locking::{Self, LockingConfig, LockingWindow, set_config, set_delete_record_window, set_delete_trail_lock, set_write_lock},
+    locking::{
+        Self,
+        LockingConfig,
+        LockingWindow,
+        set_config,
+        set_delete_record_window,
+        set_delete_trail_lock,
+        set_write_lock
+    },
     permission::{Self, Permission},
     record::{Self, Record}
 };
 use iota::{clock::{Self, Clock}, event, linked_table::{Self, LinkedTable}, vec_set::VecSet};
 use std::string::String;
-use tf_components::{capability::Capability, role_map::{Self, RoleMap}};
-use tf_components::timelock::TimeLock;
+use tf_components::{capability::Capability, role_map::{Self, RoleMap}, timelock::TimeLock};
 
 // ===== Errors =====
 #[error]
