@@ -82,7 +82,7 @@ impl AuditTrailClient<NoSigner> {
     /// IOTA Trust Framework's products.
     ///
     /// # Examples
-    /// ```
+    /// ```rust,ignore
     /// # use audit_trails::client::AuditTrailClient;
     ///
     /// # #[tokio::main]

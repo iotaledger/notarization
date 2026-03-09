@@ -4,7 +4,7 @@
 use std::collections::HashSet;
 
 use audit_trails::core::types::{CapabilityIssueOptions, Data, Permission, PermissionSet};
-use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::base_types::IotaAddress;
 use product_common::core_client::CoreClient;
 
 use crate::client::get_funded_test_client;
@@ -181,7 +181,7 @@ async fn destroy_initial_admin_capability_emits_expected_event() -> anyhow::Resu
     let roles = client.trail(trail_id).roles();
 
     let admin_cap_ref = client.get_cap(client.sender_address(), trail_id).await?;
-    let admin_cap_id = ObjectID::from(admin_cap_ref.0);
+    let admin_cap_id = admin_cap_ref.0;
 
     let destroyed = roles
         .destroy_initial_admin_capability(admin_cap_id)
@@ -225,7 +225,7 @@ async fn regular_destroy_rejects_initial_admin_capability() -> anyhow::Result<()
     let roles = client.trail(trail_id).roles();
 
     let admin_cap_ref = client.get_cap(client.sender_address(), trail_id).await?;
-    let admin_cap_id = ObjectID::from(admin_cap_ref.0);
+    let admin_cap_id = admin_cap_ref.0;
 
     let result = roles.destroy_capability(admin_cap_id).build_and_execute(&client).await;
 
@@ -244,7 +244,7 @@ async fn regular_revoke_rejects_initial_admin_capability() -> anyhow::Result<()>
     let roles = client.trail(trail_id).roles();
 
     let admin_cap_ref = client.get_cap(client.sender_address(), trail_id).await?;
-    let admin_cap_id = ObjectID::from(admin_cap_ref.0);
+    let admin_cap_id = admin_cap_ref.0;
 
     let result = roles.revoke_capability(admin_cap_id).build_and_execute(&client).await;
 

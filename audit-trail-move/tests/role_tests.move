@@ -67,6 +67,7 @@ fun test_role_based_permission_delegation() {
                 &admin_cap,
                 string::utf8(b"RoleAdmin"),
                 role_admin_perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -79,6 +80,7 @@ fun test_role_based_permission_delegation() {
                 &admin_cap,
                 string::utf8(b"CapAdmin"),
                 cap_admin_perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -142,6 +144,7 @@ fun test_role_based_permission_delegation() {
                 &role_admin_cap,
                 string::utf8(b"RecordAdmin"),
                 record_admin_perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -248,6 +251,7 @@ fun test_delete_role_success() {
                 &admin_cap,
                 string::utf8(b"RoleToDelete"),
                 perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -314,6 +318,7 @@ fun test_create_role_permission_denied() {
                 &admin_cap,
                 string::utf8(b"NoRolesPerm"),
                 perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -344,6 +349,7 @@ fun test_create_role_permission_denied() {
                 &user_cap,
                 string::utf8(b"NewRole"),
                 perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -390,6 +396,7 @@ fun test_delete_role_permission_denied() {
                 &admin_cap,
                 string::utf8(b"RoleToDelete"),
                 perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -402,6 +409,7 @@ fun test_delete_role_permission_denied() {
                 &admin_cap,
                 string::utf8(b"NoDeleteRolePerm"),
                 no_delete_perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -470,6 +478,7 @@ fun test_update_role_permissions_permission_denied() {
                 &admin_cap,
                 string::utf8(b"RoleToUpdate"),
                 perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -482,6 +491,7 @@ fun test_update_role_permissions_permission_denied() {
                 &admin_cap,
                 string::utf8(b"NoUpdateRolePerm"),
                 no_update_perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -508,10 +518,11 @@ fun test_update_role_permissions_permission_denied() {
         // This should fail - no update_roles permission
         trail
             .roles_mut()
-            .update_role_permissions(
+            .update_role(
                 &user_cap,
                 &string::utf8(b"RoleToUpdate"),
                 new_perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -588,6 +599,7 @@ fun test_update_role_permissions_success() {
                 &admin_cap,
                 string::utf8(b"TestRole"),
                 initial_perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -601,10 +613,11 @@ fun test_update_role_permissions_success() {
         let new_perms = permission::from_vec(vector[permission::delete_record()]);
         trail
             .roles_mut()
-            .update_role_permissions(
+            .update_role(
                 &admin_cap,
                 &string::utf8(b"TestRole"),
                 new_perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -650,10 +663,11 @@ fun test_update_role_permissions_nonexistent() {
         // This should fail - role doesn't exist
         trail
             .roles_mut()
-            .update_role_permissions(
+            .update_role(
                 &admin_cap,
                 &string::utf8(b"NonExistentRole"),
                 new_perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );

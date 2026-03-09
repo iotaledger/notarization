@@ -1,9 +1,9 @@
-use std::collections::HashMap;
+// Copyright 2020-2026 IOTA Stiftung
+// SPDX-License-Identifier: Apache-2.0
+
 use std::str::FromStr;
 
 use iota_interaction::ident_str;
-// Copyright 2020-2026 IOTA Stiftung
-// SPDX-License-Identifier: Apache-2.0
 use iota_interaction::types::TypeTag;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::collection_types::LinkedTable;

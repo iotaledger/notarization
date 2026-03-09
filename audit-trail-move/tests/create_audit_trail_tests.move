@@ -279,6 +279,7 @@ fun test_create_metadata_admin_role() {
                 &admin_cap,
                 metadata_admin_role_name,
                 metadata_admin_perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
