@@ -9,19 +9,18 @@ rust-version = "1.85"
 [workspace]
 resolver = "2"
 members = ["audit-trail-rs", "examples", "notarization-rs"]
-exclude = ["bindings/wasm/notarization_wasm"]
+exclude = ["bindings/wasm/notarization_wasm", "bindings/wasm/audit_trails_wasm"]
 
 [workspace.dependencies]
 anyhow = "1.0"
 async-trait = "0.1"
 bcs = "0.1"
 chrono = { version = "0.4", default-features = false }
-hyper = "1"
 iota-sdk = { git = "https://github.com/iotaledger/iota.git", package = "iota-sdk", tag = "v1.17.2" }
-iota_interaction = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/tf-compoenents-dev", default-features = false, package = "iota_interaction" }
-iota_interaction_rust = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/tf-compoenents-dev", default-features = false, package = "iota_interaction_rust" }
-iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/tf-compoenents-dev", default-features = false, package = "iota_interaction_ts" }
-product_common = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/tf-compoenents-dev", default-features = false, package = "product_common" }
+iota_interaction = { git = "https://github.com/iotaledger/product-core.git", rev = "23225ad2688f04ab45bedda7fda4d7cbc92ccbdf", default-features = false, package = "iota_interaction" }
+iota_interaction_rust = { git = "https://github.com/iotaledger/product-core.git", rev = "23225ad2688f04ab45bedda7fda4d7cbc92ccbdf", default-features = false, package = "iota_interaction_rust" }
+iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", rev = "23225ad2688f04ab45bedda7fda4d7cbc92ccbdf", default-features = false, package = "iota_interaction_ts" }
+product_common = { git = "https://github.com/iotaledger/product-core.git", rev = "23225ad2688f04ab45bedda7fda4d7cbc92ccbdf", default-features = false, package = "product_common" }
 secret-storage = { git = "https://github.com/iotaledger/secret-storage.git", tag = "v0.3.0", default-features = false }
 serde = { version = "1.0", default-features = false, features = ["alloc", "derive"] }
 serde-aux = { version = "4.7.0", default-features = false }

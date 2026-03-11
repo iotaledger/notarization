@@ -10,14 +10,12 @@ use std::ops::Deref;
 use async_trait::async_trait;
 #[cfg(not(target_arch = "wasm32"))]
 use iota_interaction::IotaClient;
-use iota_interaction::types::base_types::ObjectID;
+use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::crypto::PublicKey;
 use iota_interaction::types::transaction::ProgrammableTransaction;
 use iota_interaction::{IotaKeySignature, OptionalSync};
-use iota_interaction_rust::IotaClientAdapter;
 #[cfg(target_arch = "wasm32")]
 use iota_interaction_ts::bindings::WasmIotaClient as IotaClient;
-use iota_sdk::types::base_types::IotaAddress;
-use iota_sdk::types::crypto::PublicKey;
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use product_common::network_name::NetworkName;
 use secret_storage::Signer;
@@ -27,6 +25,7 @@ use crate::client::read_only::AuditTrailClientReadOnly;
 use crate::core::builder::AuditTrailBuilder;
 use crate::core::trail::{AuditTrailFull, AuditTrailHandle, AuditTrailReadOnly};
 use crate::error::Error;
+use crate::iota_interaction_adapter::IotaClientAdapter;
 
 /// A marker type indicating the absence of a signer.
 #[derive(Debug, Clone, Copy)]
@@ -120,6 +119,23 @@ impl AuditTrailClient<NoSigner> {
 }
 
 impl<S> AuditTrailClient<S> {
+    /// Creates a new client with signing capabilities from an existing read-only client.
+    pub async fn new(client: AuditTrailClientReadOnly, signer: S) -> Result<Self, Error>
+    where
+        S: Signer<IotaKeySignature>,
+    {
+        let public_key = signer
+            .public_key()
+            .await
+            .map_err(|e| Error::InvalidKey(e.to_string()))?;
+
+        Ok(AuditTrailClient {
+            read_client: client,
+            public_key: Some(public_key),
+            signer,
+        })
+    }
+
     /// Sets a new signer for this client.
     pub async fn with_signer<NewS>(self, signer: NewS) -> Result<AuditTrailClient<NewS>, secret_storage::Error>
     where
@@ -205,7 +221,8 @@ where
     }
 }
 
-#[async_trait::async_trait]
+#[cfg_attr(not(feature = "send-sync"), async_trait(?Send))]
+#[cfg_attr(feature = "send-sync", async_trait)]
 impl<S> AuditTrailReadOnly for AuditTrailClient<S>
 where
     S: Signer<IotaKeySignature> + OptionalSync,

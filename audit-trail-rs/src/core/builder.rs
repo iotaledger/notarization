@@ -3,7 +3,7 @@
 
 //! Audit trail builder for creation transactions.
 
-use iota_sdk::types::base_types::IotaAddress;
+use iota_interaction::types::base_types::IotaAddress;
 use product_common::transaction::transaction_builder::TransactionBuilder;
 
 use super::types::{Data, ImmutableMetadata, LockingConfig};
