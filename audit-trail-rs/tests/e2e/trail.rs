@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use audit_trails::core::types::{
-    CapabilityIssueOptions, Data, ImmutableMetadata, LockingConfig, LockingWindow, Permission, TimeLock,
+    CapabilityIssueOptions, Data, ImmutableMetadata, LockingConfig, LockingWindow, Permission, RecordTags, TimeLock,
 };
 use iota_interaction::types::base_types::IotaAddress;
 use product_common::core_client::CoreClient;
@@ -199,7 +199,7 @@ async fn update_metadata_roundtrip() -> anyhow::Result<()> {
     let trail_id = client.create_test_trail(Data::text("trail-update-meta-e2e")).await?;
     // Set initial updatable metadata via update_metadata
     client
-        .create_role(trail_id, "MetadataAdmin", vec![Permission::UpdateMetadata])
+        .create_role(trail_id, "MetadataAdmin", vec![Permission::UpdateMetadata], None)
         .await?;
     client
         .issue_cap(trail_id, "MetadataAdmin", CapabilityIssueOptions::default())
@@ -233,7 +233,7 @@ async fn update_metadata_to_none_clears_value() -> anyhow::Result<()> {
 
     let trail_id = client.create_test_trail(Data::text("trail-clear-meta-e2e")).await?;
     client
-        .create_role(trail_id, "MetadataAdmin", vec![Permission::UpdateMetadata])
+        .create_role(trail_id, "MetadataAdmin", vec![Permission::UpdateMetadata], None)
         .await?;
     client
         .issue_cap(trail_id, "MetadataAdmin", CapabilityIssueOptions::default())
@@ -260,7 +260,7 @@ async fn update_metadata_multiple_times() -> anyhow::Result<()> {
 
     let trail_id = client.create_test_trail(Data::text("trail-multi-meta-e2e")).await?;
     client
-        .create_role(trail_id, "MetadataAdmin", vec![Permission::UpdateMetadata])
+        .create_role(trail_id, "MetadataAdmin", vec![Permission::UpdateMetadata], None)
         .await?;
     client
         .issue_cap(trail_id, "MetadataAdmin", CapabilityIssueOptions::default())
@@ -304,7 +304,7 @@ async fn update_metadata_does_not_affect_immutable_metadata() -> anyhow::Result<
 
     let trail_id = created.trail_id;
     client
-        .create_role(trail_id, "MetadataAdmin", vec![Permission::UpdateMetadata])
+        .create_role(trail_id, "MetadataAdmin", vec![Permission::UpdateMetadata], None)
         .await?;
     client
         .issue_cap(trail_id, "MetadataAdmin", CapabilityIssueOptions::default())
@@ -331,7 +331,7 @@ async fn delete_audit_trail_fails_when_records_exist() -> anyhow::Result<()> {
         .create_test_trail(Data::text("trail-delete-not-empty-e2e"))
         .await?;
     client
-        .create_role(trail_id, "TrailDeleteOnly", vec![Permission::DeleteAuditTrail])
+        .create_role(trail_id, "TrailDeleteOnly", vec![Permission::DeleteAuditTrail], None)
         .await?;
     client
         .issue_cap(trail_id, "TrailDeleteOnly", CapabilityIssueOptions::default())
@@ -363,6 +363,7 @@ async fn delete_records_batch_then_delete_audit_trail_roundtrip() -> anyhow::Res
             created.trail_id,
             "TrailDeleteMaintenance",
             vec![Permission::DeleteAllRecords, Permission::DeleteAuditTrail],
+            None,
         )
         .await?;
     client
@@ -393,6 +394,91 @@ async fn delete_records_batch_then_delete_audit_trail_roundtrip() -> anyhow::Res
         fetch_deleted.is_err(),
         "trail object should no longer be readable after delete"
     );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn manage_record_tag_registry_roundtrip() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+
+    let created = client
+        .create_trail()
+        .with_initial_record(Data::text("trail-tag-registry"), None)
+        .with_available_record_tags(["finance"])
+        .finish()
+        .build_and_execute(&client)
+        .await?
+        .output;
+
+    let trail = client.trail(created.trail_id);
+    let initial = trail.get().await?;
+    assert_eq!(initial.available_record_tags.contents, vec!["finance".to_string()]);
+
+    trail.add_record_tag("legal").build_and_execute(&client).await?;
+    let after_add = trail.get().await?;
+    assert!(
+        after_add
+            .available_record_tags
+            .contents
+            .contains(&"finance".to_string())
+    );
+    assert!(after_add.available_record_tags.contents.contains(&"legal".to_string()));
+
+    trail
+        .set_record_tags(["finance", "hr"])
+        .build_and_execute(&client)
+        .await?;
+    let after_set = trail.get().await?;
+    assert!(
+        after_set
+            .available_record_tags
+            .contents
+            .contains(&"finance".to_string())
+    );
+    assert!(after_set.available_record_tags.contents.contains(&"hr".to_string()));
+    assert!(!after_set.available_record_tags.contents.contains(&"legal".to_string()));
+
+    trail.remove_record_tag("hr").build_and_execute(&client).await?;
+    let after_remove = trail.get().await?;
+    assert_eq!(after_remove.available_record_tags.contents, vec!["finance".to_string()]);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn remove_record_tag_rejects_in_use_tag() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let created = client
+        .create_trail()
+        .with_initial_record(Data::text("trail-tag-in-use"), None)
+        .with_available_record_tags(["finance"])
+        .finish()
+        .build_and_execute(&client)
+        .await?
+        .output;
+
+    client
+        .create_role(
+            created.trail_id,
+            "TaggedWriter",
+            vec![Permission::AddRecord],
+            Some(RecordTags::new(["finance"])),
+        )
+        .await?;
+    client
+        .issue_cap(created.trail_id, "TaggedWriter", CapabilityIssueOptions::default())
+        .await?;
+
+    let trail = client.trail(created.trail_id);
+    trail
+        .records()
+        .add(Data::text("tagged"), None, Some("finance".to_string()))
+        .build_and_execute(&client)
+        .await?;
+
+    let removed = trail.remove_record_tag("finance").build_and_execute(&client).await;
+    assert!(removed.is_err(), "used record tags must not be removable");
 
     Ok(())
 }

@@ -12,7 +12,7 @@ async fn grant_role_capability(
     role_name: &str,
     permissions: impl IntoIterator<Item = Permission>,
 ) -> anyhow::Result<()> {
-    client.create_role(trail_id, role_name, permissions).await?;
+    client.create_role(trail_id, role_name, permissions, None).await?;
     client
         .issue_cap(trail_id, role_name, CapabilityIssueOptions::default())
         .await?;
@@ -187,7 +187,7 @@ async fn update_write_lock_roundtrip_and_blocks_add_record() -> anyhow::Result<(
 
     let add_locked = trail
         .records()
-        .add(Data::text("should-fail-write-locked"), None)
+        .add(Data::text("should-fail-write-locked"), None, None)
         .build_and_execute(&client)
         .await;
     assert!(add_locked.is_err(), "write lock should block adding new records");
@@ -257,12 +257,12 @@ async fn is_record_locked_supports_count_window_and_missing_sequence() -> anyhow
 
     trail
         .records()
-        .add(Data::text("record-1"), None)
+        .add(Data::text("record-1"), None, None)
         .build_and_execute(&client)
         .await?;
     trail
         .records()
-        .add(Data::text("record-2"), None)
+        .add(Data::text("record-2"), None, None)
         .build_and_execute(&client)
         .await?;
 
@@ -355,7 +355,7 @@ async fn updated_time_lock_blocks_record_deletion() -> anyhow::Result<()> {
 
     trail
         .records()
-        .add("deletable-before-lock".into(), None)
+        .add("deletable-before-lock".into(), None, None)
         .build_and_execute(&client)
         .await?;
 

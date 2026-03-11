@@ -508,6 +508,7 @@ fun test_capability_lifecycle() {
             &record_cap,
             test_data,
             std::option::none(),
+            std::option::none(),
             &clock,
             ts::ctx(&mut scenario),
         );
@@ -601,6 +602,7 @@ fun test_capability_issued_to_only() {
             &record_cap,
             test_data,
             std::option::none(),
+            std::option::none(),
             &clock,
             ts::ctx(&mut scenario),
         );
@@ -623,6 +625,7 @@ fun test_capability_issued_to_only() {
         trail.add_record(
             &record_cap,
             test_data,
+            std::option::none(),
             std::option::none(),
             &clock,
             ts::ctx(&mut scenario),
@@ -710,6 +713,7 @@ fun test_revoked_capability_cannot_be_used() {
         trail.add_record(
             &user_cap,
             test_utils::new_test_data(1, b"Should fail"),
+            std::option::none(),
             std::option::none(),
             &clock,
             ts::ctx(&mut scenario),
@@ -991,6 +995,7 @@ fun test_capability_valid_from_only() {
             &cap,
             test_data,
             std::option::none(),
+            std::option::none(),
             &clock,
             ts::ctx(&mut scenario),
         );
@@ -1009,6 +1014,7 @@ fun test_capability_valid_from_only() {
         trail.add_record(
             &cap,
             test_data,
+            std::option::none(),
             std::option::none(),
             &clock,
             ts::ctx(&mut scenario),
@@ -1072,6 +1078,7 @@ fun test_capability_valid_until_only() {
             &cap,
             test_data,
             std::option::none(),
+            std::option::none(),
             &clock,
             ts::ctx(&mut scenario),
         );
@@ -1090,6 +1097,7 @@ fun test_capability_valid_until_only() {
         trail.add_record(
             &cap,
             test_data,
+            std::option::none(),
             std::option::none(),
             &clock,
             ts::ctx(&mut scenario),
@@ -1136,6 +1144,7 @@ fun test_capability_time_window() {
             &cap,
             test_data,
             std::option::none(),
+            std::option::none(),
             &clock,
             ts::ctx(&mut scenario),
         );
@@ -1180,6 +1189,7 @@ fun test_capability_time_window_before_valid_from() {
             &cap,
             test_data,
             std::option::none(),
+            std::option::none(),
             &clock,
             ts::ctx(&mut scenario),
         );
@@ -1223,6 +1233,7 @@ fun test_capability_time_window_after_valid_until() {
         trail.add_record(
             &cap,
             test_data,
+            std::option::none(),
             std::option::none(),
             &clock,
             ts::ctx(&mut scenario),

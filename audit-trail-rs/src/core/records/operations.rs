@@ -19,26 +19,60 @@ impl RecordsOps {
         owner: IotaAddress,
         data: Data,
         record_metadata: Option<String>,
+        record_tag: Option<String>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        operations::build_trail_transaction(
-            client,
-            trail_id,
-            owner,
-            Permission::AddRecord,
-            "add_record",
-            |ptb, trail_tag| {
-                data.ensure_matches_tag(trail_tag)?;
+        if let Some(tag) = record_tag.clone() {
+            let trail = operations::get_audit_trail(trail_id, client).await?;
+            if !trail
+                .available_record_tags
+                .contents
+                .iter()
+                .any(|allowed_tag| allowed_tag == &tag)
+            {
+                return Err(Error::InvalidArgument(format!(
+                    "record tag '{tag}' is not defined for trail {trail_id}"
+                )));
+            }
+            let cap_ref = find_capable_cap_for_tag(client, owner, trail_id, &trail, &tag).await?;
 
-                let data_arg = data.to_ptb(ptb, "stored_data")?;
-                let metadata = utils::ptb_pure(ptb, "record_metadata", record_metadata)?;
-                let clock = utils::get_clock_ref(ptb);
-                Ok(vec![data_arg, metadata, clock])
-            },
-        )
-        .await
+            operations::build_trail_transaction_with_cap_ref(
+                client,
+                trail_id,
+                cap_ref,
+                "add_record",
+                |ptb, trail_tag| {
+                    data.ensure_matches_tag(trail_tag)?;
+
+                    let data_arg = data.to_ptb(ptb, "stored_data")?;
+                    let metadata = utils::ptb_pure(ptb, "record_metadata", record_metadata)?;
+                    let tag_arg = utils::ptb_pure(ptb, "record_tag", Some(tag))?;
+                    let clock = utils::get_clock_ref(ptb);
+                    Ok(vec![data_arg, metadata, tag_arg, clock])
+                },
+            )
+            .await
+        } else {
+            operations::build_trail_transaction(
+                client,
+                trail_id,
+                owner,
+                Permission::AddRecord,
+                "add_record",
+                |ptb, trail_tag| {
+                    data.ensure_matches_tag(trail_tag)?;
+
+                    let data_arg = data.to_ptb(ptb, "stored_data")?;
+                    let metadata = utils::ptb_pure(ptb, "record_metadata", record_metadata)?;
+                    let tag = utils::ptb_pure(ptb, "record_tag", Option::<String>::None)?;
+                    let clock = utils::get_clock_ref(ptb);
+                    Ok(vec![data_arg, metadata, tag, clock])
+                },
+            )
+            .await
+        }
     }
 
     pub(super) async fn delete_record<C>(
@@ -110,4 +144,42 @@ impl RecordsOps {
     {
         operations::build_read_only_transaction(client, trail_id, "record_count", |_| Ok(vec![])).await
     }
+}
+
+async fn find_capable_cap_for_tag<C>(
+    client: &C,
+    owner: IotaAddress,
+    trail_id: ObjectID,
+    trail: &crate::core::types::OnChainAuditTrail,
+    tag: &str,
+) -> Result<iota_interaction::types::base_types::ObjectRef, Error>
+where
+    C: CoreClientReadOnly + OptionalSync,
+{
+    let valid_roles = trail
+        .roles
+        .roles
+        .iter()
+        .filter(|(_, role)| {
+            role.permissions.contains(&Permission::AddRecord)
+                && role.data.as_ref().is_some_and(|record_tags| record_tags.allows(tag))
+        })
+        .map(|(name, _)| name.clone())
+        .collect::<std::collections::HashSet<_>>();
+
+    let cap = client
+        .find_object_for_address(owner, |cap: &crate::core::types::Capability| {
+            cap.target_key == trail_id && valid_roles.contains(&cap.role)
+        })
+        .await
+        .map_err(|e| Error::RpcError(e.to_string()))?
+        .ok_or_else(|| {
+            Error::InvalidArgument(format!(
+                "no capability with {:?} permission and record tag '{tag}' found for owner {owner} and trail {trail_id}",
+                Permission::AddRecord
+            ))
+        })?;
+
+    let object_id = *cap.id.object_id();
+    utils::get_object_ref_by_id(client, &object_id).await
 }

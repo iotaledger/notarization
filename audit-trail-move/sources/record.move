@@ -16,6 +16,8 @@ public struct Record<D: store + copy> has store {
     data: D,
     /// Optional metadata for this specific record
     metadata: Option<String>,
+    /// Optional immutable tag associated with this record
+    tag: Option<String>,
     /// Position in the trail (0-indexed, never reused)
     sequence_number: u64,
     /// Who added this record
@@ -32,6 +34,7 @@ public struct Record<D: store + copy> has store {
 public(package) fun new<D: store + copy>(
     data: D,
     metadata: Option<String>,
+    tag: Option<String>,
     sequence_number: u64,
     added_by: address,
     added_at: u64,
@@ -40,6 +43,7 @@ public(package) fun new<D: store + copy>(
     Record {
         data,
         metadata,
+        tag,
         sequence_number,
         added_by,
         added_at,
@@ -57,6 +61,11 @@ public fun data<D: store + copy>(record: &Record<D>): &D {
 /// Get the record metadata
 public fun metadata<D: store + copy>(record: &Record<D>): &Option<String> {
     &record.metadata
+}
+
+/// Get the optional record tag
+public fun tag<D: store + copy>(record: &Record<D>): &Option<String> {
+    &record.tag
 }
 
 /// Get the record sequence number
@@ -84,6 +93,7 @@ public(package) fun destroy<D: store + copy + drop>(record: Record<D>) {
     let Record {
         data: _,
         metadata: _,
+        tag: _,
         sequence_number: _,
         added_by: _,
         added_at: _,

@@ -8,7 +8,7 @@ use product_common::transaction::transaction_builder::TransactionBuilder;
 use secret_storage::Signer;
 
 use crate::core::trail::AuditTrailFull;
-use crate::core::types::{CapabilityIssueOptions, PermissionSet};
+use crate::core::types::{CapabilityIssueOptions, PermissionSet, RecordTags};
 
 mod operations;
 mod transactions;
@@ -96,14 +96,24 @@ impl<'a, C> RoleHandle<'a, C> {
         &self.name
     }
 
-    /// Creates this role with the provided permissions.
-    pub fn create<S>(&self, permissions: PermissionSet) -> TransactionBuilder<CreateRole>
+    /// Creates this role with the provided permissions and optional record-tag access rules.
+    pub fn create<S>(
+        &self,
+        permissions: PermissionSet,
+        record_tags: Option<RecordTags>,
+    ) -> TransactionBuilder<CreateRole>
     where
         C: AuditTrailFull + CoreClient<S>,
         S: Signer<IotaKeySignature> + OptionalSync,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(CreateRole::new(self.trail_id, owner, self.name.clone(), permissions))
+        TransactionBuilder::new(CreateRole::new(
+            self.trail_id,
+            owner,
+            self.name.clone(),
+            permissions,
+            record_tags,
+        ))
     }
 
     /// Issues a capability for this role using optional restrictions.
@@ -116,14 +126,24 @@ impl<'a, C> RoleHandle<'a, C> {
         TransactionBuilder::new(IssueCapability::new(self.trail_id, owner, self.name.clone(), options))
     }
 
-    /// Updates permissions for this role.
-    pub fn update_permissions<S>(&self, permissions: PermissionSet) -> TransactionBuilder<UpdateRole>
+    /// Updates permissions and record-tag access rules for this role.
+    pub fn update_permissions<S>(
+        &self,
+        permissions: PermissionSet,
+        record_tags: Option<RecordTags>,
+    ) -> TransactionBuilder<UpdateRole>
     where
         C: AuditTrailFull + CoreClient<S>,
         S: Signer<IotaKeySignature> + OptionalSync,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(UpdateRole::new(self.trail_id, owner, self.name.clone(), permissions))
+        TransactionBuilder::new(UpdateRole::new(
+            self.trail_id,
+            owner,
+            self.name.clone(),
+            permissions,
+            record_tags,
+        ))
     }
 
     /// Deletes this role.

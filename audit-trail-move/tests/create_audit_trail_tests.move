@@ -14,7 +14,7 @@ use audit_trail::{
         cleanup_capability_trail_and_clock
     }
 };
-use iota::{clock, test_scenario as ts};
+use iota::{clock, test_scenario as ts, vec_set};
 use std::string;
 use tf_components::timelock;
 
@@ -125,6 +125,7 @@ fun test_create_minimal_metadata() {
             locking_config,
             option::none(),
             option::none(),
+            vector[],
             &clock,
             ts::ctx(&mut scenario),
         );
@@ -305,6 +306,58 @@ fun test_create_metadata_admin_role() {
         assert!(iota::vec_set::size(role_perms) == 2, 4);
 
         // Clean up
+        cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
+    };
+
+    ts::end(scenario);
+}
+
+#[test]
+fun test_manage_available_record_tags_roundtrip() {
+    let admin = @0xF;
+    let mut scenario = ts::begin(admin);
+
+    {
+        let locking_config = locking::new(
+            locking::window_count_based(0),
+            timelock::none(),
+            timelock::none(),
+        );
+        let (admin_cap, _) = setup_test_audit_trail(
+            &mut scenario,
+            locking_config,
+            option::none(),
+        );
+        transfer::public_transfer(admin_cap, admin);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
+
+        trail.add_available_record_tag(
+            &admin_cap,
+            string::utf8(b"finance"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+        trail.set_available_record_tags(
+            &admin_cap,
+            vector[string::utf8(b"finance"), string::utf8(b"legal")],
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+        trail.remove_available_record_tag(
+            &admin_cap,
+            string::utf8(b"legal"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        let available_tags = trail.available_record_tags();
+        assert!(vec_set::size(available_tags) == 1, 0);
+        assert!(vec_set::contains(available_tags, &string::utf8(b"finance")), 1);
+
         cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
     };
 

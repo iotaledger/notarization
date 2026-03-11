@@ -22,6 +22,7 @@ impl CreateOps {
         locking_config: LockingConfig,
         trail_metadata: Option<ImmutableMetadata>,
         updatable_metadata: Option<String>,
+        available_record_tags: impl IntoIterator<Item = String>,
     ) -> Result<ProgrammableTransaction, Error> {
         let mut ptb = ProgrammableTransactionBuilder::new();
 
@@ -49,6 +50,9 @@ impl CreateOps {
         };
 
         let updatable_metadata = utils::ptb_pure(&mut ptb, "updatable_metadata", updatable_metadata)?;
+        let mut available_record_tags = available_record_tags.into_iter().collect::<Vec<_>>();
+        available_record_tags.sort();
+        let available_record_tags = utils::ptb_pure(&mut ptb, "available_record_tags", available_record_tags)?;
         let clock = utils::get_clock_ref(&mut ptb);
 
         let result = ptb.programmable_move_call(
@@ -62,6 +66,7 @@ impl CreateOps {
                 locking_config,
                 trail_metadata,
                 updatable_metadata,
+                available_record_tags,
                 clock,
             ],
         );

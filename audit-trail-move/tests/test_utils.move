@@ -39,6 +39,16 @@ public(package) fun setup_test_audit_trail(
     locking_config: locking::LockingConfig,
     initial_data: Option<TestData>,
 ): (Capability, iota::object::ID) {
+    setup_test_audit_trail_with_tags(scenario, locking_config, initial_data, vector[])
+}
+
+/// Setup a test audit trail with optional initial data and available record tags.
+public(package) fun setup_test_audit_trail_with_tags(
+    scenario: &mut Scenario,
+    locking_config: locking::LockingConfig,
+    initial_data: Option<TestData>,
+    available_record_tags: vector<string::String>,
+): (Capability, iota::object::ID) {
     let (admin_cap, trail_id) = {
         let mut clock = clock::create_for_testing(ts::ctx(scenario));
         clock.set_for_testing(INITIAL_TIME_FOR_TESTING);
@@ -54,6 +64,7 @@ public(package) fun setup_test_audit_trail(
             locking_config,
             option::some(trail_metadata),
             option::none(),
+            available_record_tags,
             &clock,
             ts::ctx(scenario),
         );

@@ -107,6 +107,147 @@ impl Transaction for UpdateMetadata {
 }
 
 #[derive(Debug, Clone)]
+pub struct AddRecordTag {
+    trail_id: ObjectID,
+    owner: IotaAddress,
+    tag: String,
+    cached_ptb: OnceCell<ProgrammableTransaction>,
+}
+
+impl AddRecordTag {
+    pub fn new(trail_id: ObjectID, owner: IotaAddress, tag: String) -> Self {
+        Self {
+            trail_id,
+            owner,
+            tag,
+            cached_ptb: OnceCell::new(),
+        }
+    }
+
+    async fn make_ptb<C>(&self, client: &C) -> Result<ProgrammableTransaction, Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        TrailOps::add_record_tag(client, self.trail_id, self.owner, self.tag.clone()).await
+    }
+}
+
+#[cfg_attr(not(feature = "send-sync"), async_trait(?Send))]
+#[cfg_attr(feature = "send-sync", async_trait)]
+impl Transaction for AddRecordTag {
+    type Error = Error;
+    type Output = ();
+
+    async fn build_programmable_transaction<C>(&self, client: &C) -> Result<ProgrammableTransaction, Self::Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        self.cached_ptb.get_or_try_init(|| self.make_ptb(client)).await.cloned()
+    }
+
+    async fn apply<C>(self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct RemoveRecordTag {
+    trail_id: ObjectID,
+    owner: IotaAddress,
+    tag: String,
+    cached_ptb: OnceCell<ProgrammableTransaction>,
+}
+
+impl RemoveRecordTag {
+    pub fn new(trail_id: ObjectID, owner: IotaAddress, tag: String) -> Self {
+        Self {
+            trail_id,
+            owner,
+            tag,
+            cached_ptb: OnceCell::new(),
+        }
+    }
+
+    async fn make_ptb<C>(&self, client: &C) -> Result<ProgrammableTransaction, Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        TrailOps::remove_record_tag(client, self.trail_id, self.owner, self.tag.clone()).await
+    }
+}
+
+#[cfg_attr(not(feature = "send-sync"), async_trait(?Send))]
+#[cfg_attr(feature = "send-sync", async_trait)]
+impl Transaction for RemoveRecordTag {
+    type Error = Error;
+    type Output = ();
+
+    async fn build_programmable_transaction<C>(&self, client: &C) -> Result<ProgrammableTransaction, Self::Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        self.cached_ptb.get_or_try_init(|| self.make_ptb(client)).await.cloned()
+    }
+
+    async fn apply<C>(self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct SetRecordTags {
+    trail_id: ObjectID,
+    owner: IotaAddress,
+    tags: Vec<String>,
+    cached_ptb: OnceCell<ProgrammableTransaction>,
+}
+
+impl SetRecordTags {
+    pub fn new(trail_id: ObjectID, owner: IotaAddress, tags: Vec<String>) -> Self {
+        Self {
+            trail_id,
+            owner,
+            tags,
+            cached_ptb: OnceCell::new(),
+        }
+    }
+
+    async fn make_ptb<C>(&self, client: &C) -> Result<ProgrammableTransaction, Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        TrailOps::set_record_tags(client, self.trail_id, self.owner, self.tags.clone()).await
+    }
+}
+
+#[cfg_attr(not(feature = "send-sync"), async_trait(?Send))]
+#[cfg_attr(feature = "send-sync", async_trait)]
+impl Transaction for SetRecordTags {
+    type Error = Error;
+    type Output = ();
+
+    async fn build_programmable_transaction<C>(&self, client: &C) -> Result<ProgrammableTransaction, Self::Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        self.cached_ptb.get_or_try_init(|| self.make_ptb(client)).await.cloned()
+    }
+
+    async fn apply<C>(self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct DeleteAuditTrail {
     trail_id: ObjectID,
     owner: IotaAddress,

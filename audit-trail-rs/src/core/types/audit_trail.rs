@@ -6,7 +6,7 @@ use std::str::FromStr;
 use iota_interaction::ident_str;
 use iota_interaction::types::TypeTag;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
-use iota_interaction::types::collection_types::LinkedTable;
+use iota_interaction::types::collection_types::{LinkedTable, VecSet};
 use iota_interaction::types::id::UID;
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
 use iota_interaction::types::transaction::Argument;
@@ -25,6 +25,7 @@ pub struct OnChainAuditTrail {
     pub created_at: u64,
     pub sequence_number: u64,
     pub records: LinkedTable<u64>,
+    pub available_record_tags: VecSet<String>,
     pub locking_config: LockingConfig,
     pub roles: RoleMap,
     pub immutable_metadata: Option<ImmutableMetadata>,

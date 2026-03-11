@@ -59,7 +59,7 @@ where
 
 /// Finds a capability owned by `owner` whose role has the required permission
 /// according to the trail's RoleMap.
-async fn find_capable_cap<C>(
+pub(crate) async fn find_capable_cap<C>(
     client: &C,
     owner: IotaAddress,
     trail_id: ObjectID,
@@ -73,7 +73,7 @@ where
         .roles
         .roles
         .iter()
-        .filter(|(_, perms)| perms.contains(&permission))
+        .filter(|(_, role)| role.permissions.contains(&permission))
         .map(|(name, _)| name)
         .collect();
 

@@ -4,12 +4,14 @@ module audit_trail::role_tests;
 
 use audit_trail::{
     locking,
-    main::{initial_admin_role_name, AuditTrail},
+    main::{AuditTrail, initial_admin_role_name},
     permission,
+    record_tags,
     test_utils::{
         Self,
         TestData,
         setup_test_audit_trail,
+        setup_test_audit_trail_with_tags,
         fetch_capability_trail_and_clock,
         cleanup_capability_trail_and_clock
     }
@@ -201,6 +203,7 @@ fun test_role_based_permission_delegation() {
             &record_admin_cap,
             test_data,
             std::option::none(),
+            std::option::none(),
             &clock,
             ts::ctx(&mut scenario),
         );
@@ -213,6 +216,47 @@ fun test_role_based_permission_delegation() {
 
     // Cleanup
     ts::next_tx(&mut scenario, admin_user);
+    ts::end(scenario);
+}
+
+#[test]
+#[expected_failure(abort_code = audit_trail::main::ERecordTagNotDefined)]
+fun test_create_role_rejects_undefined_record_tags() {
+    let admin_user = @0xAD;
+    let mut scenario = ts::begin(admin_user);
+
+    {
+        let locking_config = locking::new(
+            locking::window_count_based(0),
+            timelock::none(),
+            timelock::none(),
+        );
+        let (admin_cap, _) = setup_test_audit_trail_with_tags(
+            &mut scenario,
+            locking_config,
+            std::option::none(),
+            vector[string::utf8(b"legal")],
+        );
+        transfer::public_transfer(admin_cap, admin_user);
+    };
+
+    ts::next_tx(&mut scenario, admin_user);
+    {
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
+        let perms = permission::from_vec(vector[permission::add_record()]);
+
+        trail.create_role(
+            &admin_cap,
+            string::utf8(b"TaggedRole"),
+            perms,
+            std::option::some(record_tags::new_record_tags(vector[string::utf8(b"finance")])),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
+    };
+
     ts::end(scenario);
 }
 
@@ -626,6 +670,55 @@ fun test_update_role_permissions_success() {
         let updated_perms = trail.roles().get_role_permissions(&string::utf8(b"TestRole"));
         assert!(!updated_perms.contains(&permission::add_record()), 2);
         assert!(updated_perms.contains(&permission::delete_record()), 3);
+
+        cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
+    };
+
+    ts::end(scenario);
+}
+
+#[test]
+#[expected_failure(abort_code = audit_trail::main::ERecordTagNotDefined)]
+fun test_update_role_permissions_rejects_undefined_record_tags() {
+    let admin_user = @0xAD;
+    let mut scenario = ts::begin(admin_user);
+
+    {
+        let locking_config = locking::new(
+            locking::window_count_based(0),
+            timelock::none(),
+            timelock::none(),
+        );
+        let (admin_cap, _) = setup_test_audit_trail_with_tags(
+            &mut scenario,
+            locking_config,
+            std::option::none(),
+            vector[string::utf8(b"legal")],
+        );
+        transfer::public_transfer(admin_cap, admin_user);
+    };
+
+    ts::next_tx(&mut scenario, admin_user);
+    {
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
+
+        trail.create_role(
+            &admin_cap,
+            string::utf8(b"TestRole"),
+            permission::from_vec(vector[permission::add_record()]),
+            std::option::none(),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        trail.update_role_permissions(
+            &admin_cap,
+            string::utf8(b"TestRole"),
+            permission::from_vec(vector[permission::add_record()]),
+            std::option::some(record_tags::new_record_tags(vector[string::utf8(b"finance")])),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
 
         cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
     };

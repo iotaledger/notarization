@@ -26,6 +26,7 @@ pub struct PaginatedRecord<D = Data> {
 pub struct Record<D = Data> {
     pub data: D,
     pub metadata: Option<String>,
+    pub tag: Option<String>,
     pub sequence_number: u64,
     pub added_by: IotaAddress,
     pub added_at: u64,
