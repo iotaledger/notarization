@@ -13,6 +13,8 @@ public enum Permission has copy, drop, store {
     DeleteAuditTrail,
     /// Delete records in batches for cleanup workflows
     DeleteAllRecords,
+     /// Migrate the audit trail to a new version of the contract
+    Migrate,   
     // --- Record Management - Proposed role: `RecordAdmin` ---
     /// Add records to the trail
     AddRecord,
@@ -46,8 +48,6 @@ public enum Permission has copy, drop, store {
     UpdateMetadata,
     /// Delete the updatable metadata field
     DeleteMetadata,
-    /// Migrate the audit trail to a new version of the contract
-    Migrate,
 }
 
 /// Create an empty permission set
@@ -87,6 +87,7 @@ public fun admin_permissions(): VecSet<Permission> {
     perms.insert(add_roles());
     perms.insert(update_roles());
     perms.insert(delete_roles());
+    perms.insert(migrate());
     perms
 }
 
@@ -144,6 +145,11 @@ public fun delete_audit_trail(): Permission {
 /// Returns a permission allowing to delete records in batches
 public fun delete_all_records(): Permission {
     Permission::DeleteAllRecords
+}
+
+/// Migrate the audit trail to a new version of the contract
+public fun migrate(): Permission {
+    Permission::Migrate
 }
 
 /// Returns a permission allowing to add records to the trail
