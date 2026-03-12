@@ -50,37 +50,37 @@ public(package) fun new<D: store + copy>(
 // ===== Getters =====
 
 /// Get the stored data from a record
-public fun data<D: store + copy>(record: &Record<D>): &D {
-    &record.data
+public fun data<D: store + copy>(self: &Record<D>): &D {
+    &self.data
 }
 
 /// Get the record metadata
-public fun metadata<D: store + copy>(record: &Record<D>): &Option<String> {
-    &record.metadata
+public fun metadata<D: store + copy>(self: &Record<D>): &Option<String> {
+    &self.metadata
 }
 
 /// Get the record sequence number
-public fun sequence_number<D: store + copy>(record: &Record<D>): u64 {
-    record.sequence_number
+public fun sequence_number<D: store + copy>(self: &Record<D>): u64 {
+    self.sequence_number
 }
 
 /// Get who added the record
-public fun added_by<D: store + copy>(record: &Record<D>): address {
-    record.added_by
+public fun added_by<D: store + copy>(self: &Record<D>): address {
+    self.added_by
 }
 
 /// Get when the record was added (milliseconds)
-public fun added_at<D: store + copy>(record: &Record<D>): u64 {
-    record.added_at
+public fun added_at<D: store + copy>(self: &Record<D>): u64 {
+    self.added_at
 }
 
 /// Get the correction tracker for this record
-public fun correction<D: store + copy>(record: &Record<D>): &RecordCorrection {
-    &record.correction
+public fun correction<D: store + copy>(self: &Record<D>): &RecordCorrection {
+    &self.correction
 }
 
 /// Destroy a record
-public(package) fun destroy<D: store + copy + drop>(record: Record<D>) {
+public(package) fun destroy<D: store + copy + drop>(self: Record<D>) {
     let Record {
         data: _,
         metadata: _,
@@ -88,7 +88,7 @@ public(package) fun destroy<D: store + copy + drop>(record: Record<D>) {
         added_by: _,
         added_at: _,
         correction: _,
-    } = record;
+    } = self;
 }
 
 /// Bidirectional correction tracking for audit records
