@@ -24,7 +24,6 @@ use iota::{
     clock::{Self, Clock},
     event,
     linked_table::{Self, LinkedTable},
-    vec_set::VecSet
 };
 use std::string::String;
 use tf_components::{capability::Capability, role_map::{Self, RoleMap}, timelock::TimeLock};
@@ -198,12 +197,17 @@ public fun create<D: store + copy>(
         permission::revoke_capabilities(),
     );
 
+    let role_map_admin_permissions = role_map::new_role_map_admin_permissions(
+        permission::migrate_audit_trail(),
+    );
+
     let (roles, admin_cap) = role_map::new(
         trail_id,
         initial_admin_role_name(),
         permission::admin_permissions(),
         role_admin_permissions,
         capability_admin_permissions,
+        role_map_admin_permissions,
         ctx,
     );
 
@@ -252,6 +256,7 @@ entry fun migrate<D: store + copy>(
             ctx,
         );
     self.version = PACKAGE_VERSION;
+    self.roles.migrate(cap, clock, ctx);
 }
 
 public fun new_record_tags(
@@ -559,211 +564,6 @@ public fun update_metadata<D: store + copy>(
             ctx,
         );
     self.updatable_metadata = new_metadata;
-}
-
-// ===== Role and Capability Administration =====
-
-/// Creates a new role with the provided permissions.
-public fun create_role<D: store + copy>(
-    self: &mut AuditTrail<D>,
-    cap: &Capability,
-    role: String,
-    permissions: VecSet<Permission>,
-    clock: &Clock,
-    ctx: &mut TxContext,
-) {
-    assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    role_map::create_role(
-        self.roles_mut(),
-        cap,
-        role,
-        permissions,
-        std::option::none(),
-        clock,
-        ctx,
-    );
-}
-
-/// Updates permissions for an existing role.
-public fun update_role_permissions<D: store + copy>(
-    self: &mut AuditTrail<D>,
-    cap: &Capability,
-    role: String,
-    new_permissions: VecSet<Permission>,
-    clock: &Clock,
-    ctx: &mut TxContext,
-) {
-    assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    role_map::update_role(
-        self.roles_mut(),
-        cap,
-        &role,
-        new_permissions,
-        std::option::none(),
-        clock,
-        ctx,
-    );
-}
-
-/// Deletes an existing role.
-public fun delete_role<D: store + copy>(
-    self: &mut AuditTrail<D>,
-    cap: &Capability,
-    role: String,
-    clock: &Clock,
-    ctx: &mut TxContext,
-) {
-    assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    role_map::delete_role(self.roles_mut(), cap, &role, clock, ctx);
-}
-
-/// Issues a new capability for an existing role.
-///
-/// The capability object is transferred to `issued_to` if provided, otherwise to the caller.
-public fun new_capability<D: store + copy>(
-    self: &mut AuditTrail<D>,
-    cap: &Capability,
-    role: String,
-    issued_to: Option<address>,
-    valid_from: Option<u64>,
-    valid_until: Option<u64>,
-    clock: &Clock,
-    ctx: &mut TxContext,
-) {
-    assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-
-    let recipient = if (issued_to.is_some()) {
-        let address_ref = issued_to.borrow();
-        *address_ref
-    } else {
-        ctx.sender()
-    };
-
-    let new_cap = role_map::new_capability(
-        self.roles_mut(),
-        cap,
-        &role,
-        issued_to,
-        valid_from,
-        valid_until,
-        clock,
-        ctx,
-    );
-    transfer::public_transfer(new_cap, recipient);
-}
-
-/// Revokes an issued capability by ID.
-public fun revoke_capability<D: store + copy>(
-    self: &mut AuditTrail<D>,
-    cap: &Capability,
-    cap_to_revoke: ID,
-    cap_to_revoke_valid_until: Option<u64>,
-    clock: &Clock,
-    ctx: &TxContext,
-) {
-    assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    role_map::revoke_capability(
-        self.roles_mut(),
-        cap,
-        cap_to_revoke,
-        cap_to_revoke_valid_until,
-        clock,
-        ctx
-    );
-}
-
-/// Destroys a capability object.
-///
-/// Requires a capability with `RevokeCapabilities` permission.
-public fun destroy_capability<D: store + copy>(
-    self: &mut AuditTrail<D>,
-    cap: &Capability,
-    cap_to_destroy: Capability,
-    clock: &Clock,
-    ctx: &mut TxContext,
-) {
-    assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    self
-        .roles
-        .assert_capability_valid(
-            cap,
-            &permission::revoke_capabilities(),
-            clock,
-            ctx,
-        );
-    role_map::destroy_capability(self.roles_mut(), cap_to_destroy);
-}
-
-/// Destroys an initial admin capability.
-///
-/// Self-service: the owner passes in their own initial admin capability to destroy it.
-/// No additional authorization is required.
-///
-/// WARNING: If all initial admin capabilities are destroyed, the trail will be permanently
-/// sealed with no admin access possible.
-public fun destroy_initial_admin_capability<D: store + copy>(
-    self: &mut AuditTrail<D>,
-    cap_to_destroy: Capability,
-) {
-    assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    role_map::destroy_initial_admin_capability(self.roles_mut(), cap_to_destroy);
-}
-
-/// Revokes an initial admin capability by ID.
-///
-/// Requires a capability with `RevokeCapabilities` permission.
-///
-/// WARNING: If all initial admin capabilities are revoked, the trail will be permanently
-/// sealed with no admin access possible.
-public fun revoke_initial_admin_capability<D: store + copy>(
-    self: &mut AuditTrail<D>,
-    cap: &Capability,
-    cap_to_revoke: ID,
-    cap_to_revoke_valid_until: Option<u64>,
-    clock: &Clock,
-    ctx: &mut TxContext,
-) {
-    assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    role_map::revoke_initial_admin_capability(
-        self.roles_mut(),
-        cap,
-        cap_to_revoke,
-        cap_to_revoke_valid_until,
-        clock,
-        ctx);
-}
-
-/// Remove expired entries from the `revoked_capabilities` denylist.
-///
-/// Iterates through the revoked capabilities list and removes every entry whose
-/// `valid_until` timestamp is **non-zero** and **less than** the current clock time,
-/// because those capabilities are already naturally expired and no longer need to
-/// occupy space in the denylist.
-///
-/// Entries with `valid_until == 0` (i.e. capabilities that had no expiry) are kept,
-/// since they remain potentially valid and must stay on the denylist.
-///
-/// Parameters
-/// ----------
-/// - cap: Reference to the capability used to authorize this operation.
-///   Needs to grant the `CapabilityAdminPermissions::revoke` permission.
-/// - clock: Reference to a Clock instance for obtaining the current timestamp.
-/// - ctx: Reference to the transaction context.
-///
-/// Errors:
-/// - Aborts with any error documented by `assert_capability_valid` if the provided capability fails authorization checks.
-public fun cleanup_revoked_capabilities_list<D: store + copy>(
-    self: &mut AuditTrail<D>,
-    cap: &Capability,
-    clock: &Clock,
-    ctx: &TxContext,
-) {
-    assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    self.roles_mut().cleanup_revoked_capabilities_list(
-        cap,
-        clock,
-        ctx,
-    );
 }
 
 // ===== Trail Query Functions =====
