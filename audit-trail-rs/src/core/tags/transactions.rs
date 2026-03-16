@@ -3,29 +3,30 @@
 
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
-use iota_interaction::rpc_types::{IotaTransactionBlockEffects, IotaTransactionBlockEvents};
+use iota_interaction::rpc_types::IotaTransactionBlockEffects;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::transaction::ProgrammableTransaction;
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;
 
-use super::operations::TrailOps;
-use crate::core::types::{AuditTrailDeleted, Event};
+use super::operations::TagsOps;
 use crate::error::Error;
 
 #[derive(Debug, Clone)]
-pub struct Migrate {
+pub struct AddRecordTag {
     trail_id: ObjectID,
     owner: IotaAddress,
+    tag: String,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
-impl Migrate {
-    pub fn new(trail_id: ObjectID, owner: IotaAddress) -> Self {
+impl AddRecordTag {
+    pub fn new(trail_id: ObjectID, owner: IotaAddress, tag: String) -> Self {
         Self {
             trail_id,
             owner,
+            tag,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -34,13 +35,13 @@ impl Migrate {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        TrailOps::migrate(client, self.trail_id, self.owner).await
+        TagsOps::add_record_tag(client, self.trail_id, self.owner, self.tag.clone()).await
     }
 }
 
 #[cfg_attr(not(feature = "send-sync"), async_trait(?Send))]
 #[cfg_attr(feature = "send-sync", async_trait)]
-impl Transaction for Migrate {
+impl Transaction for AddRecordTag {
     type Error = Error;
     type Output = ();
 
@@ -60,19 +61,19 @@ impl Transaction for Migrate {
 }
 
 #[derive(Debug, Clone)]
-pub struct UpdateMetadata {
+pub struct RemoveRecordTag {
     trail_id: ObjectID,
     owner: IotaAddress,
-    metadata: Option<String>,
+    tag: String,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
-impl UpdateMetadata {
-    pub fn new(trail_id: ObjectID, owner: IotaAddress, metadata: Option<String>) -> Self {
+impl RemoveRecordTag {
+    pub fn new(trail_id: ObjectID, owner: IotaAddress, tag: String) -> Self {
         Self {
             trail_id,
             owner,
-            metadata,
+            tag,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -81,13 +82,13 @@ impl UpdateMetadata {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        TrailOps::update_metadata(client, self.trail_id, self.owner, self.metadata.clone()).await
+        TagsOps::remove_record_tag(client, self.trail_id, self.owner, self.tag.clone()).await
     }
 }
 
 #[cfg_attr(not(feature = "send-sync"), async_trait(?Send))]
 #[cfg_attr(feature = "send-sync", async_trait)]
-impl Transaction for UpdateMetadata {
+impl Transaction for RemoveRecordTag {
     type Error = Error;
     type Output = ();
 
@@ -107,17 +108,19 @@ impl Transaction for UpdateMetadata {
 }
 
 #[derive(Debug, Clone)]
-pub struct DeleteAuditTrail {
+pub struct SetRecordTags {
     trail_id: ObjectID,
     owner: IotaAddress,
+    tags: Vec<String>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
-impl DeleteAuditTrail {
-    pub fn new(trail_id: ObjectID, owner: IotaAddress) -> Self {
+impl SetRecordTags {
+    pub fn new(trail_id: ObjectID, owner: IotaAddress, tags: Vec<String>) -> Self {
         Self {
             trail_id,
             owner,
+            tags,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -126,15 +129,15 @@ impl DeleteAuditTrail {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        TrailOps::delete_audit_trail(client, self.trail_id, self.owner).await
+        TagsOps::set_record_tags(client, self.trail_id, self.owner, self.tags.clone()).await
     }
 }
 
 #[cfg_attr(not(feature = "send-sync"), async_trait(?Send))]
 #[cfg_attr(feature = "send-sync", async_trait)]
-impl Transaction for DeleteAuditTrail {
+impl Transaction for SetRecordTags {
     type Error = Error;
-    type Output = AuditTrailDeleted;
+    type Output = ();
 
     async fn build_programmable_transaction<C>(&self, client: &C) -> Result<ProgrammableTransaction, Self::Error>
     where
@@ -143,28 +146,10 @@ impl Transaction for DeleteAuditTrail {
         self.cached_ptb.get_or_try_init(|| self.make_ptb(client)).await.cloned()
     }
 
-    async fn apply_with_events<C>(
-        self,
-        _: &mut IotaTransactionBlockEffects,
-        events: &mut IotaTransactionBlockEvents,
-        _: &C,
-    ) -> Result<Self::Output, Self::Error>
-    where
-        C: CoreClientReadOnly + OptionalSync,
-    {
-        let event = events
-            .data
-            .iter()
-            .find_map(|data| serde_json::from_value::<Event<AuditTrailDeleted>>(data.parsed_json.clone()).ok())
-            .ok_or_else(|| Error::UnexpectedApiResponse("Expected AuditTrailDeleted event not found".to_string()))?;
-
-        Ok(event.data)
-    }
-
     async fn apply<C>(self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        unreachable!()
+        Ok(())
     }
 }

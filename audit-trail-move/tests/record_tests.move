@@ -315,7 +315,7 @@ fun test_add_tagged_record_requires_trail_defined_tag() {
 
 #[test]
 #[expected_failure(abort_code = audit_trail::main::ERecordTagInUse)]
-fun test_remove_available_record_tag_rejects_in_use_tag() {
+fun test_remove_record_tag_rejects_in_use_tag() {
     let admin = @0xAD;
     let writer = @0xB0B;
     let mut scenario = ts::begin(admin);
@@ -384,7 +384,7 @@ fun test_remove_available_record_tag_rejects_in_use_tag() {
     {
         let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
-        trail.remove_available_record_tag(
+        trail.remove_record_tag(
             &admin_cap,
             string::utf8(b"finance"),
             &clock,

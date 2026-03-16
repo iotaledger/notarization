@@ -12,13 +12,14 @@ use serde::de::DeserializeOwned;
 use crate::core::locking::TrailLocking;
 use crate::core::records::TrailRecords;
 use crate::core::roles::TrailRoles;
+use crate::core::tags::TrailTags;
 use crate::core::types::{Data, OnChainAuditTrail};
 use crate::error::Error;
 
 mod operations;
 mod transactions;
 
-pub use transactions::{AddRecordTag, DeleteAuditTrail, Migrate, RemoveRecordTag, SetRecordTags, UpdateMetadata};
+pub use transactions::{DeleteAuditTrail, Migrate, UpdateMetadata};
 
 /// Marker trait for read-only audit trail clients.
 #[doc(hidden)]
@@ -84,42 +85,6 @@ impl<'a, C> AuditTrailHandle<'a, C> {
         TransactionBuilder::new(DeleteAuditTrail::new(self.trail_id, owner))
     }
 
-    /// Adds a tag to the trail-owned record-tag registry.
-    pub fn add_record_tag<S>(&self, tag: impl Into<String>) -> TransactionBuilder<AddRecordTag>
-    where
-        C: AuditTrailFull + CoreClient<S>,
-        S: Signer<IotaKeySignature> + OptionalSync,
-    {
-        let owner = self.client.sender_address();
-        TransactionBuilder::new(AddRecordTag::new(self.trail_id, owner, tag.into()))
-    }
-
-    /// Removes a tag from the trail-owned record-tag registry.
-    pub fn remove_record_tag<S>(&self, tag: impl Into<String>) -> TransactionBuilder<RemoveRecordTag>
-    where
-        C: AuditTrailFull + CoreClient<S>,
-        S: Signer<IotaKeySignature> + OptionalSync,
-    {
-        let owner = self.client.sender_address();
-        TransactionBuilder::new(RemoveRecordTag::new(self.trail_id, owner, tag.into()))
-    }
-
-    /// Replaces the entire trail-owned record-tag registry.
-    pub fn set_record_tags<S, I, T>(&self, tags: I) -> TransactionBuilder<SetRecordTags>
-    where
-        C: AuditTrailFull + CoreClient<S>,
-        S: Signer<IotaKeySignature> + OptionalSync,
-        I: IntoIterator<Item = T>,
-        T: Into<String>,
-    {
-        let owner = self.client.sender_address();
-        TransactionBuilder::new(SetRecordTags::new(
-            self.trail_id,
-            owner,
-            tags.into_iter().map(Into::into).collect(),
-        ))
-    }
-
     pub fn records(&self) -> TrailRecords<'a, C, Data> {
         TrailRecords::new(self.client, self.trail_id)
     }
@@ -130,5 +95,9 @@ impl<'a, C> AuditTrailHandle<'a, C> {
 
     pub fn roles(&self) -> TrailRoles<'a, C> {
         TrailRoles::new(self.client, self.trail_id)
+    }
+
+    pub fn tags(&self) -> TrailTags<'a, C> {
+        TrailTags::new(self.client, self.trail_id)
     }
 }

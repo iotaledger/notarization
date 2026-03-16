@@ -94,6 +94,47 @@ where
     utils::get_object_ref_by_id(client, &object_id).await
 }
 
+/// Finds a capability owned by `owner` whose role has all required permissions
+/// according to the trail's RoleMap.
+pub(crate) async fn find_capable_cap_with_permissions<C>(
+    client: &C,
+    owner: IotaAddress,
+    trail_id: ObjectID,
+    trail: &OnChainAuditTrail,
+    required_permissions: &[Permission],
+) -> Result<ObjectRef, Error>
+where
+    C: CoreClientReadOnly + OptionalSync,
+{
+    let valid_roles: HashSet<&String> = trail
+        .roles
+        .roles
+        .iter()
+        .filter(|(_, role)| {
+            required_permissions
+                .iter()
+                .all(|permission| role.permissions.contains(permission))
+        })
+        .map(|(name, _)| name)
+        .collect();
+
+    let cap: Capability = client
+        .find_object_for_address(owner, |cap: &Capability| {
+            cap.target_key == trail_id && valid_roles.contains(&cap.role)
+        })
+        .await
+        .map_err(|e| Error::RpcError(e.to_string()))?
+        .ok_or_else(|| {
+            Error::InvalidArgument(format!(
+                "no capability with {:?} permissions found for owner {owner} and trail {trail_id}",
+                required_permissions
+            ))
+        })?;
+
+    let object_id = *cap.id.object_id();
+    utils::get_object_ref_by_id(client, &object_id).await
+}
+
 pub(crate) async fn build_trail_transaction_with_cap_ref<C, F>(
     client: &C,
     trail_id: ObjectID,

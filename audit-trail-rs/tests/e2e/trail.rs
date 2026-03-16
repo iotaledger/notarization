@@ -415,7 +415,7 @@ async fn manage_record_tag_registry_roundtrip() -> anyhow::Result<()> {
     let initial = trail.get().await?;
     assert_eq!(initial.available_record_tags.contents, vec!["finance".to_string()]);
 
-    trail.add_record_tag("legal").build_and_execute(&client).await?;
+    trail.tags().add("legal").build_and_execute(&client).await?;
     let after_add = trail.get().await?;
     assert!(
         after_add
@@ -425,10 +425,6 @@ async fn manage_record_tag_registry_roundtrip() -> anyhow::Result<()> {
     );
     assert!(after_add.available_record_tags.contents.contains(&"legal".to_string()));
 
-    trail
-        .set_record_tags(["finance", "hr"])
-        .build_and_execute(&client)
-        .await?;
     let after_set = trail.get().await?;
     assert!(
         after_set
@@ -439,7 +435,8 @@ async fn manage_record_tag_registry_roundtrip() -> anyhow::Result<()> {
     assert!(after_set.available_record_tags.contents.contains(&"hr".to_string()));
     assert!(!after_set.available_record_tags.contents.contains(&"legal".to_string()));
 
-    trail.remove_record_tag("hr").build_and_execute(&client).await?;
+    trail.tags().remove("hr").build_and_execute(&client).await?;
+
     let after_remove = trail.get().await?;
     assert_eq!(after_remove.available_record_tags.contents, vec!["finance".to_string()]);
 
@@ -477,7 +474,7 @@ async fn remove_record_tag_rejects_in_use_tag() -> anyhow::Result<()> {
         .build_and_execute(&client)
         .await?;
 
-    let removed = trail.remove_record_tag("finance").build_and_execute(&client).await;
+    let removed = trail.tags().remove("finance").build_and_execute(&client).await;
     assert!(removed.is_err(), "used record tags must not be removable");
 
     Ok(())

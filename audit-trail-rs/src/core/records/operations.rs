@@ -6,7 +6,7 @@ use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::transaction::ProgrammableTransaction;
 use product_common::core_client::CoreClientReadOnly;
 
-use crate::core::types::{Data, Permission};
+use crate::core::types::{Data, OnChainAuditTrail, Permission};
 use crate::core::{operations, utils};
 use crate::error::Error;
 
@@ -150,7 +150,7 @@ async fn find_capable_cap_for_tag<C>(
     client: &C,
     owner: IotaAddress,
     trail_id: ObjectID,
-    trail: &crate::core::types::OnChainAuditTrail,
+    trail: &OnChainAuditTrail,
     tag: &str,
 ) -> Result<iota_interaction::types::base_types::ObjectRef, Error>
 where

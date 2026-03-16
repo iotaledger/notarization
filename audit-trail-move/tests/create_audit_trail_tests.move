@@ -5,13 +5,15 @@ module audit_trail::create_audit_trail_tests;
 use audit_trail::{
     locking,
     main::{Self, AuditTrail, initial_admin_role_name},
+    permission,
     test_utils::{
         setup_test_audit_trail,
         new_test_data,
         initial_time_for_testing,
         TestData,
         fetch_capability_trail_and_clock,
-        cleanup_capability_trail_and_clock
+        cleanup_capability_trail_and_clock,
+        new_capability_for_address
     }
 };
 use iota::{clock, test_scenario as ts, vec_set};
@@ -54,6 +56,86 @@ fun test_create_without_initial_record() {
         assert!(trail.record_count() == 0, 4);
 
         ts::return_shared(trail);
+    };
+
+    ts::end(scenario);
+}
+
+#[test]
+fun test_tag_admin_role_can_manage_available_record_tags() {
+    let admin = @0xA;
+    let tag_admin = @0xB;
+    let mut scenario = ts::begin(admin);
+
+    {
+        let locking_config = locking::new(
+            locking::window_count_based(0),
+            timelock::none(),
+            timelock::none(),
+        );
+
+        let (admin_cap, _) = setup_test_audit_trail(
+            &mut scenario,
+            locking_config,
+            option::none(),
+        );
+
+        transfer::public_transfer(admin_cap, admin);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
+
+        trail.create_role(
+            &admin_cap,
+            string::utf8(b"TagAdmin"),
+            permission::tag_admin_permissions(),
+            option::none(),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        let tag_admin_cap = new_capability_for_address(
+            trail.roles_mut(),
+            &admin_cap,
+            &string::utf8(b"TagAdmin"),
+            tag_admin,
+            option::none(),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        transfer::public_transfer(tag_admin_cap, tag_admin);
+        cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
+    };
+
+    ts::next_tx(&mut scenario, tag_admin);
+    {
+        let (tag_admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
+
+        trail.add_record_tag(
+            &tag_admin_cap,
+            string::utf8(b"finance"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        let available_tags = trail.available_record_tags();
+        assert!(vec_set::size(available_tags) == 1, 0);
+        assert!(vec_set::contains(available_tags, &string::utf8(b"finance")), 1);
+
+        trail.remove_record_tag(
+            &tag_admin_cap,
+            string::utf8(b"finance"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        let available_tags = trail.available_record_tags();
+        assert!(vec_set::size(available_tags) == 0, 0);
+
+        cleanup_capability_trail_and_clock(&scenario, tag_admin_cap, trail, clock);
     };
 
     ts::end(scenario);
@@ -306,58 +388,6 @@ fun test_create_metadata_admin_role() {
         assert!(iota::vec_set::size(role_perms) == 2, 4);
 
         // Clean up
-        cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
-    };
-
-    ts::end(scenario);
-}
-
-#[test]
-fun test_manage_available_record_tags_roundtrip() {
-    let admin = @0xF;
-    let mut scenario = ts::begin(admin);
-
-    {
-        let locking_config = locking::new(
-            locking::window_count_based(0),
-            timelock::none(),
-            timelock::none(),
-        );
-        let (admin_cap, _) = setup_test_audit_trail(
-            &mut scenario,
-            locking_config,
-            option::none(),
-        );
-        transfer::public_transfer(admin_cap, admin);
-    };
-
-    ts::next_tx(&mut scenario, admin);
-    {
-        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
-
-        trail.add_available_record_tag(
-            &admin_cap,
-            string::utf8(b"finance"),
-            &clock,
-            ts::ctx(&mut scenario),
-        );
-        trail.set_available_record_tags(
-            &admin_cap,
-            vector[string::utf8(b"finance"), string::utf8(b"legal")],
-            &clock,
-            ts::ctx(&mut scenario),
-        );
-        trail.remove_available_record_tag(
-            &admin_cap,
-            string::utf8(b"legal"),
-            &clock,
-            ts::ctx(&mut scenario),
-        );
-
-        let available_tags = trail.available_record_tags();
-        assert!(vec_set::size(available_tags) == 1, 0);
-        assert!(vec_set::contains(available_tags, &string::utf8(b"finance")), 1);
-
         cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
     };
 

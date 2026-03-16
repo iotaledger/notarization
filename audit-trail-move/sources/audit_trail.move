@@ -43,18 +43,13 @@ const EPackageVersionMismatch: vector<u8> =
 const ERecordTagNotAllowed: vector<u8> =
     b"The provided capability cannot create records with the requested tag";
 #[error]
-const ERecordTagNotDefined: vector<u8> =
-    b"The requested tag is not defined for this audit trail";
+const ERecordTagNotDefined: vector<u8> = b"The requested tag is not defined for this audit trail";
 #[error]
 const ERecordTagAlreadyDefined: vector<u8> =
     b"The requested tag is already defined for this audit trail";
 #[error]
 const ERecordTagInUse: vector<u8> =
     b"The requested tag cannot be removed because it is already used by an existing record";
-#[error]
-const ERecordTagAdminOnly: vector<u8> =
-    b"Only the Admin role may manage the trail record-tag registry";
-
 // ===== Constants =====
 const INITIAL_ADMIN_ROLE_NAME: vector<u8> = b"Admin";
 
@@ -267,33 +262,6 @@ entry fun migrate<D: store + copy>(
     trail.version = PACKAGE_VERSION;
 }
 
-fun assert_defined_record_tags<D: store + copy>(
-    self: &AuditTrail<D>,
-    record_tags: &Option<RecordTags>,
-) {
-    assert!(
-        record_tags::defined_for_trail(&self.available_record_tags, record_tags),
-        ERecordTagNotDefined,
-    );
-}
-
-fun assert_record_tag_admin<D: store + copy>(
-    self: &AuditTrail<D>,
-    cap: &Capability,
-    clock: &Clock,
-    ctx: &TxContext,
-) {
-    self
-        .roles
-        .assert_capability_valid(
-            cap,
-            &permission::add_roles(),
-            clock,
-            ctx,
-        );
-    assert!(*cap.role() == initial_admin_role_name(), ERecordTagAdminOnly);
-}
-
 fun assert_record_tag_allowed<D: store + copy>(
     self: &AuditTrail<D>,
     cap: &Capability,
@@ -304,7 +272,10 @@ fun assert_record_tag_allowed<D: store + copy>(
     };
 
     let requested_tag = option::borrow(tag);
-    assert!(record_tags::is_defined(&self.available_record_tags, requested_tag), ERecordTagNotDefined);
+    assert!(
+        record_tags::is_defined(&self.available_record_tags, requested_tag),
+        ERecordTagNotDefined,
+    );
     assert!(record_tags::role_allows(&self.roles, cap, requested_tag), ERecordTagNotAllowed);
 }
 
@@ -610,7 +581,7 @@ public fun update_metadata<D: store + copy>(
 }
 
 /// Adds a new record tag to the trail registry.
-public fun add_available_record_tag<D: store + copy>(
+public fun add_record_tag<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
     tag: String,
@@ -618,13 +589,15 @@ public fun add_available_record_tag<D: store + copy>(
     ctx: &TxContext,
 ) {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    assert_record_tag_admin(self, cap, clock, ctx);
+
+    self.roles.assert_capability_valid(cap, &permission::add_record_tags(), clock, ctx);
+
     assert!(!iota::vec_set::contains(&self.available_record_tags, &tag), ERecordTagAlreadyDefined);
     self.available_record_tags.insert(tag);
 }
 
 /// Removes a record tag from the trail registry if it is not used by any record.
-public fun remove_available_record_tag<D: store + copy>(
+public fun remove_record_tag<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
     tag: String,
@@ -632,40 +605,12 @@ public fun remove_available_record_tag<D: store + copy>(
     ctx: &TxContext,
 ) {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    assert_record_tag_admin(self, cap, clock, ctx);
+
+    self.roles.assert_capability_valid(cap, &permission::delete_record_tags(), clock, ctx);
+
     assert!(iota::vec_set::contains(&self.available_record_tags, &tag), ERecordTagNotDefined);
     assert!(!record_tags::is_in_use(&self.records, self.sequence_number, &tag), ERecordTagInUse);
     self.available_record_tags.remove(&tag);
-}
-
-/// Replaces the trail registry with a new set of available record tags.
-public fun set_available_record_tags<D: store + copy>(
-    self: &mut AuditTrail<D>,
-    cap: &Capability,
-    tags: vector<String>,
-    clock: &Clock,
-    ctx: &TxContext,
-) {
-    assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    assert_record_tag_admin(self, cap, clock, ctx);
-
-    let new_tags = iota::vec_set::from_keys(tags);
-    let existing_tags = iota::vec_set::keys(&self.available_record_tags);
-    let mut i = 0;
-    let existing_tag_count = existing_tags.length();
-
-    while (i < existing_tag_count) {
-        let existing_tag = &existing_tags[i];
-        if (!iota::vec_set::contains(&new_tags, existing_tag)) {
-            assert!(
-                !record_tags::is_in_use(&self.records, self.sequence_number, existing_tag),
-                ERecordTagInUse,
-            );
-        };
-        i = i + 1;
-    };
-
-    self.available_record_tags = new_tags;
 }
 
 // ===== Role and Capability Administration =====
@@ -681,7 +626,12 @@ public fun create_role<D: store + copy>(
     ctx: &mut TxContext,
 ) {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    assert_defined_record_tags(self, &record_tags);
+
+    assert!(
+        record_tags::defined_for_trail(&self.available_record_tags, &record_tags),
+        ERecordTagNotDefined,
+    );
+
     role_map::create_role(
         self.roles_mut(),
         cap,
@@ -704,7 +654,11 @@ public fun update_role_permissions<D: store + copy>(
     ctx: &mut TxContext,
 ) {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    assert_defined_record_tags(self, &record_tags);
+
+    assert!(
+        record_tags::defined_for_trail(&self.available_record_tags, &record_tags),
+        ERecordTagNotDefined,
+    );
     role_map::update_role(
         self.roles_mut(),
         cap,
@@ -929,7 +883,7 @@ public fun roles<D: store + copy>(self: &AuditTrail<D>): &RoleMap<Permission, Re
 }
 
 /// Returns a mutable reference to the RoleMap managing the roles and capabilities used in the audit trail
-public fun roles_mut<D: store + copy>(
+public(package) fun roles_mut<D: store + copy>(
     self: &mut AuditTrail<D>,
 ): &mut RoleMap<Permission, RecordTags> {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);

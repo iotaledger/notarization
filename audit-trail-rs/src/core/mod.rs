@@ -9,6 +9,7 @@ pub mod locking;
 pub(crate) mod operations;
 pub mod records;
 pub mod roles;
+pub mod tags;
 pub mod trail;
 pub mod types;
 pub(crate) mod utils;

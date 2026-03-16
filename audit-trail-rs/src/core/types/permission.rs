@@ -33,6 +33,8 @@ pub enum Permission {
     UpdateMetadata,
     DeleteMetadata,
     Migrate,
+    AddRecordTags,
+    DeleteRecordTags,
 }
 
 impl Permission {
@@ -48,6 +50,8 @@ impl Permission {
             Self::UpdateLockingConfigForDeleteRecord => "update_locking_config_for_delete_record",
             Self::UpdateLockingConfigForDeleteTrail => "update_locking_config_for_delete_trail",
             Self::UpdateLockingConfigForWrite => "update_locking_config_for_write",
+            Self::AddRecordTags => "add_record_tags",
+            Self::DeleteRecordTags => "delete_record_tags",
             Self::AddRoles => "add_roles",
             Self::UpdateRoles => "update_roles",
             Self::DeleteRoles => "delete_roles",
@@ -93,6 +97,8 @@ impl PermissionSet {
             permissions: HashSet::from([
                 Permission::AddCapabilities,
                 Permission::RevokeCapabilities,
+                Permission::AddRecordTags,
+                Permission::DeleteRecordTags,
                 Permission::AddRoles,
                 Permission::UpdateRoles,
                 Permission::DeleteRoles,
@@ -124,6 +130,12 @@ impl PermissionSet {
     pub fn role_admin_permissions() -> Self {
         Self {
             permissions: HashSet::from([Permission::AddRoles, Permission::UpdateRoles, Permission::DeleteRoles]),
+        }
+    }
+
+    pub fn tag_admin_permissions() -> Self {
+        Self {
+            permissions: HashSet::from([Permission::AddRecordTags, Permission::DeleteRecordTags]),
         }
     }
 
