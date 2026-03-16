@@ -10,9 +10,9 @@ use crate::core::types::{CapabilityIssueOptions, Permission, PermissionSet};
 use crate::core::{operations, utils};
 use crate::error::Error;
 
-pub(super) struct RolesOps;
+pub(super) struct AccessOps;
 
-impl RolesOps {
+impl AccessOps {
     pub(super) async fn create_role<C>(
         client: &C,
         trail_id: ObjectID,

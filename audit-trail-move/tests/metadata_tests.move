@@ -48,7 +48,7 @@ fun test_update_metadata_success() {
         // Create MetadataAdmin role with metadata permissions
         let metadata_perms = permission::metadata_admin_permissions();
         trail
-            .roles_mut()
+            .access_mut()
             .create_role(
                 &admin_cap,
                 string::utf8(b"MetadataAdmin"),
@@ -60,7 +60,7 @@ fun test_update_metadata_success() {
 
         // Issue capability to metadata admin user
         let metadata_cap = test_utils::new_capability_without_restrictions(
-            trail.roles_mut(),
+            trail.access_mut(),
             &admin_cap,
             &string::utf8(b"MetadataAdmin"),
             &clock,
@@ -171,7 +171,7 @@ fun test_update_metadata_permission_denied() {
         // Create role with only add_record permission (no update_metadata)
         let perms = permission::from_vec(vector[permission::add_record()]);
         trail
-            .roles_mut()
+            .access_mut()
             .create_role(
                 &admin_cap,
                 string::utf8(b"NoMetadataPerm"),
@@ -182,7 +182,7 @@ fun test_update_metadata_permission_denied() {
             );
 
         let user_cap = test_utils::new_capability_without_restrictions(
-            trail.roles_mut(),
+            trail.access_mut(),
             &admin_cap,
             &string::utf8(b"NoMetadataPerm"),
             &clock,
@@ -243,7 +243,7 @@ fun test_update_metadata_revoked_capability() {
         // Create MetadataAdmin role
         let metadata_perms = permission::metadata_admin_permissions();
         trail
-            .roles_mut()
+            .access_mut()
             .create_role(
                 &admin_cap,
                 string::utf8(b"MetadataAdmin"),
@@ -255,7 +255,7 @@ fun test_update_metadata_revoked_capability() {
 
         // Issue capability
         let metadata_cap = test_utils::new_capability_without_restrictions(
-            trail.roles_mut(),
+            trail.access_mut(),
             &admin_cap,
             &string::utf8(b"MetadataAdmin"),
             &clock,
@@ -273,7 +273,7 @@ fun test_update_metadata_revoked_capability() {
         let metadata_cap = ts::take_from_address<Capability>(&scenario, metadata_admin_user);
 
         trail
-            .roles_mut()
+            .access_mut()
             .revoke_capability(&admin_cap, metadata_cap.id(), &clock, ts::ctx(&mut scenario));
 
         ts::return_to_address(metadata_admin_user, metadata_cap);
