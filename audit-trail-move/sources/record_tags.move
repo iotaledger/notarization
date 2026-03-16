@@ -5,25 +5,25 @@
 module audit_trail::record_tags;
 
 use audit_trail::{permission::Permission, record::{Self, Record}};
-use iota::{linked_table::{Self, LinkedTable}, vec_set::VecSet};
+use iota::{linked_table::{Self, LinkedTable}, vec_set::{Self, VecSet}};
 use std::string::String;
 use tf_components::{capability::Capability, role_map::{Self, RoleMap}};
 
 /// Stores all record tag related data associated with a role in the RoleMap.
 public struct RecordTags has copy, drop, store {
-    allowed_tags: VecSet<String>,
+    tags: VecSet<String>,
 }
 
 /// Create a role-scoped record-tag access list.
-public fun new_record_tags(allowed_tags: vector<String>): RecordTags {
+public fun new_record_tags(tags: vector<String>): RecordTags {
     RecordTags {
-        allowed_tags: iota::vec_set::from_keys(allowed_tags),
+        tags: vec_set::from_keys(tags),
     }
 }
 
 /// Get the allowlisted record tags for a role.
 public fun allowed_record_tags(record_tags: &RecordTags): &VecSet<String> {
-    &record_tags.allowed_tags
+    &record_tags.tags
 }
 
 /// Returns true when all provided role tags are defined on the trail.
@@ -35,8 +35,8 @@ public(package) fun defined_for_trail(
         return true
     };
 
-    let allowed_tags = &option::borrow(record_tags).allowed_tags;
-    let allowed_tag_keys = iota::vec_set::keys(allowed_tags);
+    let tags = &option::borrow(record_tags).tags;
+    let allowed_tag_keys = iota::vec_set::keys(tags);
     let mut i = 0;
     let tag_count = allowed_tag_keys.length();
 
@@ -66,8 +66,8 @@ public(package) fun role_allows(
         return false
     };
 
-    let allowed_tags = &option::borrow(role_tags).allowed_tags;
-    iota::vec_set::contains(allowed_tags, tag)
+    let tags = &option::borrow(role_tags).tags;
+    iota::vec_set::contains(tags, tag)
 }
 
 /// Returns true when any live record currently uses the provided tag.

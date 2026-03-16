@@ -277,13 +277,7 @@ where
     let undefined_tags = record_tags
         .allowed_tags
         .iter()
-        .filter(|tag| {
-            !trail
-                .available_record_tags
-                .contents
-                .iter()
-                .any(|available_tag| available_tag == *tag)
-        })
+        .filter(|tag| !trail.tags.contents.iter().any(|available_tag| available_tag == *tag))
         .cloned()
         .collect::<Vec<_>>();
 

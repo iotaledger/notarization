@@ -413,32 +413,32 @@ async fn manage_record_tag_registry_roundtrip() -> anyhow::Result<()> {
 
     let trail = client.trail(created.trail_id);
     let initial = trail.get().await?;
-    assert_eq!(initial.available_record_tags.contents, vec!["finance".to_string()]);
+    assert_eq!(initial.tags.contents, vec!["finance".to_string()]);
 
     trail.tags().add("legal").build_and_execute(&client).await?;
     let after_add = trail.get().await?;
     assert!(
         after_add
-            .available_record_tags
+            .tags
             .contents
             .contains(&"finance".to_string())
     );
-    assert!(after_add.available_record_tags.contents.contains(&"legal".to_string()));
+    assert!(after_add.tags.contents.contains(&"legal".to_string()));
 
     let after_set = trail.get().await?;
     assert!(
         after_set
-            .available_record_tags
+            .tags
             .contents
             .contains(&"finance".to_string())
     );
-    assert!(after_set.available_record_tags.contents.contains(&"hr".to_string()));
-    assert!(!after_set.available_record_tags.contents.contains(&"legal".to_string()));
+    assert!(after_set.tags.contents.contains(&"hr".to_string()));
+    assert!(!after_set.tags.contents.contains(&"legal".to_string()));
 
     trail.tags().remove("hr").build_and_execute(&client).await?;
 
     let after_remove = trail.get().await?;
-    assert_eq!(after_remove.available_record_tags.contents, vec!["finance".to_string()]);
+    assert_eq!(after_remove.tags.contents, vec!["finance".to_string()]);
 
     Ok(())
 }

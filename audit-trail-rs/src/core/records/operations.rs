@@ -26,12 +26,7 @@ impl RecordsOps {
     {
         if let Some(tag) = record_tag.clone() {
             let trail = operations::get_audit_trail(trail_id, client).await?;
-            if !trail
-                .available_record_tags
-                .contents
-                .iter()
-                .any(|allowed_tag| allowed_tag == &tag)
-            {
+            if !trail.tags.contents.iter().any(|allowed_tag| allowed_tag == &tag) {
                 return Err(Error::InvalidArgument(format!(
                     "record tag '{tag}' is not defined for trail {trail_id}"
                 )));

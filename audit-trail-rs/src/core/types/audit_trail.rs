@@ -25,7 +25,7 @@ pub struct OnChainAuditTrail {
     pub created_at: u64,
     pub sequence_number: u64,
     pub records: LinkedTable<u64>,
-    pub available_record_tags: VecSet<String>,
+    pub tags: VecSet<String>,
     pub locking_config: LockingConfig,
     pub roles: RoleMap,
     pub immutable_metadata: Option<ImmutableMetadata>,

@@ -21,7 +21,7 @@ use audit_trail::{
     record::{Self, Record},
     record_tags::{Self, RecordTags}
 };
-use iota::{clock::{Self, Clock}, event, linked_table::{Self, LinkedTable}, vec_set::VecSet};
+use iota::{clock::{Self, Clock}, vec_set, event, linked_table::{Self, LinkedTable}, vec_set::VecSet};
 use std::string::String;
 use tf_components::{capability::Capability, role_map::{Self, RoleMap}, timelock::TimeLock};
 
@@ -81,7 +81,7 @@ public struct AuditTrail<D: store + copy> has key, store {
     /// LinkedTable mapping sequence numbers to records
     records: LinkedTable<u64, Record<D>>,
     /// Canonical list of tags that may be attached to records in this trail
-    available_record_tags: VecSet<String>,
+    tags: VecSet<String>,
     /// Deletion locking rules
     locking_config: LockingConfig,
     /// A list of role definitions consisting of a unique role specifier and a list of associated permissions
@@ -157,7 +157,7 @@ public fun create<D: store + copy>(
     locking_config: LockingConfig,
     trail_metadata: Option<ImmutableMetadata>,
     updatable_metadata: Option<String>,
-    available_record_tags: vector<String>,
+    tags: vector<String>,
     clock: &Clock,
     ctx: &mut TxContext,
 ): (Capability, ID) {
@@ -220,7 +220,7 @@ public fun create<D: store + copy>(
         created_at: timestamp,
         sequence_number,
         records,
-        available_record_tags: iota::vec_set::from_keys(available_record_tags),
+        tags: vec_set::from_keys(tags),
         locking_config,
         roles,
         immutable_metadata: trail_metadata,
@@ -267,15 +267,12 @@ fun assert_record_tag_allowed<D: store + copy>(
     cap: &Capability,
     tag: &Option<String>,
 ) {
-    if (!tag.is_some()) {
+    if (tag.is_none()) {
         return
     };
 
     let requested_tag = option::borrow(tag);
-    assert!(
-        record_tags::is_defined(&self.available_record_tags, requested_tag),
-        ERecordTagNotDefined,
-    );
+    assert!(record_tags::is_defined(&self.tags, requested_tag), ERecordTagNotDefined);
     assert!(record_tags::role_allows(&self.roles, cap, requested_tag), ERecordTagNotAllowed);
 }
 
@@ -443,7 +440,7 @@ public fun delete_audit_trail<D: store + copy>(
         created_at: _,
         sequence_number: _,
         records,
-        available_record_tags: _,
+        tags: _,
         locking_config: _,
         roles: _,
         immutable_metadata: _,
@@ -592,8 +589,8 @@ public fun add_record_tag<D: store + copy>(
 
     self.roles.assert_capability_valid(cap, &permission::add_record_tags(), clock, ctx);
 
-    assert!(!iota::vec_set::contains(&self.available_record_tags, &tag), ERecordTagAlreadyDefined);
-    self.available_record_tags.insert(tag);
+    assert!(!iota::vec_set::contains(&self.tags, &tag), ERecordTagAlreadyDefined);
+    self.tags.insert(tag);
 }
 
 /// Removes a record tag from the trail registry if it is not used by any record.
@@ -608,9 +605,9 @@ public fun remove_record_tag<D: store + copy>(
 
     self.roles.assert_capability_valid(cap, &permission::delete_record_tags(), clock, ctx);
 
-    assert!(iota::vec_set::contains(&self.available_record_tags, &tag), ERecordTagNotDefined);
+    assert!(iota::vec_set::contains(&self.tags, &tag), ERecordTagNotDefined);
     assert!(!record_tags::is_in_use(&self.records, self.sequence_number, &tag), ERecordTagInUse);
-    self.available_record_tags.remove(&tag);
+    self.tags.remove(&tag);
 }
 
 // ===== Role and Capability Administration =====
@@ -627,10 +624,7 @@ public fun create_role<D: store + copy>(
 ) {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
 
-    assert!(
-        record_tags::defined_for_trail(&self.available_record_tags, &record_tags),
-        ERecordTagNotDefined,
-    );
+    assert!(record_tags::defined_for_trail(&self.tags, &record_tags), ERecordTagNotDefined);
 
     role_map::create_role(
         self.roles_mut(),
@@ -655,10 +649,7 @@ public fun update_role_permissions<D: store + copy>(
 ) {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
 
-    assert!(
-        record_tags::defined_for_trail(&self.available_record_tags, &record_tags),
-        ERecordTagNotDefined,
-    );
+    assert!(record_tags::defined_for_trail(&self.tags, &record_tags), ERecordTagNotDefined);
     role_map::update_role(
         self.roles_mut(),
         cap,
@@ -835,8 +826,8 @@ public fun locking_config<D: store + copy>(self: &AuditTrail<D>): &LockingConfig
 }
 
 /// Get the trail-defined record tags.
-public fun available_record_tags<D: store + copy>(self: &AuditTrail<D>): &VecSet<String> {
-    &self.available_record_tags
+public fun tags<D: store + copy>(self: &AuditTrail<D>): &VecSet<String> {
+    &self.tags
 }
 
 /// Check if the trail is empty
