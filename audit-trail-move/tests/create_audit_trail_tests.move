@@ -97,7 +97,7 @@ fun test_tag_admin_role_can_manage_available_record_tags() {
         );
 
         let tag_admin_cap = new_capability_for_address(
-            trail.roles_mut(),
+            trail.access_mut(),
             &admin_cap,
             &string::utf8(b"TagAdmin"),
             tag_admin,
@@ -121,7 +121,7 @@ fun test_tag_admin_role_can_manage_available_record_tags() {
             ts::ctx(&mut scenario),
         );
 
-        let available_tags = trail.available_record_tags();
+        let available_tags = trail.tags();
         assert!(vec_set::size(available_tags) == 1, 0);
         assert!(vec_set::contains(available_tags, &string::utf8(b"finance")), 1);
 
@@ -132,7 +132,7 @@ fun test_tag_admin_role_can_manage_available_record_tags() {
             ts::ctx(&mut scenario),
         );
 
-        let available_tags = trail.available_record_tags();
+        let available_tags = trail.tags();
         assert!(vec_set::size(available_tags) == 0, 0);
 
         cleanup_capability_trail_and_clock(&scenario, tag_admin_cap, trail, clock);
@@ -357,7 +357,7 @@ fun test_create_metadata_admin_role() {
         let metadata_admin_perms = audit_trail::permission::metadata_admin_permissions();
 
         trail
-            .roles_mut()
+            .access_mut()
             .create_role(
                 &admin_cap,
                 metadata_admin_role_name,
@@ -368,7 +368,7 @@ fun test_create_metadata_admin_role() {
             );
 
         // Verify the role was created by fetching its permissions
-        let role_perms = trail.roles().get_role_permissions(&string::utf8(b"MetadataAdmin"));
+        let role_perms = trail.access().get_role_permissions(&string::utf8(b"MetadataAdmin"));
 
         // Verify the role has the correct permissions
         assert!(

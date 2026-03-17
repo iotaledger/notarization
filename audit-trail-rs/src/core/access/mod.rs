@@ -19,12 +19,12 @@ pub use transactions::{
 };
 
 #[derive(Debug, Clone)]
-pub struct TrailRoles<'a, C> {
+pub struct TrailAccess<'a, C> {
     pub(crate) client: &'a C,
     pub(crate) trail_id: ObjectID,
 }
 
-impl<'a, C> TrailRoles<'a, C> {
+impl<'a, C> TrailAccess<'a, C> {
     pub(crate) fn new(client: &'a C, trail_id: ObjectID) -> Self {
         Self { client, trail_id }
     }

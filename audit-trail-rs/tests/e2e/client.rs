@@ -117,7 +117,7 @@ impl TestClient {
     ) -> anyhow::Result<RoleCreated> {
         let created = self
             .trail(trail_id)
-            .roles()
+            .access()
             .for_role(role_name)
             .create(
                 PermissionSet {
@@ -140,7 +140,7 @@ impl TestClient {
     ) -> anyhow::Result<CapabilityIssued> {
         let issued = self
             .trail(trail_id)
-            .roles()
+            .access()
             .for_role(role_name)
             .issue_capability(options)
             .build_and_execute(self)

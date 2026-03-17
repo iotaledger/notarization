@@ -3,12 +3,12 @@
 
 //! Core types and builders for audit trails.
 
+pub mod access;
 pub mod builder;
 pub mod create;
 pub mod locking;
 pub(crate) mod operations;
 pub mod records;
-pub mod roles;
 pub mod tags;
 pub mod trail;
 pub mod types;
