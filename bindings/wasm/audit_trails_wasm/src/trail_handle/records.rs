@@ -109,24 +109,13 @@ impl WasmTrailRecords {
         Ok(WasmEmpty)
     }
 
-    #[wasm_bindgen(js_name = addString, unchecked_return_type = "TransactionBuilder<AddRecord>")]
-    pub fn add_string(&self, data: String, metadata: Option<String>) -> Result<WasmTransactionBuilder> {
+    #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<AddRecord>")]
+    pub fn add(&self, data: WasmData, metadata: Option<String>) -> Result<WasmTransactionBuilder> {
         let tx = self
             .require_write()?
             .trail(self.trail_id)
             .records()
-            .add(AuditTrailData::text(data), metadata)
-            .into_inner();
-        Ok(into_transaction_builder(WasmAddRecord(tx)))
-    }
-
-    #[wasm_bindgen(js_name = addBytes, unchecked_return_type = "TransactionBuilder<AddRecord>")]
-    pub fn add_bytes(&self, data: js_sys::Uint8Array, metadata: Option<String>) -> Result<WasmTransactionBuilder> {
-        let tx = self
-            .require_write()?
-            .trail(self.trail_id)
-            .records()
-            .add(AuditTrailData::bytes(data.to_vec()), metadata)
+            .add(AuditTrailData::from(data), metadata)
             .into_inner();
         Ok(into_transaction_builder(WasmAddRecord(tx)))
     }

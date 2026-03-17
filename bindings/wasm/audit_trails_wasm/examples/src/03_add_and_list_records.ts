@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { strict as assert } from "assert";
+import { Data } from "../../web";
 import { createTrailWithSeedRecord, getFundedClient, TEST_GAS_BUDGET } from "./util";
 
 export async function addAndListRecords(): Promise<void> {
@@ -12,11 +13,11 @@ export async function addAndListRecords(): Promise<void> {
     const records = client.trail(trail.id).records();
 
     const addedString = await records
-        .addString("record 2", "second")
+        .add(Data.fromString("record 2"), "second")
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(client);
     const addedBytes = await records
-        .addBytes(Uint8Array.from([1, 2, 3, 4]), "third")
+        .add(Data.fromBytes(Uint8Array.from([1, 2, 3, 4])), "third")
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(client);
 

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { strict as assert } from "assert";
+import { Data } from "../../web";
 import { createTrailWithSeedRecord, getFundedClient, TEST_GAS_BUDGET } from "./util";
 
 export async function deleteRecordsBatch(): Promise<void> {
@@ -11,8 +12,8 @@ export async function deleteRecordsBatch(): Promise<void> {
     const { output: trail } = await createTrailWithSeedRecord(client);
     const records = client.trail(trail.id).records();
 
-    await records.addString("record 2", "second").withGasBudget(TEST_GAS_BUDGET).buildAndExecute(client);
-    await records.addString("record 3", "third").withGasBudget(TEST_GAS_BUDGET).buildAndExecute(client);
+    await records.add(Data.fromString("record 2"), "second").withGasBudget(TEST_GAS_BUDGET).buildAndExecute(client);
+    await records.add(Data.fromString("record 3"), "third").withGasBudget(TEST_GAS_BUDGET).buildAndExecute(client);
 
     const before = await records.recordCount();
     const deleted = await records.deleteBatch(BigInt(2)).withGasBudget(TEST_GAS_BUDGET).buildAndExecute(client);
