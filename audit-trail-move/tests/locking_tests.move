@@ -135,7 +135,7 @@ fun test_count_based_locking() {
         let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
         trail
-            .roles_mut()
+            .access_mut()
             .create_role(
                 &admin_cap,
                 string::utf8(b"RecordAdmin"),
@@ -146,7 +146,7 @@ fun test_count_based_locking() {
             );
 
         let record_cap = test_utils::new_capability_without_restrictions(
-            trail.roles_mut(),
+            trail.access_mut(),
             &admin_cap,
             &string::utf8(b"RecordAdmin"),
             &clock,
@@ -297,7 +297,7 @@ fun test_update_locking_config() {
 
         let perms = permission::from_vec(vector[permission::update_locking_config()]);
         trail
-            .roles_mut()
+            .access_mut()
             .create_role(
                 &admin_cap,
                 string::utf8(b"LockingAdmin"),
@@ -308,7 +308,7 @@ fun test_update_locking_config() {
             );
 
         let locking_cap = test_utils::new_capability_without_restrictions(
-            trail.roles_mut(),
+            trail.access_mut(),
             &admin_cap,
             &string::utf8(b"LockingAdmin"),
             &clock,
@@ -374,7 +374,7 @@ fun test_update_locking_config_permission_denied() {
 
         let perms = permission::from_vec(vector[permission::add_record()]);
         trail
-            .roles_mut()
+            .access_mut()
             .create_role(
                 &admin_cap,
                 string::utf8(b"NoLockingPerm"),
@@ -385,7 +385,7 @@ fun test_update_locking_config_permission_denied() {
             );
 
         let no_locking_cap = test_utils::new_capability_without_restrictions(
-            trail.roles_mut(),
+            trail.access_mut(),
             &admin_cap,
             &string::utf8(b"NoLockingPerm"),
             &clock,
@@ -443,7 +443,7 @@ fun test_update_delete_record_window() {
             permission::update_locking_config_for_delete_record(),
         ]);
         trail
-            .roles_mut()
+            .access_mut()
             .create_role(
                 &admin_cap,
                 string::utf8(b"DeleteLockAdmin"),
@@ -454,7 +454,7 @@ fun test_update_delete_record_window() {
             );
 
         let delete_lock_cap = test_utils::new_capability_without_restrictions(
-            trail.roles_mut(),
+            trail.access_mut(),
             &admin_cap,
             &string::utf8(b"DeleteLockAdmin"),
             &clock,
@@ -521,7 +521,7 @@ fun test_update_delete_record_window_permission_denied() {
 
         let perms = permission::from_vec(vector[permission::update_locking_config()]);
         trail
-            .roles_mut()
+            .access_mut()
             .create_role(
                 &admin_cap,
                 string::utf8(b"WrongPerm"),
@@ -532,7 +532,7 @@ fun test_update_delete_record_window_permission_denied() {
             );
 
         let wrong_cap = test_utils::new_capability_without_restrictions(
-            trail.roles_mut(),
+            trail.access_mut(),
             &admin_cap,
             &string::utf8(b"WrongPerm"),
             &clock,
@@ -588,7 +588,7 @@ fun test_delete_record_after_time_lock_expires() {
         let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
         trail
-            .roles_mut()
+            .access_mut()
             .create_role(
                 &admin_cap,
                 string::utf8(b"RecordAdmin"),
@@ -599,7 +599,7 @@ fun test_delete_record_after_time_lock_expires() {
             );
 
         let record_cap = test_utils::new_capability_without_restrictions(
-            trail.roles_mut(),
+            trail.access_mut(),
             &admin_cap,
             &string::utf8(b"RecordAdmin"),
             &clock,
@@ -719,7 +719,7 @@ fun test_time_based_locking_all_recent_records_locked() {
         let (admin_cap, mut trail, mut clock) = fetch_capability_trail_and_clock(&mut scenario);
 
         trail
-            .roles_mut()
+            .access_mut()
             .create_role(
                 &admin_cap,
                 string::utf8(b"RecordAdmin"),
@@ -730,7 +730,7 @@ fun test_time_based_locking_all_recent_records_locked() {
             );
 
         let record_cap = test_utils::new_capability_without_restrictions(
-            trail.roles_mut(),
+            trail.access_mut(),
             &admin_cap,
             &string::utf8(b"RecordAdmin"),
             &clock,
@@ -805,7 +805,7 @@ fun test_count_based_locking_last_records_remain_locked() {
         let (admin_cap, mut trail, mut clock) = fetch_capability_trail_and_clock(&mut scenario);
 
         trail
-            .roles_mut()
+            .access_mut()
             .create_role(
                 &admin_cap,
                 string::utf8(b"RecordAdmin"),
@@ -816,7 +816,7 @@ fun test_count_based_locking_last_records_remain_locked() {
             );
 
         let record_cap = test_utils::new_capability_without_restrictions(
-            trail.roles_mut(),
+            trail.access_mut(),
             &admin_cap,
             &string::utf8(b"RecordAdmin"),
             &clock,
@@ -893,7 +893,7 @@ fun test_time_based_locking_still_locked_before_expiry() {
         let (admin_cap, mut trail, mut clock) = fetch_capability_trail_and_clock(&mut scenario);
 
         trail
-            .roles_mut()
+            .access_mut()
             .create_role(
                 &admin_cap,
                 string::utf8(b"RecordAdmin"),
@@ -904,7 +904,7 @@ fun test_time_based_locking_still_locked_before_expiry() {
             );
 
         let record_cap = test_utils::new_capability_without_restrictions(
-            trail.roles_mut(),
+            trail.access_mut(),
             &admin_cap,
             &string::utf8(b"RecordAdmin"),
             &clock,
@@ -977,7 +977,7 @@ fun test_count_based_locking_old_record_can_delete() {
         let (admin_cap, mut trail, mut clock) = fetch_capability_trail_and_clock(&mut scenario);
 
         trail
-            .roles_mut()
+            .access_mut()
             .create_role(
                 &admin_cap,
                 string::utf8(b"RecordAdmin"),
@@ -988,7 +988,7 @@ fun test_count_based_locking_old_record_can_delete() {
             );
 
         let record_cap = test_utils::new_capability_without_restrictions(
-            trail.roles_mut(),
+            trail.access_mut(),
             &admin_cap,
             &string::utf8(b"RecordAdmin"),
             &clock,
@@ -1071,7 +1071,7 @@ fun test_delete_records_batch_bypasses_record_lock() {
         let delete_all_perms = permission::from_vec(vector[permission::delete_all_records()]);
 
         trail
-            .roles_mut()
+            .access_mut()
             .create_role(
                 &admin_cap,
                 delete_all_role,
@@ -1082,7 +1082,7 @@ fun test_delete_records_batch_bypasses_record_lock() {
             );
 
         let delete_all_cap = test_utils::new_capability_without_restrictions(
-            trail.roles_mut(),
+            trail.access_mut(),
             &admin_cap,
             &string::utf8(b"DeleteAllRecordsAdmin"),
             &clock,
@@ -1134,7 +1134,7 @@ fun test_delete_records_batch_requires_delete_all_records_permission() {
 
         let perms = permission::from_vec(vector[permission::delete_audit_trail()]);
         trail
-            .roles_mut()
+            .access_mut()
             .create_role(
                 &admin_cap,
                 string::utf8(b"TrailDeleteOnly"),
@@ -1145,7 +1145,7 @@ fun test_delete_records_batch_requires_delete_all_records_permission() {
             );
 
         let delete_only_cap = test_utils::new_capability_without_restrictions(
-            trail.roles_mut(),
+            trail.access_mut(),
             &admin_cap,
             &string::utf8(b"TrailDeleteOnly"),
             &clock,
@@ -1204,7 +1204,7 @@ fun test_delete_audit_trail_fails_while_not_empty() {
         let delete_trail_role = string::utf8(b"DeleteTrailOnly");
         let delete_trail_perms = permission::from_vec(vector[permission::delete_audit_trail()]);
         trail
-            .roles_mut()
+            .access_mut()
             .create_role(
                 &admin_cap,
                 delete_trail_role,
@@ -1215,7 +1215,7 @@ fun test_delete_audit_trail_fails_while_not_empty() {
             );
 
         let delete_trail_cap = test_utils::new_capability_without_restrictions(
-            trail.roles_mut(),
+            trail.access_mut(),
             &admin_cap,
             &string::utf8(b"DeleteTrailOnly"),
             &clock,
@@ -1263,7 +1263,7 @@ fun test_delete_audit_trail_after_batch_cleanup() {
         ]);
 
         trail
-            .roles_mut()
+            .access_mut()
             .create_role(
                 &admin_cap,
                 delete_maintenance_role,
@@ -1274,7 +1274,7 @@ fun test_delete_audit_trail_after_batch_cleanup() {
             );
 
         let delete_maintenance_cap = test_utils::new_capability_without_restrictions(
-            trail.roles_mut(),
+            trail.access_mut(),
             &admin_cap,
             &string::utf8(b"DeleteMaintenance"),
             &clock,
