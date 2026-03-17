@@ -759,7 +759,7 @@ public fun cleanup_revoked_capabilities_list<D: store + copy>(
     ctx: &TxContext,
 ) {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    self.roles_mut().cleanup_revoked_capabilities_list(
+    self.access_mut().cleanup_revoked_capabilities_list(
         cap,
         clock,
         ctx,
