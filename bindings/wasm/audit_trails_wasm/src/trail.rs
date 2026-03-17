@@ -1,21 +1,33 @@
 // Copyright 2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+use audit_trails::core::access::{
+    CreateRole, DeleteRole, DestroyCapability, DestroyInitialAdminCapability, IssueCapability, RevokeCapability,
+    RevokeInitialAdminCapability, UpdateRole,
+};
 use audit_trails::core::create::{CreateTrail, TrailCreated};
+use audit_trails::core::locking::{
+    UpdateDeleteRecordWindow, UpdateDeleteTrailLock, UpdateLockingConfig, UpdateWriteLock,
+};
 use audit_trails::core::records::{AddRecord, DeleteRecord, DeleteRecordsBatch};
-use audit_trails::core::trail::UpdateMetadata;
-use audit_trails::core::types::{OnChainAuditTrail, RecordAdded, RecordDeleted};
+use audit_trails::core::trail::{DeleteAuditTrail, Migrate, UpdateMetadata};
+use audit_trails::core::types::{
+    AuditTrailDeleted, CapabilityDestroyed, CapabilityIssued, CapabilityRevoked, OnChainAuditTrail, RecordAdded,
+    RecordDeleted, RoleCreated, RoleRemoved, RoleUpdated,
+};
 use iota_interaction_ts::bindings::{WasmIotaTransactionBlockEffects, WasmIotaTransactionBlockEvents};
 use iota_interaction_ts::core_client::WasmCoreClientReadOnly;
 use iota_interaction_ts::wasm_error::{Result, WasmResult};
-use js_sys::Object;
 use product_common::bindings::core_client::WasmManagedCoreClientReadOnly;
-use product_common::transaction::transaction_builder::Transaction;
+use product_common::bindings::utils::{apply_with_events, build_programmable_transaction};
 use wasm_bindgen::prelude::*;
 
 use crate::builder::WasmAuditTrailBuilder;
-use crate::types::{WasmEmpty, WasmImmutableMetadata, WasmLockingConfig};
-use crate::audit_trails_wasm_result;
+use crate::types::{
+    WasmAuditTrailDeleted, WasmCapabilityDestroyed, WasmCapabilityIssued, WasmCapabilityRevoked, WasmEmpty,
+    WasmImmutableMetadata, WasmLinkedTable, WasmLockingConfig, WasmRoleCreated, WasmRoleMap, WasmRoleRemoved,
+    WasmRoleUpdated,
+};
 
 #[wasm_bindgen(js_name = OnChainAuditTrail, inspectable)]
 #[derive(Clone)]
@@ -52,6 +64,16 @@ impl WasmOnChainAuditTrail {
         self.0.locking_config.clone().into()
     }
 
+    #[wasm_bindgen(getter)]
+    pub fn records(&self) -> WasmLinkedTable {
+        self.0.records.clone().into()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn roles(&self) -> WasmRoleMap {
+        self.0.roles.clone().into()
+    }
+
     #[wasm_bindgen(js_name = immutableMetadata, getter)]
     pub fn immutable_metadata(&self) -> Option<WasmImmutableMetadata> {
         self.0.immutable_metadata.clone().map(Into::into)
@@ -81,50 +103,9 @@ async fn apply_trail_created(
     client: &WasmCoreClientReadOnly,
 ) -> Result<WasmOnChainAuditTrail> {
     let managed_client = WasmManagedCoreClientReadOnly::from_wasm(client)?;
-    let mut effects = wasm_effects.clone().into();
-    let mut events = wasm_events.clone().into();
-    let created = tx.apply_with_events(&mut effects, &mut events, &managed_client).await;
-
-    let rem_wasm_effects = WasmIotaTransactionBlockEffects::from(&effects);
-    Object::assign(wasm_effects, &rem_wasm_effects);
-    let rem_wasm_events = WasmIotaTransactionBlockEvents::from(&events);
-    Object::assign(wasm_events, &rem_wasm_events);
-
-    let created: TrailCreated = audit_trails_wasm_result(created)?;
-    let trail = audit_trails_wasm_result(created.fetch_audit_trail(&managed_client).await)?;
+    let created: TrailCreated = apply_with_events(tx, wasm_effects, wasm_events, client).await?;
+    let trail = created.fetch_audit_trail(&managed_client).await.wasm_result()?;
     Ok(trail.into())
-}
-
-async fn build_audit_trail_transaction<T>(tx: &T, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>>
-where
-    T: Transaction<Error = audit_trails::error::Error>,
-{
-    let managed_client = WasmManagedCoreClientReadOnly::from_wasm(client)?;
-    let pt = audit_trails_wasm_result(tx.build_programmable_transaction(&managed_client).await)?;
-    bcs::to_bytes(&pt).wasm_result()
-}
-
-async fn apply_audit_trail_with_events<T, O>(
-    tx: T,
-    wasm_effects: &WasmIotaTransactionBlockEffects,
-    wasm_events: &WasmIotaTransactionBlockEvents,
-    client: &WasmCoreClientReadOnly,
-) -> Result<O>
-where
-    T: Transaction<Error = audit_trails::error::Error>,
-    O: From<<T as Transaction>::Output>,
-{
-    let managed_client = WasmManagedCoreClientReadOnly::from_wasm(client)?;
-    let mut effects = wasm_effects.clone().into();
-    let mut events = wasm_events.clone().into();
-    let output = tx.apply_with_events(&mut effects, &mut events, &managed_client).await;
-
-    let rem_wasm_effects = WasmIotaTransactionBlockEffects::from(&effects);
-    Object::assign(wasm_effects, &rem_wasm_effects);
-    let rem_wasm_events = WasmIotaTransactionBlockEvents::from(&events);
-    Object::assign(wasm_events, &rem_wasm_events);
-
-    audit_trails_wasm_result(output).map(Into::into)
 }
 
 #[wasm_bindgen(js_name = CreateTrail, inspectable)]
@@ -139,7 +120,7 @@ impl WasmCreateTrail {
 
     #[wasm_bindgen(js_name = buildProgrammableTransaction)]
     pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
-        build_audit_trail_transaction(&self.0, client).await
+        build_programmable_transaction(&self.0, client).await
     }
 
     #[wasm_bindgen(js_name = applyWithEvents)]
@@ -160,7 +141,7 @@ pub struct WasmUpdateMetadata(pub(crate) UpdateMetadata);
 impl WasmUpdateMetadata {
     #[wasm_bindgen(js_name = buildProgrammableTransaction)]
     pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
-        build_audit_trail_transaction(&self.0, client).await
+        build_programmable_transaction(&self.0, client).await
     }
 
     #[wasm_bindgen(js_name = applyWithEvents)]
@@ -170,7 +151,310 @@ impl WasmUpdateMetadata {
         wasm_events: &WasmIotaTransactionBlockEvents,
         client: &WasmCoreClientReadOnly,
     ) -> Result<WasmEmpty> {
-        apply_audit_trail_with_events(self.0, wasm_effects, wasm_events, client).await
+        apply_with_events(self.0, wasm_effects, wasm_events, client).await
+    }
+}
+
+#[wasm_bindgen(js_name = Migrate, inspectable)]
+pub struct WasmMigrate(pub(crate) Migrate);
+
+#[wasm_bindgen(js_class = Migrate)]
+impl WasmMigrate {
+    #[wasm_bindgen(js_name = buildProgrammableTransaction)]
+    pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
+        build_programmable_transaction(&self.0, client).await
+    }
+
+    #[wasm_bindgen(js_name = applyWithEvents)]
+    pub async fn apply_with_events(
+        self,
+        wasm_effects: &WasmIotaTransactionBlockEffects,
+        wasm_events: &WasmIotaTransactionBlockEvents,
+        client: &WasmCoreClientReadOnly,
+    ) -> Result<WasmEmpty> {
+        apply_with_events(self.0, wasm_effects, wasm_events, client).await
+    }
+}
+
+#[wasm_bindgen(js_name = DeleteAuditTrail, inspectable)]
+pub struct WasmDeleteAuditTrail(pub(crate) DeleteAuditTrail);
+
+#[wasm_bindgen(js_class = DeleteAuditTrail)]
+impl WasmDeleteAuditTrail {
+    #[wasm_bindgen(js_name = buildProgrammableTransaction)]
+    pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
+        build_programmable_transaction(&self.0, client).await
+    }
+
+    #[wasm_bindgen(js_name = applyWithEvents)]
+    pub async fn apply_with_events(
+        self,
+        wasm_effects: &WasmIotaTransactionBlockEffects,
+        wasm_events: &WasmIotaTransactionBlockEvents,
+        client: &WasmCoreClientReadOnly,
+    ) -> Result<WasmAuditTrailDeleted> {
+        let event: AuditTrailDeleted = apply_with_events(self.0, wasm_effects, wasm_events, client).await?;
+        Ok(event.into())
+    }
+}
+
+#[wasm_bindgen(js_name = UpdateLockingConfig, inspectable)]
+pub struct WasmUpdateLockingConfig(pub(crate) UpdateLockingConfig);
+
+#[wasm_bindgen(js_class = UpdateLockingConfig)]
+impl WasmUpdateLockingConfig {
+    #[wasm_bindgen(js_name = buildProgrammableTransaction)]
+    pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
+        build_programmable_transaction(&self.0, client).await
+    }
+
+    #[wasm_bindgen(js_name = applyWithEvents)]
+    pub async fn apply_with_events(
+        self,
+        wasm_effects: &WasmIotaTransactionBlockEffects,
+        wasm_events: &WasmIotaTransactionBlockEvents,
+        client: &WasmCoreClientReadOnly,
+    ) -> Result<WasmEmpty> {
+        apply_with_events(self.0, wasm_effects, wasm_events, client).await
+    }
+}
+
+#[wasm_bindgen(js_name = UpdateDeleteRecordWindow, inspectable)]
+pub struct WasmUpdateDeleteRecordWindow(pub(crate) UpdateDeleteRecordWindow);
+
+#[wasm_bindgen(js_class = UpdateDeleteRecordWindow)]
+impl WasmUpdateDeleteRecordWindow {
+    #[wasm_bindgen(js_name = buildProgrammableTransaction)]
+    pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
+        build_programmable_transaction(&self.0, client).await
+    }
+
+    #[wasm_bindgen(js_name = applyWithEvents)]
+    pub async fn apply_with_events(
+        self,
+        wasm_effects: &WasmIotaTransactionBlockEffects,
+        wasm_events: &WasmIotaTransactionBlockEvents,
+        client: &WasmCoreClientReadOnly,
+    ) -> Result<WasmEmpty> {
+        apply_with_events(self.0, wasm_effects, wasm_events, client).await
+    }
+}
+
+#[wasm_bindgen(js_name = UpdateDeleteTrailLock, inspectable)]
+pub struct WasmUpdateDeleteTrailLock(pub(crate) UpdateDeleteTrailLock);
+
+#[wasm_bindgen(js_class = UpdateDeleteTrailLock)]
+impl WasmUpdateDeleteTrailLock {
+    #[wasm_bindgen(js_name = buildProgrammableTransaction)]
+    pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
+        build_programmable_transaction(&self.0, client).await
+    }
+
+    #[wasm_bindgen(js_name = applyWithEvents)]
+    pub async fn apply_with_events(
+        self,
+        wasm_effects: &WasmIotaTransactionBlockEffects,
+        wasm_events: &WasmIotaTransactionBlockEvents,
+        client: &WasmCoreClientReadOnly,
+    ) -> Result<WasmEmpty> {
+        apply_with_events(self.0, wasm_effects, wasm_events, client).await
+    }
+}
+
+#[wasm_bindgen(js_name = UpdateWriteLock, inspectable)]
+pub struct WasmUpdateWriteLock(pub(crate) UpdateWriteLock);
+
+#[wasm_bindgen(js_class = UpdateWriteLock)]
+impl WasmUpdateWriteLock {
+    #[wasm_bindgen(js_name = buildProgrammableTransaction)]
+    pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
+        build_programmable_transaction(&self.0, client).await
+    }
+
+    #[wasm_bindgen(js_name = applyWithEvents)]
+    pub async fn apply_with_events(
+        self,
+        wasm_effects: &WasmIotaTransactionBlockEffects,
+        wasm_events: &WasmIotaTransactionBlockEvents,
+        client: &WasmCoreClientReadOnly,
+    ) -> Result<WasmEmpty> {
+        apply_with_events(self.0, wasm_effects, wasm_events, client).await
+    }
+}
+
+#[wasm_bindgen(js_name = CreateRole, inspectable)]
+pub struct WasmCreateRole(pub(crate) CreateRole);
+
+#[wasm_bindgen(js_class = CreateRole)]
+impl WasmCreateRole {
+    #[wasm_bindgen(js_name = buildProgrammableTransaction)]
+    pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
+        build_programmable_transaction(&self.0, client).await
+    }
+
+    #[wasm_bindgen(js_name = applyWithEvents)]
+    pub async fn apply_with_events(
+        self,
+        wasm_effects: &WasmIotaTransactionBlockEffects,
+        wasm_events: &WasmIotaTransactionBlockEvents,
+        client: &WasmCoreClientReadOnly,
+    ) -> Result<WasmRoleCreated> {
+        let event: RoleCreated = apply_with_events(self.0, wasm_effects, wasm_events, client).await?;
+        Ok(event.into())
+    }
+}
+
+#[wasm_bindgen(js_name = UpdateRole, inspectable)]
+pub struct WasmUpdateRole(pub(crate) UpdateRole);
+
+#[wasm_bindgen(js_class = UpdateRole)]
+impl WasmUpdateRole {
+    #[wasm_bindgen(js_name = buildProgrammableTransaction)]
+    pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
+        build_programmable_transaction(&self.0, client).await
+    }
+
+    #[wasm_bindgen(js_name = applyWithEvents)]
+    pub async fn apply_with_events(
+        self,
+        wasm_effects: &WasmIotaTransactionBlockEffects,
+        wasm_events: &WasmIotaTransactionBlockEvents,
+        client: &WasmCoreClientReadOnly,
+    ) -> Result<WasmRoleUpdated> {
+        let event: RoleUpdated = apply_with_events(self.0, wasm_effects, wasm_events, client).await?;
+        Ok(event.into())
+    }
+}
+
+#[wasm_bindgen(js_name = DeleteRole, inspectable)]
+pub struct WasmDeleteRole(pub(crate) DeleteRole);
+
+#[wasm_bindgen(js_class = DeleteRole)]
+impl WasmDeleteRole {
+    #[wasm_bindgen(js_name = buildProgrammableTransaction)]
+    pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
+        build_programmable_transaction(&self.0, client).await
+    }
+
+    #[wasm_bindgen(js_name = applyWithEvents)]
+    pub async fn apply_with_events(
+        self,
+        wasm_effects: &WasmIotaTransactionBlockEffects,
+        wasm_events: &WasmIotaTransactionBlockEvents,
+        client: &WasmCoreClientReadOnly,
+    ) -> Result<WasmRoleRemoved> {
+        let event: RoleRemoved = apply_with_events(self.0, wasm_effects, wasm_events, client).await?;
+        Ok(event.into())
+    }
+}
+
+#[wasm_bindgen(js_name = IssueCapability, inspectable)]
+pub struct WasmIssueCapability(pub(crate) IssueCapability);
+
+#[wasm_bindgen(js_class = IssueCapability)]
+impl WasmIssueCapability {
+    #[wasm_bindgen(js_name = buildProgrammableTransaction)]
+    pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
+        build_programmable_transaction(&self.0, client).await
+    }
+
+    #[wasm_bindgen(js_name = applyWithEvents)]
+    pub async fn apply_with_events(
+        self,
+        wasm_effects: &WasmIotaTransactionBlockEffects,
+        wasm_events: &WasmIotaTransactionBlockEvents,
+        client: &WasmCoreClientReadOnly,
+    ) -> Result<WasmCapabilityIssued> {
+        let event: CapabilityIssued = apply_with_events(self.0, wasm_effects, wasm_events, client).await?;
+        Ok(event.into())
+    }
+}
+
+#[wasm_bindgen(js_name = RevokeCapability, inspectable)]
+pub struct WasmRevokeCapability(pub(crate) RevokeCapability);
+
+#[wasm_bindgen(js_class = RevokeCapability)]
+impl WasmRevokeCapability {
+    #[wasm_bindgen(js_name = buildProgrammableTransaction)]
+    pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
+        build_programmable_transaction(&self.0, client).await
+    }
+
+    #[wasm_bindgen(js_name = applyWithEvents)]
+    pub async fn apply_with_events(
+        self,
+        wasm_effects: &WasmIotaTransactionBlockEffects,
+        wasm_events: &WasmIotaTransactionBlockEvents,
+        client: &WasmCoreClientReadOnly,
+    ) -> Result<WasmCapabilityRevoked> {
+        let event: CapabilityRevoked = apply_with_events(self.0, wasm_effects, wasm_events, client).await?;
+        Ok(event.into())
+    }
+}
+
+#[wasm_bindgen(js_name = DestroyCapability, inspectable)]
+pub struct WasmDestroyCapability(pub(crate) DestroyCapability);
+
+#[wasm_bindgen(js_class = DestroyCapability)]
+impl WasmDestroyCapability {
+    #[wasm_bindgen(js_name = buildProgrammableTransaction)]
+    pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
+        build_programmable_transaction(&self.0, client).await
+    }
+
+    #[wasm_bindgen(js_name = applyWithEvents)]
+    pub async fn apply_with_events(
+        self,
+        wasm_effects: &WasmIotaTransactionBlockEffects,
+        wasm_events: &WasmIotaTransactionBlockEvents,
+        client: &WasmCoreClientReadOnly,
+    ) -> Result<WasmCapabilityDestroyed> {
+        let event: CapabilityDestroyed = apply_with_events(self.0, wasm_effects, wasm_events, client).await?;
+        Ok(event.into())
+    }
+}
+
+#[wasm_bindgen(js_name = DestroyInitialAdminCapability, inspectable)]
+pub struct WasmDestroyInitialAdminCapability(pub(crate) DestroyInitialAdminCapability);
+
+#[wasm_bindgen(js_class = DestroyInitialAdminCapability)]
+impl WasmDestroyInitialAdminCapability {
+    #[wasm_bindgen(js_name = buildProgrammableTransaction)]
+    pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
+        build_programmable_transaction(&self.0, client).await
+    }
+
+    #[wasm_bindgen(js_name = applyWithEvents)]
+    pub async fn apply_with_events(
+        self,
+        wasm_effects: &WasmIotaTransactionBlockEffects,
+        wasm_events: &WasmIotaTransactionBlockEvents,
+        client: &WasmCoreClientReadOnly,
+    ) -> Result<WasmCapabilityDestroyed> {
+        let event: CapabilityDestroyed = apply_with_events(self.0, wasm_effects, wasm_events, client).await?;
+        Ok(event.into())
+    }
+}
+
+#[wasm_bindgen(js_name = RevokeInitialAdminCapability, inspectable)]
+pub struct WasmRevokeInitialAdminCapability(pub(crate) RevokeInitialAdminCapability);
+
+#[wasm_bindgen(js_class = RevokeInitialAdminCapability)]
+impl WasmRevokeInitialAdminCapability {
+    #[wasm_bindgen(js_name = buildProgrammableTransaction)]
+    pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
+        build_programmable_transaction(&self.0, client).await
+    }
+
+    #[wasm_bindgen(js_name = applyWithEvents)]
+    pub async fn apply_with_events(
+        self,
+        wasm_effects: &WasmIotaTransactionBlockEffects,
+        wasm_events: &WasmIotaTransactionBlockEvents,
+        client: &WasmCoreClientReadOnly,
+    ) -> Result<WasmCapabilityRevoked> {
+        let event: CapabilityRevoked = apply_with_events(self.0, wasm_effects, wasm_events, client).await?;
+        Ok(event.into())
     }
 }
 
@@ -181,7 +465,7 @@ pub struct WasmAddRecord(pub(crate) AddRecord);
 impl WasmAddRecord {
     #[wasm_bindgen(js_name = buildProgrammableTransaction)]
     pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
-        build_audit_trail_transaction(&self.0, client).await
+        build_programmable_transaction(&self.0, client).await
     }
 
     #[wasm_bindgen(js_name = applyWithEvents)]
@@ -191,8 +475,7 @@ impl WasmAddRecord {
         wasm_events: &WasmIotaTransactionBlockEvents,
         client: &WasmCoreClientReadOnly,
     ) -> Result<u64> {
-        let added: RecordAdded =
-            apply_audit_trail_with_events(self.0, wasm_effects, wasm_events, client).await?;
+        let added: RecordAdded = apply_with_events(self.0, wasm_effects, wasm_events, client).await?;
         Ok(added.sequence_number)
     }
 }
@@ -204,7 +487,7 @@ pub struct WasmDeleteRecord(pub(crate) DeleteRecord);
 impl WasmDeleteRecord {
     #[wasm_bindgen(js_name = buildProgrammableTransaction)]
     pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
-        build_audit_trail_transaction(&self.0, client).await
+        build_programmable_transaction(&self.0, client).await
     }
 
     #[wasm_bindgen(js_name = applyWithEvents)]
@@ -214,8 +497,7 @@ impl WasmDeleteRecord {
         wasm_events: &WasmIotaTransactionBlockEvents,
         client: &WasmCoreClientReadOnly,
     ) -> Result<u64> {
-        let deleted: RecordDeleted =
-            apply_audit_trail_with_events(self.0, wasm_effects, wasm_events, client).await?;
+        let deleted: RecordDeleted = apply_with_events(self.0, wasm_effects, wasm_events, client).await?;
         Ok(deleted.sequence_number)
     }
 }
@@ -227,7 +509,7 @@ pub struct WasmDeleteRecordsBatch(pub(crate) DeleteRecordsBatch);
 impl WasmDeleteRecordsBatch {
     #[wasm_bindgen(js_name = buildProgrammableTransaction)]
     pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
-        build_audit_trail_transaction(&self.0, client).await
+        build_programmable_transaction(&self.0, client).await
     }
 
     #[wasm_bindgen(js_name = applyWithEvents)]
@@ -237,6 +519,6 @@ impl WasmDeleteRecordsBatch {
         wasm_events: &WasmIotaTransactionBlockEvents,
         client: &WasmCoreClientReadOnly,
     ) -> Result<u64> {
-        apply_audit_trail_with_events(self.0, wasm_effects, wasm_events, client).await
+        apply_with_events(self.0, wasm_effects, wasm_events, client).await
     }
 }

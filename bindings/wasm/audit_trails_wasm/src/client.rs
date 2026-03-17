@@ -1,8 +1,11 @@
 // Copyright 2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+use anyhow::anyhow;
+use audit_trails::{AuditTrailClient, AuditTrailClientReadOnly};
 use iota_interaction_ts::bindings::{WasmIotaClient, WasmPublicKey, WasmTransactionSigner};
-use iota_interaction_ts::wasm_error::Result;
+use iota_interaction_ts::wasm_error::{wasm_error, Result, WasmResult};
+use product_common::bindings::utils::parse_wasm_object_id;
 use product_common::bindings::WasmObjectID;
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use wasm_bindgen::prelude::*;
@@ -10,11 +13,10 @@ use wasm_bindgen::prelude::*;
 use crate::builder::WasmAuditTrailBuilder;
 use crate::client_read_only::WasmAuditTrailClientReadOnly;
 use crate::trail_handle::WasmAuditTrailHandle;
-use crate::audit_trails_wasm_result;
 
 #[derive(Clone)]
 #[wasm_bindgen(js_name = AuditTrailClient)]
-pub struct WasmAuditTrailClient(pub(crate) audit_trails::AuditTrailClient<WasmTransactionSigner>);
+pub struct WasmAuditTrailClient(pub(crate) AuditTrailClient<WasmTransactionSigner>);
 
 #[wasm_bindgen(js_class = AuditTrailClient)]
 impl WasmAuditTrailClient {
@@ -23,7 +25,26 @@ impl WasmAuditTrailClient {
         client: WasmAuditTrailClientReadOnly,
         signer: WasmTransactionSigner,
     ) -> Result<WasmAuditTrailClient> {
-        let client = audit_trails_wasm_result(audit_trails::AuditTrailClient::new(client.0, signer).await)?;
+        let client = AuditTrailClient::new(client.0, signer).await.wasm_result()?;
+        Ok(Self(client))
+    }
+
+    #[wasm_bindgen(js_name = createFromIotaClient)]
+    pub async fn create_from_iota_client(
+        iota_client: WasmIotaClient,
+        signer: WasmTransactionSigner,
+        package_id: Option<WasmObjectID>,
+    ) -> Result<WasmAuditTrailClient> {
+        let read_only = if let Some(package_id) = package_id {
+            let package_id = parse_wasm_object_id(&package_id)?;
+            AuditTrailClientReadOnly::new_with_pkg_id(iota_client, package_id)
+                .await
+                .wasm_result()?
+        } else {
+            AuditTrailClientReadOnly::new(iota_client).await.wasm_result()?
+        };
+
+        let client = AuditTrailClient::new(read_only, signer).await.wasm_result()?;
         Ok(Self(client))
     }
 
@@ -66,6 +87,16 @@ impl WasmAuditTrailClient {
         self.0.signer().clone()
     }
 
+    #[wasm_bindgen(js_name = withSigner)]
+    pub async fn with_signer(self, signer: WasmTransactionSigner) -> Result<WasmAuditTrailClient> {
+        let client = self
+            .0
+            .with_signer(signer)
+            .await
+            .map_err(|err| wasm_error(anyhow!(err.to_string())))?;
+        Ok(Self(client))
+    }
+
     #[wasm_bindgen(js_name = readOnly)]
     pub fn read_only(&self) -> WasmAuditTrailClientReadOnly {
         WasmAuditTrailClientReadOnly(self.0.read_only().clone())
@@ -77,7 +108,7 @@ impl WasmAuditTrailClient {
     }
 
     pub fn trail(&self, trail_id: WasmObjectID) -> Result<WasmAuditTrailHandle> {
-        let trail_id = product_common::bindings::utils::parse_wasm_object_id(&trail_id)?;
+        let trail_id = parse_wasm_object_id(&trail_id)?;
         Ok(WasmAuditTrailHandle::from_full(self.0.clone(), trail_id))
     }
 }

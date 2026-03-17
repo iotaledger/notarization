@@ -7,18 +7,14 @@
 #![allow(clippy::unused_unit)]
 #![allow(clippy::await_holding_refcell_ref)]
 
-use std::borrow::Cow;
-
-use iota_interaction_ts::wasm_error::{Result, WasmError};
-use wasm_bindgen::JsValue;
 use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsValue;
 
-mod trail;
 pub(crate) mod builder;
 pub(crate) mod client;
 pub(crate) mod client_read_only;
+mod trail;
 pub(crate) mod trail_handle;
-pub(crate) mod trail_records;
 pub(crate) mod types;
 
 pub use product_common::bindings::*;
@@ -39,16 +35,3 @@ import {
   CoreClientReadOnly
 } from '../lib/index';
 "#;
-
-pub(crate) fn audit_trails_wasm_error(error: audit_trails::error::Error) -> JsValue {
-    JsValue::from(WasmError {
-        name: Cow::Borrowed("audit_trails::Error"),
-        message: Cow::Owned(error.to_string()),
-    })
-}
-
-pub(crate) fn audit_trails_wasm_result<T>(
-    result: std::result::Result<T, audit_trails::error::Error>,
-) -> Result<T> {
-    result.map_err(audit_trails_wasm_error)
-}

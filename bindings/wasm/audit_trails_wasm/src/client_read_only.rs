@@ -1,25 +1,25 @@
 // Copyright 2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+use audit_trails::AuditTrailClientReadOnly;
 use iota_interaction_ts::bindings::WasmIotaClient;
-use iota_interaction_ts::wasm_error::Result;
+use iota_interaction_ts::wasm_error::{Result, WasmResult};
 use product_common::bindings::utils::parse_wasm_object_id;
 use product_common::bindings::WasmObjectID;
 use product_common::core_client::CoreClientReadOnly;
 use wasm_bindgen::prelude::*;
 
 use crate::trail_handle::WasmAuditTrailHandle;
-use crate::audit_trails_wasm_result;
 
 #[derive(Clone)]
 #[wasm_bindgen(js_name = AuditTrailClientReadOnly)]
-pub struct WasmAuditTrailClientReadOnly(pub(crate) audit_trails::AuditTrailClientReadOnly);
+pub struct WasmAuditTrailClientReadOnly(pub(crate) AuditTrailClientReadOnly);
 
 #[wasm_bindgen(js_class = AuditTrailClientReadOnly)]
 impl WasmAuditTrailClientReadOnly {
     #[wasm_bindgen(js_name = create)]
     pub async fn new(iota_client: WasmIotaClient) -> Result<WasmAuditTrailClientReadOnly> {
-        let client = audit_trails_wasm_result(audit_trails::AuditTrailClientReadOnly::new(iota_client).await)?;
+        let client = AuditTrailClientReadOnly::new(iota_client).await.wasm_result()?;
         Ok(Self(client))
     }
 
@@ -29,8 +29,9 @@ impl WasmAuditTrailClientReadOnly {
         package_id: WasmObjectID,
     ) -> Result<WasmAuditTrailClientReadOnly> {
         let package_id = parse_wasm_object_id(&package_id)?;
-        let client =
-            audit_trails_wasm_result(audit_trails::AuditTrailClientReadOnly::new_with_pkg_id(iota_client, package_id).await)?;
+        let client = AuditTrailClientReadOnly::new_with_pkg_id(iota_client, package_id)
+            .await
+            .wasm_result()?;
         Ok(Self(client))
     }
 

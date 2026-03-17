@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 
 use super::permission::Permission;
 use crate::core::utils::{deserialize_vec_map, deserialize_vec_set};
+use crate::package;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RoleMap {
