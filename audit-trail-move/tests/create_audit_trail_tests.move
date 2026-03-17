@@ -274,17 +274,18 @@ fun test_create_metadata_admin_role() {
         let metadata_admin_perms = audit_trail::permission::metadata_admin_permissions();
 
         trail
-            .roles_mut()
+            .access_mut()
             .create_role(
                 &admin_cap,
                 metadata_admin_role_name,
                 metadata_admin_perms,
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
 
         // Verify the role was created by fetching its permissions
-        let role_perms = trail.roles().get_role_permissions(&string::utf8(b"MetadataAdmin"));
+        let role_perms = trail.access().get_role_permissions(&string::utf8(b"MetadataAdmin"));
 
         // Verify the role has the correct permissions
         assert!(

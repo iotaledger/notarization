@@ -10,7 +10,7 @@ use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;
 
-use super::operations::RolesOps;
+use super::operations::AccessOps;
 use crate::core::types::{
     CapabilityDestroyed, CapabilityIssueOptions, CapabilityIssued, CapabilityRevoked, Event, PermissionSet,
     RoleCreated, RoleRemoved, RoleUpdated,
@@ -43,7 +43,7 @@ impl CreateRole {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        RolesOps::create_role(
+        AccessOps::create_role(
             client,
             self.trail_id,
             self.owner,
@@ -117,7 +117,7 @@ impl UpdateRole {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        RolesOps::update_role(
+        AccessOps::update_role(
             client,
             self.trail_id,
             self.owner,
@@ -189,7 +189,7 @@ impl DeleteRole {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        RolesOps::delete_role(client, self.trail_id, self.owner, self.name.clone()).await
+        AccessOps::delete_role(client, self.trail_id, self.owner, self.name.clone()).await
     }
 }
 
@@ -256,7 +256,7 @@ impl IssueCapability {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        RolesOps::issue_capability(
+        AccessOps::issue_capability(
             client,
             self.trail_id,
             self.owner,
@@ -328,7 +328,7 @@ impl RevokeCapability {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        RolesOps::revoke_capability(client, self.trail_id, self.owner, self.capability_id).await
+        AccessOps::revoke_capability(client, self.trail_id, self.owner, self.capability_id).await
     }
 }
 
@@ -393,7 +393,7 @@ impl DestroyCapability {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        RolesOps::destroy_capability(client, self.trail_id, self.owner, self.capability_id).await
+        AccessOps::destroy_capability(client, self.trail_id, self.owner, self.capability_id).await
     }
 }
 
@@ -458,7 +458,7 @@ impl DestroyInitialAdminCapability {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        RolesOps::destroy_initial_admin_capability(client, self.trail_id, self.capability_id).await
+        AccessOps::destroy_initial_admin_capability(client, self.trail_id, self.capability_id).await
     }
 }
 
@@ -525,7 +525,7 @@ impl RevokeInitialAdminCapability {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        RolesOps::revoke_initial_admin_capability(client, self.trail_id, self.owner, self.capability_id).await
+        AccessOps::revoke_initial_admin_capability(client, self.trail_id, self.owner, self.capability_id).await
     }
 }
 

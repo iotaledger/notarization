@@ -47,6 +47,9 @@ const PACKAGE_VERSION: u64 = 1;
 
 // ===== Core Structures =====
 
+/// Stores all record tag related data associated with a role in the RoleMap
+public struct RecordTags has copy, drop, store {}
+
 /// Metadata set at trail creation
 public struct ImmutableMetadata has copy, drop, store {
     name: String,
@@ -72,7 +75,7 @@ public struct AuditTrail<D: store + copy> has key, store {
     /// Deletion locking rules
     locking_config: LockingConfig,
     /// A list of role definitions consisting of a unique role specifier and a list of associated permissions
-    roles: RoleMap<Permission>,
+    roles: RoleMap<Permission, RecordTags>,
     /// Set at creation, cannot be changed
     immutable_metadata: Option<ImmutableMetadata>,
     /// Can be updated by holders of MetadataUpdate permission
@@ -244,6 +247,14 @@ entry fun migrate<D: store + copy>(
             ctx,
         );
     trail.version = PACKAGE_VERSION;
+}
+
+public fun new_record_tags(
+    // TODO: Add any parameters needed to initialize record tags
+): RecordTags {
+    RecordTags {
+        // TODO: Initialize fields as needed
+    }
 }
 
 // ===== Record Operations =====
@@ -555,7 +566,15 @@ public fun create_role<D: store + copy>(
     ctx: &mut TxContext,
 ) {
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    role_map::create_role(trail.roles_mut(), cap, role, permissions, clock, ctx);
+    role_map::create_role(
+        trail.access_mut(),
+        cap,
+        role,
+        permissions,
+        std::option::none(),
+        clock,
+        ctx,
+    );
 }
 
 /// Updates permissions for an existing role.
@@ -568,7 +587,15 @@ public fun update_role_permissions<D: store + copy>(
     ctx: &mut TxContext,
 ) {
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    role_map::update_role_permissions(trail.roles_mut(), cap, &role, new_permissions, clock, ctx);
+    role_map::update_role(
+        trail.access_mut(),
+        cap,
+        &role,
+        new_permissions,
+        std::option::none(),
+        clock,
+        ctx,
+    );
 }
 
 /// Deletes an existing role.
@@ -580,7 +607,7 @@ public fun delete_role<D: store + copy>(
     ctx: &mut TxContext,
 ) {
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    role_map::delete_role(trail.roles_mut(), cap, &role, clock, ctx);
+    role_map::delete_role(trail.access_mut(), cap, &role, clock, ctx);
 }
 
 /// Issues a new capability for an existing role.
@@ -606,7 +633,7 @@ public fun new_capability<D: store + copy>(
     };
 
     let new_cap = role_map::new_capability(
-        trail.roles_mut(),
+        trail.access_mut(),
         cap,
         &role,
         issued_to,
@@ -627,7 +654,7 @@ public fun revoke_capability<D: store + copy>(
     ctx: &mut TxContext,
 ) {
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    role_map::revoke_capability(trail.roles_mut(), cap, capability_id, clock, ctx);
+    role_map::revoke_capability(trail.access_mut(), cap, capability_id, clock, ctx);
 }
 
 /// Destroys a capability object.
@@ -649,7 +676,7 @@ public fun destroy_capability<D: store + copy>(
             clock,
             ctx,
         );
-    role_map::destroy_capability(trail.roles_mut(), cap_to_destroy);
+    role_map::destroy_capability(trail.access_mut(), cap_to_destroy);
 }
 
 /// Destroys an initial admin capability.
@@ -664,7 +691,7 @@ public fun destroy_initial_admin_capability<D: store + copy>(
     cap_to_destroy: Capability,
 ) {
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    role_map::destroy_initial_admin_capability(trail.roles_mut(), cap_to_destroy);
+    role_map::destroy_initial_admin_capability(trail.access_mut(), cap_to_destroy);
 }
 
 /// Revokes an initial admin capability by ID.
@@ -681,7 +708,7 @@ public fun revoke_initial_admin_capability<D: store + copy>(
     ctx: &mut TxContext,
 ) {
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    role_map::revoke_initial_admin_capability(trail.roles_mut(), cap, capability_id, clock, ctx);
+    role_map::revoke_initial_admin_capability(trail.access_mut(), cap, capability_id, clock, ctx);
 }
 
 // ===== Trail Query Functions =====
@@ -770,16 +797,16 @@ public fun records<D: store + copy>(trail: &AuditTrail<D>): &LinkedTable<u64, Re
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     &trail.records
 }
-// ===== Role and Capability Functions =====
+// ===== Access Control Functions =====
 
-/// Returns a reference the RoleMap managing the roles and capabilities used in the audit trail
-public fun roles<D: store + copy>(trail: &AuditTrail<D>): &RoleMap<Permission> {
+/// Returns the RoleMap managing access for the audit trail.
+public fun access<D: store + copy>(trail: &AuditTrail<D>): &RoleMap<Permission, RecordTags> {
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     &trail.roles
 }
 
-/// Returns a mutable reference to the RoleMap managing the roles and capabilities used in the audit trail
-public fun roles_mut<D: store + copy>(trail: &mut AuditTrail<D>): &mut RoleMap<Permission> {
+/// Returns a mutable reference to the RoleMap managing access for the audit trail.
+public fun access_mut<D: store + copy>(trail: &mut AuditTrail<D>): &mut RoleMap<Permission, RecordTags> {
     assert!(trail.version == PACKAGE_VERSION, EPackageVersionMismatch);
     &mut trail.roles
 }

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
-use iota_interaction::types::transaction::{Argument, Command, ObjectArg, ProgrammableTransaction};
+use iota_interaction::types::transaction::{ObjectArg, ProgrammableTransaction};
 use iota_interaction::{OptionalSync, ident_str};
 use product_common::core_client::CoreClientReadOnly;
 
@@ -10,9 +10,9 @@ use crate::core::types::{CapabilityIssueOptions, Permission, PermissionSet};
 use crate::core::{operations, utils};
 use crate::error::Error;
 
-pub(super) struct RolesOps;
+pub(super) struct AccessOps;
 
-impl RolesOps {
+impl AccessOps {
     pub(super) async fn create_role<C>(
         client: &C,
         trail_id: ObjectID,
