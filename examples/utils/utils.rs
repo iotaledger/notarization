@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Context;
-use iota_interaction::{IOTA_LOCAL_NETWORK_URL, IotaClientBuilder};
+use iota_sdk::{IOTA_LOCAL_NETWORK_URL, IotaClientBuilder};
 use notarization::client::{NotarizationClient, NotarizationClientReadOnly};
 use product_common::test_utils::{InMemSigner, request_funds};
 

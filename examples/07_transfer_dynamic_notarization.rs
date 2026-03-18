@@ -5,7 +5,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
 use examples::get_funded_client;
-use iota_interaction::types::base_types::IotaAddress;
+use iota_sdk::types::base_types::IotaAddress;
 use notarization::core::types::{State, TimeLock};
 
 #[tokio::main]
