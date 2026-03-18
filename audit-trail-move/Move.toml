@@ -3,7 +3,8 @@ name = "audit_trail"
 edition = "2024.beta"
 
 [dependencies]
-TfComponents = { local = "../../product-core/components_move"}
+# TODO: Use git tag
+TfComponents = { local = "../../product-core/components_move" }
 
 [addresses]
 audit_trail = "0x0"

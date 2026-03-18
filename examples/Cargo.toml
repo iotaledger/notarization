@@ -51,8 +51,8 @@ path = "real-world/02_legal_contract.rs"
 [dependencies]
 anyhow.workspace = true
 chrono = { workspace = true }
-iota_interaction = { workspace = true }
 iota-sdk = { workspace = true }
+iota_interaction = { workspace = true }
 notarization = { path = "../notarization-rs" }
 product_common = { workspace = true, features = ["core-client", "test-utils", "transaction"] }
 serde_json = { workspace = true }
