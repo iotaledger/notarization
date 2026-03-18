@@ -12,19 +12,32 @@ use crate::error::Error;
 
 pub(super) struct CreateOps;
 
+pub(super) struct CreateTrailArgs {
+    pub audit_trail_package_id: ObjectID,
+    pub tf_components_package_id: ObjectID,
+    pub admin: IotaAddress,
+    pub initial_data: Option<Data>,
+    pub initial_record_metadata: Option<String>,
+    pub locking_config: LockingConfig,
+    pub trail_metadata: Option<ImmutableMetadata>,
+    pub updatable_metadata: Option<String>,
+    pub available_record_tags: Vec<String>,
+}
+
 impl CreateOps {
-    pub(super) fn create_trail(
-        audit_trail_package_id: ObjectID,
-        tf_components_package_id: ObjectID,
-        admin: IotaAddress,
-        initial_data: Option<Data>,
-        initial_record_metadata: Option<String>,
-        locking_config: LockingConfig,
-        trail_metadata: Option<ImmutableMetadata>,
-        updatable_metadata: Option<String>,
-        available_record_tags: impl IntoIterator<Item = String>,
-    ) -> Result<ProgrammableTransaction, Error> {
+    pub(super) fn create_trail(args: CreateTrailArgs) -> Result<ProgrammableTransaction, Error> {
         let mut ptb = ProgrammableTransactionBuilder::new();
+        let CreateTrailArgs {
+            audit_trail_package_id,
+            tf_components_package_id,
+            admin,
+            initial_data,
+            initial_record_metadata,
+            locking_config,
+            trail_metadata,
+            updatable_metadata,
+            mut available_record_tags,
+        } = args;
 
         let initial_data = initial_data.ok_or_else(|| {
             Error::InvalidArgument(
@@ -32,7 +45,7 @@ impl CreateOps {
             )
         })?;
         let data_tag = initial_data.tag();
-        let initial_data_arg = initial_data.to_option_ptb(&mut ptb, "initial_data")?;
+        let initial_data_arg = initial_data.into_option_ptb(&mut ptb, "initial_data")?;
 
         let initial_record_metadata = utils::ptb_pure(&mut ptb, "initial_record_metadata", initial_record_metadata)?;
         let locking_config = locking_config.to_ptb(&mut ptb, audit_trail_package_id, tf_components_package_id)?;
@@ -50,7 +63,6 @@ impl CreateOps {
         };
 
         let updatable_metadata = utils::ptb_pure(&mut ptb, "updatable_metadata", updatable_metadata)?;
-        let mut available_record_tags = available_record_tags.into_iter().collect::<Vec<_>>();
         available_record_tags.sort();
         let available_record_tags = utils::ptb_pure(&mut ptb, "available_record_tags", available_record_tags)?;
         let clock = utils::get_clock_ref(&mut ptb);

@@ -67,7 +67,7 @@ impl Permission {
         TypeTag::from_str(&format!("{package_id}::permission::Permission")).expect("invalid TypeTag for Permission")
     }
 
-    pub(in crate::core) fn to_ptb(&self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
+    pub(in crate::core) fn to_ptb(self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
         let function = Identifier::from_str(self.function_name())
             .map_err(|e| Error::InvalidArgument(format!("Failed to create identifier for function: {e}")))?;
 
@@ -87,7 +87,7 @@ impl PermissionSet {
         let permission_args: Vec<_> = self
             .permissions
             .iter()
-            .map(|permission| permission.to_ptb(ptb, package_id))
+            .map(|permission| (*permission).to_ptb(ptb, package_id))
             .collect::<Result<Vec<_>, _>>()?;
 
         Ok(ptb.command(Command::MakeMoveVec(Some(permission_type.into()), permission_args)))

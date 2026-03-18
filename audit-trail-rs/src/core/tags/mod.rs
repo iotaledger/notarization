@@ -12,7 +12,7 @@ use crate::core::trail::AuditTrailFull;
 mod operations;
 mod transactions;
 
-pub use transactions::{AddRecordTag, RemoveRecordTag, SetRecordTags};
+pub use transactions::{AddRecordTag, RemoveRecordTag};
 
 #[derive(Debug, Clone)]
 pub struct TrailTags<'a, C> {
@@ -43,21 +43,5 @@ impl<'a, C> TrailTags<'a, C> {
     {
         let owner = self.client.sender_address();
         TransactionBuilder::new(RemoveRecordTag::new(self.trail_id, owner, tag.into()))
-    }
-
-    /// Replaces the entire trail-owned record-tag registry.
-    pub fn set<S, I, T>(&self, tags: I) -> TransactionBuilder<SetRecordTags>
-    where
-        C: AuditTrailFull + CoreClient<S>,
-        S: Signer<IotaKeySignature> + OptionalSync,
-        I: IntoIterator<Item = T>,
-        T: Into<String>,
-    {
-        let owner = self.client.sender_address();
-        TransactionBuilder::new(SetRecordTags::new(
-            self.trail_id,
-            owner,
-            tags.into_iter().map(Into::into).collect(),
-        ))
     }
 }

@@ -41,7 +41,7 @@ impl RecordsOps {
                 |ptb, trail_tag| {
                     data.ensure_matches_tag(trail_tag)?;
 
-                    let data_arg = data.to_ptb(ptb, "stored_data")?;
+                    let data_arg = data.into_ptb(ptb, "stored_data")?;
                     let metadata = utils::ptb_pure(ptb, "record_metadata", record_metadata)?;
                     let tag_arg = utils::ptb_pure(ptb, "record_tag", Some(tag))?;
                     let clock = utils::get_clock_ref(ptb);
@@ -59,7 +59,7 @@ impl RecordsOps {
                 |ptb, trail_tag| {
                     data.ensure_matches_tag(trail_tag)?;
 
-                    let data_arg = data.to_ptb(ptb, "stored_data")?;
+                    let data_arg = data.into_ptb(ptb, "stored_data")?;
                     let metadata = utils::ptb_pure(ptb, "record_metadata", record_metadata)?;
                     let tag = utils::ptb_pure(ptb, "record_tag", Option::<String>::None)?;
                     let clock = utils::get_clock_ref(ptb);

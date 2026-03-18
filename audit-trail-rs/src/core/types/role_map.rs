@@ -4,13 +4,12 @@
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 
-use iota_interaction::MoveType;
-use iota_interaction::ident_str;
 use iota_interaction::types::TypeTag;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::id::UID;
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
 use iota_interaction::types::transaction::Argument;
+use iota_interaction::{MoveType, ident_str};
 use serde::{Deserialize, Serialize};
 
 use super::permission::Permission;
@@ -85,8 +84,7 @@ impl RecordTags {
     }
 
     pub(crate) fn tag(package_id: ObjectID) -> TypeTag {
-        TypeTag::from_str(&format!("{package_id}::record_tags::RecordTags"))
-            .expect("invalid TypeTag for RecordTags")
+        TypeTag::from_str(&format!("{package_id}::record_tags::RecordTags")).expect("invalid TypeTag for RecordTags")
     }
 
     pub(in crate::core) fn to_ptb(&self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {

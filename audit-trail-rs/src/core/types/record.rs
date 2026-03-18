@@ -96,7 +96,7 @@ impl Data {
     }
 
     /// Creates a PTB argument for `D` where `D` is the concrete Move data type.
-    pub(in crate::core) fn to_ptb(self, ptb: &mut Ptb, name: &str) -> Result<Argument, Error> {
+    pub(in crate::core) fn into_ptb(self, ptb: &mut Ptb, name: &str) -> Result<Argument, Error> {
         match self {
             Data::Bytes(bytes) => utils::ptb_pure(ptb, name, bytes),
             Data::Text(text) => utils::ptb_pure(ptb, name, text),
@@ -104,7 +104,7 @@ impl Data {
     }
 
     /// Creates a PTB argument for `Option<D>` where `D` is the concrete Move data type.
-    pub(in crate::core) fn to_option_ptb(self, ptb: &mut Ptb, name: &str) -> Result<Argument, Error> {
+    pub(in crate::core) fn into_option_ptb(self, ptb: &mut Ptb, name: &str) -> Result<Argument, Error> {
         match self {
             Data::Bytes(bytes) => utils::ptb_pure(ptb, name, Some(bytes)),
             Data::Text(text) => utils::ptb_pure(ptb, name, Some(text)),

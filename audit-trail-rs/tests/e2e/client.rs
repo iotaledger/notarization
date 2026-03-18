@@ -9,11 +9,10 @@ use audit_trails::AuditTrailClient;
 use audit_trails::core::types::{
     Capability, CapabilityIssueOptions, CapabilityIssued, Data, Permission, PermissionSet, RecordTags, RoleCreated,
 };
-use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::base_types::{IotaAddress, ObjectID, ObjectRef};
 use iota_interaction::types::crypto::PublicKey;
 use iota_interaction::{IOTA_LOCAL_NETWORK_URL, IotaClientBuilder};
 use iota_interaction_rust::IotaClientAdapter;
-use iota_sdk::types::base_types::ObjectRef;
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use product_common::network_name::NetworkName;
 use product_common::test_utils::{InMemSigner, init_product_package, request_funds};

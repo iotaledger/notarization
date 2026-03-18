@@ -417,25 +417,10 @@ async fn manage_record_tag_registry_roundtrip() -> anyhow::Result<()> {
 
     trail.tags().add("legal").build_and_execute(&client).await?;
     let after_add = trail.get().await?;
-    assert!(
-        after_add
-            .tags
-            .contents
-            .contains(&"finance".to_string())
-    );
+    assert!(after_add.tags.contents.contains(&"finance".to_string()));
     assert!(after_add.tags.contents.contains(&"legal".to_string()));
 
-    let after_set = trail.get().await?;
-    assert!(
-        after_set
-            .tags
-            .contents
-            .contains(&"finance".to_string())
-    );
-    assert!(after_set.tags.contents.contains(&"hr".to_string()));
-    assert!(!after_set.tags.contents.contains(&"legal".to_string()));
-
-    trail.tags().remove("hr").build_and_execute(&client).await?;
+    trail.tags().remove("legal").build_and_execute(&client).await?;
 
     let after_remove = trail.get().await?;
     assert_eq!(after_remove.tags.contents, vec!["finance".to_string()]);
