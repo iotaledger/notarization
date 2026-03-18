@@ -324,6 +324,54 @@ fun test_delete_role_success() {
     ts::end(scenario);
 }
 
+#[test]
+#[expected_failure(abort_code = audit_trail::main::ERecordTagInUse)]
+fun test_remove_record_tag_rejects_role_only_usage() {
+    let admin_user = @0xAD;
+    let mut scenario = ts::begin(admin_user);
+
+    {
+        let locking_config = locking::new(
+            locking::window_count_based(0),
+            timelock::none(),
+            timelock::none(),
+        );
+        let (admin_cap, _) = setup_test_audit_trail_with_tags(
+            &mut scenario,
+            locking_config,
+            std::option::none(),
+            vector[string::utf8(b"finance")],
+        );
+        transfer::public_transfer(admin_cap, admin_user);
+    };
+
+    ts::next_tx(&mut scenario, admin_user);
+    {
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
+        let perms = permission::from_vec(vector[permission::add_record()]);
+
+        trail.create_role(
+            &admin_cap,
+            string::utf8(b"TaggedRole"),
+            perms,
+            std::option::some(record_tags::new_record_tags(vector[string::utf8(b"finance")])),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        trail.remove_record_tag(
+            &admin_cap,
+            string::utf8(b"finance"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
+    };
+
+    ts::end(scenario);
+}
+
 // ===== Error Case Tests =====
 
 #[test]

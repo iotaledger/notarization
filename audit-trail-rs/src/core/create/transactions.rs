@@ -61,7 +61,7 @@ impl CreateTrail {
             locking_config,
             trail_metadata,
             updatable_metadata,
-            available_record_tags,
+            record_tags,
         } = self.builder.clone();
 
         let admin = admin.ok_or_else(|| {
@@ -81,7 +81,7 @@ impl CreateTrail {
             locking_config,
             trail_metadata,
             updatable_metadata,
-            available_record_tags: available_record_tags.into_iter().collect(),
+            record_tags,
         })
     }
 }

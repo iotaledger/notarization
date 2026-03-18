@@ -455,7 +455,7 @@ public fun delete_audit_trail<D: store + copy>(
         records,
         mut tags,
         locking_config: _,
-        roles,
+        roles: _roles,
         immutable_metadata: _,
         updatable_metadata: _,
         version: _,
@@ -466,7 +466,6 @@ public fun delete_audit_trail<D: store + copy>(
         let (_, _) = vec_map::pop(&mut tags);
     };
     vec_map::destroy_empty(tags);
-    role_map::destroy(roles);
     object::delete(id);
 
     event::emit(AuditTrailDeleted { trail_id, timestamp });
@@ -785,7 +784,6 @@ public fun revoke_capability<D: store + copy>(
         self.access_mut(),
         cap,
         capability_id,
-        option::none(),
         clock,
         ctx,
     );
@@ -846,7 +844,6 @@ public fun revoke_initial_admin_capability<D: store + copy>(
         self.access_mut(),
         cap,
         capability_id,
-        option::none(),
         clock,
         ctx,
     );

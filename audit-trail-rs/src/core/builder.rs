@@ -20,7 +20,7 @@ pub struct AuditTrailBuilder {
     pub locking_config: LockingConfig,
     pub trail_metadata: Option<ImmutableMetadata>,
     pub updatable_metadata: Option<String>,
-    pub available_record_tags: HashSet<String>,
+    pub record_tags: HashSet<String>,
 }
 
 impl AuditTrailBuilder {
@@ -59,12 +59,12 @@ impl AuditTrailBuilder {
     }
 
     /// Sets the canonical list of tags that may be used on records in this trail.
-    pub fn with_available_record_tags<I, S>(mut self, tags: I) -> Self
+    pub fn with_record_tags<I, S>(mut self, tags: I) -> Self
     where
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        self.available_record_tags = tags.into_iter().map(Into::into).collect();
+        self.record_tags = tags.into_iter().map(Into::into).collect();
         self
     }
 

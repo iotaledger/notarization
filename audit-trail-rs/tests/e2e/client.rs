@@ -98,7 +98,7 @@ impl TestClient {
         let created = self
             .create_trail()
             .with_initial_record(data, None)
-            .with_available_record_tags(tags)
+            .with_record_tags(tags)
             .finish()
             .build_and_execute(self)
             .await?

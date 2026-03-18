@@ -405,7 +405,7 @@ async fn manage_record_tag_registry_roundtrip() -> anyhow::Result<()> {
     let created = client
         .create_trail()
         .with_initial_record(Data::text("trail-tag-registry"), None)
-        .with_available_record_tags(["finance"])
+        .with_record_tags(["finance"])
         .finish()
         .build_and_execute(&client)
         .await?
@@ -436,7 +436,7 @@ async fn remove_record_tag_rejects_in_use_tag() -> anyhow::Result<()> {
     let created = client
         .create_trail()
         .with_initial_record(Data::text("trail-tag-in-use"), None)
-        .with_available_record_tags(["finance"])
+        .with_record_tags(["finance"])
         .finish()
         .build_and_execute(&client)
         .await?
@@ -463,6 +463,34 @@ async fn remove_record_tag_rejects_in_use_tag() -> anyhow::Result<()> {
 
     let removed = trail.tags().remove("finance").build_and_execute(&client).await;
     assert!(removed.is_err(), "used record tags must not be removable");
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn remove_record_tag_rejects_role_only_usage() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let created = client
+        .create_trail()
+        .with_initial_record(Data::text("trail-tag-role-usage"), None)
+        .with_record_tags(["finance"])
+        .finish()
+        .build_and_execute(&client)
+        .await?
+        .output;
+
+    client
+        .create_role(
+            created.trail_id,
+            "TaggedWriter",
+            vec![Permission::AddRecord],
+            Some(RecordTags::new(["finance"])),
+        )
+        .await?;
+
+    let trail = client.trail(created.trail_id);
+    let removed = trail.tags().remove("finance").build_and_execute(&client).await;
+    assert!(removed.is_err(), "role-backed tags must not be removable");
 
     Ok(())
 }

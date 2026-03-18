@@ -1,6 +1,8 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+use std::collections::HashSet;
+
 use iota_interaction::ident_str;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder;
@@ -21,7 +23,7 @@ pub(super) struct CreateTrailArgs {
     pub locking_config: LockingConfig,
     pub trail_metadata: Option<ImmutableMetadata>,
     pub updatable_metadata: Option<String>,
-    pub available_record_tags: Vec<String>,
+    pub record_tags: HashSet<String>,
 }
 
 impl CreateOps {
@@ -36,7 +38,7 @@ impl CreateOps {
             locking_config,
             trail_metadata,
             updatable_metadata,
-            mut available_record_tags,
+            record_tags,
         } = args;
 
         let initial_data = initial_data.ok_or_else(|| {
@@ -63,8 +65,12 @@ impl CreateOps {
         };
 
         let updatable_metadata = utils::ptb_pure(&mut ptb, "updatable_metadata", updatable_metadata)?;
-        available_record_tags.sort();
-        let available_record_tags = utils::ptb_pure(&mut ptb, "available_record_tags", available_record_tags)?;
+
+        let record_tags = {
+            let mut record_tags = record_tags.into_iter().collect::<Vec<_>>();
+            record_tags.sort();
+            utils::ptb_pure(&mut ptb, "record_tags", record_tags)?
+        };
         let clock = utils::get_clock_ref(&mut ptb);
 
         let result = ptb.programmable_move_call(
@@ -78,7 +84,7 @@ impl CreateOps {
                 locking_config,
                 trail_metadata,
                 updatable_metadata,
-                available_record_tags,
+                record_tags,
                 clock,
             ],
         );
