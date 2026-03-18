@@ -16,7 +16,7 @@ use audit_trail::{
         new_capability_for_address
     }
 };
-use iota::{clock, test_scenario as ts, vec_set};
+use iota::{clock, test_scenario as ts, vec_map, vec_set};
 use std::string;
 use tf_components::timelock;
 
@@ -122,8 +122,8 @@ fun test_tag_admin_role_can_manage_available_record_tags() {
         );
 
         let available_tags = trail.tags();
-        assert!(vec_set::size(available_tags) == 1, 0);
-        assert!(vec_set::contains(available_tags, &string::utf8(b"finance")), 1);
+        assert!(vec_map::size(available_tags) == 1, 0);
+        assert!(vec_map::contains(available_tags, &string::utf8(b"finance")), 1);
 
         trail.remove_record_tag(
             &tag_admin_cap,
@@ -133,7 +133,7 @@ fun test_tag_admin_role_can_manage_available_record_tags() {
         );
 
         let available_tags = trail.tags();
-        assert!(vec_set::size(available_tags) == 0, 0);
+        assert!(vec_map::size(available_tags) == 0, 0);
 
         cleanup_capability_trail_and_clock(&scenario, tag_admin_cap, trail, clock);
     };

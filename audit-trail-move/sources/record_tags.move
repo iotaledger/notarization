@@ -4,8 +4,8 @@
 /// Record tag types and helper predicates for audit trails.
 module audit_trail::record_tags;
 
-use audit_trail::{permission::Permission, record::{Self, Record}};
-use iota::{linked_table::{Self, LinkedTable}, vec_set::{Self, VecSet}};
+use audit_trail::permission::Permission;
+use iota::{vec_map::{Self, VecMap}, vec_set::{Self, VecSet}};
 use std::string::String;
 use tf_components::{capability::Capability, role_map::{Self, RoleMap}};
 
@@ -26,9 +26,21 @@ public fun allowed_record_tags(record_tags: &RecordTags): &VecSet<String> {
     &record_tags.tags
 }
 
+/// Create a zeroed usage counter for all tags in the trail list
+public(package) fun new_usage(mut tags: vector<String>): VecMap<String, u64> {
+    let mut usage = vec_map::empty<String, u64>();
+    tags.reverse();
+
+    while (tags.length() != 0) {
+        vec_map::insert(&mut usage, tags.pop_back(), 0);
+    };
+
+    usage
+}
+
 /// Returns true when all provided role tags are defined on the trail.
 public(package) fun defined_for_trail(
-    available_tags: &VecSet<String>,
+    available_tags: &VecMap<String, u64>,
     record_tags: &Option<RecordTags>,
 ): bool {
     if (!record_tags.is_some()) {
@@ -41,7 +53,7 @@ public(package) fun defined_for_trail(
     let tag_count = allowed_tag_keys.length();
 
     while (i < tag_count) {
-        if (!iota::vec_set::contains(available_tags, &allowed_tag_keys[i])) {
+        if (!iota::vec_map::contains(available_tags, &allowed_tag_keys[i])) {
             return false
         };
         i = i + 1;
@@ -51,8 +63,8 @@ public(package) fun defined_for_trail(
 }
 
 /// Returns true when the requested tag exists in the trail registry.
-public(package) fun is_defined(available_tags: &VecSet<String>, tag: &String): bool {
-    iota::vec_set::contains(available_tags, tag)
+public(package) fun is_defined(available_tags: &VecMap<String, u64>, tag: &String): bool {
+    iota::vec_map::contains(available_tags, tag)
 }
 
 /// Returns true when the capability's role data allows the requested tag.
@@ -70,25 +82,21 @@ public(package) fun role_allows(
     iota::vec_set::contains(tags, tag)
 }
 
-/// Returns true when any live record currently uses the provided tag.
-public(package) fun is_in_use<D: store + copy>(
-    records: &LinkedTable<u64, Record<D>>,
-    sequence_number: u64,
-    tag: &String,
-): bool {
-    let mut current_sequence = 0;
-    while (current_sequence < sequence_number) {
-        if (linked_table::contains(records, current_sequence)) {
-            let stored_record = linked_table::borrow(records, current_sequence);
-            let record_tag = record::tag(stored_record);
+/// Returns the current combined usage count for a tag across records and roles.
+public(package) fun usage_count(usage: &VecMap<String, u64>, tag: &String): u64 {
+    if (vec_map::contains(usage, tag)) {
+        *vec_map::get(usage, tag)
+    } else {
+        0
+    }
+}
 
-            if (record_tag.is_some() && option::borrow(record_tag) == tag) {
-                return true
-            };
-        };
+public(package) fun increment_tag_usage(usage: &mut VecMap<String, u64>, tag: &String) {
+    let count = vec_map::get_mut(usage, tag);
+    *count = *count + 1;
+}
 
-        current_sequence = current_sequence + 1;
-    };
-
-    false
+public(package) fun decrement_tag_usage(usage: &mut VecMap<String, u64>, tag: &String) {
+    let count = vec_map::get_mut(usage, tag);
+    *count = *count - 1;
 }
