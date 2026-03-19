@@ -136,7 +136,7 @@ fun test_add_tagged_record_with_matching_role_tags() {
             &admin_cap,
             string::utf8(b"TaggedWriter"),
             permission::record_admin_permissions(),
-            std::option::some(record_tags::new_record_tags(vector[string::utf8(b"finance")])),
+            std::option::some(record_tags::new_role_tags(vector[string::utf8(b"finance")])),
             &clock,
             ts::ctx(&mut scenario),
         );
@@ -275,7 +275,7 @@ fun test_add_tagged_record_requires_trail_defined_tag() {
             &admin_cap,
             string::utf8(b"TaggedWriter"),
             permission::record_admin_permissions(),
-            std::option::some(record_tags::new_record_tags(vector[string::utf8(b"finance")])),
+            std::option::some(record_tags::new_role_tags(vector[string::utf8(b"finance")])),
             &clock,
             ts::ctx(&mut scenario),
         );
@@ -343,7 +343,7 @@ fun test_remove_record_tag_rejects_in_use_tag() {
             &admin_cap,
             string::utf8(b"TaggedWriter"),
             permission::record_admin_permissions(),
-            std::option::some(record_tags::new_record_tags(vector[string::utf8(b"finance")])),
+            std::option::some(record_tags::new_role_tags(vector[string::utf8(b"finance")])),
             &clock,
             ts::ctx(&mut scenario),
         );
