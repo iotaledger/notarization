@@ -9,98 +9,63 @@ use iota::{vec_map::{Self, VecMap}, vec_set::{Self, VecSet}};
 use std::string::String;
 use tf_components::{capability::Capability, role_map::{Self, RoleMap}};
 
-// ----------- RoleTagList -------
+// ----------- RoleTags -------
 
 /// Stores all record tag related data associated with a role in the RoleMap.
 /// Contains a list of allowlisted tags for the role.
-public struct RoleTagList has copy, drop, store {
+public struct RoleTags has copy, drop, store {
     tags: VecSet<String>,
 }
 
-/// Create a new `RoleTagList`.
-public fun new_role_tag_list(tags: vector<String>): RoleTagList {
-    RoleTagList {
+/// Create a new `RoleTags`.
+public fun new_role_tag_list(tags: vector<String>): RoleTags {
+    RoleTags {
         tags: vec_set::from_keys(tags),
     }
 }
 
-/// Get the allowlisted record tags for a role from a `RoleTagList`.
-public fun tags(self: &RoleTagList): &VecSet<String> {
+/// Get the allowlisted record tags for a role from a `RoleTags`.
+public fun tags(self: &RoleTags): &VecSet<String> {
     &self.tags
-}
-
-// ----------- UsageCounters -------
-
-/// Usage counters for a record tag, tracking how many records and roles are currently using the tag.
-public struct UsageCounters has copy, drop, store {
-    record: u64,
-    role: u64,
-}
-
-/// Create a `UsageCounters` struct with the provided counts for record and role usage.
-public fun new_usage_counters(record: u64, role: u64): UsageCounters {
-    UsageCounters {
-        record,
-        role,
-    }
-}
-
-/// Increment the record usage counter by 1.
-public fun increment_record_usage_counter(self: &mut UsageCounters) {
-    self.record = self.record + 1;
-}
-
-/// Increment the role usage counter by 1.
-public fun increment_role_usage_counter(self: &mut UsageCounters) {
-    self.role = self.role + 1;
-}
-
-/// Getter for the record usage counter.
-public fun record_usage_counter(self: &UsageCounters): u64 {
-    self.record
-}
-
-/// Getter for the role usage counter.
-public fun role_usage_counter(self: &UsageCounters): u64 {
-    self.role
 }
 
 // ----------- TagRegistry -------
 
-/// A registry of tags available for use on an audit trail, along with `UsageCounters`
+/// A registry of tags available for use on an audit trail, along with usage counts
 /// to track how many records and roles are currently using each tag.
+/// Usage counts for roles and tags are summed and build a combined usage count.
 public struct TagRegistry has copy, drop, store {
-    tag_map: VecMap<String, UsageCounters>,
+    tag_map: VecMap<String, u64>,
 }
 
-/// Get a mapping of record tag names to `UsageCounters`.
-public fun tag_map(self: &TagRegistry): &VecMap<String, UsageCounters> {
+/// Get a mapping of record tag names to `u64`.
+public fun tag_map(self: &TagRegistry): &VecMap<String, u64> {
     &self.tag_map
 }
 
-/// Create a `TagRegistry` with zeroed `UsageCounters` to manage a list of available tags to be
+/// Create a `TagRegistry` with zeroed usage counts to manage a list of available tags to be
 /// associated with records and roles on an audit trail.
 public(package) fun new_tag_registry(mut tags: vector<String>): TagRegistry {
-    let mut usage = vec_map::empty<String, UsageCounters>();
+    let mut usage = vec_map::empty<String, u64>();
     tags.reverse();
 
     while (tags.length() != 0) {
-        vec_map::insert(&mut usage, tags.pop_back(), new_usage_counters(0, 0));
+        vec_map::insert(&mut usage, tags.pop_back(), 0);
     };
 
     TagRegistry { tag_map: usage }
 }
 
-/// Returns true when all provided `record_tags` (tags associated with a role) are contained in the `TagRegistry`.
-public(package) fun defined_for_trail(
+/// Returns true when all provided `role_tags` (tags associated with a role) are contained in the `TagRegistry`.
+public(package) fun contains_all_role_tags(
     self: &TagRegistry,
-    record_tags: &Option<RoleTagList>,
+    role_tags: &Option<RoleTags>,
 ): bool {
-    if (!record_tags.is_some()) {
+    if (!role_tags.is_some()) {
         return true
     };
 
-    let tags = &option::borrow(record_tags).tags;
+    let tags = &option::borrow(role_tags).tags;
     let allowed_tag_keys = iota::vec_set::keys(tags);
     let mut i = 0;
     let tag_count = allowed_tag_keys.length();
@@ -120,9 +85,9 @@ public(package) fun contains(self: &TagRegistry, tag: &String): bool {
     iota::vec_map::contains(&self.tag_map, tag)
 }
 
-/// Returns the current `UsageCounters` for a tag.
+/// Returns the current combined usage count (sum of role and record usages) for a tag.
 /// Returns `Option::none()` if the tag is not contained in the registry.
-public(package) fun usage_counters(self: &TagRegistry, tag: &String): Option<UsageCounters> {
+public(package) fun usage_count(self: &TagRegistry, tag: &String): Option<u64> {
     if (self.tag_map.contains(tag)) {
         option::some(*self.tag_map.get(tag))
     } else {
@@ -130,25 +95,14 @@ public(package) fun usage_counters(self: &TagRegistry, tag: &String): Option<Usa
     }
 }
 
-/// Returns the current combined (summed) usage counts for a tag across records and roles.
-/// Returns 0 if the tag is not contained in the registry.
-public(package) fun usage_count_total(self: &TagRegistry, tag: &String): u64 {
-    if (vec_map::contains(&self.tag_map, tag)) {
-        let counters = vec_map::get(&self.tag_map, tag);
-        counters.record + counters.role
-    } else {
-        0
-    }
+public(package) fun increment_usage_count(self: &mut TagRegistry, tag: &String) {
+    let counters = vec_map::get_mut(&mut self.tag_map, tag);
+    *counters = *counters + 1;
 }
 
-public(package) fun increment_tag_usage_for_records(self: &mut TagRegistry, tag: &String) {
+public(package) fun decrement_usage_count(self: &mut TagRegistry, tag: &String) {
     let counters = vec_map::get_mut(&mut self.tag_map, tag);
-    counters.increment_record_usage_counter();
-}
-
-public(package) fun decrement_tag_usage_for_roles(self: &mut TagRegistry, tag: &String) {
-    let counters = vec_map::get_mut(&mut self.tag_map, tag);
-    counters.increment_role_usage_counter();
+    *counters = *counters - 1;
 }
 
 
@@ -156,7 +110,7 @@ public(package) fun decrement_tag_usage_for_roles(self: &mut TagRegistry, tag: &
 
 /// Returns true when the capability's role data allows the requested tag.
 public(package) fun role_allows(
-    roles: &RoleMap<Permission, RoleTagList>,
+    roles: &RoleMap<Permission, RoleTags>,
     cap: &Capability,
     tag: &String,
 ): bool {
