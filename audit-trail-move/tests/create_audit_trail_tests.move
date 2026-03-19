@@ -203,7 +203,6 @@ fun test_create_minimal_metadata() {
 
         let (admin_cap, _trail_id) = main::create<TestData>(
             option::none(),
-            option::none(),
             locking_config,
             option::none(),
             option::none(),

@@ -28,7 +28,23 @@ public struct Record<D: store + copy> has store {
     correction: RecordCorrection,
 }
 
+/// Input used when creating a trail with an initial record.
+public struct InitialRecord<D: store + copy> has copy, drop, store {
+    data: D,
+    metadata: Option<String>,
+    tag: Option<String>,
+}
+
 // ===== Constructors =====
+
+/// Create a new initial-record input.
+public fun new_initial_record<D: store + copy>(
+    data: D,
+    metadata: Option<String>,
+    tag: Option<String>,
+): InitialRecord<D> {
+    InitialRecord { data, metadata, tag }
+}
 
 /// Create a new record
 public(package) fun new<D: store + copy>(
@@ -49,6 +65,25 @@ public(package) fun new<D: store + copy>(
         added_at,
         correction,
     }
+}
+
+/// Convert an initial-record input into a stored record.
+public(package) fun into_record<D: store + copy>(
+    initial_record: InitialRecord<D>,
+    sequence_number: u64,
+    added_by: address,
+    added_at: u64,
+): Record<D> {
+    let InitialRecord { data, metadata, tag } = initial_record;
+    new(
+        data,
+        metadata,
+        tag,
+        sequence_number,
+        added_by,
+        added_at,
+        empty(),
+    )
 }
 
 // ===== Getters =====
@@ -108,7 +143,7 @@ public struct RecordCorrection has copy, drop, store {
 }
 
 /// Create a new correction tracker for a normal (non-correcting) record
-public fun new_correction(): RecordCorrection {
+public fun empty(): RecordCorrection {
     RecordCorrection {
         replaces: vec_set::empty(),
         is_replaced_by: option::none(),

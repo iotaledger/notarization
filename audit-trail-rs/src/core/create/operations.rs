@@ -8,7 +8,7 @@ use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use iota_interaction::types::transaction::{Argument, ProgrammableTransaction};
 
-use crate::core::types::{Data, ImmutableMetadata, LockingConfig};
+use crate::core::types::{ImmutableMetadata, InitialRecord, LockingConfig};
 use crate::core::utils;
 use crate::error::Error;
 
@@ -18,8 +18,7 @@ pub(super) struct CreateTrailArgs {
     pub audit_trail_package_id: ObjectID,
     pub tf_components_package_id: ObjectID,
     pub admin: IotaAddress,
-    pub initial_data: Option<Data>,
-    pub initial_record_metadata: Option<String>,
+    pub initial_record: Option<InitialRecord>,
     pub locking_config: LockingConfig,
     pub trail_metadata: Option<ImmutableMetadata>,
     pub updatable_metadata: Option<String>,
@@ -33,23 +32,25 @@ impl CreateOps {
             audit_trail_package_id,
             tf_components_package_id,
             admin,
-            initial_data,
-            initial_record_metadata,
+            initial_record,
             locking_config,
             trail_metadata,
             updatable_metadata,
             record_tags,
         } = args;
 
-        let initial_data = initial_data.ok_or_else(|| {
+        let initial_record = initial_record.ok_or_else(|| {
             Error::InvalidArgument(
-                "initial_data is required to infer trail record type; use `with_initial_record(...)`".to_string(),
+                "initial_record is required to infer trail record type; use `with_initial_record(...)`".to_string(),
             )
         })?;
-        let data_tag = initial_data.tag();
-        let initial_data_arg = initial_data.into_option_ptb(&mut ptb, "initial_data")?;
-
-        let initial_record_metadata = utils::ptb_pure(&mut ptb, "initial_record_metadata", initial_record_metadata)?;
+        let data_tag = initial_record.data.tag();
+        let initial_record_tag = InitialRecord::tag(audit_trail_package_id, &data_tag);
+        let initial_record_arg = initial_record.into_ptb(&mut ptb, audit_trail_package_id)?;
+        let initial_record =
+            utils::option_to_move(Some(initial_record_arg), initial_record_tag, &mut ptb).map_err(|e| {
+                Error::InvalidArgument(format!("failed to build initial_record option: {e}"))
+            })?;
         let locking_config = locking_config.to_ptb(&mut ptb, audit_trail_package_id, tf_components_package_id)?;
 
         let immutable_metadata_tag = ImmutableMetadata::tag(audit_trail_package_id);
@@ -79,8 +80,7 @@ impl CreateOps {
             ident_str!("create").into(),
             vec![data_tag],
             vec![
-                initial_data_arg,
-                initial_record_metadata,
+                initial_record,
                 locking_config,
                 trail_metadata,
                 updatable_metadata,

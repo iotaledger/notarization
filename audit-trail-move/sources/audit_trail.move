@@ -152,8 +152,7 @@ public fun new_trail_metadata(name: String, description: Option<String>): Immuta
 ///   roles and issue capabilities to other users.
 /// * Trail ID
 public fun create<D: store + copy>(
-    data: Option<D>,
-    record_metadata: Option<String>,
+    initial_record: Option<record::InitialRecord<D>>,
     locking_config: LockingConfig,
     trail_metadata: Option<ImmutableMetadata>,
     updatable_metadata: Option<String>,
@@ -170,15 +169,12 @@ public fun create<D: store + copy>(
     let mut records = linked_table::new<u64, Record<D>>(ctx);
     let mut sequence_number = 0;
 
-    if (data.is_some()) {
-        let record = record::new(
-            data.destroy_some(),
-            record_metadata,
-            option::none(),
+    if (initial_record.is_some()) {
+        let record = record::into_record(
+            initial_record.destroy_some(),
             0,
             creator,
             timestamp,
-            record::new_correction(),
         );
 
         linked_table::push_back(&mut records, 0, record);
@@ -191,7 +187,7 @@ public fun create<D: store + copy>(
             timestamp,
         });
     } else {
-        data.destroy_none();
+        initial_record.destroy_none();
     };
 
     let role_admin_permissions = role_map::new_role_admin_permissions(
@@ -320,7 +316,7 @@ public fun add_record<D: store + copy>(
         seq,
         caller,
         timestamp,
-        record::new_correction(),
+        record::empty(),
     );
 
     linked_table::push_back(&mut self.records, seq, record);

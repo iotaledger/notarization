@@ -1,7 +1,7 @@
 #[test_only]
 module audit_trail::test_utils;
 
-use audit_trail::{locking, main::{Self, AuditTrail}};
+use audit_trail::{locking, main::{Self, AuditTrail}, record};
 use iota::{clock::{Self, Clock}, test_scenario::{Self as ts, Scenario}};
 use std::string;
 use tf_components::{capability::Capability, role_map::RoleMap};
@@ -58,9 +58,19 @@ public(package) fun setup_test_audit_trail_with_tags(
             option::some(string::utf8(b"Setup Test Trail Description")),
         );
 
+        let initial_record = if (initial_data.is_some()) {
+            option::some(record::new_initial_record(
+                initial_data.destroy_some(),
+                option::none(),
+                option::none(),
+            ))
+        } else {
+            initial_data.destroy_none();
+            option::none()
+        };
+
         let (admin_cap, trail_id) = main::create<TestData>(
-            initial_data,
-            option::none(),
+            initial_record,
             locking_config,
             option::some(trail_metadata),
             option::none(),

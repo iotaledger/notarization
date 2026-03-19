@@ -7,7 +7,8 @@ use std::sync::Arc;
 
 use audit_trails::AuditTrailClient;
 use audit_trails::core::types::{
-    Capability, CapabilityIssueOptions, CapabilityIssued, Data, Permission, PermissionSet, RecordTags, RoleCreated,
+    Capability, CapabilityIssueOptions, CapabilityIssued, Data, InitialRecord, Permission, PermissionSet, RecordTags,
+    RoleCreated,
 };
 use iota_interaction::types::base_types::{IotaAddress, ObjectID, ObjectRef};
 use iota_interaction::types::crypto::PublicKey;
@@ -97,7 +98,7 @@ impl TestClient {
     {
         let created = self
             .create_trail()
-            .with_initial_record(data, None)
+            .with_initial_record(InitialRecord::new(data, None, None))
             .with_record_tags(tags)
             .finish()
             .build_and_execute(self)

@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use audit_trails::core::types::{
-    CapabilityIssueOptions, Data, ImmutableMetadata, LockingConfig, LockingWindow, Permission, RecordTags, TimeLock,
+    CapabilityIssueOptions, Data, ImmutableMetadata, InitialRecord, LockingConfig, LockingWindow, Permission,
+    RecordTags, TimeLock,
 };
 use iota_interaction::types::base_types::IotaAddress;
 use product_common::core_client::CoreClient;
@@ -23,7 +24,11 @@ async fn create_trail_with_default_builder_settings() -> anyhow::Result<()> {
 
     let created = client
         .create_trail()
-        .with_initial_record(Data::text("audit-trail-create-default"), None)
+        .with_initial_record(InitialRecord::new(
+            Data::text("audit-trail-create-default"),
+            None,
+            None,
+        ))
         .finish()
         .build_and_execute(&client)
         .await?
@@ -51,10 +56,11 @@ async fn create_trail_with_metadata_and_time_lock() -> anyhow::Result<()> {
 
     let created = client
         .create_trail()
-        .with_initial_record(
+        .with_initial_record(InitialRecord::new(
             Data::text("audit-trail-create-time-lock"),
             Some("initial record metadata".to_string()),
-        )
+            None,
+        ))
         .with_locking_config(config_with_window(LockingWindow::TimeBased { seconds: 300 }))
         .with_trail_metadata(immutable_metadata.clone())
         .with_updatable_metadata("updatable metadata")
@@ -80,10 +86,11 @@ async fn create_trail_with_bytes_and_count_lock() -> anyhow::Result<()> {
 
     let created = client
         .create_trail()
-        .with_initial_record(
+        .with_initial_record(InitialRecord::new(
             Data::bytes(vec![0xAA, 0xBB, 0xCC, 0xDD]),
             Some("bytes metadata".to_string()),
-        )
+            None,
+        ))
         .with_locking_config(config_with_window(LockingWindow::CountBased { count: 3 }))
         .with_trail_metadata_parts("Trail Count Lock", Some("count lock description".to_string()))
         .finish()
@@ -109,7 +116,11 @@ async fn create_trail_with_custom_admin_address() -> anyhow::Result<()> {
     let created = client
         .create_trail()
         .with_admin(custom_admin)
-        .with_initial_record(Data::text("audit-trail-custom-admin"), None)
+        .with_initial_record(InitialRecord::new(
+            Data::text("audit-trail-custom-admin"),
+            None,
+            None,
+        ))
         .finish()
         .build_and_execute(&client)
         .await?
@@ -131,7 +142,7 @@ async fn get_returns_on_chain_trail() -> anyhow::Result<()> {
 
     let created = client
         .create_trail()
-        .with_initial_record(Data::text("trail-get-e2e"), None)
+        .with_initial_record(InitialRecord::new(Data::text("trail-get-e2e"), None, None))
         .with_trail_metadata_parts("Get Test", Some("description".into()))
         .with_updatable_metadata("initial updatable")
         .finish()
@@ -163,7 +174,7 @@ async fn get_trail_without_metadata() -> anyhow::Result<()> {
 
     let created = client
         .create_trail()
-        .with_initial_record(Data::text("trail-no-meta-e2e"), None)
+        .with_initial_record(InitialRecord::new(Data::text("trail-no-meta-e2e"), None, None))
         .finish()
         .build_and_execute(&client)
         .await?
@@ -294,7 +305,11 @@ async fn update_metadata_does_not_affect_immutable_metadata() -> anyhow::Result<
 
     let created = client
         .create_trail()
-        .with_initial_record(Data::text("trail-immutable-check-e2e"), None)
+        .with_initial_record(InitialRecord::new(
+            Data::text("trail-immutable-check-e2e"),
+            None,
+            None,
+        ))
         .with_trail_metadata(immutable.clone())
         .with_updatable_metadata("mutable")
         .finish()
@@ -352,7 +367,11 @@ async fn delete_records_batch_then_delete_audit_trail_roundtrip() -> anyhow::Res
     let client = get_funded_test_client().await?;
     let created = client
         .create_trail()
-        .with_initial_record(Data::text("trail-batch-delete-e2e"), None)
+        .with_initial_record(InitialRecord::new(
+            Data::text("trail-batch-delete-e2e"),
+            None,
+            None,
+        ))
         .with_locking_config(config_with_window(LockingWindow::TimeBased { seconds: 3600 }))
         .finish()
         .build_and_execute(&client)
@@ -404,7 +423,7 @@ async fn manage_record_tag_registry_roundtrip() -> anyhow::Result<()> {
 
     let created = client
         .create_trail()
-        .with_initial_record(Data::text("trail-tag-registry"), None)
+        .with_initial_record(InitialRecord::new(Data::text("trail-tag-registry"), None, None))
         .with_record_tags(["finance"])
         .finish()
         .build_and_execute(&client)
@@ -435,7 +454,7 @@ async fn remove_record_tag_rejects_in_use_tag() -> anyhow::Result<()> {
     let client = get_funded_test_client().await?;
     let created = client
         .create_trail()
-        .with_initial_record(Data::text("trail-tag-in-use"), None)
+        .with_initial_record(InitialRecord::new(Data::text("trail-tag-in-use"), None, None))
         .with_record_tags(["finance"])
         .finish()
         .build_and_execute(&client)
@@ -472,7 +491,11 @@ async fn remove_record_tag_rejects_role_only_usage() -> anyhow::Result<()> {
     let client = get_funded_test_client().await?;
     let created = client
         .create_trail()
-        .with_initial_record(Data::text("trail-tag-role-usage"), None)
+        .with_initial_record(InitialRecord::new(
+            Data::text("trail-tag-role-usage"),
+            None,
+            None,
+        ))
         .with_record_tags(["finance"])
         .finish()
         .build_and_execute(&client)
