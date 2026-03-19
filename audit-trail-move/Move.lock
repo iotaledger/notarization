@@ -2,7 +2,7 @@
 
 [move]
 version = 3
-manifest_digest = "BBDC635C3E5B1F977F4F12056411AADB62CD398CFCA75919B69BE3414CFC8393"
+manifest_digest = "E2DCED5F45474DE4CA933A99DEAB29171001E7D699076C9B2528FA3A74FC2FCE"
 deps_digest = "397E6A9F7A624706DBDFEE056CE88391A15876868FD18A88504DA74EB458D697"
 dependencies = [
   { id = "Iota", name = "Iota" },
@@ -44,7 +44,7 @@ dependencies = [
 
 [[move.package]]
 id = "TfComponents"
-source = { git = "https://github.com/iotaledger/product-core.git", rev = "feat/tf-compoenents-dev", subdir = "components_move" }
+source = { local = "../../product-core/components_move" }
 
 dependencies = [
   { id = "Iota", name = "Iota" },
@@ -61,7 +61,7 @@ flavor = "iota"
 [env]
 
 [env.localnet]
-chain-id = "426effa0"
-original-published-id = "0x4644007b931d759798353f3a1f631f690658f04e3111d8438d211033d35fdd34"
-latest-published-id = "0x4644007b931d759798353f3a1f631f690658f04e3111d8438d211033d35fdd34"
+chain-id = "78a386e3"
+original-published-id = "0xf154e65610afbae141151a26bc624fe57af27917e8e7b1266ab4e8c43659a6ef"
+latest-published-id = "0xf154e65610afbae141151a26bc624fe57af27917e8e7b1266ab4e8c43659a6ef"
 published-version = "1"

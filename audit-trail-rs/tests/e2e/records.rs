@@ -28,6 +28,13 @@ fn assert_text_data(data: Data, expected: &str) {
     }
 }
 
+fn assert_bytes_data(data: Data, expected: &[u8]) {
+    match data {
+        Data::Bytes(actual) => assert_eq!(actual, expected),
+        other => panic!("expected bytes data, got {other:?}"),
+    }
+}
+
 fn config_with_window(delete_record_window: LockingWindow) -> LockingConfig {
     LockingConfig {
         delete_record_window,
@@ -68,23 +75,25 @@ async fn add_and_fetch_record_roundtrip() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn add_record_rejects_mismatched_data_type() -> anyhow::Result<()> {
+async fn add_record_accepts_mixed_data_variants_in_default_trail() -> anyhow::Result<()> {
     let client = get_funded_test_client().await?;
     let trail_id = client.create_test_trail(Data::text("text-trail")).await?;
     let records = client.trail(trail_id).records();
 
     grant_role_capability(&client, trail_id, "RecordWriter", [Permission::AddRecord]).await?;
 
-    let add_mismatch = records
+    let added = records
         .add(Data::bytes(vec![0xFF, 0x00, 0xAA]), Some("binary payload".to_string()))
         .build_and_execute(&client)
-        .await;
+        .await?
+        .output;
 
-    assert!(
-        add_mismatch.is_err(),
-        "adding bytes to a text trail should fail before execution"
-    );
-    assert_eq!(records.record_count().await?, 1);
+    assert_eq!(added.sequence_number, 1);
+    assert_eq!(records.record_count().await?, 2);
+
+    let record = records.get(1).await?;
+    assert_eq!(record.metadata, Some("binary payload".to_string()));
+    assert_bytes_data(record.data, &[0xFF, 0x00, 0xAA]);
 
     Ok(())
 }

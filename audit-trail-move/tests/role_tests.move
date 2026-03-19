@@ -4,11 +4,11 @@ module audit_trail::role_tests;
 
 use audit_trail::{
     locking,
+    record::{Self, Data},
     main::{initial_admin_role_name, AuditTrail},
     permission,
     test_utils::{
         Self,
-        TestData,
         setup_test_audit_trail,
         fetch_capability_trail_and_clock,
         cleanup_capability_trail_and_clock
@@ -195,7 +195,7 @@ fun test_role_based_permission_delegation() {
         // Verify initial record count
         let initial_record_count = trail.records().length();
 
-        let test_data = test_utils::new_test_data(42, b"Test record added by RecordAdmin");
+        let test_data = record::new_text(string::utf8(b"Test record added by RecordAdmin"));
 
         trail.add_record(
             &record_admin_cap,
@@ -556,7 +556,7 @@ fun test_get_role_permissions_nonexistent() {
 
     ts::next_tx(&mut scenario, admin_user);
     {
-        let trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let trail = ts::take_shared<AuditTrail<Data>>(&scenario);
 
         // This should fail - role doesn't exist
         let _perms = trail.access().get_role_permissions(&string::utf8(b"NonExistentRole"));

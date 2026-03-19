@@ -30,9 +30,9 @@ impl RecordsOps {
             Permission::AddRecord,
             "add_record",
             |ptb, trail_tag| {
-                data.ensure_matches_tag(trail_tag)?;
+                Data::ensure_supported_trail_tag(trail_tag, client.package_id())?;
 
-                let data_arg = data.to_ptb(ptb, "stored_data")?;
+                let data_arg = data.to_ptb(ptb, client.package_id())?;
                 let metadata = utils::ptb_pure(ptb, "record_metadata", record_metadata)?;
                 let clock = utils::get_clock_ref(ptb);
                 Ok(vec![data_arg, metadata, clock])

@@ -34,7 +34,7 @@ static AUDIT_TRAIL_PACKAGE_REGISTRY: LazyLock<RwLock<PackageRegistry>> = LazyLoc
 ///
 /// Update this value after publishing TfComponents.
 /// TODO:Replac this with real value
-const TF_COMPONENTS_PACKAGE_ID: &str = "0x5deb1782f8f078d7d85640099466c6513bee3ac261555fb06cb0bbe1f838ab17";
+const TF_COMPONENTS_PACKAGE_ID: &str = "0xefd478a0cca3cc660a46d2b55586fe799c71b331d939ee854272bc24ac16c07f";
 
 /// Returns a read lock to the package registry.
 pub(crate) async fn audit_trail_package_registry() -> PackageRegistryLock {

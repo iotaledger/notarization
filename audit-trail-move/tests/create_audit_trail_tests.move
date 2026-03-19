@@ -4,12 +4,11 @@ module audit_trail::create_audit_trail_tests;
 
 use audit_trail::{
     locking,
+    record::{Self, Data},
     main::{Self, AuditTrail, initial_admin_role_name},
     test_utils::{
         setup_test_audit_trail,
-        new_test_data,
         initial_time_for_testing,
-        TestData,
         fetch_capability_trail_and_clock,
         cleanup_capability_trail_and_clock
     }
@@ -46,7 +45,7 @@ fun test_create_without_initial_record() {
 
     ts::next_tx(&mut scenario, user);
     {
-        let trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let trail = ts::take_shared<AuditTrail<Data>>(&scenario);
 
         // Verify trail was created correctly
         assert!(trail.creator() == user, 2);
@@ -70,7 +69,7 @@ fun test_create_with_initial_record() {
             timelock::none(),
             timelock::none(),
         ); // 1 day in seconds
-        let initial_data = new_test_data(42, b"Hello, World!");
+        let initial_data = record::new_text(string::utf8(b"Hello, World!"));
 
         let (admin_cap, trail_id) = setup_test_audit_trail(
             &mut scenario,
@@ -88,7 +87,7 @@ fun test_create_with_initial_record() {
 
     ts::next_tx(&mut scenario, user);
     {
-        let trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let trail = ts::take_shared<AuditTrail<Data>>(&scenario);
 
         // Verify trail with initial record
         assert!(trail.creator() == user, 2);
@@ -119,7 +118,7 @@ fun test_create_minimal_metadata() {
             timelock::none(),
         );
 
-        let (admin_cap, _trail_id) = main::create<TestData>(
+        let (admin_cap, _trail_id) = main::create<Data>(
             option::none(),
             option::none(),
             locking_config,
@@ -139,7 +138,7 @@ fun test_create_minimal_metadata() {
 
     ts::next_tx(&mut scenario, user);
     {
-        let trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let trail = ts::take_shared<AuditTrail<Data>>(&scenario);
 
         // Verify trail was created
         assert!(trail.creator() == user, 1);
@@ -175,7 +174,7 @@ fun test_create_with_locking_enabled() {
 
     ts::next_tx(&mut scenario, user);
     {
-        let trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let trail = ts::take_shared<AuditTrail<Data>>(&scenario);
 
         // Verify trail with locking enabled
         assert!(trail.creator() == user, 0);

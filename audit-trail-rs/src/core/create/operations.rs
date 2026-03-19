@@ -27,11 +27,12 @@ impl CreateOps {
 
         let initial_data = initial_data.ok_or_else(|| {
             Error::InvalidArgument(
-                "initial_data is required to infer trail record type; use `with_initial_record(...)`".to_string(),
+                "initial_data is required to create the default flexible trail; use `with_initial_record(...)`"
+                    .to_string(),
             )
         })?;
-        let data_tag = initial_data.tag();
-        let initial_data_arg = initial_data.to_option_ptb(&mut ptb, "initial_data")?;
+        let data_tag = Data::tag(audit_trail_package_id);
+        let initial_data_arg = initial_data.to_option_ptb(&mut ptb, audit_trail_package_id)?;
 
         let initial_record_metadata = utils::ptb_pure(&mut ptb, "initial_record_metadata", initial_record_metadata)?;
         let locking_config = locking_config.to_ptb(&mut ptb, audit_trail_package_id, tf_components_package_id)?;
