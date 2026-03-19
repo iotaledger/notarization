@@ -752,14 +752,14 @@ public fun revoke_initial_admin_capability<D: store + copy>(
 ///
 /// Errors:
 /// - Aborts with any error documented by `assert_capability_valid` if the provided capability fails authorization checks.
-public fun cleanup_revoked_capabilities_list<D: store + copy>(
+public fun cleanup_revoked_capabilities<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
     clock: &Clock,
     ctx: &TxContext,
 ) {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    self.access_mut().cleanup_revoked_capabilities_list(
+    self.access_mut().cleanup_revoked_capabilities(
         cap,
         clock,
         ctx,
