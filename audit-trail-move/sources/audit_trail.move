@@ -21,7 +21,13 @@ use audit_trail::{
     record::{Self, Record},
     record_tags::{Self, RecordTags}
 };
-use iota::{clock::{Self, Clock}, event, linked_table::{Self, LinkedTable}, vec_map::{Self, VecMap}, vec_set::VecSet};
+use iota::{
+    clock::{Self, Clock},
+    event,
+    linked_table::{Self, LinkedTable},
+    vec_map::{Self, VecMap},
+    vec_set::VecSet
+};
 use std::string::String;
 use tf_components::{capability::Capability, role_map::{Self, RoleMap}, timelock::TimeLock};
 
@@ -243,13 +249,13 @@ public fun initial_admin_role_name(): String {
 
 /// Migrate the trail to the latest package version
 entry fun migrate<D: store + copy>(
-    trail: &mut AuditTrail<D>,
+    self: &mut AuditTrail<D>,
     cap: &Capability,
     clock: &Clock,
     ctx: &TxContext,
 ) {
-    assert!(trail.version < PACKAGE_VERSION, EPackageVersionMismatch);
-    trail
+    assert!(self.version < PACKAGE_VERSION, EPackageVersionMismatch);
+    self
         .roles
         .assert_capability_valid(
             cap,
@@ -257,7 +263,7 @@ entry fun migrate<D: store + copy>(
             clock,
             ctx,
         );
-    trail.version = PACKAGE_VERSION;
+    self.version = PACKAGE_VERSION;
 }
 
 fun assert_record_tag_allowed<D: store + copy>(
@@ -451,11 +457,13 @@ public fun delete_audit_trail<D: store + copy>(
         records,
         mut tags,
         locking_config: _,
-        roles: _roles,
+        roles,
         immutable_metadata: _,
         updatable_metadata: _,
         version: _,
     } = self;
+
+    roles.destroy();
 
     linked_table::destroy_empty(records);
     while (!vec_map::is_empty(&tags)) {
@@ -771,17 +779,19 @@ public fun new_capability<D: store + copy>(
 public fun revoke_capability<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
-    capability_id: ID,
+    cap_to_revoke: ID,
+    cap_to_revoke_valid_until: Option<u64>,
     clock: &Clock,
-    ctx: &mut TxContext,
+    ctx: &TxContext,
 ) {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
     role_map::revoke_capability(
         self.access_mut(),
         cap,
-        capability_id,
+        cap_to_revoke,
+        cap_to_revoke_valid_until,
         clock,
-        ctx,
+        ctx
     );
 }
 
@@ -831,7 +841,8 @@ public fun destroy_initial_admin_capability<D: store + copy>(
 public fun revoke_initial_admin_capability<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
-    capability_id: ID,
+    cap_to_revoke: ID,
+    cap_to_revoke_valid_until: Option<u64>,
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
@@ -839,7 +850,40 @@ public fun revoke_initial_admin_capability<D: store + copy>(
     role_map::revoke_initial_admin_capability(
         self.access_mut(),
         cap,
-        capability_id,
+        cap_to_revoke,
+        cap_to_revoke_valid_until,
+        clock,
+        ctx);
+}
+
+/// Remove expired entries from the `revoked_capabilities` denylist.
+///
+/// Iterates through the revoked capabilities list and removes every entry whose
+/// `valid_until` timestamp is **non-zero** and **less than** the current clock time,
+/// because those capabilities are already naturally expired and no longer need to
+/// occupy space in the denylist.
+///
+/// Entries with `valid_until == 0` (i.e. capabilities that had no expiry) are kept,
+/// since they remain potentially valid and must stay on the denylist.
+///
+/// Parameters
+/// ----------
+/// - cap: Reference to the capability used to authorize this operation.
+///   Needs to grant the `CapabilityAdminPermissions::revoke` permission.
+/// - clock: Reference to a Clock instance for obtaining the current timestamp.
+/// - ctx: Reference to the transaction context.
+///
+/// Errors:
+/// - Aborts with any error documented by `assert_capability_valid` if the provided capability fails authorization checks.
+public fun cleanup_revoked_capabilities<D: store + copy>(
+    self: &mut AuditTrail<D>,
+    cap: &Capability,
+    clock: &Clock,
+    ctx: &TxContext,
+) {
+    assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
+    self.access_mut().cleanup_revoked_capabilities(
+        cap,
         clock,
         ctx,
     );
@@ -938,13 +982,13 @@ public fun records<D: store + copy>(self: &AuditTrail<D>): &LinkedTable<u64, Rec
 }
 // ===== Access Control Functions =====
 
-/// Returns the RoleMap managing access for the audit trail.
+/// Returns a reference to the RoleMap managing access (roles and capabilities) for the audit trail.
 public fun access<D: store + copy>(self: &AuditTrail<D>): &RoleMap<Permission, RecordTags> {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
     &self.roles
 }
 
-/// Returns a mutable reference to the RoleMap managing access for the audit trail.
+/// Returns a mutable reference to the RoleMap managing access (roles and capabilities) for the audit trail.
 public(package) fun access_mut<D: store + copy>(
     self: &mut AuditTrail<D>,
 ): &mut RoleMap<Permission, RecordTags> {
