@@ -12,6 +12,6 @@ RESPONSE=$(iota client publish --silence-warnings  --json --gas-budget 500000000
 } || { # catch
     echo $RESPONSE
 }
-
+c
 export IOTA_AUDIT_TRAIL_PKG_ID=$PACKAGE_ID
 echo "${IOTA_AUDIT_TRAIL_PKG_ID}"

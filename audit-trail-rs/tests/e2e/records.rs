@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use audit_trails::core::types::{
-    CapabilityIssueOptions, Data, LockingConfig, LockingWindow, Permission, RecordTags, TimeLock,
+    CapabilityIssueOptions, Data, InitialRecord, LockingConfig, LockingWindow, Permission, RecordTags, TimeLock,
 };
 use audit_trails::error::Error;
 use iota_interaction::types::base_types::ObjectID;
@@ -283,7 +283,7 @@ async fn delete_record_fails_while_time_locked() -> anyhow::Result<()> {
     let client = get_funded_test_client().await?;
     let created = client
         .create_trail()
-        .with_initial_record(Data::text("locked"), None)
+        .with_initial_record(InitialRecord::new(Data::text("locked"), None, None))
         .with_locking_config(config_with_window(LockingWindow::TimeBased { seconds: 3600 }))
         .finish()
         .build_and_execute(&client)
@@ -346,7 +346,7 @@ async fn delete_record_fails_while_count_locked() -> anyhow::Result<()> {
     let client = get_funded_test_client().await?;
     let created = client
         .create_trail()
-        .with_initial_record(Data::text("count-locked"), None)
+        .with_initial_record(InitialRecord::new(Data::text("count-locked"), None, None))
         .with_locking_config(config_with_window(LockingWindow::CountBased { count: 5 }))
         .finish()
         .build_and_execute(&client)
@@ -369,7 +369,7 @@ async fn delete_records_batch_respects_limit_and_deletes_oldest_first() -> anyho
     let client = get_funded_test_client().await?;
     let created = client
         .create_trail()
-        .with_initial_record(Data::text("batch-initial"), None)
+        .with_initial_record(InitialRecord::new(Data::text("batch-initial"), None, None))
         .with_locking_config(config_with_window(LockingWindow::TimeBased { seconds: 3600 }))
         .finish()
         .build_and_execute(&client)

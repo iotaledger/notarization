@@ -1,7 +1,9 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use audit_trails::core::types::{CapabilityIssueOptions, Data, LockingConfig, LockingWindow, Permission, TimeLock};
+use audit_trails::core::types::{
+    CapabilityIssueOptions, Data, InitialRecord, LockingConfig, LockingWindow, Permission, TimeLock,
+};
 use iota_interaction::types::base_types::ObjectID;
 
 use crate::client::{TestClient, get_funded_test_client};
@@ -55,7 +57,11 @@ async fn update_locking_config_switches_count_to_time_based() -> anyhow::Result<
     let client = get_funded_test_client().await?;
     let trail_id = client
         .create_trail()
-        .with_initial_record(Data::text("trail-switch-count-to-time-e2e"), None)
+        .with_initial_record(InitialRecord::new(
+            Data::text("trail-switch-count-to-time-e2e"),
+            None,
+            None,
+        ))
         .with_locking_config(config_with_window(LockingWindow::CountBased { count: 3 }))
         .finish()
         .build_and_execute(&client)
@@ -244,7 +250,11 @@ async fn is_record_locked_supports_count_window_and_missing_sequence() -> anyhow
     let client = get_funded_test_client().await?;
     let trail_id = client
         .create_trail()
-        .with_initial_record(Data::text("trail-locking-status-e2e"), None)
+        .with_initial_record(InitialRecord::new(
+            Data::text("trail-locking-status-e2e"),
+            None,
+            None,
+        ))
         .with_locking_config(config_with_window(LockingWindow::CountBased { count: 2 }))
         .finish()
         .build_and_execute(&client)

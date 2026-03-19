@@ -56,8 +56,7 @@ impl CreateTrail {
     {
         let AuditTrailBuilder {
             admin,
-            record: data,
-            record_metadata,
+            initial_record,
             locking_config,
             trail_metadata,
             updatable_metadata,
@@ -76,8 +75,7 @@ impl CreateTrail {
             audit_trail_package_id: client.package_id(),
             tf_components_package_id,
             admin,
-            initial_data: data,
-            initial_record_metadata: record_metadata,
+            initial_record,
             locking_config,
             trail_metadata,
             updatable_metadata,
