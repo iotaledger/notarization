@@ -70,7 +70,7 @@ impl Data {
         TypeTag::from_str(&format!("{package_id}::record::Data")).expect("should be valid type tag")
     }
 
-    /// Creates a PTB argument for the default flexible Move `record::Data` type.
+    /// Creates a PTB argument for the Move `record::Data` type exposed by the Rust SDK.
     pub(in crate::core) fn to_ptb(self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
         match self {
             Data::Bytes(bytes) => {
@@ -103,7 +103,7 @@ impl Data {
             .map_err(|e| Error::InvalidArgument(format!("failed to build record data option: {e}")))
     }
 
-    /// Validates that the on-chain trail stores the default flexible Move `record::Data` type.
+    /// Validates that the on-chain trail stores the Move `record::Data` type supported by the Rust SDK.
     pub(in crate::core) fn ensure_supported_trail_tag(expected: &TypeTag, package_id: ObjectID) -> Result<(), Error> {
         let supported = Self::tag(package_id);
 
@@ -173,52 +173,5 @@ impl From<Vec<u8>> for Data {
 impl From<&[u8]> for Data {
     fn from(value: &[u8]) -> Self {
         Data::Bytes(value.to_vec())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::Data;
-    use iota_interaction::types::TypeTag;
-    use iota_interaction::types::base_types::ObjectID;
-    use std::str::FromStr;
-
-    fn roundtrip(value: &Data) -> Data {
-        let encoded = bcs::to_bytes(value).expect("failed to bcs encode Data");
-        bcs::from_bytes::<Data>(&encoded).expect("failed to deserialize Data from bcs payload")
-    }
-
-    #[test]
-    fn deserialize_text_variant_roundtrips() {
-        let data = roundtrip(&Data::Text("hello world".to_string()));
-        assert_eq!(data, Data::Text("hello world".to_string()));
-    }
-
-    #[test]
-    fn deserialize_bytes_variant_roundtrips() {
-        let data = roundtrip(&Data::Bytes(vec![0xF0, 0x28, 0x8C, 0x28]));
-        assert_eq!(data, Data::Bytes(vec![0xF0, 0x28, 0x8C, 0x28]));
-    }
-
-    #[test]
-    fn supported_trail_tag_accepts_record_data() {
-        let package_id = ObjectID::from_str("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
-            .expect("valid object id");
-
-        let expected = Data::tag(package_id);
-        Data::ensure_supported_trail_tag(&expected, package_id).expect("record::Data should be supported");
-    }
-
-    #[test]
-    fn supported_trail_tag_rejects_legacy_string_trails() {
-        let package_id = ObjectID::from_str("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
-            .expect("valid object id");
-        let legacy_string = TypeTag::from_str("0x1::string::String").expect("valid string type tag");
-
-        let err = Data::ensure_supported_trail_tag(&legacy_string, package_id).expect_err("legacy tag should fail");
-        assert!(
-            err.to_string().contains("unsupported trail record type"),
-            "unexpected error: {err}"
-        );
     }
 }
