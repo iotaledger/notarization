@@ -9,25 +9,43 @@ use iota::{vec_map::{Self, VecMap}, vec_set::{Self, VecSet}};
 use std::string::String;
 use tf_components::{capability::Capability, role_map::{Self, RoleMap}};
 
+// ----------- RoleTags -------
+
 /// Stores all record tag related data associated with a role in the RoleMap.
-public struct RecordTags has copy, drop, store {
+/// Contains a list of allowlisted tags for the role.
+public struct RoleTags has copy, drop, store {
     tags: VecSet<String>,
 }
 
-/// Create a role-scoped record-tag access list.
-public fun new_record_tags(tags: vector<String>): RecordTags {
-    RecordTags {
+/// Create a new `RoleTags`.
+public fun new_role_tag_list(tags: vector<String>): RoleTags {
+    RoleTags {
         tags: vec_set::from_keys(tags),
     }
 }
 
-/// Get the allowlisted record tags for a role.
-public fun allowed_record_tags(record_tags: &RecordTags): &VecSet<String> {
-    &record_tags.tags
+/// Get the allowlisted record tags for a role from a `RoleTags`.
+public fun tags(self: &RoleTags): &VecSet<String> {
+    &self.tags
 }
 
-/// Create a zeroed usage counter for all tags in the trail list
-public(package) fun new_usage(mut tags: vector<String>): VecMap<String, u64> {
+// ----------- TagRegistry -------
+
+/// A registry of tags available for use on an audit trail, along with usage counts
+/// to track how many records and roles are currently using each tag.
+/// Usage counts for roles and tags are summed and build a combined usage count.
+public struct TagRegistry has copy, drop, store {
+    tag_map: VecMap<String, u64>,
+}
+
+/// Get a mapping of record tag names to `u64`.
+public fun tag_map(self: &TagRegistry): &VecMap<String, u64> {
+    &self.tag_map
+}
+
+/// Create a `TagRegistry` with zeroed usage counts to manage a list of available tags to be
+/// associated with records and roles on an audit trail.
+public(package) fun new_tag_registry(mut tags: vector<String>): TagRegistry {
     let mut usage = vec_map::empty<String, u64>();
     tags.reverse();
 
@@ -35,25 +53,25 @@ public(package) fun new_usage(mut tags: vector<String>): VecMap<String, u64> {
         vec_map::insert(&mut usage, tags.pop_back(), 0);
     };
 
-    usage
+    TagRegistry { tag_map: usage }
 }
 
-/// Returns true when all provided role tags are defined on the trail.
-public(package) fun defined_for_trail(
-    available_tags: &VecMap<String, u64>,
-    record_tags: &Option<RecordTags>,
+/// Returns true when all provided `role_tags` (tags associated with a role) are contained in the `TagRegistry`.
+public(package) fun contains_all_role_tags(
+    self: &TagRegistry,
+    role_tags: &Option<RoleTags>,
 ): bool {
-    if (!record_tags.is_some()) {
+    if (!role_tags.is_some()) {
         return true
     };
 
-    let tags = &option::borrow(record_tags).tags;
+    let tags = &option::borrow(role_tags).tags;
     let allowed_tag_keys = iota::vec_set::keys(tags);
     let mut i = 0;
     let tag_count = allowed_tag_keys.length();
 
     while (i < tag_count) {
-        if (!iota::vec_map::contains(available_tags, &allowed_tag_keys[i])) {
+        if (!iota::vec_map::contains(&self.tag_map, &allowed_tag_keys[i])) {
             return false
         };
         i = i + 1;
@@ -62,14 +80,37 @@ public(package) fun defined_for_trail(
     true
 }
 
-/// Returns true when the requested tag exists in the trail registry.
-public(package) fun is_defined(available_tags: &VecMap<String, u64>, tag: &String): bool {
-    iota::vec_map::contains(available_tags, tag)
+/// Returns true when the specified tag is contained in the `TagRegistry`.
+public(package) fun contains(self: &TagRegistry, tag: &String): bool {
+    iota::vec_map::contains(&self.tag_map, tag)
 }
+
+/// Returns the current combined usage count (sum of role and record usages) for a tag.
+/// Returns `Option::none()` if the tag is not contained in the registry.
+public(package) fun usage_count(self: &TagRegistry, tag: &String): Option<u64> {
+    if (self.tag_map.contains(tag)) {
+        option::some(*self.tag_map.get(tag))
+    } else {
+        option::none()
+    }
+}
+
+public(package) fun increment_usage_count(self: &mut TagRegistry, tag: &String) {
+    let counters = vec_map::get_mut(&mut self.tag_map, tag);
+    *counters = *counters + 1;
+}
+
+public(package) fun decrement_usage_count(self: &mut TagRegistry, tag: &String) {
+    let counters = vec_map::get_mut(&mut self.tag_map, tag);
+    *counters = *counters - 1;
+}
+
+
+// ----------- RoleMap related -------
 
 /// Returns true when the capability's role data allows the requested tag.
 public(package) fun role_allows(
-    roles: &RoleMap<Permission, RecordTags>,
+    roles: &RoleMap<Permission, RoleTags>,
     cap: &Capability,
     tag: &String,
 ): bool {
@@ -80,23 +121,4 @@ public(package) fun role_allows(
 
     let tags = &option::borrow(role_tags).tags;
     iota::vec_set::contains(tags, tag)
-}
-
-/// Returns the current combined usage count for a tag across records and roles.
-public(package) fun usage_count(usage: &VecMap<String, u64>, tag: &String): u64 {
-    if (vec_map::contains(usage, tag)) {
-        *vec_map::get(usage, tag)
-    } else {
-        0
-    }
-}
-
-public(package) fun increment_tag_usage(usage: &mut VecMap<String, u64>, tag: &String) {
-    let count = vec_map::get_mut(usage, tag);
-    *count = *count + 1;
-}
-
-public(package) fun decrement_tag_usage(usage: &mut VecMap<String, u64>, tag: &String) {
-    let count = vec_map::get_mut(usage, tag);
-    *count = *count - 1;
 }
