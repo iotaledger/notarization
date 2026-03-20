@@ -19,7 +19,7 @@ use audit_trail::{
     },
     permission::{Self, Permission},
     record::{Self, Record},
-    record_tags::{Self, RoleTags}
+    record_tags::{Self, RoleTags, TagRegistry}
 };
 use iota::{
     clock::{Self, Clock},
@@ -656,12 +656,12 @@ public fun create_role<D: store + copy>(
     );
 
     if (record_tags.is_some()) {
-        let tags = iota::vec_set::keys(record_tags::allowed_record_tags(option::borrow(&record_tags)));
+        let tags = record_tags.borrow().tags().keys();
         let mut i = 0;
         let tag_count = tags.length();
 
         while (i < tag_count) {
-            record_tags::increment_tag_usage(&mut self.tags, &tags[i]);
+            self.tags.increment_usage_count(&tags[i]);
             i = i + 1;
         };
     };
@@ -692,23 +692,23 @@ public fun update_role_permissions<D: store + copy>(
     );
 
     if (old_record_tags.is_some()) {
-        let tags = iota::vec_set::keys(record_tags::allowed_record_tags(option::borrow(&old_record_tags)));
+        let tags = old_record_tags.borrow().tags().keys();
         let mut i = 0;
         let tag_count = tags.length();
 
         while (i < tag_count) {
-            record_tags::decrement_tag_usage(&mut self.tags, &tags[i]);
+            self.tags.decrement_usage_count(&tags[i]);
             i = i + 1;
         };
     };
 
     if (record_tags.is_some()) {
-        let tags = iota::vec_set::keys(record_tags::allowed_record_tags(option::borrow(&record_tags)));
+        let tags = record_tags.borrow().tags().keys();
         let mut i = 0;
         let tag_count = tags.length();
 
         while (i < tag_count) {
-            record_tags::increment_tag_usage(&mut self.tags, &tags[i]);
+            self.tags.increment_usage_count(&tags[i]);
             i = i + 1;
         };
     };
@@ -727,12 +727,12 @@ public fun delete_role<D: store + copy>(
     role_map::delete_role(self.access_mut(), cap, &role, clock, ctx);
 
     if (old_record_tags.is_some()) {
-        let tags = iota::vec_set::keys(record_tags::allowed_record_tags(option::borrow(&old_record_tags)));
+        let tags = old_record_tags.borrow().tags().keys();
         let mut i = 0;
         let tag_count = tags.length();
 
         while (i < tag_count) {
-            record_tags::decrement_tag_usage(&mut self.tags, &tags[i]);
+            self.tags.decrement_usage_count(&tags[i]);
             i = i + 1;
         };
     };
@@ -939,7 +939,7 @@ public fun locking_config<D: store + copy>(self: &AuditTrail<D>): &LockingConfig
 }
 
 /// Get the trail-defined record tags and their combined usage counts.
-public fun tags<D: store + copy>(self: &AuditTrail<D>): &VecMap<String, u64> {
+public fun tags<D: store + copy>(self: &AuditTrail<D>): &TagRegistry {
     &self.tags
 }
 

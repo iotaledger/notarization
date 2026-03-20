@@ -72,6 +72,10 @@ public(package) fun remove_tag(self: &mut TagRegistry, tag: &String) {
     self.tag_map.remove(tag);
 }
 
+public(package) fun tag_keys(self: &TagRegistry): vector<String> {
+    iota::vec_map::keys(&self.tag_map)
+}
+
 /// Returns true when all provided `role_tags` (tags associated with a role) are contained in the `TagRegistry`.
 public(package) fun contains_all_role_tags(
     self: &TagRegistry,

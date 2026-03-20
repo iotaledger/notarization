@@ -121,9 +121,9 @@ fun test_tag_admin_role_can_manage_available_record_tags() {
             ts::ctx(&mut scenario),
         );
 
-        let available_tags = trail.tags();
-        assert!(vec_map::size(available_tags) == 1, 0);
-        assert!(vec_map::contains(available_tags, &string::utf8(b"finance")), 1);
+        let available_tags = trail.tags().tag_keys();
+        assert!(available_tags.length() == 1, 0);
+        assert!(available_tags.contains(&string::utf8(b"finance")), 1);
 
         trail.remove_record_tag(
             &tag_admin_cap,
@@ -132,8 +132,8 @@ fun test_tag_admin_role_can_manage_available_record_tags() {
             ts::ctx(&mut scenario),
         );
 
-        let available_tags = trail.tags();
-        assert!(vec_map::size(available_tags) == 0, 0);
+        let available_tags = trail.tags().tag_keys();
+        assert!(available_tags.length() == 0, 2);
 
         cleanup_capability_trail_and_clock(&scenario, tag_admin_cap, trail, clock);
     };
