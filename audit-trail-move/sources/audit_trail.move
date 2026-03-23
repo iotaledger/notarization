@@ -636,26 +636,26 @@ public fun create_role<D: store + copy>(
     cap: &Capability,
     role: String,
     permissions: VecSet<Permission>,
-    record_tags: Option<RoleTags>,
+    role_tags: Option<RoleTags>,
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
 
-    assert!(self.tags.contains_all_role_tags(&record_tags), ERecordTagNotDefined);
+    assert!(self.tags.contains_all_role_tags(&role_tags), ERecordTagNotDefined);
 
     role_map::create_role(
         self.access_mut(),
         cap,
         role,
         permissions,
-        copy record_tags,
+        copy role_tags,
         clock,
         ctx,
     );
 
-    if (record_tags.is_some()) {
-        let tags = record_tags.borrow().tags().keys();
+    if (role_tags.is_some()) {
+        let tags = role_tags.borrow().tags().keys();
         let mut i = 0;
         let tag_count = tags.length();
 
@@ -672,20 +672,20 @@ public fun update_role_permissions<D: store + copy>(
     cap: &Capability,
     role: String,
     new_permissions: VecSet<Permission>,
-    record_tags: Option<RoleTags>,
+    role_tags: Option<RoleTags>,
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
 
-    assert!(self.tags.contains_all_role_tags(&record_tags), ERecordTagNotDefined);
+    assert!(self.tags.contains_all_role_tags(&role_tags), ERecordTagNotDefined);
     let old_record_tags = *role_map::get_role_data(self.access(), &role);
     role_map::update_role(
         self.access_mut(),
         cap,
         &role,
         new_permissions,
-        copy record_tags,
+        copy role_tags,
         clock,
         ctx,
     );
@@ -701,8 +701,8 @@ public fun update_role_permissions<D: store + copy>(
         };
     };
 
-    if (record_tags.is_some()) {
-        let tags = record_tags.borrow().tags().keys();
+    if (role_tags.is_some()) {
+        let tags = role_tags.borrow().tags().keys();
         let mut i = 0;
         let tag_count = tags.length();
 
