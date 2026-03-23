@@ -16,7 +16,7 @@ use audit_trail::{
         new_capability_for_address
     }
 };
-use iota::{clock, test_scenario as ts, vec_map};
+use iota::{clock, test_scenario as ts};
 use std::string;
 use tf_components::timelock;
 

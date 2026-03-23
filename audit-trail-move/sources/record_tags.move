@@ -136,7 +136,7 @@ public(package) fun decrement_usage_count(self: &mut TagRegistry, tag: &String) 
 /// Returns if the specified is in use.
 /// Returns false if the tag is not contained in the registry.
 public(package) fun is_in_use(self: &TagRegistry, tag: &String): bool {
-    self.usage_count(tag).borrow_with_default(&0) == 0
+    (*self.usage_count(tag).borrow_with_default(&0)) > 0
 }
 
 

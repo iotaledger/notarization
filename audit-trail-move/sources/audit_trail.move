@@ -25,7 +25,6 @@ use iota::{
     clock::{Self, Clock},
     event,
     linked_table::{Self, LinkedTable},
-    vec_map::{Self, VecMap},
     vec_set::VecSet
 };
 use std::string::String;
@@ -455,7 +454,7 @@ public fun delete_audit_trail<D: store + copy>(
         created_at: _,
         sequence_number: _,
         records,
-        mut tags,
+        tags,
         locking_config: _,
         roles,
         immutable_metadata: _,
