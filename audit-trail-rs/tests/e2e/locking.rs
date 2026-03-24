@@ -250,11 +250,7 @@ async fn is_record_locked_supports_count_window_and_missing_sequence() -> anyhow
     let client = get_funded_test_client().await?;
     let trail_id = client
         .create_trail()
-        .with_initial_record(InitialRecord::new(
-            Data::text("trail-locking-status-e2e"),
-            None,
-            None,
-        ))
+        .with_initial_record(InitialRecord::new(Data::text("trail-locking-status-e2e"), None, None))
         .with_locking_config(config_with_window(LockingWindow::CountBased { count: 2 }))
         .finish()
         .build_and_execute(&client)

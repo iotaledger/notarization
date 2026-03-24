@@ -47,10 +47,8 @@ impl CreateOps {
         let data_tag = initial_record.data.tag();
         let initial_record_tag = InitialRecord::tag(audit_trail_package_id, &data_tag);
         let initial_record_arg = initial_record.into_ptb(&mut ptb, audit_trail_package_id)?;
-        let initial_record =
-            utils::option_to_move(Some(initial_record_arg), initial_record_tag, &mut ptb).map_err(|e| {
-                Error::InvalidArgument(format!("failed to build initial_record option: {e}"))
-            })?;
+        let initial_record = utils::option_to_move(Some(initial_record_arg), initial_record_tag, &mut ptb)
+            .map_err(|e| Error::InvalidArgument(format!("failed to build initial_record option: {e}")))?;
         let locking_config = locking_config.to_ptb(&mut ptb, audit_trail_package_id, tf_components_package_id)?;
 
         let immutable_metadata_tag = ImmutableMetadata::tag(audit_trail_package_id);
