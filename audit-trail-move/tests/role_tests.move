@@ -249,7 +249,7 @@ fun test_create_role_rejects_undefined_record_tags() {
             &admin_cap,
             string::utf8(b"TaggedRole"),
             perms,
-            std::option::some(record_tags::new_record_tags(vector[string::utf8(b"finance")])),
+            std::option::some(record_tags::new_role_tags(vector[string::utf8(b"finance")])),
             &clock,
             ts::ctx(&mut scenario),
         );
@@ -354,7 +354,7 @@ fun test_remove_record_tag_rejects_role_only_usage() {
             &admin_cap,
             string::utf8(b"TaggedRole"),
             perms,
-            std::option::some(record_tags::new_record_tags(vector[string::utf8(b"finance")])),
+            std::option::some(record_tags::new_role_tags(vector[string::utf8(b"finance")])),
             &clock,
             ts::ctx(&mut scenario),
         );
@@ -763,7 +763,7 @@ fun test_update_role_permissions_rejects_undefined_record_tags() {
             &admin_cap,
             string::utf8(b"TestRole"),
             permission::from_vec(vector[permission::add_record()]),
-            std::option::some(record_tags::new_record_tags(vector[string::utf8(b"finance")])),
+            std::option::some(record_tags::new_role_tags(vector[string::utf8(b"finance")])),
             &clock,
             ts::ctx(&mut scenario),
         );

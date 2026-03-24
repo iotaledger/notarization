@@ -18,7 +18,7 @@ public struct RoleTags has copy, drop, store {
 }
 
 /// Create a new `RoleTags`.
-public fun new_role_tag_list(tags: vector<String>): RoleTags {
+public fun new_role_tags(tags: vector<String>): RoleTags {
     RoleTags {
         tags: vec_set::from_keys(tags),
     }
@@ -54,6 +54,26 @@ public(package) fun new_tag_registry(mut tags: vector<String>): TagRegistry {
     };
 
     TagRegistry { tag_map: usage }
+}
+
+/// Destroys the `TagRegistry` by emptying the internal tag map and then destroying it.
+public(package) fun destroy(mut self: TagRegistry) {
+    while (!self.tag_map.is_empty()) {
+        let (_, _) = self.tag_map.pop();
+    };
+    self.tag_map.destroy_empty();
+}
+
+public(package) fun insert_tag(self: &mut TagRegistry, tag: String, usage_count: u64) {
+    self.tag_map.insert(tag, usage_count);
+}
+
+public(package) fun remove_tag(self: &mut TagRegistry, tag: &String) {
+    self.tag_map.remove(tag);
+}
+
+public(package) fun tag_keys(self: &TagRegistry): vector<String> {
+    iota::vec_map::keys(&self.tag_map)
 }
 
 /// Returns true when all provided `role_tags` (tags associated with a role) are contained in the `TagRegistry`.
@@ -95,14 +115,28 @@ public(package) fun usage_count(self: &TagRegistry, tag: &String): Option<u64> {
     }
 }
 
+/// Increments the usage count for a tag by 1.
+/// Will be without effect if the tag is not contained in the registry.
 public(package) fun increment_usage_count(self: &mut TagRegistry, tag: &String) {
-    let counters = vec_map::get_mut(&mut self.tag_map, tag);
-    *counters = *counters + 1;
+    if (self.tag_map.contains(tag)) {
+        let counters = vec_map::get_mut(&mut self.tag_map, tag);
+        *counters = *counters + 1;
+    };
 }
 
+/// Decrements the usage count for a tag by 1.
+/// Will be without effect if the tag is not contained in the registry.
 public(package) fun decrement_usage_count(self: &mut TagRegistry, tag: &String) {
-    let counters = vec_map::get_mut(&mut self.tag_map, tag);
-    *counters = *counters - 1;
+    if (self.tag_map.contains(tag)) {
+        let counters = vec_map::get_mut(&mut self.tag_map, tag);
+        *counters = *counters - 1;
+    };
+}
+
+/// Returns if the specified is in use.
+/// Returns false if the tag is not contained in the registry.
+public(package) fun is_in_use(self: &TagRegistry, tag: &String): bool {
+    (*self.usage_count(tag).borrow_with_default(&0)) > 0
 }
 
 

@@ -19,13 +19,12 @@ use audit_trail::{
     },
     permission::{Self, Permission},
     record::{Self, Record},
-    record_tags::{Self, RecordTags}
+    record_tags::{Self, RoleTags, TagRegistry}
 };
 use iota::{
     clock::{Self, Clock},
     event,
     linked_table::{Self, LinkedTable},
-    vec_map::{Self, VecMap},
     vec_set::VecSet
 };
 use std::string::String;
@@ -87,11 +86,11 @@ public struct AuditTrail<D: store + copy> has key, store {
     /// LinkedTable mapping sequence numbers to records
     records: LinkedTable<u64, Record<D>>,
     /// Canonical list of tags that may be attached to records in this trail with their combined usage counts
-    tags: VecMap<String, u64>,
+    tags: record_tags::TagRegistry,
     /// Deletion locking rules
     locking_config: LockingConfig,
     /// A list of role definitions consisting of a unique role specifier and a list of associated permissions
-    roles: RoleMap<Permission, RecordTags>,
+    roles: RoleMap<Permission, RoleTags>,
     /// Set at creation, cannot be changed
     immutable_metadata: Option<ImmutableMetadata>,
     /// Can be updated by holders of MetadataUpdate permission
@@ -216,7 +215,7 @@ public fun create<D: store + copy>(
         ctx,
     );
 
-    let tags = record_tags::new_usage(tags);
+    let tags = record_tags::new_tag_registry(tags);
 
     let trail = AuditTrail {
         id: trail_uid,
@@ -276,7 +275,7 @@ fun assert_record_tag_allowed<D: store + copy>(
     };
 
     let requested_tag = option::borrow(tag);
-    assert!(record_tags::is_defined(&self.tags, requested_tag), ERecordTagNotDefined);
+    assert!(record_tags::contains(&self.tags, requested_tag), ERecordTagNotDefined);
     assert!(record_tags::role_allows(&self.roles, cap, requested_tag), ERecordTagNotAllowed);
 }
 
@@ -312,7 +311,7 @@ public fun add_record<D: store + copy>(
     let seq = self.sequence_number;
 
     if (record_tag.is_some()) {
-        record_tags::increment_tag_usage(&mut self.tags, option::borrow(&record_tag));
+        record_tags::increment_usage_count(&mut self.tags, option::borrow(&record_tag));
     };
 
     let record = record::new(
@@ -365,7 +364,7 @@ public fun delete_record<D: store + copy + drop>(
 
     let record = linked_table::remove(&mut self.records, sequence_number);
     if (record::tag(&record).is_some()) {
-        record_tags::decrement_tag_usage(&mut self.tags, option::borrow(record::tag(&record)));
+        record_tags::decrement_usage_count(&mut self.tags, option::borrow(record::tag(&record)));
     };
     record::destroy(record);
 
@@ -407,7 +406,7 @@ public fun delete_records_batch<D: store + copy + drop>(
         let (sequence_number, record) = self.records.pop_front();
 
         if (record::tag(&record).is_some()) {
-            record_tags::decrement_tag_usage(&mut self.tags, option::borrow(record::tag(&record)));
+            record_tags::decrement_usage_count(&mut self.tags, option::borrow(record::tag(&record)));
         };
 
         record.destroy();
@@ -455,7 +454,7 @@ public fun delete_audit_trail<D: store + copy>(
         created_at: _,
         sequence_number: _,
         records,
-        mut tags,
+        tags,
         locking_config: _,
         roles,
         immutable_metadata: _,
@@ -464,12 +463,9 @@ public fun delete_audit_trail<D: store + copy>(
     } = self;
 
     roles.destroy();
-
     linked_table::destroy_empty(records);
-    while (!vec_map::is_empty(&tags)) {
-        let (_, _) = vec_map::pop(&mut tags);
-    };
-    vec_map::destroy_empty(tags);
+    tags.destroy();
+
     object::delete(id);
 
     event::emit(AuditTrailDeleted { trail_id, timestamp });
@@ -610,8 +606,8 @@ public fun add_record_tag<D: store + copy>(
 
     self.roles.assert_capability_valid(cap, &permission::add_record_tags(), clock, ctx);
 
-    assert!(!iota::vec_map::contains(&self.tags, &tag), ERecordTagAlreadyDefined);
-    vec_map::insert(&mut self.tags, tag, 0);
+    assert!(!self.tags.contains(&tag), ERecordTagAlreadyDefined);
+    self.tags.insert_tag(tag, 0);
 }
 
 /// Removes a record tag from the trail registry if it is not used by any record.
@@ -626,9 +622,10 @@ public fun remove_record_tag<D: store + copy>(
 
     self.roles.assert_capability_valid(cap, &permission::delete_record_tags(), clock, ctx);
 
-    assert!(iota::vec_map::contains(&self.tags, &tag), ERecordTagNotDefined);
-    assert!(record_tags::usage_count(&self.tags, &tag) == 0, ERecordTagInUse);
-    vec_map::remove(&mut self.tags, &tag);
+    assert!(self.tags.contains(&tag), ERecordTagNotDefined);
+    assert!(!self.tags.is_in_use(&tag), ERecordTagInUse);
+
+    self.tags.remove_tag(&tag);
 }
 
 // ===== Role and Capability Administration =====
@@ -639,31 +636,31 @@ public fun create_role<D: store + copy>(
     cap: &Capability,
     role: String,
     permissions: VecSet<Permission>,
-    record_tags: Option<RecordTags>,
+    role_tags: Option<RoleTags>,
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
 
-    assert!(record_tags::defined_for_trail(&self.tags, &record_tags), ERecordTagNotDefined);
+    assert!(self.tags.contains_all_role_tags(&role_tags), ERecordTagNotDefined);
 
     role_map::create_role(
         self.access_mut(),
         cap,
         role,
         permissions,
-        copy record_tags,
+        copy role_tags,
         clock,
         ctx,
     );
 
-    if (record_tags.is_some()) {
-        let tags = iota::vec_set::keys(record_tags::allowed_record_tags(option::borrow(&record_tags)));
+    if (role_tags.is_some()) {
+        let tags = role_tags.borrow().tags().keys();
         let mut i = 0;
         let tag_count = tags.length();
 
         while (i < tag_count) {
-            record_tags::increment_tag_usage(&mut self.tags, &tags[i]);
+            self.tags.increment_usage_count(&tags[i]);
             i = i + 1;
         };
     };
@@ -675,42 +672,42 @@ public fun update_role_permissions<D: store + copy>(
     cap: &Capability,
     role: String,
     new_permissions: VecSet<Permission>,
-    record_tags: Option<RecordTags>,
+    role_tags: Option<RoleTags>,
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
 
-    assert!(record_tags::defined_for_trail(&self.tags, &record_tags), ERecordTagNotDefined);
+    assert!(self.tags.contains_all_role_tags(&role_tags), ERecordTagNotDefined);
     let old_record_tags = *role_map::get_role_data(self.access(), &role);
     role_map::update_role(
         self.access_mut(),
         cap,
         &role,
         new_permissions,
-        copy record_tags,
+        copy role_tags,
         clock,
         ctx,
     );
 
     if (old_record_tags.is_some()) {
-        let tags = iota::vec_set::keys(record_tags::allowed_record_tags(option::borrow(&old_record_tags)));
+        let tags = old_record_tags.borrow().tags().keys();
         let mut i = 0;
         let tag_count = tags.length();
 
         while (i < tag_count) {
-            record_tags::decrement_tag_usage(&mut self.tags, &tags[i]);
+            self.tags.decrement_usage_count(&tags[i]);
             i = i + 1;
         };
     };
 
-    if (record_tags.is_some()) {
-        let tags = iota::vec_set::keys(record_tags::allowed_record_tags(option::borrow(&record_tags)));
+    if (role_tags.is_some()) {
+        let tags = role_tags.borrow().tags().keys();
         let mut i = 0;
         let tag_count = tags.length();
 
         while (i < tag_count) {
-            record_tags::increment_tag_usage(&mut self.tags, &tags[i]);
+            self.tags.increment_usage_count(&tags[i]);
             i = i + 1;
         };
     };
@@ -729,12 +726,12 @@ public fun delete_role<D: store + copy>(
     role_map::delete_role(self.access_mut(), cap, &role, clock, ctx);
 
     if (old_record_tags.is_some()) {
-        let tags = iota::vec_set::keys(record_tags::allowed_record_tags(option::borrow(&old_record_tags)));
+        let tags = old_record_tags.borrow().tags().keys();
         let mut i = 0;
         let tag_count = tags.length();
 
         while (i < tag_count) {
-            record_tags::decrement_tag_usage(&mut self.tags, &tags[i]);
+            self.tags.decrement_usage_count(&tags[i]);
             i = i + 1;
         };
     };
@@ -941,7 +938,7 @@ public fun locking_config<D: store + copy>(self: &AuditTrail<D>): &LockingConfig
 }
 
 /// Get the trail-defined record tags and their combined usage counts.
-public fun tags<D: store + copy>(self: &AuditTrail<D>): &VecMap<String, u64> {
+public fun tags<D: store + copy>(self: &AuditTrail<D>): &TagRegistry {
     &self.tags
 }
 
@@ -983,7 +980,7 @@ public fun records<D: store + copy>(self: &AuditTrail<D>): &LinkedTable<u64, Rec
 // ===== Access Control Functions =====
 
 /// Returns a reference to the RoleMap managing access (roles and capabilities) for the audit trail.
-public fun access<D: store + copy>(self: &AuditTrail<D>): &RoleMap<Permission, RecordTags> {
+public fun access<D: store + copy>(self: &AuditTrail<D>): &RoleMap<Permission, RoleTags> {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
     &self.roles
 }
@@ -991,7 +988,7 @@ public fun access<D: store + copy>(self: &AuditTrail<D>): &RoleMap<Permission, R
 /// Returns a mutable reference to the RoleMap managing access (roles and capabilities) for the audit trail.
 public(package) fun access_mut<D: store + copy>(
     self: &mut AuditTrail<D>,
-): &mut RoleMap<Permission, RecordTags> {
+): &mut RoleMap<Permission, RoleTags> {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
     &mut self.roles
 }
