@@ -1,7 +1,7 @@
 #[test_only]
 module audit_trail::test_utils;
 
-use audit_trail::{locking, main::{Self, AuditTrail}};
+use audit_trail::{locking, main::{Self, AuditTrail}, record};
 use iota::{clock::{Self, Clock}, test_scenario::{Self as ts, Scenario}};
 use std::string;
 use tf_components::{capability::Capability, role_map::RoleMap};
@@ -39,6 +39,16 @@ public(package) fun setup_test_audit_trail(
     locking_config: locking::LockingConfig,
     initial_data: Option<TestData>,
 ): (Capability, iota::object::ID) {
+    setup_test_audit_trail_with_tags(scenario, locking_config, initial_data, vector[])
+}
+
+/// Setup a test audit trail with optional initial data and available record tags.
+public(package) fun setup_test_audit_trail_with_tags(
+    scenario: &mut Scenario,
+    locking_config: locking::LockingConfig,
+    initial_data: Option<TestData>,
+    available_record_tags: vector<string::String>,
+): (Capability, iota::object::ID) {
     let (admin_cap, trail_id) = {
         let mut clock = clock::create_for_testing(ts::ctx(scenario));
         clock.set_for_testing(INITIAL_TIME_FOR_TESTING);
@@ -48,12 +58,23 @@ public(package) fun setup_test_audit_trail(
             option::some(string::utf8(b"Setup Test Trail Description")),
         );
 
+        let initial_record = if (initial_data.is_some()) {
+            option::some(record::new_initial_record(
+                initial_data.destroy_some(),
+                option::none(),
+                option::none(),
+            ))
+        } else {
+            initial_data.destroy_none();
+            option::none()
+        };
+
         let (admin_cap, trail_id) = main::create<TestData>(
-            initial_data,
-            option::none(),
+            initial_record,
             locking_config,
             option::some(trail_metadata),
             option::none(),
+            available_record_tags,
             &clock,
             ts::ctx(scenario),
         );

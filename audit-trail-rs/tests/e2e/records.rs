@@ -1,7 +1,9 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use audit_trails::core::types::{CapabilityIssueOptions, Data, LockingConfig, LockingWindow, Permission, TimeLock};
+use audit_trails::core::types::{
+    CapabilityIssueOptions, Data, InitialRecord, LockingConfig, LockingWindow, Permission, RecordTags, TimeLock,
+};
 use audit_trails::error::Error;
 use iota_interaction::types::base_types::ObjectID;
 use product_common::core_client::CoreClient;
@@ -14,7 +16,7 @@ async fn grant_role_capability(
     role_name: &str,
     permissions: impl IntoIterator<Item = Permission>,
 ) -> anyhow::Result<()> {
-    client.create_role(trail_id, role_name, permissions).await?;
+    client.create_role(trail_id, role_name, permissions, None).await?;
     client
         .issue_cap(trail_id, role_name, CapabilityIssueOptions::default())
         .await?;
@@ -45,7 +47,7 @@ async fn add_and_fetch_record_roundtrip() -> anyhow::Result<()> {
     grant_role_capability(&client, trail_id, "RecordWriter", [Permission::AddRecord]).await?;
 
     let added = records
-        .add(Data::text("second record"), Some("second metadata".to_string()))
+        .add(Data::text("second record"), Some("second metadata".to_string()), None)
         .build_and_execute(&client)
         .await?
         .output;
@@ -68,6 +70,102 @@ async fn add_and_fetch_record_roundtrip() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+async fn add_and_fetch_tagged_record_roundtrip() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let trail_id = client
+        .create_test_trail_with_tags(Data::text("records-tagged"), ["finance"])
+        .await?;
+    let records = client.trail(trail_id).records();
+
+    client
+        .create_role(
+            trail_id,
+            "TaggedWriter",
+            [Permission::AddRecord],
+            Some(RecordTags::new(["finance"])),
+        )
+        .await?;
+    client
+        .issue_cap(trail_id, "TaggedWriter", CapabilityIssueOptions::default())
+        .await?;
+
+    let added = records
+        .add(
+            Data::text("finance record"),
+            Some("tagged metadata".to_string()),
+            Some("finance".to_string()),
+        )
+        .build_and_execute(&client)
+        .await?
+        .output;
+
+    assert_eq!(added.trail_id, trail_id);
+    assert_eq!(added.sequence_number, 1);
+
+    let record = records.get(1).await?;
+    assert_eq!(record.tag, Some("finance".to_string()));
+    assert_eq!(record.metadata, Some("tagged metadata".to_string()));
+    assert_text_data(record.data, "finance record");
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn add_tagged_record_requires_matching_role_tag_access() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let trail_id = client
+        .create_test_trail_with_tags(Data::text("records-tagged-deny"), ["finance"])
+        .await?;
+    let records = client.trail(trail_id).records();
+
+    grant_role_capability(&client, trail_id, "PlainWriter", [Permission::AddRecord]).await?;
+
+    let denied = records
+        .add(Data::text("should fail"), None, Some("finance".to_string()))
+        .build_and_execute(&client)
+        .await;
+
+    assert!(denied.is_err(), "tagged writes should require matching role tag access");
+    assert_eq!(records.record_count().await?, 1);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn add_tagged_record_requires_trail_defined_tag() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let trail_id = client
+        .create_test_trail_with_tags(Data::text("records-tagged-undefined"), ["finance"])
+        .await?;
+    let records = client.trail(trail_id).records();
+
+    client
+        .create_role(
+            trail_id,
+            "TaggedWriter",
+            [Permission::AddRecord],
+            Some(RecordTags::new(["finance"])),
+        )
+        .await?;
+    client
+        .issue_cap(trail_id, "TaggedWriter", CapabilityIssueOptions::default())
+        .await?;
+
+    let denied = records
+        .add(Data::text("should fail"), None, Some("legal".to_string()))
+        .build_and_execute(&client)
+        .await;
+
+    assert!(
+        denied.is_err(),
+        "tagged writes should require the tag to be defined on the trail"
+    );
+    assert_eq!(records.record_count().await?, 1);
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn add_record_rejects_mismatched_data_type() -> anyhow::Result<()> {
     let client = get_funded_test_client().await?;
     let trail_id = client.create_test_trail(Data::text("text-trail")).await?;
@@ -76,7 +174,11 @@ async fn add_record_rejects_mismatched_data_type() -> anyhow::Result<()> {
     grant_role_capability(&client, trail_id, "RecordWriter", [Permission::AddRecord]).await?;
 
     let add_mismatch = records
-        .add(Data::bytes(vec![0xFF, 0x00, 0xAA]), Some("binary payload".to_string()))
+        .add(
+            Data::bytes(vec![0xFF, 0x00, 0xAA]),
+            Some("binary payload".to_string()),
+            None,
+        )
         .build_and_execute(&client)
         .await;
 
@@ -116,7 +218,7 @@ async fn delete_record_removes_entry_and_keeps_sequence_monotonic() -> anyhow::R
     .await?;
 
     let added = records
-        .add(Data::text("surviving record"), Some("keep me".to_string()))
+        .add(Data::text("surviving record"), Some("keep me".to_string()), None)
         .build_and_execute(&client)
         .await?
         .output;
@@ -181,7 +283,7 @@ async fn delete_record_fails_while_time_locked() -> anyhow::Result<()> {
     let client = get_funded_test_client().await?;
     let created = client
         .create_trail()
-        .with_initial_record(Data::text("locked"), None)
+        .with_initial_record(InitialRecord::new(Data::text("locked"), None, None))
         .with_locking_config(config_with_window(LockingWindow::TimeBased { seconds: 3600 }))
         .finish()
         .build_and_execute(&client)
@@ -214,7 +316,7 @@ async fn sequence_numbers_do_not_reuse_deleted_slots() -> anyhow::Result<()> {
     .await?;
 
     let first_added = records
-        .add(Data::text("first added"), None)
+        .add(Data::text("first added"), None, None)
         .build_and_execute(&client)
         .await?
         .output;
@@ -223,7 +325,7 @@ async fn sequence_numbers_do_not_reuse_deleted_slots() -> anyhow::Result<()> {
     records.delete(1).build_and_execute(&client).await?;
 
     let second_added = records
-        .add(Data::text("second added"), None)
+        .add(Data::text("second added"), None, None)
         .build_and_execute(&client)
         .await?
         .output;
@@ -244,7 +346,7 @@ async fn delete_record_fails_while_count_locked() -> anyhow::Result<()> {
     let client = get_funded_test_client().await?;
     let created = client
         .create_trail()
-        .with_initial_record(Data::text("count-locked"), None)
+        .with_initial_record(InitialRecord::new(Data::text("count-locked"), None, None))
         .with_locking_config(config_with_window(LockingWindow::CountBased { count: 5 }))
         .finish()
         .build_and_execute(&client)
@@ -267,7 +369,7 @@ async fn delete_records_batch_respects_limit_and_deletes_oldest_first() -> anyho
     let client = get_funded_test_client().await?;
     let created = client
         .create_trail()
-        .with_initial_record(Data::text("batch-initial"), None)
+        .with_initial_record(InitialRecord::new(Data::text("batch-initial"), None, None))
         .with_locking_config(config_with_window(LockingWindow::TimeBased { seconds: 3600 }))
         .finish()
         .build_and_execute(&client)
@@ -286,11 +388,11 @@ async fn delete_records_batch_respects_limit_and_deletes_oldest_first() -> anyho
     .await?;
 
     records
-        .add(Data::text("batch-second"), None)
+        .add(Data::text("batch-second"), None, None)
         .build_and_execute(&client)
         .await?;
     records
-        .add(Data::text("batch-third"), None)
+        .add(Data::text("batch-third"), None, None)
         .build_and_execute(&client)
         .await?;
 
@@ -339,11 +441,11 @@ async fn list_and_pagination_support_sparse_sequence_numbers() -> anyhow::Result
     .await?;
 
     records
-        .add(Data::text("second"), Some("m2".to_string()))
+        .add(Data::text("second"), Some("m2".to_string()), None)
         .build_and_execute(&client)
         .await?;
     records
-        .add(Data::text("third"), Some("m3".to_string()))
+        .add(Data::text("third"), Some("m3".to_string()), None)
         .build_and_execute(&client)
         .await?;
     records.delete(1).build_and_execute(&client).await?;
@@ -388,7 +490,11 @@ async fn list_and_pagination_multi_page_through_roundtrip() -> anyhow::Result<()
 
     for (idx, label) in ["r1", "r2", "r3", "r4", "r5", "r6"].into_iter().enumerate() {
         records
-            .add(Data::text(format!("record-{label}")), Some(format!("meta-{}", idx + 1)))
+            .add(
+                Data::text(format!("record-{label}")),
+                Some(format!("meta-{}", idx + 1)),
+                None,
+            )
             .build_and_execute(&client)
             .await?;
     }
@@ -468,7 +574,7 @@ async fn list_page_cursor_validation_and_mid_cursor_start() -> anyhow::Result<()
 
     for label in ["r1", "r2", "r3", "r4"] {
         records
-            .add(Data::text(format!("record-{label}")), None)
+            .add(Data::text(format!("record-{label}")), None, None)
             .build_and_execute(&client)
             .await?;
     }

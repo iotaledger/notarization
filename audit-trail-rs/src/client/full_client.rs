@@ -10,14 +10,13 @@ use std::ops::Deref;
 use async_trait::async_trait;
 #[cfg(not(target_arch = "wasm32"))]
 use iota_interaction::IotaClient;
-use iota_interaction::types::base_types::ObjectID;
+use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::crypto::PublicKey;
 use iota_interaction::types::transaction::ProgrammableTransaction;
 use iota_interaction::{IotaKeySignature, OptionalSync};
 use iota_interaction_rust::IotaClientAdapter;
 #[cfg(target_arch = "wasm32")]
 use iota_interaction_ts::bindings::WasmIotaClient as IotaClient;
-use iota_sdk::types::base_types::IotaAddress;
-use iota_sdk::types::crypto::PublicKey;
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use product_common::network_name::NetworkName;
 use secret_storage::Signer;

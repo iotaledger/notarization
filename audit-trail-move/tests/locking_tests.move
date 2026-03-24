@@ -173,6 +173,7 @@ fun test_count_based_locking() {
                 &record_cap,
                 new_test_data(i, b"Record"),
                 std::option::none(),
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -746,6 +747,7 @@ fun test_time_based_locking_all_recent_records_locked() {
                 &record_cap,
                 new_test_data(i, b"Record"),
                 std::option::none(),
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -831,6 +833,7 @@ fun test_count_based_locking_last_records_remain_locked() {
             trail.add_record(
                 &record_cap,
                 new_test_data(i, b"Record"),
+                std::option::none(),
                 std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
@@ -920,6 +923,7 @@ fun test_time_based_locking_still_locked_before_expiry() {
                 &record_cap,
                 new_test_data(i, b"Record"),
                 std::option::none(),
+                std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
@@ -1003,6 +1007,7 @@ fun test_count_based_locking_old_record_can_delete() {
             trail.add_record(
                 &record_cap,
                 new_test_data(i, b"Record"),
+                std::option::none(),
                 std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),

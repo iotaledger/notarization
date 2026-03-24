@@ -4,6 +4,8 @@
 use std::collections::{BTreeMap, HashSet};
 use std::str::FromStr;
 
+use iota_interaction::ident_str;
+use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
 use iota_interaction::types::transaction::Argument;
@@ -26,10 +28,49 @@ pub struct PaginatedRecord<D = Data> {
 pub struct Record<D = Data> {
     pub data: D,
     pub metadata: Option<String>,
+    pub tag: Option<String>,
     pub sequence_number: u64,
     pub added_by: IotaAddress,
     pub added_at: u64,
     pub correction: RecordCorrection,
+}
+
+/// Input used when creating a trail with an initial record.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct InitialRecord<D = Data> {
+    pub data: D,
+    pub metadata: Option<String>,
+    pub tag: Option<String>,
+}
+
+impl InitialRecord {
+    pub fn new(data: impl Into<Data>, metadata: Option<String>, tag: Option<String>) -> Self {
+        Self {
+            data: data.into(),
+            metadata,
+            tag,
+        }
+    }
+
+    pub(crate) fn tag(package_id: ObjectID, data_tag: &TypeTag) -> TypeTag {
+        TypeTag::from_str(&format!("{package_id}::record::InitialRecord<{data_tag}>"))
+            .expect("invalid TypeTag for InitialRecord")
+    }
+
+    pub(in crate::core) fn into_ptb(self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
+        let data_tag = self.data.tag();
+        let data = self.data.into_ptb(ptb, "initial_record_data")?;
+        let metadata = utils::ptb_pure(ptb, "initial_record_metadata", self.metadata)?;
+        let tag = utils::ptb_pure(ptb, "initial_record_tag", self.tag)?;
+
+        Ok(ptb.programmable_move_call(
+            package_id,
+            ident_str!("record").into(),
+            ident_str!("new_initial_record").into(),
+            vec![data_tag],
+            vec![data, metadata, tag],
+        ))
+    }
 }
 
 /// Bidirectional correction tracking for audit records.
@@ -95,18 +136,10 @@ impl Data {
     }
 
     /// Creates a PTB argument for `D` where `D` is the concrete Move data type.
-    pub(in crate::core) fn to_ptb(self, ptb: &mut Ptb, name: &str) -> Result<Argument, Error> {
+    pub(in crate::core) fn into_ptb(self, ptb: &mut Ptb, name: &str) -> Result<Argument, Error> {
         match self {
             Data::Bytes(bytes) => utils::ptb_pure(ptb, name, bytes),
             Data::Text(text) => utils::ptb_pure(ptb, name, text),
-        }
-    }
-
-    /// Creates a PTB argument for `Option<D>` where `D` is the concrete Move data type.
-    pub(in crate::core) fn to_option_ptb(self, ptb: &mut Ptb, name: &str) -> Result<Argument, Error> {
-        match self {
-            Data::Bytes(bytes) => utils::ptb_pure(ptb, name, Some(bytes)),
-            Data::Text(text) => utils::ptb_pure(ptb, name, Some(text)),
         }
     }
 

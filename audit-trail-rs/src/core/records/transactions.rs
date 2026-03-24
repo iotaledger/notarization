@@ -22,16 +22,24 @@ pub struct AddRecord {
     pub owner: IotaAddress,
     pub data: Data,
     pub metadata: Option<String>,
+    pub tag: Option<String>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl AddRecord {
-    pub fn new(trail_id: ObjectID, owner: IotaAddress, data: Data, metadata: Option<String>) -> Self {
+    pub fn new(
+        trail_id: ObjectID,
+        owner: IotaAddress,
+        data: Data,
+        metadata: Option<String>,
+        tag: Option<String>,
+    ) -> Self {
         Self {
             trail_id,
             owner,
             data,
             metadata,
+            tag,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -46,6 +54,7 @@ impl AddRecord {
             self.owner,
             self.data.clone(),
             self.metadata.clone(),
+            self.tag.clone(),
         )
         .await
     }
