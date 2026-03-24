@@ -4,9 +4,9 @@ module audit_trail::role_tests;
 
 use audit_trail::{
     locking,
-    record::{Self, Data},
     main::{initial_admin_role_name, AuditTrail},
     permission,
+    record::{Self, Data},
     record_tags,
     test_utils::{
         Self,

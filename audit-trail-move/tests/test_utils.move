@@ -92,11 +92,13 @@ fun setup_test_audit_trail_impl<D: store + copy + drop>(
         );
 
         let initial_record = if (initial_data.is_some()) {
-            option::some(record::new_initial_record(
-                initial_data.destroy_some(),
-                option::none(),
-                option::none(),
-            ))
+            option::some(
+                record::new_initial_record(
+                    initial_data.destroy_some(),
+                    option::none(),
+                    option::none(),
+                ),
+            )
         } else {
             initial_data.destroy_none();
             option::none()

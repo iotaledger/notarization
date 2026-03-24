@@ -4,9 +4,9 @@ module audit_trail::record_tests;
 
 use audit_trail::{
     locking,
-    record::{Self, Data},
     main::{Self, AuditTrail},
     permission,
+    record::{Self, Data},
     record_tags,
     test_utils::{
         Self,

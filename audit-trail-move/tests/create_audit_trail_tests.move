@@ -4,9 +4,9 @@ module audit_trail::create_audit_trail_tests;
 
 use audit_trail::{
     locking,
-    record::{Self, Data},
     main::{Self, AuditTrail, initial_admin_role_name},
     permission,
+    record::{Self, Data},
     test_utils::{
         setup_test_audit_trail,
         initial_time_for_testing,

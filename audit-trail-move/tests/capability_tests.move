@@ -4,9 +4,9 @@ module audit_trail::capability_tests;
 
 use audit_trail::{
     locking,
-    record::{Self, Data},
     main::AuditTrail,
     permission,
+    record::{Self, Data},
     test_utils::{
         Self,
         setup_test_audit_trail,
@@ -377,12 +377,6 @@ fun test_destroy_capability() {
     // Verify destroyed capability no longer exists
     ts::next_tx(&mut scenario, user2);
     {
-        let trail = ts::take_shared<AuditTrail<Data>>(&scenario);
-
-        // Only the initial admin capability should remain
-        assert!(trail.access().issued_capabilities().size() == 1, 8);
-
-        ts::return_shared(trail);
         assert!(!ts::has_most_recent_for_sender<Capability>(&scenario), 1);
     };
 

@@ -77,10 +77,7 @@ public(package) fun tag_keys(self: &TagRegistry): vector<String> {
 }
 
 /// Returns true when all provided `role_tags` (tags associated with a role) are contained in the `TagRegistry`.
-public(package) fun contains_all_role_tags(
-    self: &TagRegistry,
-    role_tags: &Option<RoleTags>,
-): bool {
+public(package) fun contains_all_role_tags(self: &TagRegistry, role_tags: &Option<RoleTags>): bool {
     if (!role_tags.is_some()) {
         return true
     };
@@ -138,7 +135,6 @@ public(package) fun decrement_usage_count(self: &mut TagRegistry, tag: &String) 
 public(package) fun is_in_use(self: &TagRegistry, tag: &String): bool {
     (*self.usage_count(tag).borrow_with_default(&0)) > 0
 }
-
 
 // ----------- RoleMap related -------
 
