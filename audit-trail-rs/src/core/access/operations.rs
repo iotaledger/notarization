@@ -6,7 +6,7 @@ use iota_interaction::types::transaction::{ObjectArg, ProgrammableTransaction};
 use iota_interaction::{OptionalSync, ident_str};
 use product_common::core_client::CoreClientReadOnly;
 
-use crate::core::types::{CapabilityIssueOptions, Permission, PermissionSet};
+use crate::core::types::{CapabilityIssueOptions, Permission, PermissionSet, RecordTags};
 use crate::core::{operations, utils};
 use crate::error::Error;
 
@@ -19,10 +19,13 @@ impl AccessOps {
         owner: IotaAddress,
         name: String,
         permissions: PermissionSet,
+        record_tags: Option<RecordTags>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
+        assert_record_tags_defined(client, trail_id, &record_tags).await?;
+
         operations::build_trail_transaction(
             client,
             trail_id,
@@ -39,9 +42,19 @@ impl AccessOps {
                     vec![],
                     vec![perms_vec],
                 );
+                let record_tags_arg = match record_tags {
+                    Some(record_tags) => {
+                        let record_tags_arg = record_tags.to_ptb(ptb, client.package_id())?;
+
+                        utils::option_to_move(Some(record_tags_arg), RecordTags::tag(client.package_id()), ptb)
+                            .map_err(|e| Error::InvalidArgument(format!("failed to build record_tags option: {e}")))?
+                    }
+                    None => utils::option_to_move(None, RecordTags::tag(client.package_id()), ptb)
+                        .map_err(|e| Error::InvalidArgument(format!("failed to build record_tags option: {e}")))?,
+                };
                 let clock = utils::get_clock_ref(ptb);
 
-                Ok(vec![role, perms, clock])
+                Ok(vec![role, perms, record_tags_arg, clock])
             },
         )
         .await
@@ -53,10 +66,13 @@ impl AccessOps {
         owner: IotaAddress,
         name: String,
         permissions: PermissionSet,
+        record_tags: Option<RecordTags>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
+        assert_record_tags_defined(client, trail_id, &record_tags).await?;
+
         operations::build_trail_transaction(
             client,
             trail_id,
@@ -74,10 +90,19 @@ impl AccessOps {
                     vec![],
                     vec![perms_vec],
                 );
+                let record_tags_arg = match record_tags {
+                    Some(record_tags) => {
+                        let record_tags_arg = record_tags.to_ptb(ptb, client.package_id())?;
+                        utils::option_to_move(Some(record_tags_arg), RecordTags::tag(client.package_id()), ptb)
+                            .map_err(|e| Error::InvalidArgument(format!("failed to build record_tags option: {e}")))?
+                    }
+                    None => utils::option_to_move(None, RecordTags::tag(client.package_id()), ptb)
+                        .map_err(|e| Error::InvalidArgument(format!("failed to build record_tags option: {e}")))?,
+                };
 
                 let clock = utils::get_clock_ref(ptb);
 
-                Ok(vec![role, perms, clock])
+                Ok(vec![role, perms, record_tags_arg, clock])
             },
         )
         .await
@@ -233,5 +258,35 @@ impl AccessOps {
             },
         )
         .await
+    }
+}
+
+async fn assert_record_tags_defined<C>(
+    client: &C,
+    trail_id: ObjectID,
+    record_tags: &Option<RecordTags>,
+) -> Result<(), Error>
+where
+    C: CoreClientReadOnly + OptionalSync,
+{
+    let Some(record_tags) = record_tags else {
+        return Ok(());
+    };
+
+    let trail = operations::get_audit_trail(trail_id, client).await?;
+    let undefined_tags = record_tags
+        .allowed_tags
+        .iter()
+        .filter(|tag| !trail.tags.contains_key(*tag))
+        .cloned()
+        .collect::<Vec<_>>();
+
+    if undefined_tags.is_empty() {
+        Ok(())
+    } else {
+        Err(Error::InvalidArgument(format!(
+            "record tags {:?} are not defined for trail {trail_id}",
+            undefined_tags
+        )))
     }
 }

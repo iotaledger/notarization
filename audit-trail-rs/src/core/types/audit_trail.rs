@@ -1,6 +1,7 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+use std::collections::HashMap;
 use std::str::FromStr;
 
 use iota_interaction::ident_str;
@@ -14,7 +15,7 @@ use serde::{Deserialize, Serialize};
 
 use super::locking::LockingConfig;
 use super::role_map::RoleMap;
-use crate::core::utils;
+use crate::core::utils::{self, deserialize_vec_map};
 use crate::error::Error;
 
 /// An audit trail stored on-chain.
@@ -25,6 +26,8 @@ pub struct OnChainAuditTrail {
     pub created_at: u64,
     pub sequence_number: u64,
     pub records: LinkedTable<u64>,
+    #[serde(deserialize_with = "deserialize_vec_map")]
+    pub tags: HashMap<String, u64>,
     pub locking_config: LockingConfig,
     pub roles: RoleMap,
     pub immutable_metadata: Option<ImmutableMetadata>,

@@ -7,9 +7,11 @@ use audit_trail::{
     record::{Self, Data},
     main::{Self, AuditTrail},
     permission,
+    record_tags,
     test_utils::{
         Self,
         setup_test_audit_trail,
+        setup_test_audit_trail_with_tags,
         initial_time_for_testing,
         fetch_capability_trail_and_clock,
         cleanup_capability_trail_and_clock,
@@ -86,6 +88,7 @@ fun test_add_record_to_empty_trail() {
             &record_cap,
             record::new_text(string::utf8(b"First record")),
             std::option::some(string::utf8(b"metadata")),
+            std::option::none(),
             &clock,
             ts::ctx(&mut scenario),
         );
@@ -96,6 +99,295 @@ fun test_add_record_to_empty_trail() {
         assert!(trail.has_record(0), 4);
 
         cleanup_capability_trail_and_clock(&scenario, record_cap, trail, clock);
+    };
+
+    ts::end(scenario);
+}
+
+#[test]
+fun test_add_tagged_record_with_matching_role_tags() {
+    let admin = @0xAD;
+    let mut scenario = ts::begin(admin);
+
+    {
+        let locking_config = locking::new(
+            locking::window_none(),
+            timelock::none(),
+            timelock::none(),
+        );
+        let (admin_cap, _) = setup_test_audit_trail_with_tags(
+            &mut scenario,
+            locking_config,
+            std::option::none(),
+            vector[string::utf8(b"finance")],
+        );
+        transfer::public_transfer(admin_cap, admin);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
+
+        trail.create_role(
+            &admin_cap,
+            string::utf8(b"TaggedWriter"),
+            permission::record_admin_permissions(),
+            std::option::some(record_tags::new_role_tags(vector[string::utf8(b"finance")])),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        let record_cap = test_utils::new_capability_without_restrictions(
+            trail.access_mut(),
+            &admin_cap,
+            &string::utf8(b"TaggedWriter"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        transfer::public_transfer(record_cap, admin);
+        admin_cap.destroy_for_testing();
+        cleanup_trail_and_clock(trail, clock);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let (record_cap, mut trail, mut clock) = fetch_capability_trail_and_clock(&mut scenario);
+        clock.set_for_testing(initial_time_for_testing() + 1000);
+
+        trail.add_record(
+            &record_cap,
+            record::new_text(string::utf8(b"Tagged record")),
+            std::option::none(),
+            std::option::some(string::utf8(b"finance")),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        let stored_record = trail.get_record(0);
+        assert!(*record::tag(stored_record) == std::option::some(string::utf8(b"finance")), 0);
+
+        cleanup_capability_trail_and_clock(&scenario, record_cap, trail, clock);
+    };
+
+    ts::end(scenario);
+}
+
+#[test]
+#[expected_failure(abort_code = audit_trail::main::ERecordTagNotAllowed)]
+fun test_add_tagged_record_requires_matching_role_tags() {
+    let admin = @0xAD;
+    let mut scenario = ts::begin(admin);
+
+    {
+        let locking_config = locking::new(
+            locking::window_none(),
+            timelock::none(),
+            timelock::none(),
+        );
+        let (admin_cap, _) = setup_test_audit_trail_with_tags(
+            &mut scenario,
+            locking_config,
+            std::option::none(),
+            vector[string::utf8(b"finance")],
+        );
+        transfer::public_transfer(admin_cap, admin);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
+
+        trail
+            .access_mut()
+            .create_role(
+                &admin_cap,
+                string::utf8(b"PlainWriter"),
+                permission::record_admin_permissions(),
+                std::option::none(),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
+
+        let record_cap = test_utils::new_capability_without_restrictions(
+            trail.access_mut(),
+            &admin_cap,
+            &string::utf8(b"PlainWriter"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        transfer::public_transfer(record_cap, admin);
+        admin_cap.destroy_for_testing();
+        cleanup_trail_and_clock(trail, clock);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let (record_cap, mut trail, mut clock) = fetch_capability_trail_and_clock(&mut scenario);
+        clock.set_for_testing(initial_time_for_testing() + 1000);
+
+        trail.add_record(
+            &record_cap,
+            record::new_text(string::utf8(b"Denied tagged record")),
+            std::option::none(),
+            std::option::some(string::utf8(b"finance")),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        cleanup_capability_trail_and_clock(&scenario, record_cap, trail, clock);
+    };
+
+    ts::end(scenario);
+}
+
+#[test]
+#[expected_failure(abort_code = audit_trail::main::ERecordTagNotDefined)]
+fun test_add_tagged_record_requires_trail_defined_tag() {
+    let admin = @0xAD;
+    let mut scenario = ts::begin(admin);
+
+    {
+        let locking_config = locking::new(
+            locking::window_none(),
+            timelock::none(),
+            timelock::none(),
+        );
+        let (admin_cap, _) = setup_test_audit_trail_with_tags(
+            &mut scenario,
+            locking_config,
+            std::option::none(),
+            vector[string::utf8(b"legal")],
+        );
+        transfer::public_transfer(admin_cap, admin);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
+
+        trail.create_role(
+            &admin_cap,
+            string::utf8(b"TaggedWriter"),
+            permission::record_admin_permissions(),
+            std::option::some(record_tags::new_role_tags(vector[string::utf8(b"finance")])),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        let record_cap = test_utils::new_capability_without_restrictions(
+            trail.access_mut(),
+            &admin_cap,
+            &string::utf8(b"TaggedWriter"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        transfer::public_transfer(record_cap, admin);
+        admin_cap.destroy_for_testing();
+        cleanup_trail_and_clock(trail, clock);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let (record_cap, mut trail, mut clock) = fetch_capability_trail_and_clock(&mut scenario);
+        clock.set_for_testing(initial_time_for_testing() + 1000);
+
+        trail.add_record(
+            &record_cap,
+            record::new_text(string::utf8(b"Undefined tagged record")),
+            std::option::none(),
+            std::option::some(string::utf8(b"finance")),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        cleanup_capability_trail_and_clock(&scenario, record_cap, trail, clock);
+    };
+
+    ts::end(scenario);
+}
+
+#[test]
+#[expected_failure(abort_code = audit_trail::main::ERecordTagInUse)]
+fun test_remove_record_tag_rejects_in_use_tag() {
+    let admin = @0xAD;
+    let writer = @0xB0B;
+    let mut scenario = ts::begin(admin);
+
+    {
+        let locking_config = locking::new(
+            locking::window_none(),
+            timelock::none(),
+            timelock::none(),
+        );
+        let (admin_cap, _) = setup_test_audit_trail_with_tags(
+            &mut scenario,
+            locking_config,
+            std::option::none(),
+            vector[string::utf8(b"finance")],
+        );
+        transfer::public_transfer(admin_cap, admin);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
+
+        trail.create_role(
+            &admin_cap,
+            string::utf8(b"TaggedWriter"),
+            permission::record_admin_permissions(),
+            std::option::some(record_tags::new_role_tags(vector[string::utf8(b"finance")])),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        let writer_cap = test_utils::new_capability_for_address(
+            trail.access_mut(),
+            &admin_cap,
+            &string::utf8(b"TaggedWriter"),
+            writer,
+            std::option::none(),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        transfer::public_transfer(writer_cap, writer);
+        cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
+    };
+
+    ts::next_tx(&mut scenario, writer);
+    {
+        let (writer_cap, mut trail, mut clock) = fetch_capability_trail_and_clock(&mut scenario);
+        clock.set_for_testing(initial_time_for_testing() + 1000);
+
+        trail.add_record(
+            &writer_cap,
+            record::new_text(string::utf8(b"Tagged")),
+            std::option::none(),
+            std::option::some(string::utf8(b"finance")),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        transfer::public_transfer(writer_cap, writer);
+        cleanup_trail_and_clock(trail, clock);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
+
+        trail.remove_record_tag(
+            &admin_cap,
+            string::utf8(b"finance"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
     };
 
     ts::end(scenario);
@@ -162,6 +454,7 @@ fun test_add_multiple_records() {
             trail.add_record(
                 &record_cap,
                 record::new_text(string::utf8(b"Record")),
+                std::option::none(),
                 std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
@@ -243,6 +536,7 @@ fun test_add_record_permission_denied() {
         trail.add_record(
             &no_add_cap,
             record::new_text(string::utf8(b"Should fail")),
+            std::option::none(),
             std::option::none(),
             &clock,
             ts::ctx(&mut scenario),
@@ -718,6 +1012,7 @@ fun test_first_last_sequence() {
             &record_cap,
             record::new_text(string::utf8(b"First")),
             std::option::none(),
+            std::option::none(),
             &clock,
             ts::ctx(&mut scenario),
         );
@@ -730,6 +1025,7 @@ fun test_first_last_sequence() {
             &record_cap,
             record::new_text(string::utf8(b"Second")),
             std::option::none(),
+            std::option::none(),
             &clock,
             ts::ctx(&mut scenario),
         );
@@ -741,6 +1037,7 @@ fun test_first_last_sequence() {
         trail.add_record(
             &record_cap,
             record::new_text(string::utf8(b"Third")),
+            std::option::none(),
             std::option::none(),
             &clock,
             ts::ctx(&mut scenario),

@@ -5,12 +5,11 @@ use std::collections::{BTreeMap, HashSet};
 use std::str::FromStr;
 
 use iota_interaction::ident_str;
-use iota_interaction::types::TypeTag;
-use iota_interaction::types::base_types::IotaAddress;
-use iota_interaction::types::base_types::ObjectID;
+use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
 use iota_interaction::types::transaction::Argument;
-use serde::{Deserialize, Serialize};
+use iota_interaction::types::{MOVE_STDLIB_PACKAGE_ID, TypeTag};
+use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::core::utils;
 use crate::error::Error;
@@ -28,10 +27,49 @@ pub struct PaginatedRecord<D = Data> {
 pub struct Record<D = Data> {
     pub data: D,
     pub metadata: Option<String>,
+    pub tag: Option<String>,
     pub sequence_number: u64,
     pub added_by: IotaAddress,
     pub added_at: u64,
     pub correction: RecordCorrection,
+}
+
+/// Input used when creating a trail with an initial record.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct InitialRecord<D = Data> {
+    pub data: D,
+    pub metadata: Option<String>,
+    pub tag: Option<String>,
+}
+
+impl InitialRecord {
+    pub fn new(data: impl Into<Data>, metadata: Option<String>, tag: Option<String>) -> Self {
+        Self {
+            data: data.into(),
+            metadata,
+            tag,
+        }
+    }
+
+    pub(crate) fn tag(package_id: ObjectID, data_tag: &TypeTag) -> TypeTag {
+        TypeTag::from_str(&format!("{package_id}::record::InitialRecord<{data_tag}>"))
+            .expect("invalid TypeTag for InitialRecord")
+    }
+
+    pub(in crate::core) fn into_ptb(self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
+        let data_tag = self.data.tag();
+        let data = self.data.into_ptb(ptb, "initial_record_data")?;
+        let metadata = utils::ptb_pure(ptb, "initial_record_metadata", self.metadata)?;
+        let tag = utils::ptb_pure(ptb, "initial_record_tag", self.tag)?;
+
+        Ok(ptb.programmable_move_call(
+            package_id,
+            ident_str!("record").into(),
+            ident_str!("new_initial_record").into(),
+            vec![data_tag],
+            vec![data, metadata, tag],
+        ))
+    }
 }
 
 /// Bidirectional correction tracking for audit records.
@@ -59,60 +97,59 @@ impl RecordCorrection {
 }
 
 /// Supported record data types.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub enum Data {
     Bytes(Vec<u8>),
     Text(String),
 }
 
-impl Data {
-    pub(crate) fn tag(package_id: ObjectID) -> TypeTag {
-        TypeTag::from_str(&format!("{package_id}::record::Data")).expect("should be valid type tag")
-    }
+impl<'de> Deserialize<'de> for Data {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let bytes = Vec::<u8>::deserialize(deserializer)?;
 
-    /// Creates a PTB argument for the Move `record::Data` type exposed by the Rust SDK.
-    pub(in crate::core) fn to_ptb(self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
+        if let Ok(text) = String::from_utf8(bytes.clone()) {
+            if text.chars().all(|c| c.is_ascii_graphic() || c.is_ascii_whitespace()) {
+                Ok(Data::Text(text))
+            } else {
+                Ok(Data::Bytes(bytes))
+            }
+        } else {
+            Ok(Data::Bytes(bytes))
+        }
+    }
+}
+
+impl Data {
+    /// Returns the Move type tag for this data type.
+    pub(crate) fn tag(&self) -> TypeTag {
         match self {
-            Data::Bytes(bytes) => {
-                let bytes = utils::ptb_pure(ptb, "bytes", bytes)?;
-                Ok(ptb.programmable_move_call(
-                    package_id,
-                    ident_str!("record").into(),
-                    ident_str!("new_bytes").into(),
-                    vec![],
-                    vec![bytes],
-                ))
-            }
-            Data::Text(text) => {
-                let text = utils::ptb_pure(ptb, "text", text)?;
-                Ok(ptb.programmable_move_call(
-                    package_id,
-                    ident_str!("record").into(),
-                    ident_str!("new_text").into(),
-                    vec![],
-                    vec![text],
-                ))
-            }
+            Data::Bytes(_) => TypeTag::Vector(Box::new(TypeTag::U8)),
+            Data::Text(_) => TypeTag::from_str(&format!("{MOVE_STDLIB_PACKAGE_ID}::string::String"))
+                .expect("should be valid type tag"),
         }
     }
 
-    /// Creates a PTB argument for `Option<record::Data>`.
-    pub(in crate::core) fn to_option_ptb(self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
-        let data = self.to_ptb(ptb, package_id)?;
-        utils::option_to_move(Some(data), Self::tag(package_id), ptb)
-            .map_err(|e| Error::InvalidArgument(format!("failed to build record data option: {e}")))
+    /// Creates a PTB argument for `D` where `D` is the concrete Move data type.
+    pub(in crate::core) fn into_ptb(self, ptb: &mut Ptb, name: &str) -> Result<Argument, Error> {
+        match self {
+            Data::Bytes(bytes) => utils::ptb_pure(ptb, name, bytes),
+            Data::Text(text) => utils::ptb_pure(ptb, name, text),
+        }
     }
 
-    /// Validates that the on-chain trail stores the Move `record::Data` type supported by the Rust SDK.
-    pub(in crate::core) fn ensure_supported_trail_tag(expected: &TypeTag, package_id: ObjectID) -> Result<(), Error> {
-        let supported = Self::tag(package_id);
+    /// Validates that this data payload matches the on-chain trail data type.
+    pub(in crate::core) fn ensure_matches_tag(&self, expected: &TypeTag) -> Result<(), Error> {
+        let actual = self.tag();
 
-        if expected == &supported {
+        if &actual == expected {
             Ok(())
         } else {
             Err(Error::InvalidArgument(format!(
-                "unsupported trail record type {expected:?}; expected {:?}",
-                supported
+                "record data type mismatch: provided {:?}, trail expects {:?}",
+                actual, expected
             )))
         }
     }
@@ -173,5 +210,57 @@ impl From<Vec<u8>> for Data {
 impl From<&[u8]> for Data {
     fn from(value: &[u8]) -> Self {
         Data::Bytes(value.to_vec())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Data;
+
+    fn deserialize_from_raw_bytes(payload: Vec<u8>) -> Data {
+        let encoded = bcs::to_bytes(&payload).expect("failed to bcs encode bytes payload");
+        bcs::from_bytes::<Data>(&encoded).expect("failed to deserialize Data from bcs payload")
+    }
+
+    #[test]
+    fn deserialize_ascii_text_returns_text_variant() {
+        let data = deserialize_from_raw_bytes(b"hello world".to_vec());
+        assert_eq!(data, Data::Text("hello world".to_string()));
+    }
+
+    #[test]
+    fn deserialize_ascii_text_with_whitespace_returns_text_variant() {
+        let data = deserialize_from_raw_bytes(b"line 1\nline 2\tend".to_vec());
+        assert_eq!(data, Data::Text("line 1\nline 2\tend".to_string()));
+    }
+
+    #[test]
+    fn deserialize_non_ascii_utf8_returns_bytes_variant() {
+        let data = deserialize_from_raw_bytes("olá mundo".as_bytes().to_vec());
+        assert_eq!(data, Data::Bytes("olá mundo".as_bytes().to_vec()));
+    }
+
+    #[test]
+    fn deserialize_ascii_like_binary_returns_text_variant() {
+        let data = deserialize_from_raw_bytes(b"GIF89a".to_vec());
+        assert_eq!(data, Data::Text("GIF89a".to_string()));
+    }
+
+    #[test]
+    fn deserialize_utf8_with_control_chars_returns_bytes_variant() {
+        let data = deserialize_from_raw_bytes(vec![b'a', b'b', 0x00, b'c']);
+        assert_eq!(data, Data::Bytes(vec![b'a', b'b', 0x00, b'c']));
+    }
+
+    #[test]
+    fn deserialize_invalid_utf8_returns_bytes_variant() {
+        let data = deserialize_from_raw_bytes(vec![0xF0, 0x28, 0x8C, 0x28]);
+        assert_eq!(data, Data::Bytes(vec![0xF0, 0x28, 0x8C, 0x28]));
+    }
+
+    #[test]
+    fn deserialize_empty_payload_returns_empty_text() {
+        let data = deserialize_from_raw_bytes(Vec::new());
+        assert_eq!(data, Data::Text(String::new()));
     }
 }

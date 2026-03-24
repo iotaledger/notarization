@@ -3,28 +3,40 @@
 
 //! Audit trail builder for creation transactions.
 
-use iota_sdk::types::base_types::IotaAddress;
+use std::collections::HashSet;
+
+use iota_interaction::types::base_types::IotaAddress;
 use product_common::transaction::transaction_builder::TransactionBuilder;
 
-use super::types::{Data, ImmutableMetadata, LockingConfig};
+use super::types::{Data, ImmutableMetadata, InitialRecord, LockingConfig};
 use crate::core::create::CreateTrail;
 
 /// Builder for creating an audit trail.
 #[derive(Debug, Clone, Default)]
 pub struct AuditTrailBuilder {
     pub admin: Option<IotaAddress>,
-    pub record: Option<Data>,
-    pub record_metadata: Option<String>,
+    pub initial_record: Option<InitialRecord>,
     pub locking_config: LockingConfig,
     pub trail_metadata: Option<ImmutableMetadata>,
     pub updatable_metadata: Option<String>,
+    pub record_tags: HashSet<String>,
 }
 
 impl AuditTrailBuilder {
-    /// Sets the initial record data and optional record metadata.
-    pub fn with_initial_record(mut self, data: impl Into<Data>, metadata: Option<String>) -> Self {
-        self.record = Some(data.into());
-        self.record_metadata = metadata;
+    /// Sets the full initial record input used during trail creation.
+    pub fn with_initial_record(mut self, initial_record: InitialRecord) -> Self {
+        self.initial_record = Some(initial_record);
+        self
+    }
+
+    /// Convenience helper for constructing the initial record inline.
+    pub fn with_initial_record_parts(
+        mut self,
+        data: impl Into<Data>,
+        metadata: Option<String>,
+        tag: Option<String>,
+    ) -> Self {
+        self.initial_record = Some(InitialRecord::new(data, metadata, tag));
         self
     }
 
@@ -52,6 +64,16 @@ impl AuditTrailBuilder {
     /// Sets updatable metadata for the trail.
     pub fn with_updatable_metadata(mut self, metadata: impl Into<String>) -> Self {
         self.updatable_metadata = Some(metadata.into());
+        self
+    }
+
+    /// Sets the canonical list of tags that may be used on records in this trail.
+    pub fn with_record_tags<I, S>(mut self, tags: I) -> Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        self.record_tags = tags.into_iter().map(Into::into).collect();
         self
     }
 

@@ -3,7 +3,7 @@
 
 use std::collections::HashSet;
 
-use audit_trails::core::types::{CapabilityIssueOptions, Data, Permission, PermissionSet};
+use audit_trails::core::types::{CapabilityIssueOptions, Data, Permission, PermissionSet, RecordTags};
 use iota_interaction::types::base_types::IotaAddress;
 use product_common::core_client::CoreClient;
 
@@ -16,7 +16,7 @@ async fn create_role_then_issue_capability_default_options() -> anyhow::Result<(
     let role_name = "auditor";
 
     client
-        .create_role(trail_id, role_name, vec![Permission::AddRecord])
+        .create_role(trail_id, role_name, vec![Permission::AddRecord], None)
         .await?;
 
     let issued = client
@@ -40,14 +40,17 @@ async fn update_role_permissions_then_issue_capability() -> anyhow::Result<()> {
     let role_name = "editor";
 
     client
-        .create_role(trail_id, role_name, vec![Permission::AddRecord])
+        .create_role(trail_id, role_name, vec![Permission::AddRecord], None)
         .await?;
 
     let updated = access
         .for_role(role_name)
-        .update_permissions(PermissionSet {
-            permissions: HashSet::from([Permission::AddRecord, Permission::DeleteRecord]),
-        })
+        .update_permissions(
+            PermissionSet {
+                permissions: HashSet::from([Permission::AddRecord, Permission::DeleteRecord]),
+            },
+            None,
+        )
         .build_and_execute(&client)
         .await?
         .output;
@@ -64,6 +67,62 @@ async fn update_role_permissions_then_issue_capability() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+async fn create_role_rejects_undefined_record_tags() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let trail_id = client
+        .create_test_trail_with_tags(Data::text("roles-undefined-create"), ["legal"])
+        .await?;
+
+    let created = client
+        .create_role(
+            trail_id,
+            "tagged-writer",
+            vec![Permission::AddRecord],
+            Some(RecordTags::new(["finance"])),
+        )
+        .await;
+
+    assert!(
+        created.is_err(),
+        "creating a role with tags outside the trail registry must fail"
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn update_role_permissions_rejects_undefined_record_tags() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let trail_id = client
+        .create_test_trail_with_tags(Data::text("roles-undefined-update"), ["legal"])
+        .await?;
+    let access = client.trail(trail_id).access();
+    let role_name = "editor";
+
+    client
+        .create_role(trail_id, role_name, vec![Permission::AddRecord], None)
+        .await?;
+
+    let updated = access
+        .for_role(role_name)
+        .update_permissions(
+            PermissionSet {
+                permissions: HashSet::from([Permission::AddRecord]),
+            },
+            Some(RecordTags::new(["finance"])),
+        )
+        .build_and_execute(&client)
+        .await;
+
+    assert!(
+        updated.is_err(),
+        "updating a role with tags outside the trail registry must fail"
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn delete_role_prevents_new_capability_issuance() -> anyhow::Result<()> {
     let client = get_funded_test_client().await?;
     let trail_id = client.create_test_trail(Data::text("access-e2e")).await?;
@@ -71,7 +130,7 @@ async fn delete_role_prevents_new_capability_issuance() -> anyhow::Result<()> {
     let role_name = "to-delete";
 
     client
-        .create_role(trail_id, role_name, vec![Permission::AddRecord])
+        .create_role(trail_id, role_name, vec![Permission::AddRecord], None)
         .await?;
     let deleted = access
         .for_role(role_name)
@@ -100,7 +159,7 @@ async fn issue_capability_with_constraints() -> anyhow::Result<()> {
     let role_name = "reviewer";
 
     client
-        .create_role(trail_id, role_name, vec![Permission::AddRecord])
+        .create_role(trail_id, role_name, vec![Permission::AddRecord], None)
         .await?;
 
     let issued_to = IotaAddress::random_for_testing_only();
@@ -129,7 +188,7 @@ async fn revoke_capability_emits_expected_event_data() -> anyhow::Result<()> {
     let role_name = "revoker";
 
     client
-        .create_role(trail_id, role_name, vec![Permission::AddRecord])
+        .create_role(trail_id, role_name, vec![Permission::AddRecord], None)
         .await?;
 
     let issued = client
@@ -155,7 +214,7 @@ async fn destroy_capability_emits_expected_event_data() -> anyhow::Result<()> {
     let role_name = "destroyer";
 
     client
-        .create_role(trail_id, role_name, vec![Permission::AddRecord])
+        .create_role(trail_id, role_name, vec![Permission::AddRecord], None)
         .await?;
 
     let issued = client

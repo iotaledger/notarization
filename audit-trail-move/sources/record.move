@@ -48,6 +48,8 @@ public struct Record<D: store + copy> has store {
     data: D,
     /// Optional metadata for this specific record
     metadata: Option<String>,
+    /// Optional immutable tag associated with this record
+    tag: Option<String>,
     /// Position in the trail (0-indexed, never reused)
     sequence_number: u64,
     /// Who added this record
@@ -58,12 +60,29 @@ public struct Record<D: store + copy> has store {
     correction: RecordCorrection,
 }
 
+/// Input used when creating a trail with an initial record.
+public struct InitialRecord<D: store + copy> has copy, drop, store {
+    data: D,
+    metadata: Option<String>,
+    tag: Option<String>,
+}
+
 // ===== Constructors =====
+
+/// Create a new initial-record input.
+public fun new_initial_record<D: store + copy>(
+    data: D,
+    metadata: Option<String>,
+    tag: Option<String>,
+): InitialRecord<D> {
+    InitialRecord { data, metadata, tag }
+}
 
 /// Create a new record
 public(package) fun new<D: store + copy>(
     data: D,
     metadata: Option<String>,
+    tag: Option<String>,
     sequence_number: u64,
     added_by: address,
     added_at: u64,
@@ -72,6 +91,7 @@ public(package) fun new<D: store + copy>(
     Record {
         data,
         metadata,
+        tag,
         sequence_number,
         added_by,
         added_at,
@@ -79,48 +99,73 @@ public(package) fun new<D: store + copy>(
     }
 }
 
+/// Convert an initial-record input into a stored record.
+public(package) fun into_record<D: store + copy>(
+    initial_record: InitialRecord<D>,
+    sequence_number: u64,
+    added_by: address,
+    added_at: u64,
+): Record<D> {
+    let InitialRecord { data, metadata, tag } = initial_record;
+    new(
+        data,
+        metadata,
+        tag,
+        sequence_number,
+        added_by,
+        added_at,
+        empty(),
+    )
+}
+
 // ===== Getters =====
 
 /// Get the stored data from a record
-public fun data<D: store + copy>(record: &Record<D>): &D {
-    &record.data
+public fun data<D: store + copy>(self: &Record<D>): &D {
+    &self.data
 }
 
 /// Get the record metadata
-public fun metadata<D: store + copy>(record: &Record<D>): &Option<String> {
-    &record.metadata
+public fun metadata<D: store + copy>(self: &Record<D>): &Option<String> {
+    &self.metadata
+}
+
+/// Get the optional record tag
+public fun tag<D: store + copy>(record: &Record<D>): &Option<String> {
+    &record.tag
 }
 
 /// Get the record sequence number
-public fun sequence_number<D: store + copy>(record: &Record<D>): u64 {
-    record.sequence_number
+public fun sequence_number<D: store + copy>(self: &Record<D>): u64 {
+    self.sequence_number
 }
 
 /// Get who added the record
-public fun added_by<D: store + copy>(record: &Record<D>): address {
-    record.added_by
+public fun added_by<D: store + copy>(self: &Record<D>): address {
+    self.added_by
 }
 
 /// Get when the record was added (milliseconds)
-public fun added_at<D: store + copy>(record: &Record<D>): u64 {
-    record.added_at
+public fun added_at<D: store + copy>(self: &Record<D>): u64 {
+    self.added_at
 }
 
 /// Get the correction tracker for this record
-public fun correction<D: store + copy>(record: &Record<D>): &RecordCorrection {
-    &record.correction
+public fun correction<D: store + copy>(self: &Record<D>): &RecordCorrection {
+    &self.correction
 }
 
 /// Destroy a record
-public(package) fun destroy<D: store + copy + drop>(record: Record<D>) {
+public(package) fun destroy<D: store + copy + drop>(self: Record<D>) {
     let Record {
         data: _,
         metadata: _,
+        tag: _,
         sequence_number: _,
         added_by: _,
         added_at: _,
         correction: _,
-    } = record;
+    } = self;
 }
 
 /// Bidirectional correction tracking for audit records
@@ -130,7 +175,7 @@ public struct RecordCorrection has copy, drop, store {
 }
 
 /// Create a new correction tracker for a normal (non-correcting) record
-public fun new_correction(): RecordCorrection {
+public fun empty(): RecordCorrection {
     RecordCorrection {
         replaces: vec_set::empty(),
         is_replaced_by: option::none(),

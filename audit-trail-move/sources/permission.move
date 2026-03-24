@@ -48,6 +48,11 @@ public enum Permission has copy, drop, store {
     DeleteMetadata,
     /// Migrate the audit trail to a new version of the contract
     Migrate,
+    // --- Record Tag Management - Proposed role: `TagAdmin` ---
+    /// Add new record tags to the trail registry
+    AddRecordTags,
+    /// Remove record tags from the trail registry
+    DeleteRecordTags,
 }
 
 /// Create an empty permission set
@@ -84,6 +89,8 @@ public fun admin_permissions(): VecSet<Permission> {
     let mut perms = vec_set::empty();
     perms.insert(add_capabilities());
     perms.insert(revoke_capabilities());
+    perms.insert(add_record_tags());
+    perms.insert(delete_record_tags());
     perms.insert(add_roles());
     perms.insert(update_roles());
     perms.insert(delete_roles());
@@ -115,6 +122,14 @@ public fun role_admin_permissions(): VecSet<Permission> {
     perms.insert(add_roles());
     perms.insert(update_roles());
     perms.insert(delete_roles());
+    perms
+}
+
+/// Create permissions typically used for the `TagAdmin` role
+public fun tag_admin_permissions(): VecSet<Permission> {
+    let mut perms = vec_set::empty();
+    perms.insert(add_record_tags());
+    perms.insert(delete_record_tags());
     perms
 }
 
@@ -179,6 +194,16 @@ public fun update_locking_config_for_delete_trail(): Permission {
 /// Returns a permission allowing to update the write_lock configuration for the whole Audit Trail
 public fun update_locking_config_for_write(): Permission {
     Permission::UpdateLockingConfigForWrite
+}
+
+/// Returns a permission allowing to add new record tags to the trail registry
+public fun add_record_tags(): Permission {
+    Permission::AddRecordTags
+}
+
+/// Returns a permission allowing to remove record tags from the trail registry
+public fun delete_record_tags(): Permission {
+    Permission::DeleteRecordTags
 }
 
 /// Returns a permission allowing to add new roles with associated permissions
