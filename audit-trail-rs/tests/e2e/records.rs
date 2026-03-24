@@ -75,7 +75,7 @@ async fn add_and_fetch_record_roundtrip() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn add_record_accepts_mixed_data_variants_in_default_trail() -> anyhow::Result<()> {
+async fn add_record_accepts_text_and_bytes_variants() -> anyhow::Result<()> {
     let client = get_funded_test_client().await?;
     let trail_id = client.create_test_trail(Data::text("text-trail")).await?;
     let records = client.trail(trail_id).records();
@@ -94,6 +94,30 @@ async fn add_record_accepts_mixed_data_variants_in_default_trail() -> anyhow::Re
     let record = records.get(1).await?;
     assert_eq!(record.metadata, Some("binary payload".to_string()));
     assert_bytes_data(record.data, &[0xFF, 0x00, 0xAA]);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn add_record_to_empty_trail_created_without_initial_record() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let trail_id = client.create_trail().finish().build_and_execute(&client).await?.output.trail_id;
+    let records = client.trail(trail_id).records();
+
+    grant_role_capability(&client, trail_id, "RecordWriter", [Permission::AddRecord]).await?;
+
+    let added = records
+        .add(Data::text("first record"), Some("first metadata".to_string()))
+        .build_and_execute(&client)
+        .await?
+        .output;
+
+    assert_eq!(added.sequence_number, 0);
+    assert_eq!(records.record_count().await?, 1);
+
+    let record = records.get(0).await?;
+    assert_eq!(record.metadata, Some("first metadata".to_string()));
+    assert_text_data(record.data, "first record");
 
     Ok(())
 }
