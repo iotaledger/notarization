@@ -23,7 +23,7 @@ impl LockingOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        let tf_components_package_id = package::tf_components_package_id();
+        let tf_components_package_id = package::tf_components_package_id(client.network_name().as_ref())?;
 
         operations::build_trail_transaction(
             client,
@@ -75,7 +75,7 @@ impl LockingOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        let tf_components_package_id = package::tf_components_package_id();
+        let tf_components_package_id = package::tf_components_package_id(client.network_name().as_ref())?;
 
         operations::build_trail_transaction(
             client,
@@ -102,7 +102,7 @@ impl LockingOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        let tf_components_package_id = package::tf_components_package_id();
+        let tf_components_package_id = package::tf_components_package_id(client.network_name().as_ref())?;
 
         operations::build_trail_transaction(
             client,

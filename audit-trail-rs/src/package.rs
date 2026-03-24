@@ -8,11 +8,11 @@
 
 #![allow(dead_code)]
 
-use std::str::FromStr;
 use std::sync::LazyLock;
 
 use iota_interaction::types::base_types::ObjectID;
 use product_common::package_registry::PackageRegistry;
+use product_common::tf_components_registry;
 use tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard, TryLockError};
 
 type PackageRegistryLock = RwLockReadGuard<'static, PackageRegistry>;
@@ -29,11 +29,6 @@ static AUDIT_TRAIL_PACKAGE_REGISTRY: LazyLock<RwLock<PackageRegistry>> = LazyLoc
             .expect("Move.history.json exists and it's valid"),
     )
 });
-
-/// Hardcoded TfComponents package ID used for timelock constructors.
-///
-/// Update this value after publishing TfComponents.
-const TF_COMPONENTS_PACKAGE_ID: &str = "0xefd478a0cca3cc660a46d2b55586fe799c71b331d939ee854272bc24ac16c07f";
 
 /// Returns a read lock to the package registry.
 pub(crate) async fn audit_trail_package_registry() -> PackageRegistryLock {
@@ -65,6 +60,10 @@ pub(crate) fn blocking_audit_trail_registry_mut() -> PackageRegistryLockMut {
     AUDIT_TRAIL_PACKAGE_REGISTRY.blocking_write()
 }
 
-pub(crate) fn tf_components_package_id() -> ObjectID {
-    ObjectID::from_str(TF_COMPONENTS_PACKAGE_ID).expect("`TF_COMPONENTS_PACKAGE_ID` must be a valid ObjectID")
+pub(crate) fn tf_components_package_id(network: &str) -> Result<ObjectID, crate::error::Error> {
+    tf_components_registry::tf_components_package_id(network).ok_or_else(|| {
+        crate::error::Error::InvalidConfig(format!(
+            "no information for a published `TfComponents` package on network {network}"
+        ))
+    })
 }

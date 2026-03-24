@@ -69,7 +69,7 @@ impl CreateTrail {
                     .to_string(),
             )
         })?;
-        let tf_components_package_id = package::tf_components_package_id();
+        let tf_components_package_id = package::tf_components_package_id(client.network_name().as_ref())?;
 
         CreateOps::create_trail(CreateTrailArgs {
             audit_trail_package_id: client.package_id(),

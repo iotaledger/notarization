@@ -4,20 +4,18 @@
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 
+use iota_interaction::ident_str;
 use iota_interaction::types::TypeTag;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::id::UID;
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
 use iota_interaction::types::transaction::Argument;
-use iota_interaction::{MoveType, ident_str};
 use serde::{Deserialize, Serialize};
 
 use super::permission::Permission;
 use crate::core::utils;
 use crate::core::utils::{deserialize_vec_map, deserialize_vec_set};
 use crate::error::Error;
-use crate::package;
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RoleMap {
     pub target_key: ObjectID,
@@ -113,9 +111,12 @@ pub struct Capability {
     pub valid_until: Option<u64>,
 }
 
-impl MoveType for Capability {
-    fn move_type(_: ObjectID) -> TypeTag {
-        let object_id = package::tf_components_package_id();
-        TypeTag::from_str(format!("{object_id}::capability::Capability").as_str()).expect("failed to create type tag")
+impl Capability {
+    pub(crate) fn type_tag(package_id: ObjectID) -> TypeTag {
+        TypeTag::from_str(format!("{package_id}::capability::Capability").as_str()).expect("failed to create type tag")
+    }
+
+    pub(crate) fn matches_target_and_role(&self, trail_id: ObjectID, valid_roles: &HashSet<String>) -> bool {
+        self.target_key == trail_id && valid_roles.contains(&self.role)
     }
 }
