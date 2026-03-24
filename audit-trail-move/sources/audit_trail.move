@@ -54,7 +54,7 @@ const ERecordTagAlreadyDefined: vector<u8> =
     b"The requested tag is already defined for this audit trail";
 #[error]
 const ERecordTagInUse: vector<u8> =
-    b"The requested tag cannot be removed because it is already used by an existing record";
+    b"The requested tag cannot be removed because it is already used by an existing record or role";
 // ===== Constants =====
 const INITIAL_ADMIN_ROLE_NAME: vector<u8> = b"Admin";
 
