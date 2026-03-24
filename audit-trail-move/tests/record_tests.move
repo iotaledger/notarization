@@ -6,17 +6,13 @@ use audit_trail::{
     locking,
     main::{Self, AuditTrail},
     permission,
-    record,
+    record::{Self, Data},
     record_tags,
     test_utils::{
         Self,
-        TestData,
         setup_test_audit_trail,
         setup_test_audit_trail_with_tags,
-        new_test_data,
         initial_time_for_testing,
-        test_data_value,
-        test_data_message,
         fetch_capability_trail_and_clock,
         cleanup_capability_trail_and_clock,
         cleanup_trail_and_clock
@@ -90,7 +86,7 @@ fun test_add_record_to_empty_trail() {
         // Add record
         trail.add_record(
             &record_cap,
-            new_test_data(42, b"First record"),
+            record::new_text(string::utf8(b"First record")),
             std::option::some(string::utf8(b"metadata")),
             std::option::none(),
             &clock,
@@ -161,7 +157,7 @@ fun test_add_tagged_record_with_matching_role_tags() {
 
         trail.add_record(
             &record_cap,
-            new_test_data(99, b"Tagged record"),
+            record::new_text(string::utf8(b"Tagged record")),
             std::option::none(),
             std::option::some(string::utf8(b"finance")),
             &clock,
@@ -233,7 +229,7 @@ fun test_add_tagged_record_requires_matching_role_tags() {
 
         trail.add_record(
             &record_cap,
-            new_test_data(7, b"Denied tagged record"),
+            record::new_text(string::utf8(b"Denied tagged record")),
             std::option::none(),
             std::option::some(string::utf8(b"finance")),
             &clock,
@@ -300,7 +296,7 @@ fun test_add_tagged_record_requires_trail_defined_tag() {
 
         trail.add_record(
             &record_cap,
-            new_test_data(77, b"Undefined tagged record"),
+            record::new_text(string::utf8(b"Undefined tagged record")),
             std::option::none(),
             std::option::some(string::utf8(b"finance")),
             &clock,
@@ -369,7 +365,7 @@ fun test_remove_record_tag_rejects_in_use_tag() {
 
         trail.add_record(
             &writer_cap,
-            new_test_data(55, b"Tagged"),
+            record::new_text(string::utf8(b"Tagged")),
             std::option::none(),
             std::option::some(string::utf8(b"finance")),
             &clock,
@@ -457,7 +453,7 @@ fun test_add_multiple_records() {
         while (i < 3) {
             trail.add_record(
                 &record_cap,
-                new_test_data(i, b"Record"),
+                record::new_text(string::utf8(b"Record")),
                 std::option::none(),
                 std::option::none(),
                 &clock,
@@ -539,7 +535,7 @@ fun test_add_record_permission_denied() {
         // This should fail - no AddRecord permission
         trail.add_record(
             &no_add_cap,
-            new_test_data(1, b"Should fail"),
+            record::new_text(string::utf8(b"Should fail")),
             std::option::none(),
             std::option::none(),
             &clock,
@@ -569,7 +565,7 @@ fun test_delete_record_success() {
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
-            std::option::some(new_test_data(1, b"Initial")),
+            std::option::some(record::new_text(string::utf8(b"Initial"))),
         );
         transfer::public_transfer(admin_cap, admin);
     };
@@ -643,7 +639,7 @@ fun test_delete_record_permission_denied() {
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
-            std::option::some(new_test_data(1, b"Initial")),
+            std::option::some(record::new_text(string::utf8(b"Initial"))),
         );
         transfer::public_transfer(admin_cap, admin);
     };
@@ -774,7 +770,7 @@ fun test_delete_record_time_locked() {
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
-            std::option::some(new_test_data(1, b"Locked record")),
+            std::option::some(record::new_text(string::utf8(b"Locked record"))),
         );
         transfer::public_transfer(admin_cap, admin);
     };
@@ -840,7 +836,7 @@ fun test_delete_record_count_locked() {
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
-            std::option::some(new_test_data(1, b"Locked record")),
+            std::option::some(record::new_text(string::utf8(b"Locked record"))),
         );
         transfer::public_transfer(admin_cap, admin);
     };
@@ -903,7 +899,7 @@ fun test_get_record() {
             timelock::none(),
             timelock::none(),
         );
-        let initial_data = new_test_data(42, b"Test data");
+        let initial_data = record::new_bytes(b"Test data");
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
@@ -914,13 +910,12 @@ fun test_get_record() {
 
     ts::next_tx(&mut scenario, admin);
     {
-        let trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let trail = ts::take_shared<AuditTrail<Data>>(&scenario);
 
         let record = trail.get_record(0);
         let data = audit_trail::record::data(record);
 
-        assert!(data.test_data_value() == 42, 0);
-        assert!(data.test_data_message() == b"Test data", 1);
+        assert!(record::bytes(data) == option::some(b"Test data"), 0);
 
         ts::return_shared(trail);
     };
@@ -951,7 +946,7 @@ fun test_get_record_not_found() {
 
     ts::next_tx(&mut scenario, admin);
     {
-        let trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let trail = ts::take_shared<AuditTrail<Data>>(&scenario);
 
         // This should fail - no records exist
         let _record = trail.get_record(0);
@@ -1015,7 +1010,7 @@ fun test_first_last_sequence() {
         // Add first record
         trail.add_record(
             &record_cap,
-            new_test_data(1, b"First"),
+            record::new_text(string::utf8(b"First")),
             std::option::none(),
             std::option::none(),
             &clock,
@@ -1028,7 +1023,7 @@ fun test_first_last_sequence() {
         // Add second record
         trail.add_record(
             &record_cap,
-            new_test_data(2, b"Second"),
+            record::new_text(string::utf8(b"Second")),
             std::option::none(),
             std::option::none(),
             &clock,
@@ -1041,7 +1036,7 @@ fun test_first_last_sequence() {
         // Add third record
         trail.add_record(
             &record_cap,
-            new_test_data(3, b"Third"),
+            record::new_text(string::utf8(b"Third")),
             std::option::none(),
             std::option::none(),
             &clock,
@@ -1081,7 +1076,7 @@ fun test_is_record_locked_not_found() {
 
     ts::next_tx(&mut scenario, admin);
     {
-        let trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let trail = ts::take_shared<AuditTrail<Data>>(&scenario);
 
         let mut clock = clock::create_for_testing(ts::ctx(&mut scenario));
         clock.set_for_testing(initial_time_for_testing() + 1000);

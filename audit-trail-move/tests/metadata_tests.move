@@ -13,8 +13,7 @@ use audit_trail::{
     }
 };
 use iota::test_scenario as ts;
-use std::string;
-use std::option::none;
+use std::{option::none, string};
 use tf_components::{capability::Capability, timelock};
 
 // ===== Success Case Tests =====
@@ -275,7 +274,13 @@ fun test_update_metadata_revoked_capability() {
 
         trail
             .access_mut()
-            .revoke_capability(&admin_cap, metadata_cap.id(), none(), &clock, ts::ctx(&mut scenario));
+            .revoke_capability(
+                &admin_cap,
+                metadata_cap.id(),
+                none(),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
 
         ts::return_to_address(metadata_admin_user, metadata_cap);
         cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);

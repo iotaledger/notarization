@@ -21,12 +21,7 @@ use audit_trail::{
     record::{Self, Record},
     record_tags::{Self, RoleTags, TagRegistry}
 };
-use iota::{
-    clock::{Self, Clock},
-    event,
-    linked_table::{Self, LinkedTable},
-    vec_set::VecSet
-};
+use iota::{clock::{Self, Clock}, event, linked_table::{Self, LinkedTable}, vec_set::VecSet};
 use std::string::String;
 use tf_components::{capability::Capability, role_map::{Self, RoleMap}, timelock::TimeLock};
 
@@ -406,7 +401,10 @@ public fun delete_records_batch<D: store + copy + drop>(
         let (sequence_number, record) = self.records.pop_front();
 
         if (record::tag(&record).is_some()) {
-            record_tags::decrement_usage_count(&mut self.tags, option::borrow(record::tag(&record)));
+            record_tags::decrement_usage_count(
+                &mut self.tags,
+                option::borrow(record::tag(&record)),
+            );
         };
 
         record.destroy();
@@ -788,7 +786,7 @@ public fun revoke_capability<D: store + copy>(
         cap_to_revoke,
         cap_to_revoke_valid_until,
         clock,
-        ctx
+        ctx,
     );
 }
 
@@ -850,7 +848,8 @@ public fun revoke_initial_admin_capability<D: store + copy>(
         cap_to_revoke,
         cap_to_revoke_valid_until,
         clock,
-        ctx);
+        ctx,
+    );
 }
 
 /// Remove expired entries from the `revoked_capabilities` denylist.
@@ -879,11 +878,13 @@ public fun cleanup_revoked_capabilities<D: store + copy>(
     ctx: &TxContext,
 ) {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    self.access_mut().cleanup_revoked_capabilities(
-        cap,
-        clock,
-        ctx,
-    );
+    self
+        .access_mut()
+        .cleanup_revoked_capabilities(
+            cap,
+            clock,
+            ctx,
+        );
 }
 
 // ===== Trail Query Functions =====

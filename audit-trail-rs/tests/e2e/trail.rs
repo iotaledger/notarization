@@ -24,11 +24,7 @@ async fn create_trail_with_default_builder_settings() -> anyhow::Result<()> {
 
     let created = client
         .create_trail()
-        .with_initial_record(InitialRecord::new(
-            Data::text("audit-trail-create-default"),
-            None,
-            None,
-        ))
+        .with_initial_record(InitialRecord::new(Data::text("audit-trail-create-default"), None, None))
         .finish()
         .build_and_execute(&client)
         .await?
@@ -116,11 +112,7 @@ async fn create_trail_with_custom_admin_address() -> anyhow::Result<()> {
     let created = client
         .create_trail()
         .with_admin(custom_admin)
-        .with_initial_record(InitialRecord::new(
-            Data::text("audit-trail-custom-admin"),
-            None,
-            None,
-        ))
+        .with_initial_record(InitialRecord::new(Data::text("audit-trail-custom-admin"), None, None))
         .finish()
         .build_and_execute(&client)
         .await?
@@ -305,11 +297,7 @@ async fn update_metadata_does_not_affect_immutable_metadata() -> anyhow::Result<
 
     let created = client
         .create_trail()
-        .with_initial_record(InitialRecord::new(
-            Data::text("trail-immutable-check-e2e"),
-            None,
-            None,
-        ))
+        .with_initial_record(InitialRecord::new(Data::text("trail-immutable-check-e2e"), None, None))
         .with_trail_metadata(immutable.clone())
         .with_updatable_metadata("mutable")
         .finish()
@@ -367,11 +355,7 @@ async fn delete_records_batch_then_delete_audit_trail_roundtrip() -> anyhow::Res
     let client = get_funded_test_client().await?;
     let created = client
         .create_trail()
-        .with_initial_record(InitialRecord::new(
-            Data::text("trail-batch-delete-e2e"),
-            None,
-            None,
-        ))
+        .with_initial_record(InitialRecord::new(Data::text("trail-batch-delete-e2e"), None, None))
         .with_locking_config(config_with_window(LockingWindow::TimeBased { seconds: 3600 }))
         .finish()
         .build_and_execute(&client)
@@ -491,11 +475,7 @@ async fn remove_record_tag_rejects_role_only_usage() -> anyhow::Result<()> {
     let client = get_funded_test_client().await?;
     let created = client
         .create_trail()
-        .with_initial_record(InitialRecord::new(
-            Data::text("trail-tag-role-usage"),
-            None,
-            None,
-        ))
+        .with_initial_record(InitialRecord::new(Data::text("trail-tag-role-usage"), None, None))
         .with_record_tags(["finance"])
         .finish()
         .build_and_execute(&client)

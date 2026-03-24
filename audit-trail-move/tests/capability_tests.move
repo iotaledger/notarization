@@ -6,9 +6,9 @@ use audit_trail::{
     locking,
     main::AuditTrail,
     permission,
+    record::{Self, Data},
     test_utils::{
         Self,
-        TestData,
         setup_test_audit_trail,
         fetch_capability_trail_and_clock,
         cleanup_capability_trail_and_clock
@@ -85,7 +85,7 @@ fun setup_trail_with_record_admin_role(scenario: &mut Scenario, admin_user: addr
     ts::next_tx(scenario, admin_user);
     {
         let admin_cap = ts::take_from_sender<Capability>(scenario);
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(scenario);
+        let mut trail = ts::take_shared<AuditTrail<Data>>(scenario);
         let clock = iota::clock::create_for_testing(ts::ctx(scenario));
 
         let record_admin_perms = permission::record_admin_permissions();
@@ -348,7 +348,7 @@ fun test_destroy_capability() {
     // User1 destroys their capability
     ts::next_tx(&mut scenario, user1);
     {
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let mut trail = ts::take_shared<AuditTrail<Data>>(&scenario);
         let cap1 = ts::take_from_sender<Capability>(&scenario);
 
         // Destroy the capability
@@ -366,7 +366,7 @@ fun test_destroy_capability() {
     // Test: User2 destroys their own capability
     ts::next_tx(&mut scenario, user2);
     {
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let mut trail = ts::take_shared<AuditTrail<Data>>(&scenario);
         let cap2 = ts::take_from_sender<Capability>(&scenario);
 
         trail.access_mut().destroy_capability(cap2);
@@ -457,7 +457,7 @@ fun test_capability_lifecycle() {
 
         clock.set_for_testing(test_utils::initial_time_for_testing() + 1000);
 
-        let test_data = test_utils::new_test_data(1, b"Test record");
+        let test_data = record::new_text(string::utf8(b"Test record"));
         trail.add_record(
             &record_cap,
             test_data,
@@ -473,7 +473,7 @@ fun test_capability_lifecycle() {
     // RecordAdmin destroys their capability
     ts::next_tx(&mut scenario, record_admin_user);
     {
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let mut trail = ts::take_shared<AuditTrail<Data>>(&scenario);
         let record_cap = ts::take_from_sender<Capability>(&scenario);
 
         trail.access_mut().destroy_capability(record_cap);
@@ -551,7 +551,7 @@ fun test_capability_issued_to_only() {
     {
         let (record_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
-        let test_data = test_utils::new_test_data(1, b"Authorized record");
+        let test_data = record::new_text(string::utf8(b"Authorized record"));
         trail.add_record(
             &record_cap,
             test_data,
@@ -575,7 +575,7 @@ fun test_capability_issued_to_only() {
         let (record_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
 
         // This should fail as unauthorized_user has the wrong address
-        let test_data = test_utils::new_test_data(1, b"Unauthorized record");
+        let test_data = record::new_text(string::utf8(b"Unauthorized record"));
         trail.add_record(
             &record_cap,
             test_data,
@@ -672,7 +672,7 @@ fun test_revoked_capability_cannot_be_used() {
 
         trail.add_record(
             &user_cap,
-            test_utils::new_test_data(1, b"Should fail"),
+            record::new_text(string::utf8(b"Should fail")),
             std::option::none(),
             std::option::none(),
             &clock,
@@ -801,7 +801,7 @@ fun test_revoke_capability_permission_denied() {
     ts::next_tx(&mut scenario, user1);
     {
         let user1_cap = ts::take_from_sender<Capability>(&scenario);
-        let mut trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let mut trail = ts::take_shared<AuditTrail<Data>>(&scenario);
         let user2_cap = ts::take_from_address<Capability>(&scenario, user2);
         let clock = iota::clock::create_for_testing(ts::ctx(&mut scenario));
 
@@ -956,7 +956,7 @@ fun test_capability_valid_from_only() {
         let (cap, mut trail, mut clock) = fetch_capability_trail_and_clock(&mut scenario);
         clock.set_for_testing(test_utils::initial_time_for_testing() + 6000);
 
-        let test_data = test_utils::new_test_data(1, b"Test record after valid_from");
+        let test_data = record::new_text(string::utf8(b"Test record after valid_from"));
         trail.add_record(
             &cap,
             test_data,
@@ -976,7 +976,7 @@ fun test_capability_valid_from_only() {
         clock.set_for_testing(test_utils::initial_time_for_testing() + 1000);
 
         // This should fail as the capability is not valid yet
-        let test_data = test_utils::new_test_data(1, b"Test record before valid_from");
+        let test_data = record::new_text(string::utf8(b"Test record before valid_from"));
         trail.add_record(
             &cap,
             test_data,
@@ -1039,7 +1039,7 @@ fun test_capability_valid_until_only() {
         let (cap, mut trail, mut clock) = fetch_capability_trail_and_clock(&mut scenario);
         clock.set_for_testing(valid_until_time_ms - 1000000);
 
-        let test_data = test_utils::new_test_data(1, b"Test record before valid_until");
+        let test_data = record::new_text(string::utf8(b"Test record before valid_until"));
         trail.add_record(
             &cap,
             test_data,
@@ -1059,7 +1059,7 @@ fun test_capability_valid_until_only() {
         clock.set_for_testing(valid_until_time_ms + 100000);
 
         // This should fail as the capability has expired
-        let test_data = test_utils::new_test_data(1, b"Test record after valid_until");
+        let test_data = record::new_text(string::utf8(b"Test record after valid_until"));
         trail.add_record(
             &cap,
             test_data,
@@ -1105,7 +1105,7 @@ fun test_capability_time_window() {
         let (cap, mut trail, mut clock) = fetch_capability_trail_and_clock(&mut scenario);
         clock.set_for_testing(valid_from_time + 2500);
 
-        let test_data = test_utils::new_test_data(1, b"Test record within time window");
+        let test_data = record::new_text(string::utf8(b"Test record within time window"));
         trail.add_record(
             &cap,
             test_data,
@@ -1150,7 +1150,7 @@ fun test_capability_time_window_before_valid_from() {
         let (cap, mut trail, mut clock) = fetch_capability_trail_and_clock(&mut scenario);
         clock.set_for_testing(valid_from_time_ms - 1000);
 
-        let test_data = test_utils::new_test_data(1, b"Test record before valid_from");
+        let test_data = record::new_text(string::utf8(b"Test record before valid_from"));
         trail.add_record(
             &cap,
             test_data,
@@ -1195,7 +1195,7 @@ fun test_capability_time_window_after_valid_until() {
         let (cap, mut trail, mut clock) = fetch_capability_trail_and_clock(&mut scenario);
         clock.set_for_testing(valid_until_time_ms + 1000);
 
-        let test_data = test_utils::new_test_data(1, b"Test record after valid_until");
+        let test_data = record::new_text(string::utf8(b"Test record after valid_until"));
         trail.add_record(
             &cap,
             test_data,

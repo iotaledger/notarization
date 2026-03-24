@@ -10,6 +10,38 @@ module audit_trail::record;
 use iota::vec_set::{Self, VecSet};
 use std::string::String;
 
+/// Flexible record payload that can store either raw bytes or text.
+public enum Data has copy, drop, store {
+    Bytes(vector<u8>),
+    Text(String),
+}
+
+/// Creates a bytes payload.
+public fun new_bytes(bytes: vector<u8>): Data {
+    Data::Bytes(bytes)
+}
+
+/// Creates a text payload.
+public fun new_text(text: String): Data {
+    Data::Text(text)
+}
+
+/// Returns the bytes payload when present.
+public fun bytes(data: &Data): Option<vector<u8>> {
+    match (data) {
+        Data::Bytes(bytes) => option::some(*bytes),
+        Data::Text(_) => option::none(),
+    }
+}
+
+/// Returns the text payload when present.
+public fun text(data: &Data): Option<String> {
+    match (data) {
+        Data::Bytes(_) => option::none(),
+        Data::Text(text) => option::some(*text),
+    }
+}
+
 /// A single record in the audit trail
 public struct Record<D: store + copy> has store {
     /// Arbitrary data stored on-chain

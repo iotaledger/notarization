@@ -5,8 +5,7 @@ use std::collections::{BTreeMap, HashSet};
 use std::str::FromStr;
 
 use iota_interaction::ident_str;
-use iota_interaction::types::base_types::ObjectID;
-use iota_interaction::types::base_types::IotaAddress;
+use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
 use iota_interaction::types::transaction::Argument;
 use iota_interaction::types::{MOVE_STDLIB_PACKAGE_ID, TypeTag};
@@ -109,11 +108,9 @@ impl<'de> Deserialize<'de> for Data {
     where
         D: Deserializer<'de>,
     {
-        // Handle both raw bytes and string representations from BCS
         let bytes = Vec::<u8>::deserialize(deserializer)?;
 
         if let Ok(text) = String::from_utf8(bytes.clone()) {
-            // Additional check: if it looks like actual text (not just valid UTF-8 bytes)
             if text.chars().all(|c| c.is_ascii_graphic() || c.is_ascii_whitespace()) {
                 Ok(Data::Text(text))
             } else {
@@ -245,7 +242,6 @@ mod tests {
 
     #[test]
     fn deserialize_ascii_like_binary_returns_text_variant() {
-        // Demonstrates current heuristic limitation: printable ASCII payloads are interpreted as text.
         let data = deserialize_from_raw_bytes(b"GIF89a".to_vec());
         assert_eq!(data, Data::Text("GIF89a".to_string()));
     }
