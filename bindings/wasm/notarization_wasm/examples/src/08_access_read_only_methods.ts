@@ -43,6 +43,8 @@ export async function accessReadOnlyMethods(): Promise<void> {
     // 3. Get current state
     const currentState = await notarizationClientReadOnly.state(dynamicNotarization.id);
     console.log("📄 State content:", currentState.data.toString());
+    console.log("📄 State data type:", currentState.data.valueType);
+    console.log("📄 State data length:", currentState.data.valueLength);
     console.log("📄 State metadata:", currentState.metadata);
 
     // 4. Get creation timestamp

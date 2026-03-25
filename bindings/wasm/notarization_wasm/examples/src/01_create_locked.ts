@@ -46,13 +46,18 @@ export async function createLocked(): Promise<void> {
     console.log("----------------------------------------------------");
     console.log("Notarization ID: ", notarization.id);
     console.log("Notarization Method: ", notarization.method);
+    console.log("State data value type: ", notarization.state.data.valueType);
+    console.log("State data value length: ", notarization.state.data.valueLength);
     console.log(
-        `State data as string: "${notarization.state.data.toString()}" or as bytes: [${notarization.state.data.toBytes()}]`,
+        notarization.state.data.valueType === "String"
+            ? `State data as string: "${notarization.state.data.toString()}"`
+            : `State data as bytes: [${notarization.state.data.toBytes()}]`,
     );
     console.log("State metadata: ", notarization.state.metadata);
     console.log("Immutable description: ", notarization.immutableMetadata.description);
     console.log("Immutable locking metadata: ", notarization.immutableMetadata.locking);
     console.log("Updatable metadata: ", notarization.updatableMetadata);
+    console.log("State version count: ", notarization.stateVersionCount);
     console.log("State version count: ", notarization.stateVersionCount);
     console.log("Owner: ", notarization.owner);
     // This is what the complete OnChainNotarization looks like
