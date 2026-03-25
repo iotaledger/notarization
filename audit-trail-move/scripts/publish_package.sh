@@ -6,12 +6,11 @@
 script_dir=$(cd "$(dirname $0)" && pwd)
 package_dir=$script_dir/..
 
-RESPONSE=$(iota client publish  --silence-warnings --json --gas-budget 500000000 $package_dir)
+RESPONSE=$(iota client publish --silence-warnings --json --gas-budget 500000000 $package_dir)
 { # try
     PACKAGE_ID=$(echo $RESPONSE | jq --raw-output '.objectChanges[] | select(.type | contains("published")) | .packageId')
 } || { # catch
     echo $RESPONSE
 }
-
 export IOTA_AUDIT_TRAIL_PKG_ID=$PACKAGE_ID
 echo "${IOTA_AUDIT_TRAIL_PKG_ID}"

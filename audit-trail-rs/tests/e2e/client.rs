@@ -7,13 +7,13 @@ use std::sync::Arc;
 
 use audit_trails::AuditTrailClient;
 use audit_trails::core::types::{
-    Capability, CapabilityIssueOptions, CapabilityIssued, Data, Permission, PermissionSet, RoleCreated,
+    Capability, CapabilityIssueOptions, CapabilityIssued, Data, InitialRecord, Permission, PermissionSet, RecordTags,
+    RoleCreated,
 };
-use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::base_types::{IotaAddress, ObjectID, ObjectRef};
 use iota_interaction::types::crypto::PublicKey;
 use iota_interaction::{IOTA_LOCAL_NETWORK_URL, IotaClientBuilder};
 use iota_interaction_rust::IotaClientAdapter;
-use iota_sdk::types::base_types::ObjectRef;
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use product_common::network_name::NetworkName;
 use product_common::test_utils::{InMemSigner, init_product_package, request_funds};
@@ -86,9 +86,20 @@ impl TestClient {
 
     /// Creates a trail with the given initial record data and returns its ObjectID.
     pub(crate) async fn create_test_trail(&self, data: Data) -> anyhow::Result<ObjectID> {
+        self.create_test_trail_with_tags(data, std::iter::empty::<String>())
+            .await
+    }
+
+    /// Creates a trail with the given initial record data and available tags.
+    pub(crate) async fn create_test_trail_with_tags<I, S>(&self, data: Data, tags: I) -> anyhow::Result<ObjectID>
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
         let created = self
             .create_trail()
-            .with_initial_record(data, None)
+            .with_initial_record(InitialRecord::new(data, None, None))
+            .with_record_tags(tags)
             .finish()
             .build_and_execute(self)
             .await?
@@ -102,14 +113,18 @@ impl TestClient {
         trail_id: ObjectID,
         role_name: &str,
         permissions: impl IntoIterator<Item = Permission>,
+        record_tags: Option<RecordTags>,
     ) -> anyhow::Result<RoleCreated> {
         let created = self
             .trail(trail_id)
             .access()
             .for_role(role_name)
-            .create(PermissionSet {
-                permissions: permissions.into_iter().collect::<HashSet<_>>(),
-            })
+            .create(
+                PermissionSet {
+                    permissions: permissions.into_iter().collect::<HashSet<_>>(),
+                },
+                record_tags,
+            )
             .build_and_execute(self)
             .await?
             .output;

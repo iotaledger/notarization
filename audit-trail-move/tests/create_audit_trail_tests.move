@@ -5,13 +5,14 @@ module audit_trail::create_audit_trail_tests;
 use audit_trail::{
     locking,
     main::{Self, AuditTrail, initial_admin_role_name},
+    permission,
+    record::{Self, Data},
     test_utils::{
         setup_test_audit_trail,
-        new_test_data,
         initial_time_for_testing,
-        TestData,
         fetch_capability_trail_and_clock,
-        cleanup_capability_trail_and_clock
+        cleanup_capability_trail_and_clock,
+        new_capability_for_address
     }
 };
 use iota::{clock, test_scenario as ts};
@@ -46,7 +47,7 @@ fun test_create_without_initial_record() {
 
     ts::next_tx(&mut scenario, user);
     {
-        let trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let trail = ts::take_shared<AuditTrail<Data>>(&scenario);
 
         // Verify trail was created correctly
         assert!(trail.creator() == user, 2);
@@ -54,6 +55,86 @@ fun test_create_without_initial_record() {
         assert!(trail.record_count() == 0, 4);
 
         ts::return_shared(trail);
+    };
+
+    ts::end(scenario);
+}
+
+#[test]
+fun test_tag_admin_role_can_manage_available_record_tags() {
+    let admin = @0xA;
+    let tag_admin = @0xB;
+    let mut scenario = ts::begin(admin);
+
+    {
+        let locking_config = locking::new(
+            locking::window_count_based(0),
+            timelock::none(),
+            timelock::none(),
+        );
+
+        let (admin_cap, _) = setup_test_audit_trail(
+            &mut scenario,
+            locking_config,
+            option::none(),
+        );
+
+        transfer::public_transfer(admin_cap, admin);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
+
+        trail.create_role(
+            &admin_cap,
+            string::utf8(b"TagAdmin"),
+            permission::tag_admin_permissions(),
+            option::none(),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        let tag_admin_cap = new_capability_for_address(
+            trail.access_mut(),
+            &admin_cap,
+            &string::utf8(b"TagAdmin"),
+            tag_admin,
+            option::none(),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        transfer::public_transfer(tag_admin_cap, tag_admin);
+        cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
+    };
+
+    ts::next_tx(&mut scenario, tag_admin);
+    {
+        let (tag_admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
+
+        trail.add_record_tag(
+            &tag_admin_cap,
+            string::utf8(b"finance"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        let available_tags = trail.tags().tag_keys();
+        assert!(available_tags.length() == 1, 0);
+        assert!(available_tags.contains(&string::utf8(b"finance")), 1);
+
+        trail.remove_record_tag(
+            &tag_admin_cap,
+            string::utf8(b"finance"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        let available_tags = trail.tags().tag_keys();
+        assert!(available_tags.length() == 0, 2);
+
+        cleanup_capability_trail_and_clock(&scenario, tag_admin_cap, trail, clock);
     };
 
     ts::end(scenario);
@@ -70,7 +151,7 @@ fun test_create_with_initial_record() {
             timelock::none(),
             timelock::none(),
         ); // 1 day in seconds
-        let initial_data = new_test_data(42, b"Hello, World!");
+        let initial_data = record::new_text(string::utf8(b"Hello, World!"));
 
         let (admin_cap, trail_id) = setup_test_audit_trail(
             &mut scenario,
@@ -88,7 +169,7 @@ fun test_create_with_initial_record() {
 
     ts::next_tx(&mut scenario, user);
     {
-        let trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let trail = ts::take_shared<AuditTrail<Data>>(&scenario);
 
         // Verify trail with initial record
         assert!(trail.creator() == user, 2);
@@ -119,12 +200,12 @@ fun test_create_minimal_metadata() {
             timelock::none(),
         );
 
-        let (admin_cap, _trail_id) = main::create<TestData>(
-            option::none(),
+        let (admin_cap, _trail_id) = main::create<Data>(
             option::none(),
             locking_config,
             option::none(),
             option::none(),
+            vector[],
             &clock,
             ts::ctx(&mut scenario),
         );
@@ -139,7 +220,7 @@ fun test_create_minimal_metadata() {
 
     ts::next_tx(&mut scenario, user);
     {
-        let trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let trail = ts::take_shared<AuditTrail<Data>>(&scenario);
 
         // Verify trail was created
         assert!(trail.creator() == user, 1);
@@ -175,7 +256,7 @@ fun test_create_with_locking_enabled() {
 
     ts::next_tx(&mut scenario, user);
     {
-        let trail = ts::take_shared<AuditTrail<TestData>>(&scenario);
+        let trail = ts::take_shared<AuditTrail<Data>>(&scenario);
 
         // Verify trail with locking enabled
         assert!(trail.creator() == user, 0);

@@ -10,7 +10,7 @@ use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;
 
-use super::operations::CreateOps;
+use super::operations::{CreateOps, CreateTrailArgs};
 use crate::core::builder::AuditTrailBuilder;
 use crate::core::operations;
 use crate::core::types::{AuditTrailCreated, Event, OnChainAuditTrail};
@@ -56,11 +56,11 @@ impl CreateTrail {
     {
         let AuditTrailBuilder {
             admin,
-            record: data,
-            record_metadata,
+            initial_record,
             locking_config,
             trail_metadata,
             updatable_metadata,
+            record_tags,
         } = self.builder.clone();
 
         let admin = admin.ok_or_else(|| {
@@ -71,16 +71,16 @@ impl CreateTrail {
         })?;
         let tf_components_package_id = package::tf_components_package_id();
 
-        CreateOps::create_trail(
-            client.package_id(),
+        CreateOps::create_trail(CreateTrailArgs {
+            audit_trail_package_id: client.package_id(),
             tf_components_package_id,
             admin,
-            data,
-            record_metadata,
+            initial_record,
             locking_config,
             trail_metadata,
             updatable_metadata,
-        )
+            record_tags,
+        })
     }
 }
 

@@ -100,6 +100,23 @@ fun test_metadata_admin_permissions() {
 }
 
 #[test]
+fun test_tag_admin_permissions() {
+    let perms = permission::tag_admin_permissions();
+
+    assert!(permission::has_permission(&perms, &permission::add_record_tags()), 0);
+    assert!(permission::has_permission(&perms, &permission::delete_record_tags()), 1);
+    assert!(iota::vec_set::size(&perms) == 2, 2);
+}
+
+#[test]
+fun test_admin_permissions_include_tag_management() {
+    let perms = permission::admin_permissions();
+
+    assert!(permission::has_permission(&perms, &permission::add_record_tags()), 0);
+    assert!(permission::has_permission(&perms, &permission::delete_record_tags()), 1);
+}
+
+#[test]
 #[expected_failure(abort_code = vec_set::EKeyAlreadyExists)]
 fun test_from_vec_duplicate_permission() {
     // VecSet should throw error EKeyAlreadyExists on duplicate insertions

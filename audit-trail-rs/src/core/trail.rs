@@ -12,6 +12,7 @@ use serde::de::DeserializeOwned;
 use crate::core::access::TrailAccess;
 use crate::core::locking::TrailLocking;
 use crate::core::records::TrailRecords;
+use crate::core::tags::TrailTags;
 use crate::core::types::{Data, OnChainAuditTrail};
 use crate::error::Error;
 
@@ -95,5 +96,9 @@ impl<'a, C> AuditTrailHandle<'a, C> {
 
     pub fn access(&self) -> TrailAccess<'a, C> {
         TrailAccess::new(self.client, self.trail_id)
+    }
+
+    pub fn tags(&self) -> TrailTags<'a, C> {
+        TrailTags::new(self.client, self.trail_id)
     }
 }

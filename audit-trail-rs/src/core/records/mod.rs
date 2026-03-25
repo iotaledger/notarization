@@ -52,14 +52,14 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
         self.client.execute_read_only_transaction(tx).await
     }
 
-    pub fn add<S>(&self, data: D, metadata: Option<String>) -> TransactionBuilder<AddRecord>
+    pub fn add<S>(&self, data: D, metadata: Option<String>, tag: Option<String>) -> TransactionBuilder<AddRecord>
     where
         C: AuditTrailFull + CoreClient<S>,
         S: Signer<IotaKeySignature> + OptionalSync,
         D: Into<Data>,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(AddRecord::new(self.trail_id, owner, data.into(), metadata))
+        TransactionBuilder::new(AddRecord::new(self.trail_id, owner, data.into(), metadata, tag))
     }
 
     pub fn delete<S>(&self, sequence_number: u64) -> TransactionBuilder<DeleteRecord>

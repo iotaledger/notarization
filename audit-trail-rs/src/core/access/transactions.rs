@@ -12,7 +12,7 @@ use tokio::sync::OnceCell;
 
 use super::operations::AccessOps;
 use crate::core::types::{
-    CapabilityDestroyed, CapabilityIssueOptions, CapabilityIssued, CapabilityRevoked, Event, PermissionSet,
+    CapabilityDestroyed, CapabilityIssueOptions, CapabilityIssued, CapabilityRevoked, Event, PermissionSet, RecordTags,
     RoleCreated, RoleRemoved, RoleUpdated,
 };
 use crate::error::Error;
@@ -25,16 +25,24 @@ pub struct CreateRole {
     owner: IotaAddress,
     name: String,
     permissions: PermissionSet,
+    record_tags: Option<RecordTags>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl CreateRole {
-    pub fn new(trail_id: ObjectID, owner: IotaAddress, name: String, permissions: PermissionSet) -> Self {
+    pub fn new(
+        trail_id: ObjectID,
+        owner: IotaAddress,
+        name: String,
+        permissions: PermissionSet,
+        record_tags: Option<RecordTags>,
+    ) -> Self {
         Self {
             trail_id,
             owner,
             name,
             permissions,
+            record_tags,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -49,6 +57,7 @@ impl CreateRole {
             self.owner,
             self.name.clone(),
             self.permissions.clone(),
+            self.record_tags.clone(),
         )
         .await
     }
@@ -99,16 +108,24 @@ pub struct UpdateRole {
     owner: IotaAddress,
     name: String,
     permissions: PermissionSet,
+    record_tags: Option<RecordTags>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl UpdateRole {
-    pub fn new(trail_id: ObjectID, owner: IotaAddress, name: String, permissions: PermissionSet) -> Self {
+    pub fn new(
+        trail_id: ObjectID,
+        owner: IotaAddress,
+        name: String,
+        permissions: PermissionSet,
+        record_tags: Option<RecordTags>,
+    ) -> Self {
         Self {
             trail_id,
             owner,
             name,
             permissions,
+            record_tags,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -123,6 +140,7 @@ impl UpdateRole {
             self.owner,
             self.name.clone(),
             self.permissions.clone(),
+            self.record_tags.clone(),
         )
         .await
     }

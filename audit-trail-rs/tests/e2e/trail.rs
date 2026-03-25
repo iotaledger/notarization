@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use audit_trails::core::types::{
-    CapabilityIssueOptions, Data, ImmutableMetadata, LockingConfig, LockingWindow, Permission, TimeLock,
+    CapabilityIssueOptions, Data, ImmutableMetadata, InitialRecord, LockingConfig, LockingWindow, Permission,
+    RecordTags, TimeLock,
 };
 use iota_interaction::types::base_types::IotaAddress;
 use product_common::core_client::CoreClient;
@@ -23,7 +24,7 @@ async fn create_trail_with_default_builder_settings() -> anyhow::Result<()> {
 
     let created = client
         .create_trail()
-        .with_initial_record(Data::text("audit-trail-create-default"), None)
+        .with_initial_record(InitialRecord::new(Data::text("audit-trail-create-default"), None, None))
         .finish()
         .build_and_execute(&client)
         .await?
@@ -51,10 +52,11 @@ async fn create_trail_with_metadata_and_time_lock() -> anyhow::Result<()> {
 
     let created = client
         .create_trail()
-        .with_initial_record(
+        .with_initial_record(InitialRecord::new(
             Data::text("audit-trail-create-time-lock"),
             Some("initial record metadata".to_string()),
-        )
+            None,
+        ))
         .with_locking_config(config_with_window(LockingWindow::TimeBased { seconds: 300 }))
         .with_trail_metadata(immutable_metadata.clone())
         .with_updatable_metadata("updatable metadata")
@@ -80,10 +82,11 @@ async fn create_trail_with_bytes_and_count_lock() -> anyhow::Result<()> {
 
     let created = client
         .create_trail()
-        .with_initial_record(
+        .with_initial_record(InitialRecord::new(
             Data::bytes(vec![0xAA, 0xBB, 0xCC, 0xDD]),
             Some("bytes metadata".to_string()),
-        )
+            None,
+        ))
         .with_locking_config(config_with_window(LockingWindow::CountBased { count: 3 }))
         .with_trail_metadata_parts("Trail Count Lock", Some("count lock description".to_string()))
         .finish()
@@ -109,7 +112,7 @@ async fn create_trail_with_custom_admin_address() -> anyhow::Result<()> {
     let created = client
         .create_trail()
         .with_admin(custom_admin)
-        .with_initial_record(Data::text("audit-trail-custom-admin"), None)
+        .with_initial_record(InitialRecord::new(Data::text("audit-trail-custom-admin"), None, None))
         .finish()
         .build_and_execute(&client)
         .await?
@@ -131,7 +134,7 @@ async fn get_returns_on_chain_trail() -> anyhow::Result<()> {
 
     let created = client
         .create_trail()
-        .with_initial_record(Data::text("trail-get-e2e"), None)
+        .with_initial_record(InitialRecord::new(Data::text("trail-get-e2e"), None, None))
         .with_trail_metadata_parts("Get Test", Some("description".into()))
         .with_updatable_metadata("initial updatable")
         .finish()
@@ -163,7 +166,7 @@ async fn get_trail_without_metadata() -> anyhow::Result<()> {
 
     let created = client
         .create_trail()
-        .with_initial_record(Data::text("trail-no-meta-e2e"), None)
+        .with_initial_record(InitialRecord::new(Data::text("trail-no-meta-e2e"), None, None))
         .finish()
         .build_and_execute(&client)
         .await?
@@ -199,7 +202,7 @@ async fn update_metadata_roundtrip() -> anyhow::Result<()> {
     let trail_id = client.create_test_trail(Data::text("trail-update-meta-e2e")).await?;
     // Set initial updatable metadata via update_metadata
     client
-        .create_role(trail_id, "MetadataAdmin", vec![Permission::UpdateMetadata])
+        .create_role(trail_id, "MetadataAdmin", vec![Permission::UpdateMetadata], None)
         .await?;
     client
         .issue_cap(trail_id, "MetadataAdmin", CapabilityIssueOptions::default())
@@ -233,7 +236,7 @@ async fn update_metadata_to_none_clears_value() -> anyhow::Result<()> {
 
     let trail_id = client.create_test_trail(Data::text("trail-clear-meta-e2e")).await?;
     client
-        .create_role(trail_id, "MetadataAdmin", vec![Permission::UpdateMetadata])
+        .create_role(trail_id, "MetadataAdmin", vec![Permission::UpdateMetadata], None)
         .await?;
     client
         .issue_cap(trail_id, "MetadataAdmin", CapabilityIssueOptions::default())
@@ -260,7 +263,7 @@ async fn update_metadata_multiple_times() -> anyhow::Result<()> {
 
     let trail_id = client.create_test_trail(Data::text("trail-multi-meta-e2e")).await?;
     client
-        .create_role(trail_id, "MetadataAdmin", vec![Permission::UpdateMetadata])
+        .create_role(trail_id, "MetadataAdmin", vec![Permission::UpdateMetadata], None)
         .await?;
     client
         .issue_cap(trail_id, "MetadataAdmin", CapabilityIssueOptions::default())
@@ -294,7 +297,7 @@ async fn update_metadata_does_not_affect_immutable_metadata() -> anyhow::Result<
 
     let created = client
         .create_trail()
-        .with_initial_record(Data::text("trail-immutable-check-e2e"), None)
+        .with_initial_record(InitialRecord::new(Data::text("trail-immutable-check-e2e"), None, None))
         .with_trail_metadata(immutable.clone())
         .with_updatable_metadata("mutable")
         .finish()
@@ -304,7 +307,7 @@ async fn update_metadata_does_not_affect_immutable_metadata() -> anyhow::Result<
 
     let trail_id = created.trail_id;
     client
-        .create_role(trail_id, "MetadataAdmin", vec![Permission::UpdateMetadata])
+        .create_role(trail_id, "MetadataAdmin", vec![Permission::UpdateMetadata], None)
         .await?;
     client
         .issue_cap(trail_id, "MetadataAdmin", CapabilityIssueOptions::default())
@@ -331,7 +334,7 @@ async fn delete_audit_trail_fails_when_records_exist() -> anyhow::Result<()> {
         .create_test_trail(Data::text("trail-delete-not-empty-e2e"))
         .await?;
     client
-        .create_role(trail_id, "TrailDeleteOnly", vec![Permission::DeleteAuditTrail])
+        .create_role(trail_id, "TrailDeleteOnly", vec![Permission::DeleteAuditTrail], None)
         .await?;
     client
         .issue_cap(trail_id, "TrailDeleteOnly", CapabilityIssueOptions::default())
@@ -352,7 +355,7 @@ async fn delete_records_batch_then_delete_audit_trail_roundtrip() -> anyhow::Res
     let client = get_funded_test_client().await?;
     let created = client
         .create_trail()
-        .with_initial_record(Data::text("trail-batch-delete-e2e"), None)
+        .with_initial_record(InitialRecord::new(Data::text("trail-batch-delete-e2e"), None, None))
         .with_locking_config(config_with_window(LockingWindow::TimeBased { seconds: 3600 }))
         .finish()
         .build_and_execute(&client)
@@ -363,6 +366,7 @@ async fn delete_records_batch_then_delete_audit_trail_roundtrip() -> anyhow::Res
             created.trail_id,
             "TrailDeleteMaintenance",
             vec![Permission::DeleteAllRecords, Permission::DeleteAuditTrail],
+            None,
         )
         .await?;
     client
@@ -393,6 +397,103 @@ async fn delete_records_batch_then_delete_audit_trail_roundtrip() -> anyhow::Res
         fetch_deleted.is_err(),
         "trail object should no longer be readable after delete"
     );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn manage_record_tag_registry_roundtrip() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+
+    let created = client
+        .create_trail()
+        .with_initial_record(InitialRecord::new(Data::text("trail-tag-registry"), None, None))
+        .with_record_tags(["finance"])
+        .finish()
+        .build_and_execute(&client)
+        .await?
+        .output;
+
+    let trail = client.trail(created.trail_id);
+    let initial = trail.get().await?;
+    assert_eq!(initial.tags.len(), 1);
+    assert!(initial.tags.contains_key("finance"));
+
+    trail.tags().add("legal").build_and_execute(&client).await?;
+    let after_add = trail.get().await?;
+    assert!(after_add.tags.contains_key("finance"));
+    assert!(after_add.tags.contains_key("legal"));
+
+    trail.tags().remove("legal").build_and_execute(&client).await?;
+
+    let after_remove = trail.get().await?;
+    assert_eq!(after_remove.tags.len(), 1);
+    assert!(after_remove.tags.contains_key("finance"));
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn remove_record_tag_rejects_in_use_tag() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let created = client
+        .create_trail()
+        .with_initial_record(InitialRecord::new(Data::text("trail-tag-in-use"), None, None))
+        .with_record_tags(["finance"])
+        .finish()
+        .build_and_execute(&client)
+        .await?
+        .output;
+
+    client
+        .create_role(
+            created.trail_id,
+            "TaggedWriter",
+            vec![Permission::AddRecord],
+            Some(RecordTags::new(["finance"])),
+        )
+        .await?;
+    client
+        .issue_cap(created.trail_id, "TaggedWriter", CapabilityIssueOptions::default())
+        .await?;
+
+    let trail = client.trail(created.trail_id);
+    trail
+        .records()
+        .add(Data::text("tagged"), None, Some("finance".to_string()))
+        .build_and_execute(&client)
+        .await?;
+
+    let removed = trail.tags().remove("finance").build_and_execute(&client).await;
+    assert!(removed.is_err(), "used record tags must not be removable");
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn remove_record_tag_rejects_role_only_usage() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let created = client
+        .create_trail()
+        .with_initial_record(InitialRecord::new(Data::text("trail-tag-role-usage"), None, None))
+        .with_record_tags(["finance"])
+        .finish()
+        .build_and_execute(&client)
+        .await?
+        .output;
+
+    client
+        .create_role(
+            created.trail_id,
+            "TaggedWriter",
+            vec![Permission::AddRecord],
+            Some(RecordTags::new(["finance"])),
+        )
+        .await?;
+
+    let trail = client.trail(created.trail_id);
+    let removed = trail.tags().remove("finance").build_and_execute(&client).await;
+    assert!(removed.is_err(), "role-backed tags must not be removable");
 
     Ok(())
 }

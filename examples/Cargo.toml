@@ -1,6 +1,6 @@
 [package]
 name = "examples"
-version = "0.1.16-alpha"
+version = "0.1.17-alpha"
 authors = ["IOTA Stiftung"]
 edition = "2024"
 publish = false
@@ -52,6 +52,7 @@ path = "real-world/02_legal_contract.rs"
 anyhow.workspace = true
 chrono = { workspace = true }
 iota-sdk = { workspace = true }
+iota_interaction = { workspace = true }
 notarization = { path = "../notarization-rs" }
 product_common = { workspace = true, features = ["core-client", "test-utils", "transaction"] }
 serde_json = { workspace = true }

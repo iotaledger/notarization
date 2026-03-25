@@ -1,7 +1,7 @@
 #[test_only]
 module audit_trail::test_utils;
 
-use audit_trail::{locking, main::{Self, AuditTrail}};
+use audit_trail::{locking, main::{Self, AuditTrail}, record::{Self, Data}};
 use iota::{clock::{Self, Clock}, test_scenario::{Self as ts, Scenario}};
 use std::string;
 use tf_components::{capability::Capability, role_map::RoleMap};
@@ -37,7 +37,50 @@ public(package) fun initial_time_for_testing(): u64 {
 public(package) fun setup_test_audit_trail(
     scenario: &mut Scenario,
     locking_config: locking::LockingConfig,
+    initial_data: Option<record::Data>,
+): (Capability, iota::object::ID) {
+    setup_test_audit_trail_impl(scenario, locking_config, initial_data, vector[])
+}
+
+/// Setup a test audit trail with optional initial data and available record tags.
+public(package) fun setup_test_audit_trail_with_tags(
+    scenario: &mut Scenario,
+    locking_config: locking::LockingConfig,
+    initial_data: Option<record::Data>,
+    available_record_tags: vector<string::String>,
+): (Capability, iota::object::ID) {
+    setup_test_audit_trail_impl(scenario, locking_config, initial_data, available_record_tags)
+}
+
+/// Setup a test audit trail backed by the `TestData` helper type.
+public(package) fun setup_test_data_audit_trail(
+    scenario: &mut Scenario,
+    locking_config: locking::LockingConfig,
     initial_data: Option<TestData>,
+): (Capability, iota::object::ID) {
+    setup_test_audit_trail_impl(scenario, locking_config, initial_data, vector[])
+}
+
+/// Setup a test audit trail backed by `TestData` with available record tags.
+public(package) fun setup_test_data_audit_trail_with_tags(
+    scenario: &mut Scenario,
+    locking_config: locking::LockingConfig,
+    initial_data: Option<TestData>,
+    available_record_tags: vector<string::String>,
+): (Capability, iota::object::ID) {
+    setup_test_audit_trail_impl(
+        scenario,
+        locking_config,
+        initial_data,
+        available_record_tags,
+    )
+}
+
+fun setup_test_audit_trail_impl<D: store + copy + drop>(
+    scenario: &mut Scenario,
+    locking_config: locking::LockingConfig,
+    initial_data: Option<D>,
+    available_record_tags: vector<string::String>,
 ): (Capability, iota::object::ID) {
     let (admin_cap, trail_id) = {
         let mut clock = clock::create_for_testing(ts::ctx(scenario));
@@ -48,12 +91,25 @@ public(package) fun setup_test_audit_trail(
             option::some(string::utf8(b"Setup Test Trail Description")),
         );
 
-        let (admin_cap, trail_id) = main::create<TestData>(
-            initial_data,
-            option::none(),
+        let initial_record = if (initial_data.is_some()) {
+            option::some(
+                record::new_initial_record(
+                    initial_data.destroy_some(),
+                    option::none(),
+                    option::none(),
+                ),
+            )
+        } else {
+            initial_data.destroy_none();
+            option::none()
+        };
+
+        let (admin_cap, trail_id) = main::create<D>(
+            initial_record,
             locking_config,
             option::some(trail_metadata),
             option::none(),
+            available_record_tags,
             &clock,
             ts::ctx(scenario),
         );
@@ -153,9 +209,9 @@ public fun new_capability_for_address<P: copy + drop, D: copy + drop>(
 
 public(package) fun fetch_capability_trail_and_clock(
     scenario: &mut Scenario,
-): (Capability, AuditTrail<TestData>, Clock) {
+): (Capability, AuditTrail<Data>, Clock) {
     let admin_cap = ts::take_from_sender<Capability>(scenario);
-    let trail = ts::take_shared<AuditTrail<TestData>>(scenario);
+    let trail = ts::take_shared<AuditTrail<Data>>(scenario);
     let clock = iota::clock::create_for_testing(ts::ctx(scenario));
     (admin_cap, trail, clock)
 }
@@ -163,7 +219,7 @@ public(package) fun fetch_capability_trail_and_clock(
 public(package) fun cleanup_capability_trail_and_clock(
     scenario: &Scenario,
     cap: Capability,
-    trail: AuditTrail<TestData>,
+    trail: AuditTrail<Data>,
     clock: Clock,
 ) {
     iota::clock::destroy_for_testing(clock);
@@ -171,7 +227,7 @@ public(package) fun cleanup_capability_trail_and_clock(
     ts::return_shared(trail);
 }
 
-public(package) fun cleanup_trail_and_clock(trail: AuditTrail<TestData>, clock: Clock) {
+public(package) fun cleanup_trail_and_clock(trail: AuditTrail<Data>, clock: Clock) {
     iota::clock::destroy_for_testing(clock);
     ts::return_shared(trail);
 }
