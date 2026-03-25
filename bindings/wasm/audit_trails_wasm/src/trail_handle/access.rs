@@ -15,7 +15,7 @@ use crate::trail::{
     WasmCreateRole, WasmDeleteRole, WasmDestroyCapability, WasmDestroyInitialAdminCapability, WasmIssueCapability,
     WasmRevokeCapability, WasmRevokeInitialAdminCapability, WasmUpdateRole,
 };
-use crate::types::{WasmCapabilityIssueOptions, WasmPermissionSet};
+use crate::types::{WasmCapabilityIssueOptions, WasmPermissionSet, WasmRecordTags};
 
 #[derive(Clone)]
 #[wasm_bindgen(js_name = TrailAccess, inspectable)]
@@ -126,13 +126,17 @@ impl WasmRoleHandle {
     }
 
     #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<CreateRole>")]
-    pub fn create(&self, permissions: WasmPermissionSet) -> Result<WasmTransactionBuilder> {
+    pub fn create(
+        &self,
+        permissions: WasmPermissionSet,
+        record_tags: Option<WasmRecordTags>,
+    ) -> Result<WasmTransactionBuilder> {
         let tx = self
             .require_write()?
             .trail(self.trail_id)
             .access()
             .for_role(self.name.clone())
-            .create(permissions.into())
+            .create(permissions.into(), record_tags.map(Into::into))
             .into_inner();
         Ok(into_transaction_builder(WasmCreateRole(tx)))
     }
@@ -150,13 +154,17 @@ impl WasmRoleHandle {
     }
 
     #[wasm_bindgen(js_name = updatePermissions, unchecked_return_type = "TransactionBuilder<UpdateRole>")]
-    pub fn update_permissions(&self, permissions: WasmPermissionSet) -> Result<WasmTransactionBuilder> {
+    pub fn update_permissions(
+        &self,
+        permissions: WasmPermissionSet,
+        record_tags: Option<WasmRecordTags>,
+    ) -> Result<WasmTransactionBuilder> {
         let tx = self
             .require_write()?
             .trail(self.trail_id)
             .access()
             .for_role(self.name.clone())
-            .update_permissions(permissions.into())
+            .update_permissions(permissions.into(), record_tags.map(Into::into))
             .into_inner();
         Ok(into_transaction_builder(WasmUpdateRole(tx)))
     }

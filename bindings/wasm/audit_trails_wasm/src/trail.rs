@@ -10,6 +10,7 @@ use audit_trails::core::locking::{
     UpdateDeleteRecordWindow, UpdateDeleteTrailLock, UpdateLockingConfig, UpdateWriteLock,
 };
 use audit_trails::core::records::{AddRecord, DeleteRecord, DeleteRecordsBatch};
+use audit_trails::core::tags::{AddRecordTag, RemoveRecordTag};
 use audit_trails::core::trail::{DeleteAuditTrail, Migrate, UpdateMetadata};
 use audit_trails::core::types::{
     AuditTrailDeleted, CapabilityDestroyed, CapabilityIssued, CapabilityRevoked, OnChainAuditTrail, RecordAdded,
@@ -25,8 +26,8 @@ use wasm_bindgen::prelude::*;
 use crate::builder::WasmAuditTrailBuilder;
 use crate::types::{
     WasmAuditTrailDeleted, WasmCapabilityDestroyed, WasmCapabilityIssued, WasmCapabilityRevoked, WasmEmpty,
-    WasmImmutableMetadata, WasmLinkedTable, WasmLockingConfig, WasmRoleCreated, WasmRoleMap, WasmRoleRemoved,
-    WasmRoleUpdated,
+    WasmImmutableMetadata, WasmLinkedTable, WasmLockingConfig, WasmRecordAdded, WasmRecordDeleted, WasmRecordTagEntry,
+    WasmRoleCreated, WasmRoleMap, WasmRoleRemoved, WasmRoleUpdated,
 };
 
 #[wasm_bindgen(js_name = OnChainAuditTrail, inspectable)]
@@ -67,6 +68,13 @@ impl WasmOnChainAuditTrail {
     #[wasm_bindgen(getter)]
     pub fn records(&self) -> WasmLinkedTable {
         self.0.records.clone().into()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn tags(&self) -> Vec<WasmRecordTagEntry> {
+        let mut tags: Vec<_> = self.0.tags.clone().into_iter().map(Into::into).collect();
+        tags.sort_unstable_by(|left, right| left.tag.cmp(&right.tag));
+        tags
     }
 
     #[wasm_bindgen(getter)]
@@ -474,9 +482,9 @@ impl WasmAddRecord {
         wasm_effects: &WasmIotaTransactionBlockEffects,
         wasm_events: &WasmIotaTransactionBlockEvents,
         client: &WasmCoreClientReadOnly,
-    ) -> Result<u64> {
+    ) -> Result<WasmRecordAdded> {
         let added: RecordAdded = apply_with_events(self.0, wasm_effects, wasm_events, client).await?;
-        Ok(added.sequence_number)
+        Ok(added.into())
     }
 }
 
@@ -496,9 +504,9 @@ impl WasmDeleteRecord {
         wasm_effects: &WasmIotaTransactionBlockEffects,
         wasm_events: &WasmIotaTransactionBlockEvents,
         client: &WasmCoreClientReadOnly,
-    ) -> Result<u64> {
+    ) -> Result<WasmRecordDeleted> {
         let deleted: RecordDeleted = apply_with_events(self.0, wasm_effects, wasm_events, client).await?;
-        Ok(deleted.sequence_number)
+        Ok(deleted.into())
     }
 }
 
@@ -519,6 +527,48 @@ impl WasmDeleteRecordsBatch {
         wasm_events: &WasmIotaTransactionBlockEvents,
         client: &WasmCoreClientReadOnly,
     ) -> Result<u64> {
+        apply_with_events(self.0, wasm_effects, wasm_events, client).await
+    }
+}
+
+#[wasm_bindgen(js_name = AddRecordTag, inspectable)]
+pub struct WasmAddRecordTag(pub(crate) AddRecordTag);
+
+#[wasm_bindgen(js_class = AddRecordTag)]
+impl WasmAddRecordTag {
+    #[wasm_bindgen(js_name = buildProgrammableTransaction)]
+    pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
+        build_programmable_transaction(&self.0, client).await
+    }
+
+    #[wasm_bindgen(js_name = applyWithEvents)]
+    pub async fn apply_with_events(
+        self,
+        wasm_effects: &WasmIotaTransactionBlockEffects,
+        wasm_events: &WasmIotaTransactionBlockEvents,
+        client: &WasmCoreClientReadOnly,
+    ) -> Result<WasmEmpty> {
+        apply_with_events(self.0, wasm_effects, wasm_events, client).await
+    }
+}
+
+#[wasm_bindgen(js_name = RemoveRecordTag, inspectable)]
+pub struct WasmRemoveRecordTag(pub(crate) RemoveRecordTag);
+
+#[wasm_bindgen(js_class = RemoveRecordTag)]
+impl WasmRemoveRecordTag {
+    #[wasm_bindgen(js_name = buildProgrammableTransaction)]
+    pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
+        build_programmable_transaction(&self.0, client).await
+    }
+
+    #[wasm_bindgen(js_name = applyWithEvents)]
+    pub async fn apply_with_events(
+        self,
+        wasm_effects: &WasmIotaTransactionBlockEffects,
+        wasm_events: &WasmIotaTransactionBlockEvents,
+        client: &WasmCoreClientReadOnly,
+    ) -> Result<WasmEmpty> {
         apply_with_events(self.0, wasm_effects, wasm_events, client).await
     }
 }

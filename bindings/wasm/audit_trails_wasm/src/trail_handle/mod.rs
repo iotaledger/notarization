@@ -4,6 +4,7 @@
 mod access;
 mod locking;
 mod records;
+mod tags;
 
 use anyhow::anyhow;
 use audit_trails::{AuditTrailClient, AuditTrailClientReadOnly};
@@ -19,6 +20,7 @@ use crate::trail::{WasmDeleteAuditTrail, WasmMigrate, WasmOnChainAuditTrail, Was
 pub(crate) use access::WasmTrailAccess;
 pub(crate) use locking::WasmTrailLocking;
 pub(crate) use records::WasmTrailRecords;
+pub(crate) use tags::WasmTrailTags;
 
 #[derive(Clone)]
 #[wasm_bindgen(js_name = AuditTrailHandle, inspectable)]
@@ -108,6 +110,13 @@ impl WasmAuditTrailHandle {
     pub fn locking(&self) -> WasmTrailLocking {
         WasmTrailLocking {
             read_only: self.read_only.clone(),
+            full: self.full.clone(),
+            trail_id: self.trail_id,
+        }
+    }
+
+    pub fn tags(&self) -> WasmTrailTags {
+        WasmTrailTags {
             full: self.full.clone(),
             trail_id: self.trail_id,
         }

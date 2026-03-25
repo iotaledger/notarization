@@ -9,7 +9,7 @@ use product_common::bindings::WasmIotaAddress;
 use wasm_bindgen::prelude::*;
 
 use crate::trail::WasmCreateTrail;
-use crate::types::WasmLockingConfig;
+use crate::types::{WasmLockingConfig, WasmRecordTags};
 
 #[wasm_bindgen(js_name = AuditTrailBuilder, inspectable)]
 pub struct WasmAuditTrailBuilder(pub(crate) AuditTrailBuilder);
@@ -17,13 +17,18 @@ pub struct WasmAuditTrailBuilder(pub(crate) AuditTrailBuilder);
 #[wasm_bindgen(js_class = AuditTrailBuilder)]
 impl WasmAuditTrailBuilder {
     #[wasm_bindgen(js_name = withInitialRecordString)]
-    pub fn with_initial_record_string(self, data: String, metadata: Option<String>) -> Self {
-        Self(self.0.with_initial_record(data, metadata))
+    pub fn with_initial_record_string(self, data: String, metadata: Option<String>, tag: Option<String>) -> Self {
+        Self(self.0.with_initial_record_parts(data, metadata, tag))
     }
 
     #[wasm_bindgen(js_name = withInitialRecordBytes)]
-    pub fn with_initial_record_bytes(self, data: js_sys::Uint8Array, metadata: Option<String>) -> Self {
-        Self(self.0.with_initial_record(data.to_vec(), metadata))
+    pub fn with_initial_record_bytes(
+        self,
+        data: js_sys::Uint8Array,
+        metadata: Option<String>,
+        tag: Option<String>,
+    ) -> Self {
+        Self(self.0.with_initial_record_parts(data.to_vec(), metadata, tag))
     }
 
     #[wasm_bindgen(js_name = withTrailMetadata)]
@@ -39,6 +44,11 @@ impl WasmAuditTrailBuilder {
     #[wasm_bindgen(js_name = withLockingConfig)]
     pub fn with_locking_config(self, config: WasmLockingConfig) -> Self {
         Self(self.0.with_locking_config(config.into()))
+    }
+
+    #[wasm_bindgen(js_name = withRecordTags)]
+    pub fn with_record_tags(self, record_tags: WasmRecordTags) -> Self {
+        Self(self.0.with_record_tags(record_tags.allowed_tags))
     }
 
     #[wasm_bindgen(js_name = withAdmin)]

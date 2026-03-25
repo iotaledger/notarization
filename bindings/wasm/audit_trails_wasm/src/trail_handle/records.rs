@@ -110,12 +110,12 @@ impl WasmTrailRecords {
     }
 
     #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<AddRecord>")]
-    pub fn add(&self, data: WasmData, metadata: Option<String>) -> Result<WasmTransactionBuilder> {
+    pub fn add(&self, data: WasmData, metadata: Option<String>, tag: Option<String>) -> Result<WasmTransactionBuilder> {
         let tx = self
             .require_write()?
             .trail(self.trail_id)
             .records()
-            .add(AuditTrailData::from(data), metadata)
+            .add(AuditTrailData::from(data), metadata, tag)
             .into_inner();
         Ok(into_transaction_builder(WasmAddRecord(tx)))
     }

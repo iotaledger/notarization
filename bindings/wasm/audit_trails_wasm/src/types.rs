@@ -6,7 +6,7 @@ use std::collections::{HashMap, HashSet};
 use audit_trails::core::types::{
     AuditTrailCreated, AuditTrailDeleted, Capability, CapabilityAdminPermissions, CapabilityDestroyed,
     CapabilityIssueOptions, CapabilityIssued, CapabilityRevoked, Data, ImmutableMetadata, LockingConfig, LockingWindow,
-    PaginatedRecord, Permission, PermissionSet, Record, RecordAdded, RecordCorrection, RecordDeleted,
+    PaginatedRecord, Permission, PermissionSet, Record, RecordAdded, RecordCorrection, RecordDeleted, RecordTags, Role,
     RoleAdminPermissions, RoleCreated, RoleMap, RoleRemoved, RoleUpdated, TimeLock,
 };
 use iota_interaction::types::collection_types::LinkedTable;
@@ -96,6 +96,8 @@ fn permission_sort_key(permission: Permission) -> u8 {
         Permission::UpdateMetadata => 14,
         Permission::DeleteMetadata => 15,
         Permission::Migrate => 16,
+        Permission::AddRecordTags => 17,
+        Permission::DeleteRecordTags => 18,
     }
 }
 
@@ -105,18 +107,25 @@ fn sorted_permissions_from_set(permissions: HashSet<Permission>) -> Vec<WasmPerm
     permissions.into_iter().map(Into::into).collect()
 }
 
+fn sorted_tag_names(tags: HashSet<String>) -> Vec<String> {
+    let mut tags: Vec<_> = tags.into_iter().collect();
+    tags.sort_unstable();
+    tags
+}
+
 fn sorted_object_ids(ids: HashSet<iota_interaction::types::base_types::ObjectID>) -> Vec<String> {
     let mut ids: Vec<_> = ids.into_iter().map(|id| id.to_string()).collect();
     ids.sort_unstable();
     ids
 }
 
-fn sorted_role_entries(roles: HashMap<String, HashSet<Permission>>) -> Vec<WasmRolePermissionsEntry> {
+fn sorted_role_entries(roles: HashMap<String, Role>) -> Vec<WasmRolePermissionsEntry> {
     let mut roles: Vec<_> = roles
         .into_iter()
-        .map(|(name, permissions)| WasmRolePermissionsEntry {
+        .map(|(name, role)| WasmRolePermissionsEntry {
             name,
-            permissions: sorted_permissions_from_set(permissions),
+            permissions: sorted_permissions_from_set(role.permissions),
+            record_tags: role.data.map(Into::into),
         })
         .collect();
     roles.sort_unstable_by(|left, right| left.name.cmp(&right.name));
@@ -143,6 +152,8 @@ pub enum WasmPermission {
     UpdateMetadata,
     DeleteMetadata,
     Migrate,
+    AddRecordTags,
+    DeleteRecordTags,
 }
 
 impl From<Permission> for WasmPermission {
@@ -165,6 +176,8 @@ impl From<Permission> for WasmPermission {
             Permission::UpdateMetadata => Self::UpdateMetadata,
             Permission::DeleteMetadata => Self::DeleteMetadata,
             Permission::Migrate => Self::Migrate,
+            Permission::AddRecordTags => Self::AddRecordTags,
+            Permission::DeleteRecordTags => Self::DeleteRecordTags,
         }
     }
 }
@@ -189,6 +202,8 @@ impl From<WasmPermission> for Permission {
             WasmPermission::UpdateMetadata => Self::UpdateMetadata,
             WasmPermission::DeleteMetadata => Self::DeleteMetadata,
             WasmPermission::Migrate => Self::Migrate,
+            WasmPermission::AddRecordTags => Self::AddRecordTags,
+            WasmPermission::DeleteRecordTags => Self::DeleteRecordTags,
         }
     }
 }
@@ -234,6 +249,11 @@ impl WasmPermissionSet {
     #[wasm_bindgen(js_name = metadataAdminPermissions)]
     pub fn metadata_admin_permissions() -> Self {
         PermissionSet::metadata_admin_permissions().into()
+    }
+
+    #[wasm_bindgen(js_name = tagAdminPermissions)]
+    pub fn tag_admin_permissions() -> Self {
+        PermissionSet::tag_admin_permissions().into()
     }
 }
 
@@ -312,6 +332,56 @@ impl From<CapabilityAdminPermissions> for WasmCapabilityAdminPermissions {
 pub struct WasmRolePermissionsEntry {
     pub name: String,
     pub permissions: Vec<WasmPermission>,
+    #[wasm_bindgen(js_name = recordTags)]
+    pub record_tags: Option<WasmRecordTags>,
+}
+
+#[wasm_bindgen(js_name = RecordTags, getter_with_clone, inspectable)]
+#[derive(Clone, Serialize, Deserialize)]
+pub struct WasmRecordTags {
+    #[wasm_bindgen(js_name = allowedTags)]
+    pub allowed_tags: Vec<String>,
+}
+
+#[wasm_bindgen(js_class = RecordTags)]
+impl WasmRecordTags {
+    #[wasm_bindgen(constructor)]
+    pub fn new(allowed_tags: Vec<String>) -> Self {
+        let mut allowed_tags = allowed_tags;
+        allowed_tags.sort_unstable();
+        allowed_tags.dedup();
+        Self { allowed_tags }
+    }
+}
+
+impl From<RecordTags> for WasmRecordTags {
+    fn from(value: RecordTags) -> Self {
+        Self {
+            allowed_tags: sorted_tag_names(value.allowed_tags),
+        }
+    }
+}
+
+impl From<WasmRecordTags> for RecordTags {
+    fn from(value: WasmRecordTags) -> Self {
+        Self {
+            allowed_tags: value.allowed_tags.into_iter().collect(),
+        }
+    }
+}
+
+#[wasm_bindgen(js_name = RecordTagEntry, getter_with_clone, inspectable)]
+#[derive(Clone, Serialize, Deserialize)]
+pub struct WasmRecordTagEntry {
+    pub tag: String,
+    #[wasm_bindgen(js_name = usageCount)]
+    pub usage_count: u64,
+}
+
+impl From<(String, u64)> for WasmRecordTagEntry {
+    fn from((tag, usage_count): (String, u64)) -> Self {
+        Self { tag, usage_count }
+    }
 }
 
 #[wasm_bindgen(js_name = RoleMap, getter_with_clone, inspectable)]
@@ -854,6 +924,7 @@ impl From<WasmRecordCorrection> for RecordCorrection {
 pub struct WasmRecord {
     pub data: WasmData,
     pub metadata: Option<String>,
+    pub tag: Option<String>,
     #[wasm_bindgen(js_name = sequenceNumber)]
     pub sequence_number: u64,
     #[wasm_bindgen(js_name = addedBy)]
@@ -868,6 +939,7 @@ impl From<Record<Data>> for WasmRecord {
         Self {
             data: value.data.into(),
             metadata: value.metadata,
+            tag: value.tag,
             sequence_number: value.sequence_number,
             added_by: value.added_by.to_string(),
             added_at: value.added_at,

@@ -21,7 +21,7 @@ export async function addAndListRecords(): Promise<void> {
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(client);
 
-    console.log("Added record sequence numbers:", addedString.output, addedBytes.output);
+    console.log("Added records:", addedString.output, addedBytes.output);
 
     const allRecords = await records.list();
     const firstPage = await records.listPage(undefined, 2);

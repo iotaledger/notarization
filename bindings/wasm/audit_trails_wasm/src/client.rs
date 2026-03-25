@@ -63,6 +63,11 @@ impl WasmAuditTrailClient {
         self.0.network().to_string()
     }
 
+    #[wasm_bindgen(js_name = chainId)]
+    pub fn chain_id(&self) -> String {
+        self.0.chain_id().to_string()
+    }
+
     #[wasm_bindgen(js_name = packageId)]
     pub fn package_id(&self) -> String {
         self.0.package_id().to_string()
