@@ -18,6 +18,34 @@ use super::role_map::RoleMap;
 use crate::core::utils::{self, deserialize_vec_map};
 use crate::error::Error;
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TagRegistry {
+    #[serde(deserialize_with = "deserialize_vec_map")]
+    pub tag_map: HashMap<String, u64>,
+}
+
+impl TagRegistry {
+    pub fn len(&self) -> usize {
+        self.tag_map.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.tag_map.is_empty()
+    }
+
+    pub fn contains_key(&self, tag: &str) -> bool {
+        self.tag_map.contains_key(tag)
+    }
+
+    pub fn get(&self, tag: &str) -> Option<&u64> {
+        self.tag_map.get(tag)
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&String, &u64)> {
+        self.tag_map.iter()
+    }
+}
+
 /// An audit trail stored on-chain.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct OnChainAuditTrail {
@@ -26,8 +54,7 @@ pub struct OnChainAuditTrail {
     pub created_at: u64,
     pub sequence_number: u64,
     pub records: LinkedTable<u64>,
-    #[serde(deserialize_with = "deserialize_vec_map")]
-    pub tags: HashMap<String, u64>,
+    pub tags: TagRegistry,
     pub locking_config: LockingConfig,
     pub roles: RoleMap,
     pub immutable_metadata: Option<ImmutableMetadata>,

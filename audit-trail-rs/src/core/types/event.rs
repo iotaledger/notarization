@@ -5,6 +5,9 @@ use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use serde::{Deserialize, Serialize};
 use serde_aux::field_attributes::{deserialize_number_from_string, deserialize_option_number_from_string};
 
+use super::{PermissionSet, RoleTags};
+use crate::core::utils::deserialize_vec_set;
+
 /// Generic wrapper for audit trail events.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Event<D> {
@@ -63,12 +66,20 @@ pub struct CapabilityIssued {
 pub struct CapabilityDestroyed {
     pub target_key: ObjectID,
     pub capability_id: ObjectID,
+    pub role: String,
+    pub issued_to: Option<IotaAddress>,
+    #[serde(deserialize_with = "deserialize_option_number_from_string")]
+    pub valid_from: Option<u64>,
+    #[serde(deserialize_with = "deserialize_option_number_from_string")]
+    pub valid_until: Option<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CapabilityRevoked {
     pub target_key: ObjectID,
     pub capability_id: ObjectID,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
+    pub valid_until: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -76,6 +87,12 @@ pub struct RoleCreated {
     #[serde(rename = "target_key")]
     pub trail_id: ObjectID,
     pub role: String,
+    #[serde(deserialize_with = "deserialize_permission_set")]
+    pub permissions: PermissionSet,
+    pub data: Option<RoleTags>,
+    pub created_by: IotaAddress,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
+    pub timestamp: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -83,11 +100,30 @@ pub struct RoleUpdated {
     #[serde(rename = "target_key")]
     pub trail_id: ObjectID,
     pub role: String,
+    #[serde(rename = "new_permissions", deserialize_with = "deserialize_permission_set")]
+    pub permissions: PermissionSet,
+    #[serde(rename = "new_data")]
+    pub data: Option<RoleTags>,
+    pub updated_by: IotaAddress,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
+    pub timestamp: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RoleRemoved {
+pub struct RoleDeleted {
     #[serde(rename = "target_key")]
     pub trail_id: ObjectID,
     pub role: String,
+    pub deleted_by: IotaAddress,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
+    pub timestamp: u64,
+}
+
+fn deserialize_permission_set<'de, D>(deserializer: D) -> Result<PermissionSet, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Ok(PermissionSet {
+        permissions: deserialize_vec_set(deserializer)?,
+    })
 }

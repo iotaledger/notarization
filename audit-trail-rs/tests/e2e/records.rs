@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use audit_trails::core::types::{
-    CapabilityIssueOptions, Data, InitialRecord, LockingConfig, LockingWindow, Permission, RecordTags, TimeLock,
+    CapabilityIssueOptions, Data, InitialRecord, LockingConfig, LockingWindow, Permission, RoleTags, TimeLock,
 };
 use audit_trails::error::Error;
 use iota_interaction::types::base_types::ObjectID;
@@ -89,7 +89,7 @@ async fn add_and_fetch_tagged_record_roundtrip() -> anyhow::Result<()> {
             trail_id,
             "TaggedWriter",
             [Permission::AddRecord],
-            Some(RecordTags::new(["finance"])),
+            Some(RoleTags::new(["finance"])),
         )
         .await?;
     client
@@ -151,7 +151,7 @@ async fn add_tagged_record_requires_trail_defined_tag() -> anyhow::Result<()> {
             trail_id,
             "TaggedWriter",
             [Permission::AddRecord],
-            Some(RecordTags::new(["finance"])),
+            Some(RoleTags::new(["finance"])),
         )
         .await?;
     client
