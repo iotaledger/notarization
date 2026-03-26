@@ -22,7 +22,7 @@ use product_common::network_name::NetworkName;
 use secret_storage::Signer;
 use serde::de::DeserializeOwned;
 
-use crate::client::read_only::AuditTrailClientReadOnly;
+use crate::client::read_only::{AuditTrailClientReadOnly, PackageOverrides};
 use crate::core::builder::AuditTrailBuilder;
 use crate::core::trail::{AuditTrailFull, AuditTrailHandle, AuditTrailReadOnly};
 use crate::error::Error;
@@ -74,7 +74,8 @@ impl AuditTrailClient<NoSigner> {
     /// Creates a new [AuditTrailClient], with **no** signing capabilities, from the given [IotaClient].
     ///
     /// # Warning
-    /// Passing a `custom_package_id` is **only** required when connecting to a custom IOTA network.
+    /// Passing `package_overrides` is **only** required when connecting to a custom IOTA network
+    /// or when testing against explicitly deployed package pairs.
     ///
     /// Relying on a custom Audit Trail package when connected to an official IOTA network is **highly
     /// discouraged** and is sure to result in compatibility issues when interacting with other official
@@ -96,19 +97,21 @@ impl AuditTrailClient<NoSigner> {
     /// ```
     pub async fn from_iota_client(
         iota_client: IotaClient,
-        custom_package_id: impl Into<Option<ObjectID>>,
+        package_overrides: impl Into<Option<PackageOverrides>>,
     ) -> Result<Self, FromIotaClientError> {
-        let read_only_client = if let Some(custom_package_id) = custom_package_id.into() {
-        AuditTrailClientReadOnly::new_with_pkg_id(iota_client, custom_package_id).await
-    } else {
-        AuditTrailClientReadOnly::new(iota_client).await
-    }
-    .map_err(|e| match e {
-        Error::InvalidConfig(_) => FromIotaClientErrorKind::MissingPackageId,
-        Error::RpcError(msg) => FromIotaClientErrorKind::NetworkResolution(msg.into()),
-        _ => unreachable!("'AuditTrailClientReadOnly::new' has been changed without updating error handling in 'AuditTrailClient::from_iota_client'"),
-    })
-    .map_err(|kind| FromIotaClientError { kind })?;
+        let read_only_client = if let Some(package_overrides) = package_overrides.into() {
+            AuditTrailClientReadOnly::new_with_package_overrides(iota_client, package_overrides).await
+        } else {
+            AuditTrailClientReadOnly::new(iota_client).await
+        }
+        .map_err(|e| match e {
+            Error::InvalidConfig(_) => FromIotaClientErrorKind::MissingPackageId,
+            Error::RpcError(msg) => FromIotaClientErrorKind::NetworkResolution(msg.into()),
+            _ => unreachable!(
+                "'AuditTrailClientReadOnly::new' has been changed without updating error handling in 'AuditTrailClient::from_iota_client'"
+            ),
+        })
+        .map_err(|kind| FromIotaClientError { kind })?;
 
         Ok(Self {
             read_client: read_only_client,
@@ -174,6 +177,10 @@ where
 impl<S> CoreClientReadOnly for AuditTrailClient<S> {
     fn package_id(&self) -> ObjectID {
         self.read_client.package_id()
+    }
+
+    fn tf_components_package_id(&self) -> Option<ObjectID> {
+        self.read_client.tf_components_package_id()
     }
 
     fn network_name(&self) -> &NetworkName {

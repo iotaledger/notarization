@@ -18,7 +18,6 @@ use product_common::core_client::CoreClientReadOnly;
 use crate::core::types::{Capability, OnChainAuditTrail, Permission};
 use crate::core::utils;
 use crate::error::Error;
-use crate::package;
 
 pub async fn get_audit_trail<C>(trail_id: ObjectID, client: &C) -> Result<OnChainAuditTrail, Error>
 where
@@ -56,7 +55,6 @@ where
     C: CoreClientReadOnly + OptionalSync,
 {
     let trail = get_audit_trail(trail_id, client).await?;
-
     let cap_ref = find_capable_cap(client, owner, trail_id, &trail, permission).await?;
     build_trail_transaction_with_cap_ref(client, trail_id, cap_ref, method, additional_args).await
 }
@@ -103,7 +101,7 @@ where
     C: CoreClientReadOnly + OptionalSync,
     P: Fn(&Capability) -> bool + Send,
 {
-    let tf_components_package_id = package::tf_components_package_id(client.network_name().as_ref())?;
+    let tf_components_package_id = client.tf_components_package_id().expect("package ID is present");
     let capability_struct_tag: StructTag = Capability::type_tag(tf_components_package_id)
         .to_string()
         .parse()

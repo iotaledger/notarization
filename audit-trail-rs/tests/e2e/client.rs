@@ -3,23 +3,27 @@
 
 use std::collections::HashSet;
 use std::ops::Deref;
+use std::str::FromStr;
 use std::sync::Arc;
 
-use audit_trails::AuditTrailClient;
+use anyhow::{Context, anyhow};
 use audit_trails::core::types::{
     Capability, CapabilityIssueOptions, CapabilityIssued, Data, InitialRecord, Permission, PermissionSet, RecordTags,
     RoleCreated,
 };
+use audit_trails::{AuditTrailClient, PackageOverrides};
 use iota_interaction::types::base_types::{IotaAddress, ObjectID, ObjectRef};
 use iota_interaction::types::crypto::PublicKey;
-use iota_interaction::{IOTA_LOCAL_NETWORK_URL, IotaClientBuilder};
+use iota_interaction::{IOTA_LOCAL_NETWORK_URL, IotaClient, IotaClientBuilder};
 use iota_interaction_rust::IotaClientAdapter;
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use product_common::network_name::NetworkName;
-use product_common::test_utils::{InMemSigner, init_product_package, request_funds};
+use product_common::test_utils::{InMemSigner, request_funds};
+use tokio::fs;
+use tokio::process::Command;
 use tokio::sync::OnceCell;
 
-static PACKAGE_ID: OnceCell<ObjectID> = OnceCell::const_new();
+static PACKAGE_IDS: OnceCell<PublishedPackageIds> = OnceCell::const_new();
 
 /// Script file for publishing the package.
 pub const PUBLISH_SCRIPT_FILE: &str = concat!(
@@ -27,8 +31,116 @@ pub const PUBLISH_SCRIPT_FILE: &str = concat!(
     "/../audit-trail-move/scripts/publish_package.sh"
 );
 
+const CACHED_PKG_FILE: &str = "/tmp/audit_trail_pkg_ids.txt";
+
+#[derive(Clone, Copy)]
+struct PublishedPackageIds {
+    audit_trail_package_id: ObjectID,
+    tf_components_package_id: Option<ObjectID>,
+}
+
 pub async fn get_funded_test_client() -> anyhow::Result<TestClient> {
     TestClient::new().await
+}
+
+async fn load_cached_package_ids(chain_id: &str) -> anyhow::Result<PublishedPackageIds> {
+    let cache = fs::read_to_string(CACHED_PKG_FILE).await?;
+    let mut parts = cache.trim().split(';');
+    let audit_trail_package_id = parts
+        .next()
+        .ok_or_else(|| anyhow!("missing audit_trail package ID in cache"))?;
+    let tf_components_package_id = parts.next().unwrap_or_default();
+    let cached_chain_id = parts.next().ok_or_else(|| anyhow!("missing chain ID in cache"))?;
+
+    if cached_chain_id != chain_id {
+        anyhow::bail!("cached package IDs belong to a different chain");
+    }
+
+    Ok(PublishedPackageIds {
+        audit_trail_package_id: ObjectID::from_str(audit_trail_package_id)
+            .context("failed to parse cached audit_trail package ID")?,
+        tf_components_package_id: if tf_components_package_id.is_empty() {
+            None
+        } else {
+            Some(
+                ObjectID::from_str(tf_components_package_id)
+                    .context("failed to parse cached TfComponents package ID")?,
+            )
+        },
+    })
+}
+
+async fn publish_package_ids(iota_client: &IotaClient) -> anyhow::Result<PublishedPackageIds> {
+    let chain_id = iota_client
+        .read_api()
+        .get_chain_identifier()
+        .await
+        .map_err(|e| anyhow!(e.to_string()))?;
+
+    if let Ok(ids) = load_cached_package_ids(&chain_id).await {
+        return Ok(ids);
+    }
+
+    let output = Command::new("bash")
+        .arg(PUBLISH_SCRIPT_FILE)
+        .output()
+        .await
+        .context("failed to execute publish_package.sh")?;
+
+    let stdout = std::str::from_utf8(&output.stdout).context("publish script stdout is not valid utf-8")?;
+
+    if !output.status.success() {
+        let stderr = std::str::from_utf8(&output.stderr).context("publish script stderr is not valid utf-8")?;
+        anyhow::bail!("failed to publish move package: \n\n{stdout}\n\n{stderr}");
+    }
+
+    let mut audit_trail_package_id = None;
+    let mut tf_components_package_id = None;
+
+    for line in stdout.lines() {
+        let Some(exported) = line.strip_prefix("export ") else {
+            continue;
+        };
+        let Some((key, value)) = exported.split_once('=') else {
+            continue;
+        };
+
+        match key {
+            "IOTA_AUDIT_TRAIL_PKG_ID" => {
+                let package_id =
+                    ObjectID::from_str(value).context("failed to parse published audit_trail package ID")?;
+                audit_trail_package_id = Some(package_id);
+            }
+            "IOTA_TF_COMPONENTS_PKG_ID" => {
+                let package_id =
+                    ObjectID::from_str(value).context("failed to parse published TfComponents package ID")?;
+                tf_components_package_id = Some(package_id);
+            }
+            _ => {}
+        }
+    }
+
+    let ids = PublishedPackageIds {
+        audit_trail_package_id: audit_trail_package_id
+            .ok_or_else(|| anyhow!("publish script did not expose IOTA_AUDIT_TRAIL_PKG_ID"))?,
+        tf_components_package_id,
+    };
+
+    fs::write(
+        CACHED_PKG_FILE,
+        format!(
+            "{};{};{}",
+            ids.audit_trail_package_id,
+            ids.tf_components_package_id
+                .map(|package_id| package_id.to_string())
+                .unwrap_or_default(),
+            chain_id
+        ),
+    )
+    .await
+    .context("failed to write cached package IDs")?;
+
+    Ok(ids)
 }
 
 #[derive(Clone)]
@@ -47,8 +159,8 @@ impl TestClient {
     pub async fn new() -> anyhow::Result<Self> {
         let api_endpoint = std::env::var("API_ENDPOINT").unwrap_or_else(|_| IOTA_LOCAL_NETWORK_URL.to_string());
         let iota_client = IotaClientBuilder::default().build(&api_endpoint).await?;
-        let package_id = PACKAGE_ID
-            .get_or_try_init(|| init_product_package(&iota_client, None, Some(PUBLISH_SCRIPT_FILE)))
+        let package_ids = PACKAGE_IDS
+            .get_or_try_init(|| publish_package_ids(&iota_client))
             .await
             .copied()?;
 
@@ -57,7 +169,15 @@ impl TestClient {
         let signer_address = signer.get_address().await?;
         request_funds(&signer_address).await?;
 
-        let client = AuditTrailClient::from_iota_client(iota_client.clone(), Some(package_id)).await?;
+        let client = AuditTrailClient::from_iota_client(
+            iota_client.clone(),
+            Some(PackageOverrides {
+                audit_trail_package_id: Some(package_ids.audit_trail_package_id),
+                tf_components_package_id: package_ids.tf_components_package_id,
+                ..PackageOverrides::default()
+            }),
+        )
+        .await?;
         let client = client.with_signer(signer).await?;
 
         Ok(TestClient {
@@ -153,6 +273,10 @@ impl TestClient {
 impl CoreClientReadOnly for TestClient {
     fn package_id(&self) -> ObjectID {
         self.client.package_id()
+    }
+
+    fn tf_components_package_id(&self) -> Option<ObjectID> {
+        self.client.tf_components_package_id()
     }
 
     fn network_name(&self) -> &NetworkName {

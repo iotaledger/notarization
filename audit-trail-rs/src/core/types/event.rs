@@ -86,7 +86,7 @@ pub struct RoleUpdated {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RoleRemoved {
+pub struct RoleDeleted {
     #[serde(rename = "target_key")]
     pub trail_id: ObjectID,
     pub role: String,

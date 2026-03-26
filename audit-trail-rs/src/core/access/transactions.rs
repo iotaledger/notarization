@@ -13,7 +13,7 @@ use tokio::sync::OnceCell;
 use super::operations::AccessOps;
 use crate::core::types::{
     CapabilityDestroyed, CapabilityIssueOptions, CapabilityIssued, CapabilityRevoked, Event, PermissionSet, RecordTags,
-    RoleCreated, RoleRemoved, RoleUpdated,
+    RoleCreated, RoleDeleted, RoleUpdated,
 };
 use crate::error::Error;
 
@@ -215,7 +215,7 @@ impl DeleteRole {
 #[cfg_attr(feature = "send-sync", async_trait)]
 impl Transaction for DeleteRole {
     type Error = Error;
-    type Output = RoleRemoved;
+    type Output = RoleDeleted;
 
     async fn build_programmable_transaction<C>(&self, client: &C) -> Result<ProgrammableTransaction, Self::Error>
     where
@@ -236,8 +236,8 @@ impl Transaction for DeleteRole {
         let event = events
             .data
             .iter()
-            .find_map(|data| serde_json::from_value::<Event<RoleRemoved>>(data.parsed_json.clone()).ok())
-            .ok_or_else(|| Error::UnexpectedApiResponse("RoleRemoved event not found".to_string()))?;
+            .find_map(|data| serde_json::from_value::<Event<RoleDeleted>>(data.parsed_json.clone()).ok())
+            .ok_or_else(|| Error::UnexpectedApiResponse("RoleDeleted event not found".to_string()))?;
 
         Ok(event.data)
     }

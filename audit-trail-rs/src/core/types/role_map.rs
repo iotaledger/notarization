@@ -4,12 +4,13 @@
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 
-use iota_interaction::ident_str;
 use iota_interaction::types::TypeTag;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::collection_types::LinkedTable;
 use iota_interaction::types::id::UID;
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
 use iota_interaction::types::transaction::Argument;
+use iota_interaction::{MoveType, ident_str};
 use serde::{Deserialize, Serialize};
 
 use super::permission::Permission;
@@ -22,8 +23,7 @@ pub struct RoleMap {
     #[serde(deserialize_with = "deserialize_vec_map")]
     pub roles: HashMap<String, Role>,
     pub initial_admin_role_name: String,
-    #[serde(deserialize_with = "deserialize_vec_set")]
-    pub issued_capabilities: HashSet<ObjectID>,
+    pub revoked_capabilities: LinkedTable<ObjectID>,
     #[serde(deserialize_with = "deserialize_vec_set")]
     pub initial_admin_cap_ids: HashSet<ObjectID>,
     pub role_admin_permissions: RoleAdminPermissions,
@@ -60,6 +60,10 @@ pub struct CapabilityIssueOptions {
     pub valid_until_ms: Option<u64>,
 }
 
+/// Allowlisted record tags stored as role data on the Move side.
+///
+/// The Rust name stays `RecordTags` for API continuity, but it maps to the
+/// Move `record_tags::RoleTags` type.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct RecordTags {
     #[serde(deserialize_with = "deserialize_vec_set")]
@@ -82,7 +86,7 @@ impl RecordTags {
     }
 
     pub(crate) fn tag(package_id: ObjectID) -> TypeTag {
-        TypeTag::from_str(&format!("{package_id}::record_tags::RecordTags")).expect("invalid TypeTag for RecordTags")
+        TypeTag::from_str(&format!("{package_id}::record_tags::RoleTags")).expect("invalid TypeTag for RoleTags")
     }
 
     pub(in crate::core) fn to_ptb(&self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
@@ -93,7 +97,7 @@ impl RecordTags {
         Ok(ptb.programmable_move_call(
             package_id,
             ident_str!("record_tags").into(),
-            ident_str!("new_record_tags").into(),
+            ident_str!("new_role_tags").into(),
             vec![],
             vec![allowed_tags_arg],
         ))
@@ -118,5 +122,11 @@ impl Capability {
 
     pub(crate) fn matches_target_and_role(&self, trail_id: ObjectID, valid_roles: &HashSet<String>) -> bool {
         self.target_key == trail_id && valid_roles.contains(&self.role)
+    }
+}
+
+impl MoveType for Capability {
+    fn move_type(package: ObjectID) -> TypeTag {
+        Self::type_tag(package)
     }
 }

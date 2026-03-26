@@ -6,7 +6,7 @@ use iota_interaction::types::transaction::{ObjectArg, ProgrammableTransaction};
 use iota_interaction::{OptionalSync, ident_str};
 use product_common::core_client::CoreClientReadOnly;
 
-use crate::core::types::{CapabilityIssueOptions, Permission, PermissionSet, RecordTags};
+use crate::core::types::{Capability, CapabilityIssueOptions, Permission, PermissionSet, RecordTags};
 use crate::core::{operations, utils};
 use crate::error::Error;
 
@@ -171,6 +171,11 @@ impl AccessOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
+        let capability: Capability = client
+            .get_object_by_id(capability_id)
+            .await
+            .map_err(|e| Error::UnexpectedApiResponse(format!("failed to fetch capability {capability_id}; {e}")))?;
+
         operations::build_trail_transaction(
             client,
             trail_id,
@@ -179,9 +184,10 @@ impl AccessOps {
             "revoke_capability",
             |ptb, _| {
                 let cap = utils::ptb_pure(ptb, "capability_id", capability_id)?;
+                let valid_until = utils::ptb_pure(ptb, "capability_valid_until", capability.valid_until)?;
                 let clock = utils::get_clock_ref(ptb);
 
-                Ok(vec![cap, clock])
+                Ok(vec![cap, valid_until, clock])
             },
         )
         .await
@@ -244,6 +250,11 @@ impl AccessOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
+        let capability: Capability = client
+            .get_object_by_id(capability_id)
+            .await
+            .map_err(|e| Error::UnexpectedApiResponse(format!("failed to fetch capability {capability_id}; {e}")))?;
+
         operations::build_trail_transaction(
             client,
             trail_id,
@@ -252,9 +263,10 @@ impl AccessOps {
             "revoke_initial_admin_capability",
             |ptb, _| {
                 let cap = utils::ptb_pure(ptb, "capability_id", capability_id)?;
+                let valid_until = utils::ptb_pure(ptb, "capability_valid_until", capability.valid_until)?;
                 let clock = utils::get_clock_ref(ptb);
 
-                Ok(vec![cap, clock])
+                Ok(vec![cap, valid_until, clock])
             },
         )
         .await
