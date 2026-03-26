@@ -81,7 +81,7 @@ public struct AuditTrail<D: store + copy> has key, store {
     /// LinkedTable mapping sequence numbers to records
     records: LinkedTable<u64, Record<D>>,
     /// Canonical list of tags that may be attached to records in this trail with their combined usage counts
-    tags: record_tags::TagRegistry,
+    tags: TagRegistry,
     /// Deletion locking rules
     locking_config: LockingConfig,
     /// A list of role definitions consisting of a unique role specifier and a list of associated permissions
@@ -179,13 +179,6 @@ public fun create<D: store + copy>(
 
         linked_table::push_back(&mut records, 0, record);
         sequence_number = 1;
-
-        event::emit(RecordAdded {
-            trail_id,
-            sequence_number: 0,
-            added_by: creator,
-            timestamp,
-        });
     } else {
         initial_record.destroy_none();
     };

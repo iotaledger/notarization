@@ -34,7 +34,7 @@ pub struct RoleMap {
 pub struct Role {
     #[serde(deserialize_with = "deserialize_vec_set")]
     pub permissions: HashSet<Permission>,
-    pub data: Option<RecordTags>,
+    pub data: Option<RoleTags>,
 }
 
 /// Defines the permissions required to administer roles in this RoleMap.
@@ -65,24 +65,24 @@ pub struct CapabilityIssueOptions {
 /// The Rust name stays `RecordTags` for API continuity, but it maps to the
 /// Move `record_tags::RoleTags` type.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
-pub struct RecordTags {
+pub struct RoleTags {
     #[serde(deserialize_with = "deserialize_vec_set")]
-    pub allowed_tags: HashSet<String>,
+    pub tags: HashSet<String>,
 }
 
-impl RecordTags {
-    pub fn new<I, S>(allowed_tags: I) -> Self
+impl RoleTags {
+    pub fn new<I, S>(tags: I) -> Self
     where
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
         Self {
-            allowed_tags: allowed_tags.into_iter().map(Into::into).collect(),
+            tags: tags.into_iter().map(Into::into).collect(),
         }
     }
 
     pub fn allows(&self, tag: &str) -> bool {
-        self.allowed_tags.contains(tag)
+        self.tags.contains(tag)
     }
 
     pub(crate) fn tag(package_id: ObjectID) -> TypeTag {
@@ -90,16 +90,16 @@ impl RecordTags {
     }
 
     pub(in crate::core) fn to_ptb(&self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
-        let mut allowed_tags = self.allowed_tags.iter().cloned().collect::<Vec<_>>();
-        allowed_tags.sort();
-        let allowed_tags_arg = utils::ptb_pure(ptb, "allowed_tags", allowed_tags)?;
+        let mut tags = self.tags.iter().cloned().collect::<Vec<_>>();
+        tags.sort();
+        let tags_arg = utils::ptb_pure(ptb, "tags", tags)?;
 
         Ok(ptb.programmable_move_call(
             package_id,
             ident_str!("record_tags").into(),
             ident_str!("new_role_tags").into(),
             vec![],
-            vec![allowed_tags_arg],
+            vec![tags_arg],
         ))
     }
 }

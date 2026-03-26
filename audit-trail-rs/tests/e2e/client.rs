@@ -8,8 +8,8 @@ use std::sync::Arc;
 
 use anyhow::{Context, anyhow};
 use audit_trails::core::types::{
-    Capability, CapabilityIssueOptions, CapabilityIssued, Data, InitialRecord, Permission, PermissionSet, RecordTags,
-    RoleCreated,
+    Capability, CapabilityIssueOptions, CapabilityIssued, Data, InitialRecord, Permission, PermissionSet, RoleCreated,
+    RoleTags,
 };
 use audit_trails::{AuditTrailClient, PackageOverrides};
 use iota_interaction::types::base_types::{IotaAddress, ObjectID, ObjectRef};
@@ -227,13 +227,13 @@ impl TestClient {
         Ok(created.trail_id)
     }
 
-    /// Creates a role on the given trail with the specified permissions.
+    /// Creates a role on the given trail with the specified permissions and optional role tags.
     pub(crate) async fn create_role(
         &self,
         trail_id: ObjectID,
         role_name: &str,
         permissions: impl IntoIterator<Item = Permission>,
-        record_tags: Option<RecordTags>,
+        role_tags: Option<RoleTags>,
     ) -> anyhow::Result<RoleCreated> {
         let created = self
             .trail(trail_id)
@@ -243,7 +243,7 @@ impl TestClient {
                 PermissionSet {
                     permissions: permissions.into_iter().collect::<HashSet<_>>(),
                 },
-                record_tags,
+                role_tags,
             )
             .build_and_execute(self)
             .await?

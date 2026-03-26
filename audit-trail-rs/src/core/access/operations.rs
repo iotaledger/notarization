@@ -6,7 +6,7 @@ use iota_interaction::types::transaction::{ObjectArg, ProgrammableTransaction};
 use iota_interaction::{OptionalSync, ident_str};
 use product_common::core_client::CoreClientReadOnly;
 
-use crate::core::types::{Capability, CapabilityIssueOptions, Permission, PermissionSet, RecordTags};
+use crate::core::types::{CapabilityIssueOptions, Permission, PermissionSet, RoleTags};
 use crate::core::{operations, utils};
 use crate::error::Error;
 
@@ -19,12 +19,12 @@ impl AccessOps {
         owner: IotaAddress,
         name: String,
         permissions: PermissionSet,
-        record_tags: Option<RecordTags>,
+        role_tags: Option<RoleTags>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        assert_record_tags_defined(client, trail_id, &record_tags).await?;
+        assert_role_tags_defined(client, trail_id, &role_tags).await?;
 
         operations::build_trail_transaction(
             client,
@@ -42,19 +42,19 @@ impl AccessOps {
                     vec![],
                     vec![perms_vec],
                 );
-                let record_tags_arg = match record_tags {
-                    Some(record_tags) => {
-                        let record_tags_arg = record_tags.to_ptb(ptb, client.package_id())?;
+                let role_tags_arg = match role_tags {
+                    Some(role_tags) => {
+                        let role_tags_arg = role_tags.to_ptb(ptb, client.package_id())?;
 
-                        utils::option_to_move(Some(record_tags_arg), RecordTags::tag(client.package_id()), ptb)
-                            .map_err(|e| Error::InvalidArgument(format!("failed to build record_tags option: {e}")))?
+                        utils::option_to_move(Some(role_tags_arg), RoleTags::tag(client.package_id()), ptb)
+                            .map_err(|e| Error::InvalidArgument(format!("failed to build role_tags option: {e}")))?
                     }
-                    None => utils::option_to_move(None, RecordTags::tag(client.package_id()), ptb)
-                        .map_err(|e| Error::InvalidArgument(format!("failed to build record_tags option: {e}")))?,
+                    None => utils::option_to_move(None, RoleTags::tag(client.package_id()), ptb)
+                        .map_err(|e| Error::InvalidArgument(format!("failed to build role_tags option: {e}")))?,
                 };
                 let clock = utils::get_clock_ref(ptb);
 
-                Ok(vec![role, perms, record_tags_arg, clock])
+                Ok(vec![role, perms, role_tags_arg, clock])
             },
         )
         .await
@@ -66,12 +66,12 @@ impl AccessOps {
         owner: IotaAddress,
         name: String,
         permissions: PermissionSet,
-        record_tags: Option<RecordTags>,
+        role_tags: Option<RoleTags>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        assert_record_tags_defined(client, trail_id, &record_tags).await?;
+        assert_role_tags_defined(client, trail_id, &role_tags).await?;
 
         operations::build_trail_transaction(
             client,
@@ -90,19 +90,19 @@ impl AccessOps {
                     vec![],
                     vec![perms_vec],
                 );
-                let record_tags_arg = match record_tags {
-                    Some(record_tags) => {
-                        let record_tags_arg = record_tags.to_ptb(ptb, client.package_id())?;
-                        utils::option_to_move(Some(record_tags_arg), RecordTags::tag(client.package_id()), ptb)
-                            .map_err(|e| Error::InvalidArgument(format!("failed to build record_tags option: {e}")))?
+                let role_tags_arg = match role_tags {
+                    Some(role_tags) => {
+                        let role_tags_arg = role_tags.to_ptb(ptb, client.package_id())?;
+                        utils::option_to_move(Some(role_tags_arg), RoleTags::tag(client.package_id()), ptb)
+                            .map_err(|e| Error::InvalidArgument(format!("failed to build role_tags option: {e}")))?
                     }
-                    None => utils::option_to_move(None, RecordTags::tag(client.package_id()), ptb)
-                        .map_err(|e| Error::InvalidArgument(format!("failed to build record_tags option: {e}")))?,
+                    None => utils::option_to_move(None, RoleTags::tag(client.package_id()), ptb)
+                        .map_err(|e| Error::InvalidArgument(format!("failed to build role_tags option: {e}")))?,
                 };
 
                 let clock = utils::get_clock_ref(ptb);
 
-                Ok(vec![role, perms, record_tags_arg, clock])
+                Ok(vec![role, perms, role_tags_arg, clock])
             },
         )
         .await
@@ -167,15 +167,11 @@ impl AccessOps {
         trail_id: ObjectID,
         owner: IotaAddress,
         capability_id: ObjectID,
+        capability_valid_until: Option<u64>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        let capability: Capability = client
-            .get_object_by_id(capability_id)
-            .await
-            .map_err(|e| Error::UnexpectedApiResponse(format!("failed to fetch capability {capability_id}; {e}")))?;
-
         operations::build_trail_transaction(
             client,
             trail_id,
@@ -184,7 +180,7 @@ impl AccessOps {
             "revoke_capability",
             |ptb, _| {
                 let cap = utils::ptb_pure(ptb, "capability_id", capability_id)?;
-                let valid_until = utils::ptb_pure(ptb, "capability_valid_until", capability.valid_until)?;
+                let valid_until = utils::ptb_pure(ptb, "capability_valid_until", capability_valid_until)?;
                 let clock = utils::get_clock_ref(ptb);
 
                 Ok(vec![cap, valid_until, clock])
@@ -246,15 +242,11 @@ impl AccessOps {
         trail_id: ObjectID,
         owner: IotaAddress,
         capability_id: ObjectID,
+        capability_valid_until: Option<u64>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        let capability: Capability = client
-            .get_object_by_id(capability_id)
-            .await
-            .map_err(|e| Error::UnexpectedApiResponse(format!("failed to fetch capability {capability_id}; {e}")))?;
-
         operations::build_trail_transaction(
             client,
             trail_id,
@@ -263,7 +255,7 @@ impl AccessOps {
             "revoke_initial_admin_capability",
             |ptb, _| {
                 let cap = utils::ptb_pure(ptb, "capability_id", capability_id)?;
-                let valid_until = utils::ptb_pure(ptb, "capability_valid_until", capability.valid_until)?;
+                let valid_until = utils::ptb_pure(ptb, "capability_valid_until", capability_valid_until)?;
                 let clock = utils::get_clock_ref(ptb);
 
                 Ok(vec![cap, valid_until, clock])
@@ -271,23 +263,41 @@ impl AccessOps {
         )
         .await
     }
+
+    pub(super) async fn cleanup_revoked_capabilities<C>(
+        client: &C,
+        trail_id: ObjectID,
+        owner: IotaAddress,
+    ) -> Result<ProgrammableTransaction, Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        operations::build_trail_transaction(
+            client,
+            trail_id,
+            owner,
+            Permission::RevokeCapabilities,
+            "cleanup_revoked_capabilities",
+            |ptb, _| {
+                let clock = utils::get_clock_ref(ptb);
+                Ok(vec![clock])
+            },
+        )
+        .await
+    }
 }
 
-async fn assert_record_tags_defined<C>(
-    client: &C,
-    trail_id: ObjectID,
-    record_tags: &Option<RecordTags>,
-) -> Result<(), Error>
+async fn assert_role_tags_defined<C>(client: &C, trail_id: ObjectID, role_tags: &Option<RoleTags>) -> Result<(), Error>
 where
     C: CoreClientReadOnly + OptionalSync,
 {
-    let Some(record_tags) = record_tags else {
+    let Some(role_tags) = role_tags else {
         return Ok(());
     };
 
     let trail = operations::get_audit_trail(trail_id, client).await?;
-    let undefined_tags = record_tags
-        .allowed_tags
+    let undefined_tags = role_tags
+        .tags
         .iter()
         .filter(|tag| !trail.tags.contains_key(*tag))
         .cloned()
@@ -297,7 +307,7 @@ where
         Ok(())
     } else {
         Err(Error::InvalidArgument(format!(
-            "record tags {:?} are not defined for trail {trail_id}",
+            "role tags {:?} are not defined for trail {trail_id}",
             undefined_tags
         )))
     }
