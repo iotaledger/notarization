@@ -14,7 +14,6 @@ use iota_interaction::types::transaction::{ProgrammableTransaction, TransactionK
 use iota_interaction_ts::bindings::WasmIotaClient;
 use product_common::core_client::CoreClientReadOnly;
 use product_common::network_name::NetworkName;
-use product_common::package_registry::Env;
 use serde::de::DeserializeOwned;
 
 use super::network_id;
@@ -23,6 +22,13 @@ use crate::error::Error;
 use crate::iota_interaction_adapter::IotaClientAdapter;
 use crate::package;
 
+/// Optional package ID overrides used when constructing an audit trail client.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct PackageOverrides {
+    pub audit_trail_package_id: Option<ObjectID>,
+    pub tf_components_package_id: Option<ObjectID>,
+}
+
 /// A read-only client for interacting with audit trail module objects on a specific network.
 #[derive(Clone)]
 pub struct AuditTrailClientReadOnly {
@@ -30,6 +36,8 @@ pub struct AuditTrailClientReadOnly {
     iota_client: IotaClientAdapter,
     /// The [`ObjectID`] of the deployed audit trail package (smart contract).
     audit_trail_pkg_id: ObjectID,
+    /// The [`ObjectID`] of the deployed TfComponents package used by audit trails.
+    pub(crate) tf_components_pkg_id: ObjectID,
     /// The name of the network this client is connected to (e.g., "mainnet", "testnet").
     network: NetworkName,
     /// Raw chain identifier returned by the IOTA node.
@@ -78,60 +86,39 @@ impl AuditTrailClientReadOnly {
     ) -> Result<Self, Error> {
         let client = IotaClientAdapter::new(iota_client);
         let network = network_id(&client).await?;
-        Self::new_internal(client, network).await
+        Self::new_internal(client, network, PackageOverrides::default()).await
     }
 
-    async fn new_internal(iota_client: IotaClientAdapter, network: NetworkName) -> Result<Self, Error> {
+    async fn new_internal(
+        iota_client: IotaClientAdapter,
+        network: NetworkName,
+        package_overrides: PackageOverrides,
+    ) -> Result<Self, Error> {
         let chain_id = network.as_ref().to_string();
-        let (network, audit_trail_pkg_id) = {
-            let package_registry = package::audit_trail_package_registry().await;
-            let package_id = package_registry
-                .package_id(&network)
-                .ok_or_else(|| {
-                    Error::InvalidConfig(format!(
-                        "no information for a published `audit_trail` package on network {network}; try to use `AuditTrailClientReadOnly::new_with_pkg_id`"
-                    ))
-                })?;
-            let network = match chain_id.as_str() {
-                product_common::package_registry::MAINNET_CHAIN_ID => {
-                    NetworkName::try_from("iota").expect("valid network name")
-                }
-                _ => package_registry
-                    .chain_alias(&chain_id)
-                    .and_then(|alias| NetworkName::try_from(alias).ok())
-                    .unwrap_or(network),
-            };
-
-            (network, package_id)
-        };
+        let (network, package_ids) = package::resolve_package_ids(&network, &package_overrides).await?;
 
         Ok(Self {
             iota_client,
-            audit_trail_pkg_id,
+            audit_trail_pkg_id: package_ids.audit_trail_package_id,
+            tf_components_pkg_id: package_ids.tf_components_package_id,
             network,
             chain_id,
         })
     }
 
-    /// Creates a new [`AuditTrailClientReadOnly`] with a specific audit trail package ID.
+    /// Creates a new [`AuditTrailClientReadOnly`] with explicit package overrides.
     ///
-    /// This function allows overriding the package ID lookup from the
-    /// registry, which is useful for connecting to networks where the package
-    /// ID is known but not yet registered, or for testing with custom deployments.
-    pub async fn new_with_pkg_id(
+    /// This function allows overriding the package ID lookup from the registry,
+    /// which is useful for local testing or custom deployments where the package
+    /// IDs are known ahead of time.
+    pub async fn new_with_package_overrides(
         #[cfg(target_arch = "wasm32")] iota_client: WasmIotaClient,
         #[cfg(not(target_arch = "wasm32"))] iota_client: IotaClient,
-        package_id: ObjectID,
+        package_overrides: PackageOverrides,
     ) -> Result<Self, Error> {
         let client = IotaClientAdapter::new(iota_client);
         let network = network_id(&client).await?;
-
-        {
-            let mut registry = package::audit_trail_package_registry_mut().await;
-            registry.insert_env_history(Env::new(network.as_ref()), vec![package_id]);
-        }
-
-        Self::new_internal(client, network).await
+        Self::new_internal(client, network, package_overrides).await
     }
 }
 
@@ -147,6 +134,10 @@ impl CoreClientReadOnly for AuditTrailClientReadOnly {
 
     fn client_adapter(&self) -> &IotaClientAdapter {
         &self.iota_client
+    }
+
+    fn tf_components_package_id(&self) -> Option<ObjectID> {
+        Some(self.tf_components_pkg_id)
     }
 }
 

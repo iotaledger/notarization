@@ -36,7 +36,8 @@ impl<'a, C> TrailAccess<'a, C> {
 
     /// Revokes an issued capability.
     ///
-    /// Pass the capability's `valid_until` value when it is known so the denylist entry matches the on-chain cleanup model.
+    /// Pass the capability's `valid_until` value when it is known so the denylist entry matches the on-chain cleanup
+    /// model.
     pub fn revoke_capability<S>(
         &self,
         capability_id: ObjectID,
@@ -79,7 +80,8 @@ impl<'a, C> TrailAccess<'a, C> {
 
     /// Revokes an initial admin capability by ID.
     ///
-    /// Pass the capability's `valid_until` value when it is known so the denylist entry matches the on-chain cleanup model.
+    /// Pass the capability's `valid_until` value when it is known so the denylist entry matches the on-chain cleanup
+    /// model.
     pub fn revoke_initial_admin_capability<S>(
         &self,
         capability_id: ObjectID,

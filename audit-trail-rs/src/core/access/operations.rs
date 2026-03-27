@@ -299,7 +299,7 @@ where
     let undefined_tags = role_tags
         .tags
         .iter()
-        .filter(|tag| !trail.tags.contains_key(*tag))
+        .filter(|tag| !trail.tags.contains_key(tag))
         .cloned()
         .collect::<Vec<_>>();
 

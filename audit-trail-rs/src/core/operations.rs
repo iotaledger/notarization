@@ -4,7 +4,10 @@
 use std::collections::HashSet;
 use std::str::FromStr;
 
-use iota_interaction::rpc_types::{IotaData as _, IotaObjectDataOptions};
+use iota_interaction::move_types::language_storage::StructTag;
+use iota_interaction::rpc_types::{
+    IotaData as _, IotaObjectDataFilter, IotaObjectDataOptions, IotaObjectResponseQuery, IotaParsedData,
+};
 use iota_interaction::types::base_types::{IotaAddress, ObjectID, ObjectRef};
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use iota_interaction::types::transaction::{Argument, ObjectArg, ProgrammableTransaction};
@@ -52,7 +55,6 @@ where
     C: CoreClientReadOnly + OptionalSync,
 {
     let trail = get_audit_trail(trail_id, client).await?;
-
     let cap_ref = find_capable_cap(client, owner, trail_id, &trail, permission).await?;
     build_trail_transaction_with_cap_ref(client, trail_id, cap_ref, method, additional_args).await
 }
@@ -69,20 +71,16 @@ pub(crate) async fn find_capable_cap<C>(
 where
     C: CoreClientReadOnly + OptionalSync,
 {
-    let valid_roles: HashSet<&String> = trail
+    let valid_roles: HashSet<String> = trail
         .roles
         .roles
         .iter()
         .filter(|(_, role)| role.permissions.contains(&permission))
-        .map(|(name, _)| name)
+        .map(|(name, _)| name.clone())
         .collect();
 
-    let cap: Capability = client
-        .find_object_for_address(owner, |cap: &Capability| {
-            cap.target_key == trail_id && valid_roles.contains(&cap.role)
-        })
-        .await
-        .map_err(|e| Error::RpcError(e.to_string()))?
+    let cap = find_owned_capability(client, owner, |cap| cap.matches_target_and_role(trail_id, &valid_roles))
+        .await?
         .ok_or_else(|| {
             Error::InvalidArgument(format!(
                 "no capability with {:?} permission found for owner {owner} and trail {trail_id}",
@@ -92,6 +90,58 @@ where
 
     let object_id = *cap.id.object_id();
     utils::get_object_ref_by_id(client, &object_id).await
+}
+
+pub(crate) async fn find_owned_capability<C, P>(
+    client: &C,
+    owner: IotaAddress,
+    predicate: P,
+) -> Result<Option<Capability>, Error>
+where
+    C: CoreClientReadOnly + OptionalSync,
+    P: Fn(&Capability) -> bool + Send,
+{
+    let tf_components_package_id = client.tf_components_package_id().expect("package ID is present");
+    let capability_struct_tag: StructTag = Capability::type_tag(tf_components_package_id)
+        .to_string()
+        .parse()
+        .expect("capability type tag is a valid struct tag");
+    let query = IotaObjectResponseQuery::new(
+        Some(IotaObjectDataFilter::StructType(capability_struct_tag)),
+        Some(IotaObjectDataOptions::default().with_content()),
+    );
+
+    let mut cursor = None;
+    loop {
+        let mut page = client
+            .client_adapter()
+            .read_api()
+            .get_owned_objects(owner, Some(query.clone()), cursor, Some(25))
+            .await
+            .map_err(|e| Error::RpcError(e.to_string()))?;
+
+        let maybe_cap = std::mem::take(&mut page.data)
+            .into_iter()
+            .filter_map(|res| res.data)
+            .filter_map(|data| data.content)
+            .filter_map(|obj_data| {
+                let IotaParsedData::MoveObject(move_object) = obj_data else {
+                    unreachable!()
+                };
+                serde_json::from_value(move_object.fields.to_json_value()).ok()
+            })
+            .find(&predicate);
+        cursor = page.next_cursor;
+
+        if maybe_cap.is_some() {
+            return Ok(maybe_cap);
+        }
+        if !page.has_next_page {
+            break;
+        }
+    }
+
+    Ok(None)
 }
 
 pub(crate) async fn build_trail_transaction_with_cap_ref<C, F>(

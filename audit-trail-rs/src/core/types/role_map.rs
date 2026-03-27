@@ -17,8 +17,6 @@ use super::permission::Permission;
 use crate::core::utils;
 use crate::core::utils::{deserialize_vec_map, deserialize_vec_set};
 use crate::error::Error;
-use crate::package;
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RoleMap {
     pub target_key: ObjectID,
@@ -62,6 +60,10 @@ pub struct CapabilityIssueOptions {
     pub valid_until_ms: Option<u64>,
 }
 
+/// Allowlisted record tags stored as role data on the Move side.
+///
+/// The Rust name stays `RecordTags` for API continuity, but it maps to the
+/// Move `record_tags::RoleTags` type.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct RoleTags {
     #[serde(deserialize_with = "deserialize_vec_set")]
@@ -113,9 +115,18 @@ pub struct Capability {
     pub valid_until: Option<u64>,
 }
 
+impl Capability {
+    pub(crate) fn type_tag(package_id: ObjectID) -> TypeTag {
+        TypeTag::from_str(format!("{package_id}::capability::Capability").as_str()).expect("failed to create type tag")
+    }
+
+    pub(crate) fn matches_target_and_role(&self, trail_id: ObjectID, valid_roles: &HashSet<String>) -> bool {
+        self.target_key == trail_id && valid_roles.contains(&self.role)
+    }
+}
+
 impl MoveType for Capability {
-    fn move_type(_: ObjectID) -> TypeTag {
-        let object_id = package::tf_components_package_id();
-        TypeTag::from_str(format!("{object_id}::capability::Capability").as_str()).expect("failed to create type tag")
+    fn move_type(package: ObjectID) -> TypeTag {
+        Self::type_tag(package)
     }
 }
