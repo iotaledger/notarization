@@ -174,7 +174,6 @@ impl TestClient {
             Some(PackageOverrides {
                 audit_trail_package_id: Some(package_ids.audit_trail_package_id),
                 tf_components_package_id: package_ids.tf_components_package_id,
-                ..PackageOverrides::default()
             }),
         )
         .await?;

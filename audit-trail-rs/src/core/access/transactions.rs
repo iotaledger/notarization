@@ -13,7 +13,7 @@ use tokio::sync::OnceCell;
 use super::operations::AccessOps;
 use crate::core::types::{
     CapabilityDestroyed, CapabilityIssueOptions, CapabilityIssued, CapabilityRevoked, Event, PermissionSet,
-    RoleCreated, RoleDeleted, RoleTags, RoleUpdated,
+    RawRoleCreated, RawRoleDeleted, RawRoleUpdated, RoleCreated, RoleDeleted, RoleTags, RoleUpdated,
 };
 use crate::error::Error;
 
@@ -88,10 +88,10 @@ impl Transaction for CreateRole {
         let event = events
             .data
             .iter()
-            .find_map(|data| serde_json::from_value::<Event<RoleCreated>>(data.parsed_json.clone()).ok())
+            .find_map(|data| bcs::from_bytes::<RawRoleCreated>(data.bcs.bytes()).ok().map(Into::into))
             .ok_or_else(|| Error::UnexpectedApiResponse("RoleCreated event not found".to_string()))?;
 
-        Ok(event.data)
+        Ok(event)
     }
 
     async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
@@ -171,10 +171,10 @@ impl Transaction for UpdateRole {
         let event = events
             .data
             .iter()
-            .find_map(|data| serde_json::from_value::<Event<RoleUpdated>>(data.parsed_json.clone()).ok())
+            .find_map(|data| bcs::from_bytes::<RawRoleUpdated>(data.bcs.bytes()).ok().map(Into::into))
             .ok_or_else(|| Error::UnexpectedApiResponse("RoleUpdated event not found".to_string()))?;
 
-        Ok(event.data)
+        Ok(event)
     }
 
     async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
@@ -236,10 +236,10 @@ impl Transaction for DeleteRole {
         let event = events
             .data
             .iter()
-            .find_map(|data| serde_json::from_value::<Event<RoleDeleted>>(data.parsed_json.clone()).ok())
+            .find_map(|data| bcs::from_bytes::<RawRoleDeleted>(data.bcs.bytes()).ok().map(Into::into))
             .ok_or_else(|| Error::UnexpectedApiResponse("RoleDeleted event not found".to_string()))?;
 
-        Ok(event.data)
+        Ok(event)
     }
 
     async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
