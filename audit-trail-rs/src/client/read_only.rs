@@ -122,7 +122,8 @@ impl AuditTrailClientReadOnly {
     }
 }
 
-#[async_trait::async_trait]
+#[cfg_attr(not(feature = "send-sync"), async_trait::async_trait(?Send))]
+#[cfg_attr(feature = "send-sync", async_trait::async_trait)]
 impl CoreClientReadOnly for AuditTrailClientReadOnly {
     fn package_id(&self) -> ObjectID {
         self.audit_trail_pkg_id
@@ -141,7 +142,8 @@ impl CoreClientReadOnly for AuditTrailClientReadOnly {
     }
 }
 
-#[async_trait::async_trait]
+#[cfg_attr(not(feature = "send-sync"), async_trait::async_trait(?Send))]
+#[cfg_attr(feature = "send-sync", async_trait::async_trait)]
 impl AuditTrailReadOnly for AuditTrailClientReadOnly {
     async fn execute_read_only_transaction<T: DeserializeOwned>(
         &self,

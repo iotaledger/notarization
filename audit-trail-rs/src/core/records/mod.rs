@@ -3,8 +3,7 @@
 
 use std::collections::{BTreeMap, HashMap};
 
-use iota_interaction::move_types::annotated_value::MoveValue;
-use iota_interaction::rpc_types::{IotaData as _, IotaMoveValue, IotaObjectDataOptions};
+use iota_interaction::rpc_types::{IotaData as _, IotaObjectDataOptions};
 use iota_interaction::types::TypeTag;
 use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::types::collection_types::{LinkedTable, LinkedTableNode};
@@ -237,7 +236,7 @@ where
 {
     let name = DynamicFieldName {
         type_: TypeTag::U64,
-        value: IotaMoveValue::from(MoveValue::U64(key)).to_json_value(),
+        value: serde_json::Value::String(key.to_string()),
     };
 
     let data = client

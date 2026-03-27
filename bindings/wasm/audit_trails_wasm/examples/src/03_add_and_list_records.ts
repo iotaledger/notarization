@@ -1,0 +1,38 @@
+// Copyright 2026 IOTA Stiftung
+// SPDX-License-Identifier: Apache-2.0
+
+import { strict as assert } from "assert";
+import { Data } from "../../web";
+import { createTrailWithSeedRecord, getFundedClient, TEST_GAS_BUDGET } from "./util";
+
+export async function addAndListRecords(): Promise<void> {
+    console.log("Adding records and reading them back with pagination");
+
+    const client = await getFundedClient();
+    const { output: trail } = await createTrailWithSeedRecord(client);
+    const records = client.trail(trail.id).records();
+
+    const addedString = await records
+        .add(Data.fromString("record 2"), "second")
+        .withGasBudget(TEST_GAS_BUDGET)
+        .buildAndExecute(client);
+    const addedBytes = await records
+        .add(Data.fromBytes(Uint8Array.from([1, 2, 3, 4])), "third")
+        .withGasBudget(TEST_GAS_BUDGET)
+        .buildAndExecute(client);
+
+    console.log("Added records:", addedString.output, addedBytes.output);
+
+    const allRecords = await records.list();
+    const firstPage = await records.listPage(undefined, 2);
+    const secondPage = await records.listPage(firstPage.nextCursor, 2);
+
+    console.log("All records:", allRecords);
+    console.log("First page:", firstPage);
+    console.log("Second page:", secondPage);
+
+    assert.equal(allRecords.length, 3);
+    assert.equal(firstPage.records.length, 2);
+    assert.equal(firstPage.hasNextPage, true);
+    assert.equal(secondPage.records.length, 1);
+}

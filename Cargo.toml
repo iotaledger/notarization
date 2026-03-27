@@ -9,7 +9,7 @@ rust-version = "1.85"
 [workspace]
 resolver = "2"
 members = ["audit-trail-rs", "examples", "notarization-rs"]
-exclude = ["bindings/wasm/notarization_wasm"]
+exclude = ["bindings/wasm/notarization_wasm", "bindings/wasm/audit_trails_wasm"]
 
 [workspace.dependencies]
 anyhow = "1.0"
@@ -29,7 +29,12 @@ serde_json = { version = "1.0", default-features = false }
 sha2 = { version = "0.10", default-features = false }
 strum = { version = "0.27", default-features = false, features = ["std", "derive"] }
 thiserror = { version = "2.0", default-features = false }
-tokio = { version = "1.46.1", default-features = false, features = ["macros", "sync", "rt", "process"] }
+tokio = { version = "1.46.1", default-features = false, features = [
+  "macros",
+  "sync",
+  "rt",
+  "process",
+] }
 
 [profile.release.package.iota_interaction_ts]
 opt-level = 's'
