@@ -160,6 +160,11 @@ impl<S> AuditTrailClient<S> {
         AuditTrailHandle::new(self, trail_id)
     }
 
+    /// Returns the TfComponents package ID used by this client.
+    pub fn tf_components_package_id(&self) -> ObjectID {
+        self.read_client.tf_components_package_id()
+    }
+
     /// Creates a builder for an audit trail.
     pub fn create_trail(&self) -> AuditTrailBuilder {
         AuditTrailBuilder {
@@ -197,7 +202,7 @@ impl<S> CoreClientReadOnly for AuditTrailClient<S> {
     }
 
     fn tf_components_package_id(&self) -> Option<ObjectID> {
-        self.read_client.tf_components_package_id()
+        Some(self.read_client.tf_components_package_id())
     }
 
     fn network_name(&self) -> &NetworkName {

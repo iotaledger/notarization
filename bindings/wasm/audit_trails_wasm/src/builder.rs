@@ -9,7 +9,7 @@ use product_common::bindings::WasmIotaAddress;
 use wasm_bindgen::prelude::*;
 
 use crate::trail::WasmCreateTrail;
-use crate::types::{WasmLockingConfig, WasmRecordTags};
+use crate::types::WasmLockingConfig;
 
 #[wasm_bindgen(js_name = AuditTrailBuilder, inspectable)]
 pub struct WasmAuditTrailBuilder(pub(crate) AuditTrailBuilder);
@@ -47,8 +47,8 @@ impl WasmAuditTrailBuilder {
     }
 
     #[wasm_bindgen(js_name = withRecordTags)]
-    pub fn with_record_tags(self, record_tags: WasmRecordTags) -> Self {
-        Self(self.0.with_record_tags(record_tags.allowed_tags))
+    pub fn with_record_tags(self, tags: Vec<String>) -> Self {
+        Self(self.0.with_record_tags(tags))
     }
 
     #[wasm_bindgen(js_name = withAdmin)]

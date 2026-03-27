@@ -12,10 +12,11 @@ use product_common::bindings::WasmObjectID;
 use wasm_bindgen::prelude::*;
 
 use crate::trail::{
-    WasmCreateRole, WasmDeleteRole, WasmDestroyCapability, WasmDestroyInitialAdminCapability, WasmIssueCapability,
-    WasmRevokeCapability, WasmRevokeInitialAdminCapability, WasmUpdateRole,
+    WasmCleanupRevokedCapabilities, WasmCreateRole, WasmDeleteRole, WasmDestroyCapability,
+    WasmDestroyInitialAdminCapability, WasmIssueCapability, WasmRevokeCapability, WasmRevokeInitialAdminCapability,
+    WasmUpdateRole,
 };
-use crate::types::{WasmCapabilityIssueOptions, WasmPermissionSet, WasmRecordTags};
+use crate::types::{WasmCapabilityIssueOptions, WasmPermissionSet, WasmRoleTags};
 
 #[derive(Clone)]
 #[wasm_bindgen(js_name = TrailAccess, inspectable)]
@@ -49,13 +50,17 @@ impl WasmTrailAccess {
     }
 
     #[wasm_bindgen(js_name = revokeCapability, unchecked_return_type = "TransactionBuilder<RevokeCapability>")]
-    pub fn revoke_capability(&self, capability_id: WasmObjectID) -> Result<WasmTransactionBuilder> {
+    pub fn revoke_capability(
+        &self,
+        capability_id: WasmObjectID,
+        capability_valid_until: Option<u64>,
+    ) -> Result<WasmTransactionBuilder> {
         let capability_id = parse_wasm_object_id(&capability_id)?;
         let tx = self
             .require_write()?
             .trail(self.trail_id)
             .access()
-            .revoke_capability(capability_id)
+            .revoke_capability(capability_id, capability_valid_until)
             .into_inner();
         Ok(into_transaction_builder(WasmRevokeCapability(tx)))
     }
@@ -85,15 +90,30 @@ impl WasmTrailAccess {
     }
 
     #[wasm_bindgen(js_name = revokeInitialAdminCapability, unchecked_return_type = "TransactionBuilder<RevokeInitialAdminCapability>")]
-    pub fn revoke_initial_admin_capability(&self, capability_id: WasmObjectID) -> Result<WasmTransactionBuilder> {
+    pub fn revoke_initial_admin_capability(
+        &self,
+        capability_id: WasmObjectID,
+        capability_valid_until: Option<u64>,
+    ) -> Result<WasmTransactionBuilder> {
         let capability_id = parse_wasm_object_id(&capability_id)?;
         let tx = self
             .require_write()?
             .trail(self.trail_id)
             .access()
-            .revoke_initial_admin_capability(capability_id)
+            .revoke_initial_admin_capability(capability_id, capability_valid_until)
             .into_inner();
         Ok(into_transaction_builder(WasmRevokeInitialAdminCapability(tx)))
+    }
+
+    #[wasm_bindgen(js_name = cleanupRevokedCapabilities, unchecked_return_type = "TransactionBuilder<CleanupRevokedCapabilities>")]
+    pub fn cleanup_revoked_capabilities(&self) -> Result<WasmTransactionBuilder> {
+        let tx = self
+            .require_write()?
+            .trail(self.trail_id)
+            .access()
+            .cleanup_revoked_capabilities()
+            .into_inner();
+        Ok(into_transaction_builder(WasmCleanupRevokedCapabilities(tx)))
     }
 }
 
@@ -129,14 +149,14 @@ impl WasmRoleHandle {
     pub fn create(
         &self,
         permissions: WasmPermissionSet,
-        record_tags: Option<WasmRecordTags>,
+        role_tags: Option<WasmRoleTags>,
     ) -> Result<WasmTransactionBuilder> {
         let tx = self
             .require_write()?
             .trail(self.trail_id)
             .access()
             .for_role(self.name.clone())
-            .create(permissions.into(), record_tags.map(Into::into))
+            .create(permissions.into(), role_tags.map(Into::into))
             .into_inner();
         Ok(into_transaction_builder(WasmCreateRole(tx)))
     }
@@ -157,14 +177,14 @@ impl WasmRoleHandle {
     pub fn update_permissions(
         &self,
         permissions: WasmPermissionSet,
-        record_tags: Option<WasmRecordTags>,
+        role_tags: Option<WasmRoleTags>,
     ) -> Result<WasmTransactionBuilder> {
         let tx = self
             .require_write()?
             .trail(self.trail_id)
             .access()
             .for_role(self.name.clone())
-            .update_permissions(permissions.into(), record_tags.map(Into::into))
+            .update_permissions(permissions.into(), role_tags.map(Into::into))
             .into_inner();
         Ok(into_transaction_builder(WasmUpdateRole(tx)))
     }

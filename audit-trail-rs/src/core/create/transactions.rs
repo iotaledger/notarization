@@ -68,7 +68,9 @@ impl CreateTrail {
                     .to_string(),
             )
         })?;
-        let tf_package_id = client.tf_components_package_id().expect("package ID is present");
+        let tf_package_id = client
+            .tf_components_package_id()
+            .expect("TfComponents package ID should be present for audit trail clients");
 
         CreateOps::create_trail(CreateTrailArgs {
             audit_trail_package_id: client.package_id(),

@@ -67,6 +67,11 @@ impl AuditTrailClientReadOnly {
         self.audit_trail_pkg_id
     }
 
+    /// Returns the TfComponents package ID used by this client.
+    pub fn tf_components_package_id(&self) -> ObjectID {
+        self.tf_components_pkg_id
+    }
+
     /// Returns a reference to the underlying IOTA client adapter.
     pub const fn iota_client(&self) -> &IotaClientAdapter {
         &self.iota_client
@@ -129,16 +134,16 @@ impl CoreClientReadOnly for AuditTrailClientReadOnly {
         self.audit_trail_pkg_id
     }
 
+    fn tf_components_package_id(&self) -> Option<ObjectID> {
+        Some(self.tf_components_pkg_id)
+    }
+
     fn network_name(&self) -> &NetworkName {
         &self.network
     }
 
     fn client_adapter(&self) -> &IotaClientAdapter {
         &self.iota_client
-    }
-
-    fn tf_components_package_id(&self) -> Option<ObjectID> {
-        Some(self.tf_components_pkg_id)
     }
 }
 

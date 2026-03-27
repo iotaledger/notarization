@@ -6,9 +6,10 @@ use std::collections::{HashMap, HashSet};
 use audit_trails::core::types::{
     AuditTrailCreated, AuditTrailDeleted, Capability, CapabilityAdminPermissions, CapabilityDestroyed,
     CapabilityIssueOptions, CapabilityIssued, CapabilityRevoked, Data, ImmutableMetadata, LockingConfig, LockingWindow,
-    PaginatedRecord, Permission, PermissionSet, Record, RecordAdded, RecordCorrection, RecordDeleted, RecordTags, Role,
-    RoleAdminPermissions, RoleCreated, RoleMap, RoleRemoved, RoleUpdated, TimeLock,
+    PaginatedRecord, Permission, PermissionSet, Record, RecordAdded, RecordCorrection, RecordDeleted, Role,
+    RoleAdminPermissions, RoleCreated, RoleDeleted, RoleMap, RoleTags, RoleUpdated, TimeLock,
 };
+use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::types::collection_types::LinkedTable;
 use js_sys::Uint8Array;
 use product_common::bindings::WasmIotaAddress;
@@ -119,13 +120,17 @@ fn sorted_object_ids(ids: HashSet<iota_interaction::types::base_types::ObjectID>
     ids
 }
 
+fn optional_object_id(id: Option<ObjectID>) -> Option<String> {
+    id.map(|id| id.to_string())
+}
+
 fn sorted_role_entries(roles: HashMap<String, Role>) -> Vec<WasmRolePermissionsEntry> {
     let mut roles: Vec<_> = roles
         .into_iter()
         .map(|(name, role)| WasmRolePermissionsEntry {
             name,
             permissions: sorted_permissions_from_set(role.permissions),
-            record_tags: role.data.map(Into::into),
+            role_tags: role.data.map(Into::into),
         })
         .collect();
     roles.sort_unstable_by(|left, right| left.name.cmp(&right.name));
@@ -332,41 +337,38 @@ impl From<CapabilityAdminPermissions> for WasmCapabilityAdminPermissions {
 pub struct WasmRolePermissionsEntry {
     pub name: String,
     pub permissions: Vec<WasmPermission>,
-    #[wasm_bindgen(js_name = recordTags)]
-    pub record_tags: Option<WasmRecordTags>,
+    #[wasm_bindgen(js_name = roleTags)]
+    pub role_tags: Option<WasmRoleTags>,
 }
 
-#[wasm_bindgen(js_name = RecordTags, getter_with_clone, inspectable)]
+#[wasm_bindgen(js_name = RoleTags, getter_with_clone, inspectable)]
 #[derive(Clone, Serialize, Deserialize)]
-pub struct WasmRecordTags {
-    #[wasm_bindgen(js_name = allowedTags)]
-    pub allowed_tags: Vec<String>,
+pub struct WasmRoleTags {
+    pub tags: Vec<String>,
 }
 
-#[wasm_bindgen(js_class = RecordTags)]
-impl WasmRecordTags {
+#[wasm_bindgen(js_class = RoleTags)]
+impl WasmRoleTags {
     #[wasm_bindgen(constructor)]
-    pub fn new(allowed_tags: Vec<String>) -> Self {
-        let mut allowed_tags = allowed_tags;
-        allowed_tags.sort_unstable();
-        allowed_tags.dedup();
-        Self { allowed_tags }
+    pub fn new(tags: Vec<String>) -> Self {
+        let mut tags = tags;
+        tags.sort_unstable();
+        tags.dedup();
+        Self { tags }
     }
 }
 
-impl From<RecordTags> for WasmRecordTags {
-    fn from(value: RecordTags) -> Self {
+impl From<RoleTags> for WasmRoleTags {
+    fn from(value: RoleTags) -> Self {
         Self {
-            allowed_tags: sorted_tag_names(value.allowed_tags),
+            tags: sorted_tag_names(value.tags),
         }
     }
 }
 
-impl From<WasmRecordTags> for RecordTags {
-    fn from(value: WasmRecordTags) -> Self {
-        Self {
-            allowed_tags: value.allowed_tags.into_iter().collect(),
-        }
+impl From<WasmRoleTags> for RoleTags {
+    fn from(value: WasmRoleTags) -> Self {
+        RoleTags::new(value.tags)
     }
 }
 
@@ -392,8 +394,8 @@ pub struct WasmRoleMap {
     pub roles: Vec<WasmRolePermissionsEntry>,
     #[wasm_bindgen(js_name = initialAdminRoleName)]
     pub initial_admin_role_name: String,
-    #[wasm_bindgen(js_name = issuedCapabilities)]
-    pub issued_capabilities: Vec<String>,
+    #[wasm_bindgen(js_name = revokedCapabilities)]
+    pub revoked_capabilities: WasmObjectIdLinkedTable,
     #[wasm_bindgen(js_name = initialAdminCapIds)]
     pub initial_admin_cap_ids: Vec<String>,
     #[wasm_bindgen(js_name = roleAdminPermissions)]
@@ -408,10 +410,30 @@ impl From<RoleMap> for WasmRoleMap {
             target_key: value.target_key.to_string(),
             roles: sorted_role_entries(value.roles),
             initial_admin_role_name: value.initial_admin_role_name,
-            issued_capabilities: sorted_object_ids(value.issued_capabilities),
+            revoked_capabilities: value.revoked_capabilities.into(),
             initial_admin_cap_ids: sorted_object_ids(value.initial_admin_cap_ids),
             role_admin_permissions: value.role_admin_permissions.into(),
             capability_admin_permissions: value.capability_admin_permissions.into(),
+        }
+    }
+}
+
+#[wasm_bindgen(js_name = ObjectIdLinkedTable, getter_with_clone, inspectable)]
+#[derive(Clone, Serialize, Deserialize)]
+pub struct WasmObjectIdLinkedTable {
+    pub id: String,
+    pub size: u64,
+    pub head: Option<String>,
+    pub tail: Option<String>,
+}
+
+impl From<LinkedTable<ObjectID>> for WasmObjectIdLinkedTable {
+    fn from(value: LinkedTable<ObjectID>) -> Self {
+        Self {
+            id: value.id.to_string(),
+            size: value.size,
+            head: optional_object_id(value.head),
+            tail: optional_object_id(value.tail),
         }
     }
 }
@@ -605,6 +627,13 @@ pub struct WasmCapabilityDestroyed {
     pub target_key: String,
     #[wasm_bindgen(js_name = capabilityId)]
     pub capability_id: String,
+    pub role: String,
+    #[wasm_bindgen(js_name = issuedTo)]
+    pub issued_to: Option<WasmIotaAddress>,
+    #[wasm_bindgen(js_name = validFrom)]
+    pub valid_from: Option<u64>,
+    #[wasm_bindgen(js_name = validUntil)]
+    pub valid_until: Option<u64>,
 }
 
 impl From<CapabilityDestroyed> for WasmCapabilityDestroyed {
@@ -612,6 +641,10 @@ impl From<CapabilityDestroyed> for WasmCapabilityDestroyed {
         Self {
             target_key: value.target_key.to_string(),
             capability_id: value.capability_id.to_string(),
+            role: value.role,
+            issued_to: value.issued_to.map(|address| address.to_string()),
+            valid_from: value.valid_from,
+            valid_until: value.valid_until,
         }
     }
 }
@@ -623,6 +656,8 @@ pub struct WasmCapabilityRevoked {
     pub target_key: String,
     #[wasm_bindgen(js_name = capabilityId)]
     pub capability_id: String,
+    #[wasm_bindgen(js_name = validUntil)]
+    pub valid_until: u64,
 }
 
 impl From<CapabilityRevoked> for WasmCapabilityRevoked {
@@ -630,6 +665,7 @@ impl From<CapabilityRevoked> for WasmCapabilityRevoked {
         Self {
             target_key: value.target_key.to_string(),
             capability_id: value.capability_id.to_string(),
+            valid_until: value.valid_until,
         }
     }
 }
@@ -640,6 +676,12 @@ pub struct WasmRoleCreated {
     #[wasm_bindgen(js_name = trailId)]
     pub trail_id: String,
     pub role: String,
+    pub permissions: WasmPermissionSet,
+    #[wasm_bindgen(js_name = roleTags)]
+    pub role_tags: Option<WasmRoleTags>,
+    #[wasm_bindgen(js_name = createdBy)]
+    pub created_by: WasmIotaAddress,
+    pub timestamp: u64,
 }
 
 impl From<RoleCreated> for WasmRoleCreated {
@@ -647,6 +689,10 @@ impl From<RoleCreated> for WasmRoleCreated {
         Self {
             trail_id: value.trail_id.to_string(),
             role: value.role,
+            permissions: value.permissions.into(),
+            role_tags: value.data.map(Into::into),
+            created_by: value.created_by.to_string(),
+            timestamp: value.timestamp,
         }
     }
 }
@@ -657,6 +703,12 @@ pub struct WasmRoleUpdated {
     #[wasm_bindgen(js_name = trailId)]
     pub trail_id: String,
     pub role: String,
+    pub permissions: WasmPermissionSet,
+    #[wasm_bindgen(js_name = roleTags)]
+    pub role_tags: Option<WasmRoleTags>,
+    #[wasm_bindgen(js_name = updatedBy)]
+    pub updated_by: WasmIotaAddress,
+    pub timestamp: u64,
 }
 
 impl From<RoleUpdated> for WasmRoleUpdated {
@@ -664,23 +716,32 @@ impl From<RoleUpdated> for WasmRoleUpdated {
         Self {
             trail_id: value.trail_id.to_string(),
             role: value.role,
+            permissions: value.permissions.into(),
+            role_tags: value.data.map(Into::into),
+            updated_by: value.updated_by.to_string(),
+            timestamp: value.timestamp,
         }
     }
 }
 
-#[wasm_bindgen(js_name = RoleRemoved, getter_with_clone, inspectable)]
+#[wasm_bindgen(js_name = RoleDeleted, getter_with_clone, inspectable)]
 #[derive(Clone)]
-pub struct WasmRoleRemoved {
+pub struct WasmRoleDeleted {
     #[wasm_bindgen(js_name = trailId)]
     pub trail_id: String,
     pub role: String,
+    #[wasm_bindgen(js_name = deletedBy)]
+    pub deleted_by: WasmIotaAddress,
+    pub timestamp: u64,
 }
 
-impl From<RoleRemoved> for WasmRoleRemoved {
-    fn from(value: RoleRemoved) -> Self {
+impl From<RoleDeleted> for WasmRoleDeleted {
+    fn from(value: RoleDeleted) -> Self {
         Self {
             trail_id: value.trail_id.to_string(),
             role: value.role,
+            deleted_by: value.deleted_by.to_string(),
+            timestamp: value.timestamp,
         }
     }
 }

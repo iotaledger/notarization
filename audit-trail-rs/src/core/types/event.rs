@@ -4,7 +4,7 @@
 use std::collections::HashSet;
 
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
-use iota_sdk::types::collection_types::VecSet;
+use iota_interaction::types::collection_types::VecSet;
 use serde::{Deserialize, Serialize};
 use serde_aux::field_attributes::{deserialize_number_from_string, deserialize_option_number_from_string};
 

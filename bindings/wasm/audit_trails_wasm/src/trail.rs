@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use audit_trails::core::access::{
-    CreateRole, DeleteRole, DestroyCapability, DestroyInitialAdminCapability, IssueCapability, RevokeCapability,
-    RevokeInitialAdminCapability, UpdateRole,
+    CleanupRevokedCapabilities, CreateRole, DeleteRole, DestroyCapability, DestroyInitialAdminCapability,
+    IssueCapability, RevokeCapability, RevokeInitialAdminCapability, UpdateRole,
 };
 use audit_trails::core::create::{CreateTrail, TrailCreated};
 use audit_trails::core::locking::{
@@ -14,7 +14,7 @@ use audit_trails::core::tags::{AddRecordTag, RemoveRecordTag};
 use audit_trails::core::trail::{DeleteAuditTrail, Migrate, UpdateMetadata};
 use audit_trails::core::types::{
     AuditTrailDeleted, CapabilityDestroyed, CapabilityIssued, CapabilityRevoked, OnChainAuditTrail, RecordAdded,
-    RecordDeleted, RoleCreated, RoleRemoved, RoleUpdated,
+    RecordDeleted, RoleCreated, RoleDeleted, RoleUpdated,
 };
 use iota_interaction_ts::bindings::{WasmIotaTransactionBlockEffects, WasmIotaTransactionBlockEvents};
 use iota_interaction_ts::core_client::WasmCoreClientReadOnly;
@@ -27,7 +27,7 @@ use crate::builder::WasmAuditTrailBuilder;
 use crate::types::{
     WasmAuditTrailDeleted, WasmCapabilityDestroyed, WasmCapabilityIssued, WasmCapabilityRevoked, WasmEmpty,
     WasmImmutableMetadata, WasmLinkedTable, WasmLockingConfig, WasmRecordAdded, WasmRecordDeleted, WasmRecordTagEntry,
-    WasmRoleCreated, WasmRoleMap, WasmRoleRemoved, WasmRoleUpdated,
+    WasmRoleCreated, WasmRoleDeleted, WasmRoleMap, WasmRoleUpdated,
 };
 
 #[wasm_bindgen(js_name = OnChainAuditTrail, inspectable)]
@@ -72,7 +72,12 @@ impl WasmOnChainAuditTrail {
 
     #[wasm_bindgen(getter)]
     pub fn tags(&self) -> Vec<WasmRecordTagEntry> {
-        let mut tags: Vec<_> = self.0.tags.clone().into_iter().map(Into::into).collect();
+        let mut tags: Vec<WasmRecordTagEntry> = self
+            .0
+            .tags
+            .iter()
+            .map(|(tag, usage_count)| (tag.clone(), *usage_count).into())
+            .collect();
         tags.sort_unstable_by(|left, right| left.tag.cmp(&right.tag));
         tags
     }
@@ -350,8 +355,8 @@ impl WasmDeleteRole {
         wasm_effects: &WasmIotaTransactionBlockEffects,
         wasm_events: &WasmIotaTransactionBlockEvents,
         client: &WasmCoreClientReadOnly,
-    ) -> Result<WasmRoleRemoved> {
-        let event: RoleRemoved = apply_with_events(self.0, wasm_effects, wasm_events, client).await?;
+    ) -> Result<WasmRoleDeleted> {
+        let event: RoleDeleted = apply_with_events(self.0, wasm_effects, wasm_events, client).await?;
         Ok(event.into())
     }
 }
@@ -463,6 +468,27 @@ impl WasmRevokeInitialAdminCapability {
     ) -> Result<WasmCapabilityRevoked> {
         let event: CapabilityRevoked = apply_with_events(self.0, wasm_effects, wasm_events, client).await?;
         Ok(event.into())
+    }
+}
+
+#[wasm_bindgen(js_name = CleanupRevokedCapabilities, inspectable)]
+pub struct WasmCleanupRevokedCapabilities(pub(crate) CleanupRevokedCapabilities);
+
+#[wasm_bindgen(js_class = CleanupRevokedCapabilities)]
+impl WasmCleanupRevokedCapabilities {
+    #[wasm_bindgen(js_name = buildProgrammableTransaction)]
+    pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
+        build_programmable_transaction(&self.0, client).await
+    }
+
+    #[wasm_bindgen(js_name = applyWithEvents)]
+    pub async fn apply_with_events(
+        self,
+        wasm_effects: &WasmIotaTransactionBlockEffects,
+        wasm_events: &WasmIotaTransactionBlockEvents,
+        client: &WasmCoreClientReadOnly,
+    ) -> Result<WasmEmpty> {
+        apply_with_events(self.0, wasm_effects, wasm_events, client).await
     }
 }
 

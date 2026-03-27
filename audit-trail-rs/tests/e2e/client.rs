@@ -275,7 +275,7 @@ impl CoreClientReadOnly for TestClient {
     }
 
     fn tf_components_package_id(&self) -> Option<ObjectID> {
-        self.client.tf_components_package_id()
+        Some(self.client.tf_components_package_id())
     }
 
     fn network_name(&self) -> &NetworkName {

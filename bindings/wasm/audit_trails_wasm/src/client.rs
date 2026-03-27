@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::anyhow;
-use audit_trails::{AuditTrailClient, AuditTrailClientReadOnly};
+use audit_trails::{AuditTrailClient, AuditTrailClientReadOnly, PackageOverrides};
 use iota_interaction_ts::bindings::{WasmIotaClient, WasmPublicKey, WasmTransactionSigner};
 use iota_interaction_ts::wasm_error::{wasm_error, Result, WasmResult};
 use product_common::bindings::utils::parse_wasm_object_id;
@@ -11,7 +11,7 @@ use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use wasm_bindgen::prelude::*;
 
 use crate::builder::WasmAuditTrailBuilder;
-use crate::client_read_only::WasmAuditTrailClientReadOnly;
+use crate::client_read_only::{WasmAuditTrailClientReadOnly, WasmPackageOverrides};
 use crate::trail_handle::WasmAuditTrailHandle;
 
 #[derive(Clone)]
@@ -37,7 +37,32 @@ impl WasmAuditTrailClient {
     ) -> Result<WasmAuditTrailClient> {
         let read_only = if let Some(package_id) = package_id {
             let package_id = parse_wasm_object_id(&package_id)?;
-            AuditTrailClientReadOnly::new_with_pkg_id(iota_client, package_id)
+            AuditTrailClientReadOnly::new_with_package_overrides(
+                iota_client,
+                PackageOverrides {
+                    audit_trail_package_id: Some(package_id),
+                    tf_components_package_id: None,
+                },
+            )
+            .await
+            .wasm_result()?
+        } else {
+            AuditTrailClientReadOnly::new(iota_client).await.wasm_result()?
+        };
+
+        let client = AuditTrailClient::new(read_only, signer).await.wasm_result()?;
+        Ok(Self(client))
+    }
+
+    #[wasm_bindgen(js_name = createFromIotaClientWithPackageOverrides)]
+    pub async fn create_from_iota_client_with_package_overrides(
+        iota_client: WasmIotaClient,
+        signer: WasmTransactionSigner,
+        package_overrides: Option<WasmPackageOverrides>,
+    ) -> Result<WasmAuditTrailClient> {
+        let read_only = if let Some(package_overrides) = package_overrides {
+            let package_overrides = PackageOverrides::try_from(package_overrides)?;
+            AuditTrailClientReadOnly::new_with_package_overrides(iota_client, package_overrides)
                 .await
                 .wasm_result()?
         } else {
@@ -71,6 +96,11 @@ impl WasmAuditTrailClient {
     #[wasm_bindgen(js_name = packageId)]
     pub fn package_id(&self) -> String {
         self.0.package_id().to_string()
+    }
+
+    #[wasm_bindgen(js_name = tfComponentsPackageId)]
+    pub fn tf_components_package_id(&self) -> String {
+        self.0.tf_components_package_id().to_string()
     }
 
     #[wasm_bindgen(js_name = packageHistory)]

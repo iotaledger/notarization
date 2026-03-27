@@ -101,7 +101,9 @@ where
     C: CoreClientReadOnly + OptionalSync,
     P: Fn(&Capability) -> bool + Send,
 {
-    let tf_components_package_id = client.tf_components_package_id().expect("package ID is present");
+    let tf_components_package_id = client
+        .tf_components_package_id()
+        .expect("TfComponents package ID should be present for audit trail clients");
     let capability_struct_tag: StructTag = Capability::type_tag(tf_components_package_id)
         .to_string()
         .parse()

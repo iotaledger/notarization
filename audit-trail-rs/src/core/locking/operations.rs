@@ -22,7 +22,9 @@ impl LockingOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        let tf_components_package_id = client.tf_components_package_id().expect("package ID is present");
+        let tf_components_package_id = client
+            .tf_components_package_id()
+            .expect("TfComponents package ID should be present for audit trail clients");
 
         operations::build_trail_transaction(
             client,
@@ -74,7 +76,9 @@ impl LockingOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        let tf_components_package_id = client.tf_components_package_id().expect("package ID is present");
+        let tf_components_package_id = client
+            .tf_components_package_id()
+            .expect("TfComponents package ID should be present for audit trail clients");
         operations::build_trail_transaction(
             client,
             trail_id,
@@ -100,7 +104,9 @@ impl LockingOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        let tf_components_package_id = client.tf_components_package_id().expect("package ID is present");
+        let tf_components_package_id = client
+            .tf_components_package_id()
+            .expect("TfComponents package ID should be present for audit trail clients");
         operations::build_trail_transaction(
             client,
             trail_id,
