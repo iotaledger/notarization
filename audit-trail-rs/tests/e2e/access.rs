@@ -3,7 +3,7 @@
 
 use std::collections::HashSet;
 
-use audit_trails::core::types::{CapabilityIssueOptions, Data, Permission, PermissionSet, RecordTags};
+use audit_trails::core::types::{CapabilityIssueOptions, Data, Permission, PermissionSet, RoleTags};
 use iota_interaction::types::base_types::IotaAddress;
 use product_common::core_client::CoreClient;
 
@@ -56,6 +56,13 @@ async fn update_role_permissions_then_issue_capability() -> anyhow::Result<()> {
         .output;
     assert_eq!(updated.trail_id, trail_id);
     assert_eq!(updated.role, role_name.to_string());
+    assert_eq!(
+        updated.permissions.permissions,
+        HashSet::from([Permission::AddRecord, Permission::DeleteRecord])
+    );
+    assert_eq!(updated.data, None);
+    assert_eq!(updated.updated_by, client.sender_address());
+    assert!(updated.timestamp > 0);
 
     let issued = client
         .issue_cap(trail_id, role_name, CapabilityIssueOptions::default())
@@ -67,7 +74,7 @@ async fn update_role_permissions_then_issue_capability() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn create_role_rejects_undefined_record_tags() -> anyhow::Result<()> {
+async fn create_role_rejects_undefined_role_tags() -> anyhow::Result<()> {
     let client = get_funded_test_client().await?;
     let trail_id = client
         .create_test_trail_with_tags(Data::text("roles-undefined-create"), ["legal"])
@@ -78,7 +85,7 @@ async fn create_role_rejects_undefined_record_tags() -> anyhow::Result<()> {
             trail_id,
             "tagged-writer",
             vec![Permission::AddRecord],
-            Some(RecordTags::new(["finance"])),
+            Some(RoleTags::new(["finance"])),
         )
         .await;
 
@@ -91,7 +98,7 @@ async fn create_role_rejects_undefined_record_tags() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn update_role_permissions_rejects_undefined_record_tags() -> anyhow::Result<()> {
+async fn update_role_permissions_rejects_undefined_role_tags() -> anyhow::Result<()> {
     let client = get_funded_test_client().await?;
     let trail_id = client
         .create_test_trail_with_tags(Data::text("roles-undefined-update"), ["legal"])
@@ -109,7 +116,7 @@ async fn update_role_permissions_rejects_undefined_record_tags() -> anyhow::Resu
             PermissionSet {
                 permissions: HashSet::from([Permission::AddRecord]),
             },
-            Some(RecordTags::new(["finance"])),
+            Some(RoleTags::new(["finance"])),
         )
         .build_and_execute(&client)
         .await;
@@ -140,6 +147,8 @@ async fn delete_role_prevents_new_capability_issuance() -> anyhow::Result<()> {
         .output;
     assert_eq!(deleted.trail_id, trail_id);
     assert_eq!(deleted.role, role_name.to_string());
+    assert_eq!(deleted.deleted_by, client.sender_address());
+    assert!(deleted.timestamp > 0);
 
     let issue_tx = access
         .for_role(role_name)
@@ -196,12 +205,13 @@ async fn revoke_capability_emits_expected_event_data() -> anyhow::Result<()> {
         .await?;
 
     let revoked = access
-        .revoke_capability(issued.capability_id)
+        .revoke_capability(issued.capability_id, issued.valid_until)
         .build_and_execute(&client)
         .await?
         .output;
     assert_eq!(revoked.target_key, trail_id);
     assert_eq!(revoked.capability_id, issued.capability_id);
+    assert_eq!(revoked.valid_until, 0);
 
     Ok(())
 }
@@ -229,6 +239,10 @@ async fn destroy_capability_emits_expected_event_data() -> anyhow::Result<()> {
 
     assert_eq!(destroyed.target_key, trail_id);
     assert_eq!(destroyed.capability_id, issued.capability_id);
+    assert_eq!(destroyed.role, role_name.to_string());
+    assert_eq!(destroyed.issued_to, None);
+    assert_eq!(destroyed.valid_from, None);
+    assert_eq!(destroyed.valid_until, None);
 
     Ok(())
 }
@@ -250,6 +264,10 @@ async fn destroy_initial_admin_capability_emits_expected_event() -> anyhow::Resu
 
     assert_eq!(destroyed.target_key, trail_id);
     assert_eq!(destroyed.capability_id, admin_cap_id);
+    assert_eq!(destroyed.role, "Admin".to_string());
+    assert_eq!(destroyed.issued_to, None);
+    assert_eq!(destroyed.valid_from, None);
+    assert_eq!(destroyed.valid_until, None);
 
     Ok(())
 }
@@ -266,13 +284,14 @@ async fn revoke_initial_admin_capability_emits_expected_event() -> anyhow::Resul
 
     let access = client.trail(trail_id).access();
     let revoked = access
-        .revoke_initial_admin_capability(second_admin.capability_id)
+        .revoke_initial_admin_capability(second_admin.capability_id, second_admin.valid_until)
         .build_and_execute(&client)
         .await?
         .output;
 
     assert_eq!(revoked.target_key, trail_id);
     assert_eq!(revoked.capability_id, second_admin.capability_id);
+    assert_eq!(revoked.valid_until, 0);
 
     Ok(())
 }
@@ -305,12 +324,55 @@ async fn regular_revoke_rejects_initial_admin_capability() -> anyhow::Result<()>
     let admin_cap_ref = client.get_cap(client.sender_address(), trail_id).await?;
     let admin_cap_id = admin_cap_ref.0;
 
-    let result = access.revoke_capability(admin_cap_id).build_and_execute(&client).await;
+    let result = access
+        .revoke_capability(admin_cap_id, None)
+        .build_and_execute(&client)
+        .await;
 
     assert!(
         result.is_err(),
         "revoking an initial admin cap via regular revoke_capability must fail"
     );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn cleanup_revoked_capabilities_removes_expired_entries() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let trail_id = client.create_test_trail(Data::text("access-e2e")).await?;
+    let access = client.trail(trail_id).access();
+    let role_name = "cleanup-target";
+
+    client
+        .create_role(trail_id, role_name, vec![Permission::AddRecord], None)
+        .await?;
+
+    let issued = client
+        .issue_cap(
+            trail_id,
+            role_name,
+            CapabilityIssueOptions {
+                issued_to: None,
+                valid_from_ms: None,
+                valid_until_ms: Some(1),
+            },
+        )
+        .await?;
+
+    access
+        .revoke_capability(issued.capability_id, issued.valid_until)
+        .build_and_execute(&client)
+        .await?;
+
+    let trail = client.trail(trail_id);
+    let before_cleanup = trail.get().await?;
+    assert_eq!(before_cleanup.roles.revoked_capabilities.size, 1);
+
+    access.cleanup_revoked_capabilities().build_and_execute(&client).await?;
+
+    let after_cleanup = trail.get().await?;
+    assert_eq!(after_cleanup.roles.revoked_capabilities.size, 0);
 
     Ok(())
 }

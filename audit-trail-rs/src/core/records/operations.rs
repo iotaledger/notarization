@@ -162,18 +162,16 @@ where
         .map(|(name, _)| name.clone())
         .collect::<std::collections::HashSet<_>>();
 
-    let cap = client
-        .find_object_for_address(owner, |cap: &crate::core::types::Capability| {
-            cap.target_key == trail_id && valid_roles.contains(&cap.role)
-        })
-        .await
-        .map_err(|e| Error::RpcError(e.to_string()))?
-        .ok_or_else(|| {
-            Error::InvalidArgument(format!(
-                "no capability with {:?} permission and record tag '{tag}' found for owner {owner} and trail {trail_id}",
-                Permission::AddRecord
-            ))
-        })?;
+    let cap = operations::find_owned_capability(client, owner, |cap| {
+        cap.target_key == trail_id && valid_roles.contains(&cap.role)
+    })
+    .await?
+    .ok_or_else(|| {
+        Error::InvalidArgument(format!(
+            "no capability with {:?} permission and record tag '{tag}' found for owner {owner} and trail {trail_id}",
+            Permission::AddRecord
+        ))
+    })?;
 
     let object_id = *cap.id.object_id();
     utils::get_object_ref_by_id(client, &object_id).await

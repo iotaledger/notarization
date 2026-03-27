@@ -8,14 +8,14 @@ use product_common::transaction::transaction_builder::TransactionBuilder;
 use secret_storage::Signer;
 
 use crate::core::trail::AuditTrailFull;
-use crate::core::types::{CapabilityIssueOptions, PermissionSet, RecordTags};
+use crate::core::types::{CapabilityIssueOptions, PermissionSet, RoleTags};
 
 mod operations;
 mod transactions;
 
 pub use transactions::{
-    CreateRole, DeleteRole, DestroyCapability, DestroyInitialAdminCapability, IssueCapability, RevokeCapability,
-    RevokeInitialAdminCapability, UpdateRole,
+    CleanupRevokedCapabilities, CreateRole, DeleteRole, DestroyCapability, DestroyInitialAdminCapability,
+    IssueCapability, RevokeCapability, RevokeInitialAdminCapability, UpdateRole,
 };
 
 #[derive(Debug, Clone)]
@@ -35,13 +35,25 @@ impl<'a, C> TrailAccess<'a, C> {
     }
 
     /// Revokes an issued capability.
-    pub fn revoke_capability<S>(&self, capability_id: ObjectID) -> TransactionBuilder<RevokeCapability>
+    ///
+    /// Pass the capability's `valid_until` value when it is known so the denylist entry matches the on-chain cleanup
+    /// model.
+    pub fn revoke_capability<S>(
+        &self,
+        capability_id: ObjectID,
+        capability_valid_until: Option<u64>,
+    ) -> TransactionBuilder<RevokeCapability>
     where
         C: AuditTrailFull + CoreClient<S>,
         S: Signer<IotaKeySignature> + OptionalSync,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(RevokeCapability::new(self.trail_id, owner, capability_id))
+        TransactionBuilder::new(RevokeCapability::new(
+            self.trail_id,
+            owner,
+            capability_id,
+            capability_valid_until,
+        ))
     }
 
     /// Destroys a capability object.
@@ -67,16 +79,35 @@ impl<'a, C> TrailAccess<'a, C> {
     }
 
     /// Revokes an initial admin capability by ID.
+    ///
+    /// Pass the capability's `valid_until` value when it is known so the denylist entry matches the on-chain cleanup
+    /// model.
     pub fn revoke_initial_admin_capability<S>(
         &self,
         capability_id: ObjectID,
+        capability_valid_until: Option<u64>,
     ) -> TransactionBuilder<RevokeInitialAdminCapability>
     where
         C: AuditTrailFull + CoreClient<S>,
         S: Signer<IotaKeySignature> + OptionalSync,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(RevokeInitialAdminCapability::new(self.trail_id, owner, capability_id))
+        TransactionBuilder::new(RevokeInitialAdminCapability::new(
+            self.trail_id,
+            owner,
+            capability_id,
+            capability_valid_until,
+        ))
+    }
+
+    /// Removes expired entries from the revoked-capability denylist.
+    pub fn cleanup_revoked_capabilities<S>(&self) -> TransactionBuilder<CleanupRevokedCapabilities>
+    where
+        C: AuditTrailFull + CoreClient<S>,
+        S: Signer<IotaKeySignature> + OptionalSync,
+    {
+        let owner = self.client.sender_address();
+        TransactionBuilder::new(CleanupRevokedCapabilities::new(self.trail_id, owner))
     }
 }
 
@@ -96,12 +127,8 @@ impl<'a, C> RoleHandle<'a, C> {
         &self.name
     }
 
-    /// Creates this role with the provided permissions and optional record-tag access rules.
-    pub fn create<S>(
-        &self,
-        permissions: PermissionSet,
-        record_tags: Option<RecordTags>,
-    ) -> TransactionBuilder<CreateRole>
+    /// Creates this role with the provided permissions and optional role-tag access rules.
+    pub fn create<S>(&self, permissions: PermissionSet, role_tags: Option<RoleTags>) -> TransactionBuilder<CreateRole>
     where
         C: AuditTrailFull + CoreClient<S>,
         S: Signer<IotaKeySignature> + OptionalSync,
@@ -112,7 +139,7 @@ impl<'a, C> RoleHandle<'a, C> {
             owner,
             self.name.clone(),
             permissions,
-            record_tags,
+            role_tags,
         ))
     }
 
@@ -126,11 +153,11 @@ impl<'a, C> RoleHandle<'a, C> {
         TransactionBuilder::new(IssueCapability::new(self.trail_id, owner, self.name.clone(), options))
     }
 
-    /// Updates permissions and record-tag access rules for this role.
+    /// Updates permissions and role-tag access rules for this role.
     pub fn update_permissions<S>(
         &self,
         permissions: PermissionSet,
-        record_tags: Option<RecordTags>,
+        role_tags: Option<RoleTags>,
     ) -> TransactionBuilder<UpdateRole>
     where
         C: AuditTrailFull + CoreClient<S>,
@@ -142,7 +169,7 @@ impl<'a, C> RoleHandle<'a, C> {
             owner,
             self.name.clone(),
             permissions,
-            record_tags,
+            role_tags,
         ))
     }
 

@@ -9,7 +9,6 @@ use product_common::core_client::CoreClientReadOnly;
 use crate::core::types::{LockingConfig, LockingWindow, Permission, TimeLock};
 use crate::core::{operations, utils};
 use crate::error::Error;
-use crate::package;
 
 pub(super) struct LockingOps;
 
@@ -23,7 +22,7 @@ impl LockingOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        let tf_components_package_id = package::tf_components_package_id();
+        let tf_components_package_id = client.tf_components_package_id().expect("package ID is present");
 
         operations::build_trail_transaction(
             client,
@@ -75,8 +74,7 @@ impl LockingOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        let tf_components_package_id = package::tf_components_package_id();
-
+        let tf_components_package_id = client.tf_components_package_id().expect("package ID is present");
         operations::build_trail_transaction(
             client,
             trail_id,
@@ -102,8 +100,7 @@ impl LockingOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        let tf_components_package_id = package::tf_components_package_id();
-
+        let tf_components_package_id = client.tf_components_package_id().expect("package ID is present");
         operations::build_trail_transaction(
             client,
             trail_id,

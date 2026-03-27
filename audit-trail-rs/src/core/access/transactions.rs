@@ -12,8 +12,8 @@ use tokio::sync::OnceCell;
 
 use super::operations::AccessOps;
 use crate::core::types::{
-    CapabilityDestroyed, CapabilityIssueOptions, CapabilityIssued, CapabilityRevoked, Event, PermissionSet, RecordTags,
-    RoleCreated, RoleRemoved, RoleUpdated,
+    CapabilityDestroyed, CapabilityIssueOptions, CapabilityIssued, CapabilityRevoked, Event, PermissionSet,
+    RawRoleCreated, RawRoleDeleted, RawRoleUpdated, RoleCreated, RoleDeleted, RoleTags, RoleUpdated,
 };
 use crate::error::Error;
 
@@ -25,7 +25,7 @@ pub struct CreateRole {
     owner: IotaAddress,
     name: String,
     permissions: PermissionSet,
-    record_tags: Option<RecordTags>,
+    role_tags: Option<RoleTags>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
@@ -35,14 +35,14 @@ impl CreateRole {
         owner: IotaAddress,
         name: String,
         permissions: PermissionSet,
-        record_tags: Option<RecordTags>,
+        role_tags: Option<RoleTags>,
     ) -> Self {
         Self {
             trail_id,
             owner,
             name,
             permissions,
-            record_tags,
+            role_tags,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -57,7 +57,7 @@ impl CreateRole {
             self.owner,
             self.name.clone(),
             self.permissions.clone(),
-            self.record_tags.clone(),
+            self.role_tags.clone(),
         )
         .await
     }
@@ -88,10 +88,10 @@ impl Transaction for CreateRole {
         let event = events
             .data
             .iter()
-            .find_map(|data| serde_json::from_value::<Event<RoleCreated>>(data.parsed_json.clone()).ok())
+            .find_map(|data| bcs::from_bytes::<RawRoleCreated>(data.bcs.bytes()).ok().map(Into::into))
             .ok_or_else(|| Error::UnexpectedApiResponse("RoleCreated event not found".to_string()))?;
 
-        Ok(event.data)
+        Ok(event)
     }
 
     async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
@@ -108,7 +108,7 @@ pub struct UpdateRole {
     owner: IotaAddress,
     name: String,
     permissions: PermissionSet,
-    record_tags: Option<RecordTags>,
+    role_tags: Option<RoleTags>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
@@ -118,14 +118,14 @@ impl UpdateRole {
         owner: IotaAddress,
         name: String,
         permissions: PermissionSet,
-        record_tags: Option<RecordTags>,
+        role_tags: Option<RoleTags>,
     ) -> Self {
         Self {
             trail_id,
             owner,
             name,
             permissions,
-            record_tags,
+            role_tags,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -140,7 +140,7 @@ impl UpdateRole {
             self.owner,
             self.name.clone(),
             self.permissions.clone(),
-            self.record_tags.clone(),
+            self.role_tags.clone(),
         )
         .await
     }
@@ -171,10 +171,10 @@ impl Transaction for UpdateRole {
         let event = events
             .data
             .iter()
-            .find_map(|data| serde_json::from_value::<Event<RoleUpdated>>(data.parsed_json.clone()).ok())
+            .find_map(|data| bcs::from_bytes::<RawRoleUpdated>(data.bcs.bytes()).ok().map(Into::into))
             .ok_or_else(|| Error::UnexpectedApiResponse("RoleUpdated event not found".to_string()))?;
 
-        Ok(event.data)
+        Ok(event)
     }
 
     async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
@@ -215,7 +215,7 @@ impl DeleteRole {
 #[cfg_attr(feature = "send-sync", async_trait)]
 impl Transaction for DeleteRole {
     type Error = Error;
-    type Output = RoleRemoved;
+    type Output = RoleDeleted;
 
     async fn build_programmable_transaction<C>(&self, client: &C) -> Result<ProgrammableTransaction, Self::Error>
     where
@@ -236,10 +236,10 @@ impl Transaction for DeleteRole {
         let event = events
             .data
             .iter()
-            .find_map(|data| serde_json::from_value::<Event<RoleRemoved>>(data.parsed_json.clone()).ok())
-            .ok_or_else(|| Error::UnexpectedApiResponse("RoleRemoved event not found".to_string()))?;
+            .find_map(|data| bcs::from_bytes::<RawRoleDeleted>(data.bcs.bytes()).ok().map(Into::into))
+            .ok_or_else(|| Error::UnexpectedApiResponse("RoleDeleted event not found".to_string()))?;
 
-        Ok(event.data)
+        Ok(event)
     }
 
     async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
@@ -329,15 +329,22 @@ pub struct RevokeCapability {
     trail_id: ObjectID,
     owner: IotaAddress,
     capability_id: ObjectID,
+    capability_valid_until: Option<u64>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl RevokeCapability {
-    pub fn new(trail_id: ObjectID, owner: IotaAddress, capability_id: ObjectID) -> Self {
+    pub fn new(
+        trail_id: ObjectID,
+        owner: IotaAddress,
+        capability_id: ObjectID,
+        capability_valid_until: Option<u64>,
+    ) -> Self {
         Self {
             trail_id,
             owner,
             capability_id,
+            capability_valid_until,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -346,7 +353,14 @@ impl RevokeCapability {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        AccessOps::revoke_capability(client, self.trail_id, self.owner, self.capability_id).await
+        AccessOps::revoke_capability(
+            client,
+            self.trail_id,
+            self.owner,
+            self.capability_id,
+            self.capability_valid_until,
+        )
+        .await
     }
 }
 
@@ -526,15 +540,22 @@ pub struct RevokeInitialAdminCapability {
     trail_id: ObjectID,
     owner: IotaAddress,
     capability_id: ObjectID,
+    capability_valid_until: Option<u64>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl RevokeInitialAdminCapability {
-    pub fn new(trail_id: ObjectID, owner: IotaAddress, capability_id: ObjectID) -> Self {
+    pub fn new(
+        trail_id: ObjectID,
+        owner: IotaAddress,
+        capability_id: ObjectID,
+        capability_valid_until: Option<u64>,
+    ) -> Self {
         Self {
             trail_id,
             owner,
             capability_id,
+            capability_valid_until,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -543,7 +564,14 @@ impl RevokeInitialAdminCapability {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        AccessOps::revoke_initial_admin_capability(client, self.trail_id, self.owner, self.capability_id).await
+        AccessOps::revoke_initial_admin_capability(
+            client,
+            self.trail_id,
+            self.owner,
+            self.capability_id,
+            self.capability_valid_until,
+        )
+        .await
     }
 }
 
@@ -583,5 +611,50 @@ impl Transaction for RevokeInitialAdminCapability {
         C: CoreClientReadOnly + OptionalSync,
     {
         unreachable!()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CleanupRevokedCapabilities {
+    trail_id: ObjectID,
+    owner: IotaAddress,
+    cached_ptb: OnceCell<ProgrammableTransaction>,
+}
+
+impl CleanupRevokedCapabilities {
+    pub fn new(trail_id: ObjectID, owner: IotaAddress) -> Self {
+        Self {
+            trail_id,
+            owner,
+            cached_ptb: OnceCell::new(),
+        }
+    }
+
+    async fn make_ptb<C>(&self, client: &C) -> Result<ProgrammableTransaction, Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        AccessOps::cleanup_revoked_capabilities(client, self.trail_id, self.owner).await
+    }
+}
+
+#[cfg_attr(not(feature = "send-sync"), async_trait(?Send))]
+#[cfg_attr(feature = "send-sync", async_trait)]
+impl Transaction for CleanupRevokedCapabilities {
+    type Error = Error;
+    type Output = ();
+
+    async fn build_programmable_transaction<C>(&self, client: &C) -> Result<ProgrammableTransaction, Self::Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        self.cached_ptb.get_or_try_init(|| self.make_ptb(client)).await.cloned()
+    }
+
+    async fn apply<C>(self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        Ok(())
     }
 }

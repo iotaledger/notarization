@@ -5,6 +5,7 @@ use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::collection_types::LinkedTable;
 use iota_interaction::types::id::UID;
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
 use iota_interaction::types::transaction::Argument;
@@ -16,16 +17,13 @@ use super::permission::Permission;
 use crate::core::utils;
 use crate::core::utils::{deserialize_vec_map, deserialize_vec_set};
 use crate::error::Error;
-use crate::package;
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RoleMap {
     pub target_key: ObjectID,
     #[serde(deserialize_with = "deserialize_vec_map")]
     pub roles: HashMap<String, Role>,
     pub initial_admin_role_name: String,
-    #[serde(deserialize_with = "deserialize_vec_set")]
-    pub issued_capabilities: HashSet<ObjectID>,
+    pub revoked_capabilities: LinkedTable<ObjectID>,
     #[serde(deserialize_with = "deserialize_vec_set")]
     pub initial_admin_cap_ids: HashSet<ObjectID>,
     pub role_admin_permissions: RoleAdminPermissions,
@@ -36,7 +34,7 @@ pub struct RoleMap {
 pub struct Role {
     #[serde(deserialize_with = "deserialize_vec_set")]
     pub permissions: HashSet<Permission>,
-    pub data: Option<RecordTags>,
+    pub data: Option<RoleTags>,
 }
 
 /// Defines the permissions required to administer roles in this RoleMap.
@@ -62,42 +60,46 @@ pub struct CapabilityIssueOptions {
     pub valid_until_ms: Option<u64>,
 }
 
+/// Allowlisted record tags stored as role data on the Move side.
+///
+/// The Rust name stays `RecordTags` for API continuity, but it maps to the
+/// Move `record_tags::RoleTags` type.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
-pub struct RecordTags {
+pub struct RoleTags {
     #[serde(deserialize_with = "deserialize_vec_set")]
-    pub allowed_tags: HashSet<String>,
+    pub tags: HashSet<String>,
 }
 
-impl RecordTags {
-    pub fn new<I, S>(allowed_tags: I) -> Self
+impl RoleTags {
+    pub fn new<I, S>(tags: I) -> Self
     where
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
         Self {
-            allowed_tags: allowed_tags.into_iter().map(Into::into).collect(),
+            tags: tags.into_iter().map(Into::into).collect(),
         }
     }
 
     pub fn allows(&self, tag: &str) -> bool {
-        self.allowed_tags.contains(tag)
+        self.tags.contains(tag)
     }
 
     pub(crate) fn tag(package_id: ObjectID) -> TypeTag {
-        TypeTag::from_str(&format!("{package_id}::record_tags::RecordTags")).expect("invalid TypeTag for RecordTags")
+        TypeTag::from_str(&format!("{package_id}::record_tags::RoleTags")).expect("invalid TypeTag for RoleTags")
     }
 
     pub(in crate::core) fn to_ptb(&self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
-        let mut allowed_tags = self.allowed_tags.iter().cloned().collect::<Vec<_>>();
-        allowed_tags.sort();
-        let allowed_tags_arg = utils::ptb_pure(ptb, "allowed_tags", allowed_tags)?;
+        let mut tags = self.tags.iter().cloned().collect::<Vec<_>>();
+        tags.sort();
+        let tags_arg = utils::ptb_pure(ptb, "tags", tags)?;
 
         Ok(ptb.programmable_move_call(
             package_id,
             ident_str!("record_tags").into(),
-            ident_str!("new_record_tags").into(),
+            ident_str!("new_role_tags").into(),
             vec![],
-            vec![allowed_tags_arg],
+            vec![tags_arg],
         ))
     }
 }
@@ -113,10 +115,18 @@ pub struct Capability {
     pub valid_until: Option<u64>,
 }
 
+impl Capability {
+    pub(crate) fn type_tag(package_id: ObjectID) -> TypeTag {
+        TypeTag::from_str(format!("{package_id}::capability::Capability").as_str()).expect("failed to create type tag")
+    }
+
+    pub(crate) fn matches_target_and_role(&self, trail_id: ObjectID, valid_roles: &HashSet<String>) -> bool {
+        self.target_key == trail_id && valid_roles.contains(&self.role)
+    }
+}
+
 impl MoveType for Capability {
-    fn move_type(_: ObjectID) -> TypeTag {
-        let tf_components_package_id = package::tf_components_package_id();
-        TypeTag::from_str(format!("{tf_components_package_id}::capability::Capability").as_str())
-            .expect("failed to create type tag")
+    fn move_type(package: ObjectID) -> TypeTag {
+        Self::type_tag(package)
     }
 }

@@ -15,7 +15,6 @@ use crate::core::builder::AuditTrailBuilder;
 use crate::core::operations;
 use crate::core::types::{AuditTrailCreated, Event, OnChainAuditTrail};
 use crate::error::Error;
-use crate::package;
 
 /// Output of a create trail transaction.
 #[derive(Debug, Clone)]
@@ -69,11 +68,11 @@ impl CreateTrail {
                     .to_string(),
             )
         })?;
-        let tf_components_package_id = package::tf_components_package_id();
+        let tf_package_id = client.tf_components_package_id().expect("package ID is present");
 
         CreateOps::create_trail(CreateTrailArgs {
             audit_trail_package_id: client.package_id(),
-            tf_components_package_id,
+            tf_components_package_id: tf_package_id,
             admin,
             initial_record,
             locking_config,

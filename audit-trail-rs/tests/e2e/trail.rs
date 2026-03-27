@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use audit_trails::core::types::{
-    CapabilityIssueOptions, Data, ImmutableMetadata, InitialRecord, LockingConfig, LockingWindow, Permission,
-    RecordTags, TimeLock,
+    CapabilityIssueOptions, Data, ImmutableMetadata, InitialRecord, LockingConfig, LockingWindow, Permission, RoleTags,
+    TimeLock,
 };
 use iota_interaction::types::base_types::IotaAddress;
 use product_common::core_client::CoreClient;
@@ -450,7 +450,7 @@ async fn remove_record_tag_rejects_in_use_tag() -> anyhow::Result<()> {
             created.trail_id,
             "TaggedWriter",
             vec![Permission::AddRecord],
-            Some(RecordTags::new(["finance"])),
+            Some(RoleTags::new(["finance"])),
         )
         .await?;
     client
@@ -487,7 +487,7 @@ async fn remove_record_tag_rejects_role_only_usage() -> anyhow::Result<()> {
             created.trail_id,
             "TaggedWriter",
             vec![Permission::AddRecord],
-            Some(RecordTags::new(["finance"])),
+            Some(RoleTags::new(["finance"])),
         )
         .await?;
 
