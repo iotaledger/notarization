@@ -1,13 +1,19 @@
 // Copyright (c) 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-/// Audit Trails with role-based access control and timelock
+/// Audit Trails with external authorization via OperationCap
+///
 /// A trail is a tamper-proof, sequential chain of notarized records where each
 /// entry references its predecessor, ensuring verifiable continuity and
 /// integrity.
-module audit_trail::main;
+///
+/// Authorization is externalized — the trail stores a `trusted_source` ID pointing
+/// to an authority object (e.g. AccessControllerBridge). Protected operations require
+/// an `OperationCap` issued by that authority, verified by source binding.
+module audit_trail::audit_trail;
 
 use audit_trail::{
+    actions,
     locking::{
         Self,
         LockingConfig,
@@ -17,13 +23,13 @@ use audit_trail::{
         set_delete_trail_lock,
         set_write_lock
     },
-    permission::{Self, Permission},
+    marker::AuditTrailPerm,
     record::{Self, Record},
-    record_tags::{Self, RoleTags, TagRegistry}
+    record_tags::{Self, TagRegistry}
 };
-use iota::{clock::{Self, Clock}, event, linked_table::{Self, LinkedTable}, vec_set::VecSet};
+use iota::{clock::{Self, Clock}, event, linked_table::{Self, LinkedTable}};
 use std::string::String;
-use tf_components::{capability::Capability, role_map::{Self, RoleMap}, timelock::TimeLock};
+use tf_components::{operation_cap::{Self, OperationCap}, timelock::TimeLock};
 
 // ===== Errors =====
 #[error]
@@ -40,9 +46,6 @@ const ETrailWriteLocked: vector<u8> = b"The audit trail is write-locked";
 const EPackageVersionMismatch: vector<u8> =
     b"The package version of the trail does not match the expected version";
 #[error]
-const ERecordTagNotAllowed: vector<u8> =
-    b"The provided capability cannot create records with the requested tag";
-#[error]
 const ERecordTagNotDefined: vector<u8> = b"The requested tag is not defined for this audit trail";
 #[error]
 const ERecordTagAlreadyDefined: vector<u8> =
@@ -50,8 +53,24 @@ const ERecordTagAlreadyDefined: vector<u8> =
 #[error]
 const ERecordTagInUse: vector<u8> =
     b"The requested tag cannot be removed because it is already used by an existing record or role";
-// ===== Constants =====
-const INITIAL_ADMIN_ROLE_NAME: vector<u8> = b"Admin";
+#[error]
+const ETrustedSourceNotSet: vector<u8> =
+    b"The trail's trusted source has not been set";
+#[error]
+const ETargetMismatch: vector<u8> =
+    b"The OperationCap does not target this trail";
+#[error]
+const ESourceMismatch: vector<u8> =
+    b"The OperationCap was not issued by this trail's trusted source";
+#[error]
+const EPermissionDenied: vector<u8> =
+    b"The OperationCap does not grant the required permission";
+#[error]
+const EHolderMismatch: vector<u8> =
+    b"The OperationCap holder does not match the transaction sender";
+#[error]
+const ENotCreator: vector<u8> =
+    b"Only the trail creator can set the trusted source";
 
 // Package version, incremented when the package is updated
 const PACKAGE_VERSION: u64 = 1;
@@ -65,11 +84,12 @@ public struct ImmutableMetadata has copy, drop, store {
 }
 
 /// A shared, tamper-evident ledger for storing sequential records with
-/// role-based access control.
+/// external authorization via OperationCap.
 ///
 /// It maintains an ordered sequence of records, each assigned a unique
 /// auto-incrementing sequence number.
-/// Uses capability-based RBAC to manage access to the trail and its records.
+/// Authorization is externalized — the trail trusts an authority object
+/// identified by `trusted_source`.
 public struct AuditTrail<D: store + copy> has key, store {
     id: UID,
     /// Address that created this trail
@@ -84,14 +104,17 @@ public struct AuditTrail<D: store + copy> has key, store {
     tags: TagRegistry,
     /// Deletion locking rules
     locking_config: LockingConfig,
-    /// A list of role definitions consisting of a unique role specifier and a list of associated permissions
-    roles: RoleMap<Permission, RoleTags>,
     /// Set at creation, cannot be changed
     immutable_metadata: Option<ImmutableMetadata>,
-    /// Can be updated by holders of MetadataUpdate permission
+    /// Can be updated by holders of UpdateMetadata permission
     updatable_metadata: Option<String>,
     /// Package version
     version: u64,
+    /// The authority source this trail trusts.
+    /// Points to the AccessControllerBridge's ID (or any other authority).
+    /// None until explicitly set via set_trusted_source().
+    /// When None, all protected operations fail (trail is inert).
+    trusted_source: Option<ID>,
 }
 
 // ===== Events =====
@@ -132,25 +155,27 @@ public fun new_trail_metadata(name: String, description: Option<String>): Immuta
     ImmutableMetadata { name, description }
 }
 
+// ===== Internal Authorization =====
+
+/// Verify OperationCap against this trail's trusted source and required permission.
+fun assert_authorized<D: store + copy>(
+    self: &AuditTrail<D>,
+    cap: &OperationCap<AuditTrailPerm>,
+    required_action: u16,
+    ctx: &TxContext,
+) {
+    assert!(self.trusted_source.is_some(), ETrustedSourceNotSet);
+    assert!(operation_cap::target(cap) == self.id(), ETargetMismatch);
+    assert!(operation_cap::source(cap) == *self.trusted_source.borrow(), ESourceMismatch);
+    assert!(operation_cap::has_permission(cap, required_action), EPermissionDenied);
+    assert!(operation_cap::holder(cap) == ctx.sender(), EHolderMismatch);
+}
+
 // ===== Trail Creation =====
 
 /// Create a new audit trail with optional initial record
 ///
-/// Initial roles config
-/// --------------------
-/// Initializes the `roles` map with only one role, called "Admin" which is associated with the permissions
-/// * TrailDelete
-/// * CapabilitiesAdd
-/// * CapabilitiesRevoke
-/// * RolesAdd
-/// * RolesUpdate
-/// * RolesDelete
-///
-/// Returns
-/// -------
-/// * Capability with *Admin* role, allowing the creator to define custom
-///   roles and issue capabilities to other users.
-/// * Trail ID
+/// Returns the trail ID. The trail is inert until `set_trusted_source()` is called.
 public fun create<D: store + copy>(
     initial_record: Option<record::InitialRecord<D>>,
     locking_config: LockingConfig,
@@ -159,7 +184,7 @@ public fun create<D: store + copy>(
     tags: vector<String>,
     clock: &Clock,
     ctx: &mut TxContext,
-): (Capability, ID) {
+): ID {
     let creator = ctx.sender();
     let timestamp = clock::timestamp_ms(clock);
 
@@ -183,26 +208,6 @@ public fun create<D: store + copy>(
         initial_record.destroy_none();
     };
 
-    let role_admin_permissions = role_map::new_role_admin_permissions(
-        permission::add_roles(),
-        permission::delete_roles(),
-        permission::update_roles(),
-    );
-
-    let capability_admin_permissions = role_map::new_capability_admin_permissions(
-        permission::add_capabilities(),
-        permission::revoke_capabilities(),
-    );
-
-    let (roles, admin_cap) = role_map::new(
-        trail_id,
-        initial_admin_role_name(),
-        permission::admin_permissions(),
-        role_admin_permissions,
-        capability_admin_permissions,
-        ctx,
-    );
-
     let tags = record_tags::new_tag_registry(tags);
 
     let trail = AuditTrail {
@@ -213,10 +218,10 @@ public fun create<D: store + copy>(
         records,
         tags,
         locking_config,
-        roles,
         immutable_metadata: trail_metadata,
         updatable_metadata,
         version: PACKAGE_VERSION,
+        trusted_source: option::none(),
     };
 
     transfer::share_object(trail);
@@ -227,44 +232,32 @@ public fun create<D: store + copy>(
         timestamp,
     });
 
-    (admin_cap, trail_id)
+    trail_id
 }
 
-public fun initial_admin_role_name(): String {
-    INITIAL_ADMIN_ROLE_NAME.to_string()
+/// Set the trusted authority source for this trail.
+/// Only callable by the trail creator.
+///
+/// After this, the trail only accepts OperationCaps whose `source` matches
+/// the provided ID.
+public fun set_trusted_source<D: store + copy>(
+    self: &mut AuditTrail<D>,
+    trusted_source: ID,
+    ctx: &TxContext,
+) {
+    assert!(ctx.sender() == self.creator, ENotCreator);
+    self.trusted_source = option::some(trusted_source);
 }
 
 /// Migrate the trail to the latest package version
-entry fun migrate<D: store + copy>(
+public fun migrate<D: store + copy>(
     self: &mut AuditTrail<D>,
-    cap: &Capability,
-    clock: &Clock,
+    cap: &OperationCap<AuditTrailPerm>,
     ctx: &TxContext,
 ) {
     assert!(self.version < PACKAGE_VERSION, EPackageVersionMismatch);
-    self
-        .roles
-        .assert_capability_valid(
-            cap,
-            &permission::migrate_audit_trail(),
-            clock,
-            ctx,
-        );
+    assert_authorized(self, cap, actions::migrate(), ctx);
     self.version = PACKAGE_VERSION;
-}
-
-fun assert_record_tag_allowed<D: store + copy>(
-    self: &AuditTrail<D>,
-    cap: &Capability,
-    tag: &Option<String>,
-) {
-    if (tag.is_none()) {
-        return
-    };
-
-    let requested_tag = option::borrow(tag);
-    assert!(record_tags::contains(&self.tags, requested_tag), ERecordTagNotDefined);
-    assert!(record_tags::role_allows(&self.roles, cap, requested_tag), ERecordTagNotAllowed);
 }
 
 // ===== Record Operations =====
@@ -274,7 +267,7 @@ fun assert_record_tag_allowed<D: store + copy>(
 /// Records are added sequentially with auto-assigned sequence numbers.
 public fun add_record<D: store + copy>(
     self: &mut AuditTrail<D>,
-    cap: &Capability,
+    cap: &OperationCap<AuditTrailPerm>,
     stored_data: D,
     record_metadata: Option<String>,
     record_tag: Option<String>,
@@ -282,16 +275,12 @@ public fun add_record<D: store + copy>(
     ctx: &mut TxContext,
 ) {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    self
-        .roles
-        .assert_capability_valid(
-            cap,
-            &permission::add_record(),
-            clock,
-            ctx,
-        );
+    assert_authorized(self, cap, actions::add_record(), ctx);
     assert!(!locking::is_write_locked(&self.locking_config, clock), ETrailWriteLocked);
-    assert_record_tag_allowed(self, cap, &record_tag);
+
+    if (record_tag.is_some()) {
+        assert!(record_tags::contains(&self.tags, option::borrow(&record_tag)), ERecordTagNotDefined);
+    };
 
     let caller = ctx.sender();
     let timestamp = clock::timestamp_ms(clock);
@@ -326,23 +315,15 @@ public fun add_record<D: store + copy>(
 /// Delete a record from the trail by sequence number
 ///
 /// The record must not be locked (based on the trail's locking configuration).
-/// Requires the DeleteRecord permission.
 public fun delete_record<D: store + copy + drop>(
     self: &mut AuditTrail<D>,
-    cap: &Capability,
+    cap: &OperationCap<AuditTrailPerm>,
     sequence_number: u64,
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    self
-        .roles
-        .assert_capability_valid(
-            cap,
-            &permission::delete_record(),
-            clock,
-            ctx,
-        );
+    assert_authorized(self, cap, actions::delete_record(), ctx);
     assert!(linked_table::contains(&self.records, sequence_number), ERecordNotFound);
     assert!(!self.is_record_locked(sequence_number, clock), ERecordLocked);
 
@@ -366,24 +347,17 @@ public fun delete_record<D: store + copy + drop>(
 
 /// Delete up to `limit` records from the front of the trail.
 ///
-/// Requires `DeleteAllRecords` permission. This operation bypasses record locks.
+/// This operation bypasses record locks.
 /// Returns the number of records deleted in this batch.
 public fun delete_records_batch<D: store + copy + drop>(
     self: &mut AuditTrail<D>,
-    cap: &Capability,
+    cap: &OperationCap<AuditTrailPerm>,
     limit: u64,
     clock: &Clock,
     ctx: &mut TxContext,
 ): u64 {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    self
-        .roles
-        .assert_capability_valid(
-            cap,
-            &permission::delete_all_records(),
-            clock,
-            ctx,
-        );
+    assert_authorized(self, cap, actions::delete_all_records(), ctx);
 
     let mut deleted = 0;
     let caller = ctx.sender();
@@ -417,22 +391,15 @@ public fun delete_records_batch<D: store + copy + drop>(
 
 /// Delete an empty audit trail.
 ///
-/// Requires `DeleteAuditTrail` permission and aborts if records still exist.
+/// Aborts if records still exist.
 public fun delete_audit_trail<D: store + copy>(
     self: AuditTrail<D>,
-    cap: &Capability,
+    cap: &OperationCap<AuditTrailPerm>,
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    self
-        .roles
-        .assert_capability_valid(
-            cap,
-            &permission::delete_audit_trail(),
-            clock,
-            ctx,
-        );
+    assert_authorized(&self, cap, actions::delete_audit_trail(), ctx);
     assert!(!locking::is_delete_trail_locked(&self.locking_config, clock), ETrailDeleteLocked);
     assert!(linked_table::is_empty(&self.records), ETrailNotEmpty);
 
@@ -447,13 +414,12 @@ public fun delete_audit_trail<D: store + copy>(
         records,
         tags,
         locking_config: _,
-        roles,
         immutable_metadata: _,
         updatable_metadata: _,
         version: _,
+        trusted_source: _,
     } = self;
 
-    roles.destroy();
     linked_table::destroy_empty(records);
     tags.destroy();
 
@@ -485,118 +451,75 @@ public fun is_record_locked<D: store + copy>(
     )
 }
 
-/// Update the locking configuration. Requires `UpdateLockingConfig` permission.
+/// Update the locking configuration.
 public fun update_locking_config<D: store + copy>(
     self: &mut AuditTrail<D>,
-    cap: &Capability,
+    cap: &OperationCap<AuditTrailPerm>,
     new_config: LockingConfig,
-    clock: &Clock,
-    ctx: &mut TxContext,
+    ctx: &TxContext,
 ) {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    self
-        .roles
-        .assert_capability_valid(
-            cap,
-            &permission::update_locking_config(),
-            clock,
-            ctx,
-        );
+    assert_authorized(self, cap, actions::update_locking_config(), ctx);
     set_config(&mut self.locking_config, new_config);
 }
 
 /// Update the `delete_record_lock` locking configuration
 public fun update_delete_record_window<D: store + copy>(
     self: &mut AuditTrail<D>,
-    cap: &Capability,
+    cap: &OperationCap<AuditTrailPerm>,
     new_delete_record_lock: LockingWindow,
-    clock: &Clock,
-    ctx: &mut TxContext,
+    ctx: &TxContext,
 ) {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    self
-        .roles
-        .assert_capability_valid(
-            cap,
-            &permission::update_locking_config_for_delete_record(),
-            clock,
-            ctx,
-        );
+    assert_authorized(self, cap, actions::update_locking_config_for_delete_record(), ctx);
     set_delete_record_window(&mut self.locking_config, new_delete_record_lock);
 }
 
 /// Update the `delete_trail_lock` locking configuration.
 public fun update_delete_trail_lock<D: store + copy>(
     self: &mut AuditTrail<D>,
-    cap: &Capability,
+    cap: &OperationCap<AuditTrailPerm>,
     new_delete_trail_lock: TimeLock,
-    clock: &Clock,
-    ctx: &mut TxContext,
+    ctx: &TxContext,
 ) {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    self
-        .roles
-        .assert_capability_valid(
-            cap,
-            &permission::update_locking_config_for_delete_trail(),
-            clock,
-            ctx,
-        );
+    assert_authorized(self, cap, actions::update_locking_config_for_delete_trail(), ctx);
     set_delete_trail_lock(&mut self.locking_config, new_delete_trail_lock);
 }
 
 /// Update the `write_lock` locking configuration.
 public fun update_write_lock<D: store + copy>(
     self: &mut AuditTrail<D>,
-    cap: &Capability,
+    cap: &OperationCap<AuditTrailPerm>,
     new_write_lock: TimeLock,
-    clock: &Clock,
-    ctx: &mut TxContext,
+    ctx: &TxContext,
 ) {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    self
-        .roles
-        .assert_capability_valid(
-            cap,
-            &permission::update_locking_config_for_write(),
-            clock,
-            ctx,
-        );
+    assert_authorized(self, cap, actions::update_locking_config_for_write(), ctx);
     set_write_lock(&mut self.locking_config, new_write_lock);
 }
 
 /// Update the trail's mutable metadata
 public fun update_metadata<D: store + copy>(
     self: &mut AuditTrail<D>,
-    cap: &Capability,
+    cap: &OperationCap<AuditTrailPerm>,
     new_metadata: Option<String>,
-    clock: &Clock,
-    ctx: &mut TxContext,
+    ctx: &TxContext,
 ) {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    self
-        .roles
-        .assert_capability_valid(
-            cap,
-            &permission::update_metadata(),
-            clock,
-            ctx,
-        );
+    assert_authorized(self, cap, actions::update_metadata(), ctx);
     self.updatable_metadata = new_metadata;
 }
 
 /// Adds a new record tag to the trail registry.
 public fun add_record_tag<D: store + copy>(
     self: &mut AuditTrail<D>,
-    cap: &Capability,
+    cap: &OperationCap<AuditTrailPerm>,
     tag: String,
-    clock: &Clock,
     ctx: &TxContext,
 ) {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-
-    self.roles.assert_capability_valid(cap, &permission::add_record_tags(), clock, ctx);
-
+    assert_authorized(self, cap, actions::add_record_tags(), ctx);
     assert!(!self.tags.contains(&tag), ERecordTagAlreadyDefined);
     self.tags.insert_tag(tag, 0);
 }
@@ -604,280 +527,15 @@ public fun add_record_tag<D: store + copy>(
 /// Removes a record tag from the trail registry if it is not used by any record.
 public fun remove_record_tag<D: store + copy>(
     self: &mut AuditTrail<D>,
-    cap: &Capability,
+    cap: &OperationCap<AuditTrailPerm>,
     tag: String,
-    clock: &Clock,
     ctx: &TxContext,
 ) {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-
-    self.roles.assert_capability_valid(cap, &permission::delete_record_tags(), clock, ctx);
-
+    assert_authorized(self, cap, actions::delete_record_tags(), ctx);
     assert!(self.tags.contains(&tag), ERecordTagNotDefined);
     assert!(!self.tags.is_in_use(&tag), ERecordTagInUse);
-
     self.tags.remove_tag(&tag);
-}
-
-// ===== Role and Capability Administration =====
-
-/// Creates a new role with the provided permissions.
-public fun create_role<D: store + copy>(
-    self: &mut AuditTrail<D>,
-    cap: &Capability,
-    role: String,
-    permissions: VecSet<Permission>,
-    role_tags: Option<RoleTags>,
-    clock: &Clock,
-    ctx: &mut TxContext,
-) {
-    assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-
-    assert!(self.tags.contains_all_role_tags(&role_tags), ERecordTagNotDefined);
-
-    role_map::create_role(
-        self.access_mut(),
-        cap,
-        role,
-        permissions,
-        copy role_tags,
-        clock,
-        ctx,
-    );
-
-    if (role_tags.is_some()) {
-        let tags = role_tags.borrow().tags().keys();
-        let mut i = 0;
-        let tag_count = tags.length();
-
-        while (i < tag_count) {
-            self.tags.increment_usage_count(&tags[i]);
-            i = i + 1;
-        };
-    };
-}
-
-/// Updates permissions for an existing role.
-public fun update_role_permissions<D: store + copy>(
-    self: &mut AuditTrail<D>,
-    cap: &Capability,
-    role: String,
-    new_permissions: VecSet<Permission>,
-    role_tags: Option<RoleTags>,
-    clock: &Clock,
-    ctx: &mut TxContext,
-) {
-    assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-
-    assert!(self.tags.contains_all_role_tags(&role_tags), ERecordTagNotDefined);
-    let old_record_tags = *role_map::get_role_data(self.access(), &role);
-    role_map::update_role(
-        self.access_mut(),
-        cap,
-        &role,
-        new_permissions,
-        copy role_tags,
-        clock,
-        ctx,
-    );
-
-    if (old_record_tags.is_some()) {
-        let tags = old_record_tags.borrow().tags().keys();
-        let mut i = 0;
-        let tag_count = tags.length();
-
-        while (i < tag_count) {
-            self.tags.decrement_usage_count(&tags[i]);
-            i = i + 1;
-        };
-    };
-
-    if (role_tags.is_some()) {
-        let tags = role_tags.borrow().tags().keys();
-        let mut i = 0;
-        let tag_count = tags.length();
-
-        while (i < tag_count) {
-            self.tags.increment_usage_count(&tags[i]);
-            i = i + 1;
-        };
-    };
-}
-
-/// Deletes an existing role.
-public fun delete_role<D: store + copy>(
-    self: &mut AuditTrail<D>,
-    cap: &Capability,
-    role: String,
-    clock: &Clock,
-    ctx: &mut TxContext,
-) {
-    assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    let old_record_tags = *role_map::get_role_data(self.access(), &role);
-    role_map::delete_role(self.access_mut(), cap, &role, clock, ctx);
-
-    if (old_record_tags.is_some()) {
-        let tags = old_record_tags.borrow().tags().keys();
-        let mut i = 0;
-        let tag_count = tags.length();
-
-        while (i < tag_count) {
-            self.tags.decrement_usage_count(&tags[i]);
-            i = i + 1;
-        };
-    };
-}
-
-/// Issues a new capability for an existing role.
-///
-/// The capability object is transferred to `issued_to` if provided, otherwise to the caller.
-public fun new_capability<D: store + copy>(
-    self: &mut AuditTrail<D>,
-    cap: &Capability,
-    role: String,
-    issued_to: Option<address>,
-    valid_from: Option<u64>,
-    valid_until: Option<u64>,
-    clock: &Clock,
-    ctx: &mut TxContext,
-) {
-    assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-
-    let recipient = if (issued_to.is_some()) {
-        let address_ref = issued_to.borrow();
-        *address_ref
-    } else {
-        ctx.sender()
-    };
-
-    let new_cap = role_map::new_capability(
-        self.access_mut(),
-        cap,
-        &role,
-        issued_to,
-        valid_from,
-        valid_until,
-        clock,
-        ctx,
-    );
-    transfer::public_transfer(new_cap, recipient);
-}
-
-/// Revokes an issued capability by ID.
-public fun revoke_capability<D: store + copy>(
-    self: &mut AuditTrail<D>,
-    cap: &Capability,
-    cap_to_revoke: ID,
-    cap_to_revoke_valid_until: Option<u64>,
-    clock: &Clock,
-    ctx: &TxContext,
-) {
-    assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    role_map::revoke_capability(
-        self.access_mut(),
-        cap,
-        cap_to_revoke,
-        cap_to_revoke_valid_until,
-        clock,
-        ctx,
-    );
-}
-
-/// Destroys a capability object.
-///
-/// Requires a capability with `RevokeCapabilities` permission.
-public fun destroy_capability<D: store + copy>(
-    self: &mut AuditTrail<D>,
-    cap: &Capability,
-    cap_to_destroy: Capability,
-    clock: &Clock,
-    ctx: &mut TxContext,
-) {
-    assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    self
-        .roles
-        .assert_capability_valid(
-            cap,
-            &permission::revoke_capabilities(),
-            clock,
-            ctx,
-        );
-    role_map::destroy_capability(self.access_mut(), cap_to_destroy);
-}
-
-/// Destroys an initial admin capability.
-///
-/// Self-service: the owner passes in their own initial admin capability to destroy it.
-/// No additional authorization is required.
-///
-/// WARNING: If all initial admin capabilities are destroyed, the trail will be permanently
-/// sealed with no admin access possible.
-public fun destroy_initial_admin_capability<D: store + copy>(
-    self: &mut AuditTrail<D>,
-    cap_to_destroy: Capability,
-) {
-    assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    role_map::destroy_initial_admin_capability(self.access_mut(), cap_to_destroy);
-}
-
-/// Revokes an initial admin capability by ID.
-///
-/// Requires a capability with `RevokeCapabilities` permission.
-///
-/// WARNING: If all initial admin capabilities are revoked, the trail will be permanently
-/// sealed with no admin access possible.
-public fun revoke_initial_admin_capability<D: store + copy>(
-    self: &mut AuditTrail<D>,
-    cap: &Capability,
-    cap_to_revoke: ID,
-    cap_to_revoke_valid_until: Option<u64>,
-    clock: &Clock,
-    ctx: &mut TxContext,
-) {
-    assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    role_map::revoke_initial_admin_capability(
-        self.access_mut(),
-        cap,
-        cap_to_revoke,
-        cap_to_revoke_valid_until,
-        clock,
-        ctx,
-    );
-}
-
-/// Remove expired entries from the `revoked_capabilities` denylist.
-///
-/// Iterates through the revoked capabilities list and removes every entry whose
-/// `valid_until` timestamp is **non-zero** and **less than** the current clock time,
-/// because those capabilities are already naturally expired and no longer need to
-/// occupy space in the denylist.
-///
-/// Entries with `valid_until == 0` (i.e. capabilities that had no expiry) are kept,
-/// since they remain potentially valid and must stay on the denylist.
-///
-/// Parameters
-/// ----------
-/// - cap: Reference to the capability used to authorize this operation.
-///   Needs to grant the `CapabilityAdminPermissions::revoke` permission.
-/// - clock: Reference to a Clock instance for obtaining the current timestamp.
-/// - ctx: Reference to the transaction context.
-///
-/// Errors:
-/// - Aborts with any error documented by `assert_capability_valid` if the provided capability fails authorization checks.
-public fun cleanup_revoked_capabilities<D: store + copy>(
-    self: &mut AuditTrail<D>,
-    cap: &Capability,
-    clock: &Clock,
-    ctx: &TxContext,
-) {
-    assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    self
-        .access_mut()
-        .cleanup_revoked_capabilities(
-            cap,
-            clock,
-            ctx,
-        );
 }
 
 // ===== Trail Query Functions =====
@@ -936,6 +594,11 @@ public fun tags<D: store + copy>(self: &AuditTrail<D>): &TagRegistry {
     &self.tags
 }
 
+/// Get the trusted source ID
+public fun trusted_source<D: store + copy>(self: &AuditTrail<D>): &Option<ID> {
+    &self.trusted_source
+}
+
 /// Check if the trail is empty
 public fun is_empty<D: store + copy>(self: &AuditTrail<D>): bool {
     linked_table::is_empty(&self.records)
@@ -970,19 +633,4 @@ public fun has_record<D: store + copy>(self: &AuditTrail<D>, sequence_number: u6
 public fun records<D: store + copy>(self: &AuditTrail<D>): &LinkedTable<u64, Record<D>> {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
     &self.records
-}
-// ===== Access Control Functions =====
-
-/// Returns a reference to the RoleMap managing access (roles and capabilities) for the audit trail.
-public fun access<D: store + copy>(self: &AuditTrail<D>): &RoleMap<Permission, RoleTags> {
-    assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    &self.roles
-}
-
-/// Returns a mutable reference to the RoleMap managing access (roles and capabilities) for the audit trail.
-public(package) fun access_mut<D: store + copy>(
-    self: &mut AuditTrail<D>,
-): &mut RoleMap<Permission, RoleTags> {
-    assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
-    &mut self.roles
 }

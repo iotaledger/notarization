@@ -4,14 +4,12 @@
 /// Record tag types and helper predicates for audit trails.
 module audit_trail::record_tags;
 
-use audit_trail::permission::Permission;
 use iota::{vec_map::{Self, VecMap}, vec_set::{Self, VecSet}};
 use std::string::String;
-use tf_components::{capability::Capability, role_map::{Self, RoleMap}};
 
 // ----------- RoleTags -------
 
-/// Stores all record tag related data associated with a role in the RoleMap.
+/// Stores all record tag related data associated with a role.
 /// Contains a list of allowlisted tags for the role.
 public struct RoleTags has copy, drop, store {
     tags: VecSet<String>,
@@ -134,21 +132,4 @@ public(package) fun decrement_usage_count(self: &mut TagRegistry, tag: &String) 
 /// Returns false if the tag is not contained in the registry.
 public(package) fun is_in_use(self: &TagRegistry, tag: &String): bool {
     (*self.usage_count(tag).borrow_with_default(&0)) > 0
-}
-
-// ----------- RoleMap related -------
-
-/// Returns true when the capability's role data allows the requested tag.
-public(package) fun role_allows(
-    roles: &RoleMap<Permission, RoleTags>,
-    cap: &Capability,
-    tag: &String,
-): bool {
-    let role_tags = role_map::get_role_data(roles, cap.role());
-    if (!role_tags.is_some()) {
-        return false
-    };
-
-    let tags = &option::borrow(role_tags).tags;
-    iota::vec_set::contains(tags, tag)
 }

@@ -72,9 +72,9 @@ impl CreateOps {
         };
         let clock = utils::get_clock_ref(&mut ptb);
 
-        let result = ptb.programmable_move_call(
+        ptb.programmable_move_call(
             audit_trail_package_id,
-            ident_str!("main").into(),
+            ident_str!("audit_trail").into(),
             ident_str!("create").into(),
             vec![data_tag],
             vec![
@@ -86,12 +86,6 @@ impl CreateOps {
                 clock,
             ],
         );
-
-        let cap = match result {
-            Argument::Result(idx) => Argument::NestedResult(idx, 0),
-            _ => unreachable!("programmable_move_call should always return Argument::Result"),
-        };
-        ptb.transfer_arg(admin, cap);
 
         Ok(ptb.finish())
     }

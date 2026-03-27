@@ -75,7 +75,7 @@ impl ImmutableMetadata {
     }
 
     pub(in crate::core) fn tag(package_id: ObjectID) -> TypeTag {
-        TypeTag::from_str(&format!("{package_id}::main::ImmutableMetadata"))
+        TypeTag::from_str(&format!("{package_id}::audit_trail::ImmutableMetadata"))
             .expect("invalid TypeTag for ImmutableMetadata")
     }
 
@@ -88,7 +88,7 @@ impl ImmutableMetadata {
 
         Ok(ptb.programmable_move_call(
             package_id,
-            ident_str!("main").into(),
+            ident_str!("audit_trail").into(),
             ident_str!("new_trail_metadata").into(),
             vec![],
             vec![name, description],

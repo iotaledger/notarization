@@ -1,10 +1,10 @@
 #[test_only]
 module audit_trail::test_utils;
 
-use audit_trail::{locking, main::{Self, AuditTrail}, record::{Self, Data}};
-use iota::{clock::{Self, Clock}, test_scenario::{Self as ts, Scenario}};
+use audit_trail::{actions, locking, audit_trail::{Self as at, AuditTrail}, marker::AuditTrailPerm, record::{Self, Data}};
+use iota::{clock::{Self, Clock}, test_scenario::{Self as ts, Scenario}, vec_set};
 use std::string;
-use tf_components::{capability::Capability, role_map::RoleMap};
+use tf_components::operation_cap::{Self, OperationCap};
 
 const INITIAL_TIME_FOR_TESTING: u64 = 1234567;
 
@@ -33,12 +33,13 @@ public(package) fun initial_time_for_testing(): u64 {
     INITIAL_TIME_FOR_TESTING
 }
 
-/// Setup a test audit trail with optional initial data
+/// Setup a test audit trail with optional initial data.
+/// Returns the trail ID and the authority UID used to issue OperationCaps.
 public(package) fun setup_test_audit_trail(
     scenario: &mut Scenario,
     locking_config: locking::LockingConfig,
     initial_data: Option<record::Data>,
-): (Capability, iota::object::ID) {
+): (UID, iota::object::ID) {
     setup_test_audit_trail_impl(scenario, locking_config, initial_data, vector[])
 }
 
@@ -48,7 +49,7 @@ public(package) fun setup_test_audit_trail_with_tags(
     locking_config: locking::LockingConfig,
     initial_data: Option<record::Data>,
     available_record_tags: vector<string::String>,
-): (Capability, iota::object::ID) {
+): (UID, iota::object::ID) {
     setup_test_audit_trail_impl(scenario, locking_config, initial_data, available_record_tags)
 }
 
@@ -57,23 +58,8 @@ public(package) fun setup_test_data_audit_trail(
     scenario: &mut Scenario,
     locking_config: locking::LockingConfig,
     initial_data: Option<TestData>,
-): (Capability, iota::object::ID) {
+): (UID, iota::object::ID) {
     setup_test_audit_trail_impl(scenario, locking_config, initial_data, vector[])
-}
-
-/// Setup a test audit trail backed by `TestData` with available record tags.
-public(package) fun setup_test_data_audit_trail_with_tags(
-    scenario: &mut Scenario,
-    locking_config: locking::LockingConfig,
-    initial_data: Option<TestData>,
-    available_record_tags: vector<string::String>,
-): (Capability, iota::object::ID) {
-    setup_test_audit_trail_impl(
-        scenario,
-        locking_config,
-        initial_data,
-        available_record_tags,
-    )
 }
 
 fun setup_test_audit_trail_impl<D: store + copy + drop>(
@@ -81,12 +67,12 @@ fun setup_test_audit_trail_impl<D: store + copy + drop>(
     locking_config: locking::LockingConfig,
     initial_data: Option<D>,
     available_record_tags: vector<string::String>,
-): (Capability, iota::object::ID) {
-    let (admin_cap, trail_id) = {
+): (UID, iota::object::ID) {
+    let trail_id = {
         let mut clock = clock::create_for_testing(ts::ctx(scenario));
         clock.set_for_testing(INITIAL_TIME_FOR_TESTING);
 
-        let trail_metadata = main::new_trail_metadata(
+        let trail_metadata = at::new_trail_metadata(
             string::utf8(b"Setup Test Trail"),
             option::some(string::utf8(b"Setup Test Trail Description")),
         );
@@ -104,7 +90,7 @@ fun setup_test_audit_trail_impl<D: store + copy + drop>(
             option::none()
         };
 
-        let (admin_cap, trail_id) = main::create<D>(
+        let trail_id = at::create<D>(
             initial_record,
             locking_config,
             option::some(trail_metadata),
@@ -115,118 +101,102 @@ fun setup_test_audit_trail_impl<D: store + copy + drop>(
         );
 
         clock::destroy_for_testing(clock);
-        (admin_cap, trail_id)
+        trail_id
     };
 
-    (admin_cap, trail_id)
+    // Create authority UID and bind trail to it
+    let authority_uid = object::new(ts::ctx(scenario));
+    let authority_id = object::uid_to_inner(&authority_uid);
+
+    // Bind trail to authority in next tx
+    let sender = ts::ctx(scenario).sender();
+    ts::next_tx(scenario, sender);
+    {
+        let mut trail = ts::take_shared<AuditTrail<D>>(scenario);
+        at::set_trusted_source(&mut trail, authority_id, ts::ctx(scenario));
+        ts::return_shared(trail);
+    };
+
+    (authority_uid, trail_id)
 }
 
-/// Create a new unrestricted capability with a specific role without any
-/// address, valid_from, or valid_until restrictions.
-///
-/// Returns the newly created capability.
-///
-/// Sends a CapabilityIssued event upon successful creation.
-///
-/// Errors:
-/// - Aborts with EPermissionDenied if the provided capability does not have the permission specified with `CapabilityAdminPermissions::add`.
-/// - Aborts with ERoleDoesNotExist if the specified role does not exist in the role_map.
-public fun new_capability_without_restrictions<P: copy + drop, D: copy + drop>(
-    role_map: &mut RoleMap<P, D>,
-    cap: &Capability,
-    role: &string::String,
-    clock: &Clock,
-    ctx: &mut TxContext,
-): Capability {
-    role_map.new_capability(
-        cap,
-        role,
-        std::option::none(),
-        std::option::none(),
-        std::option::none(),
-        clock,
-        ctx,
+/// Create an OperationCap for testing with the given permissions.
+public(package) fun create_test_cap(
+    authority_uid: &UID,
+    trail_id: ID,
+    permissions: vector<u16>,
+    holder: address,
+): OperationCap<AuditTrailPerm> {
+    let perms = vec_set::from_keys(permissions);
+    operation_cap::new<AuditTrailPerm>(authority_uid, trail_id, perms, holder)
+}
+
+/// Create an OperationCap with all record-related permissions.
+public(package) fun create_record_admin_cap(
+    authority_uid: &UID,
+    trail_id: ID,
+    holder: address,
+): OperationCap<AuditTrailPerm> {
+    create_test_cap(
+        authority_uid,
+        trail_id,
+        vector[
+            actions::add_record(),
+            actions::correct_record(),
+            actions::delete_record(),
+            actions::delete_all_records(),
+        ],
+        holder,
     )
 }
 
-/// Create a new capability with a specific role that expires at a given timestamp (milliseconds since Unix epoch).
-///
-/// Returns the newly created capability.
-///
-/// Sends a CapabilityIssued event upon successful creation.
-///
-/// Errors:
-/// - Aborts with EPermissionDenied if the provided capability does not have the permission specified with `CapabilityAdminPermissions::add`.
-/// - Aborts with ERoleDoesNotExist if the specified role does not exist in the role_map.
-public(package) fun new_capability_valid_until<P: copy + drop, D: copy + drop>(
-    role_map: &mut RoleMap<P, D>,
-    cap: &Capability,
-    role: &string::String,
-    valid_until: u64,
-    clock: &Clock,
-    ctx: &mut TxContext,
-): Capability {
-    role_map.new_capability(
-        cap,
-        role,
-        std::option::none(),
-        std::option::none(),
-        std::option::some(valid_until),
-        clock,
-        ctx,
+/// Create an OperationCap with all permissions (admin-like).
+public(package) fun create_full_admin_cap(
+    authority_uid: &UID,
+    trail_id: ID,
+    holder: address,
+): OperationCap<AuditTrailPerm> {
+    create_test_cap(
+        authority_uid,
+        trail_id,
+        vector[
+            actions::add_record(),
+            actions::correct_record(),
+            actions::delete_record(),
+            actions::delete_all_records(),
+            actions::update_metadata(),
+            actions::delete_metadata(),
+            actions::update_locking_config(),
+            actions::update_locking_config_for_delete_record(),
+            actions::update_locking_config_for_delete_trail(),
+            actions::update_locking_config_for_write(),
+            actions::add_record_tags(),
+            actions::delete_record_tags(),
+            actions::delete_audit_trail(),
+            actions::migrate(),
+        ],
+        holder,
     )
 }
 
-/// Create a new capability with a specific role restricted to an address.
-/// Optionally set an expiration time (milliseconds since Unix epoch).
-///
-/// Returns the newly created capability.
-///
-/// Sends a CapabilityIssued event upon successful creation.
-///
-/// Errors:
-/// - Aborts with EPermissionDenied if the provided capability does not have the permission specified with `CapabilityAdminPermissions::add`.
-/// - Aborts with ERoleDoesNotExist if the specified role does not exist in the role_map.
-public fun new_capability_for_address<P: copy + drop, D: copy + drop>(
-    role_map: &mut RoleMap<P, D>,
-    cap: &Capability,
-    role: &string::String,
-    issued_to: address,
-    valid_until: Option<u64>,
-    clock: &Clock,
-    ctx: &mut TxContext,
-): Capability {
-    role_map.new_capability(
-        cap,
-        role,
-        std::option::some(issued_to),
-        std::option::none(),
-        valid_until,
-        clock,
-        ctx,
-    )
+/// Destroy an OperationCap for testing cleanup.
+public(package) fun destroy_test_cap(
+    authority_uid: &UID,
+    cap: OperationCap<AuditTrailPerm>,
+) {
+    operation_cap::destroy(authority_uid, cap);
 }
 
-public(package) fun fetch_capability_trail_and_clock(
+/// Fetch trail and clock for a test transaction.
+public(package) fun fetch_trail_and_clock(
     scenario: &mut Scenario,
-): (Capability, AuditTrail<Data>, Clock) {
-    let admin_cap = ts::take_from_sender<Capability>(scenario);
+): (AuditTrail<Data>, Clock) {
     let trail = ts::take_shared<AuditTrail<Data>>(scenario);
     let clock = iota::clock::create_for_testing(ts::ctx(scenario));
-    (admin_cap, trail, clock)
+    (trail, clock)
 }
 
-public(package) fun cleanup_capability_trail_and_clock(
-    scenario: &Scenario,
-    cap: Capability,
-    trail: AuditTrail<Data>,
-    clock: Clock,
-) {
-    iota::clock::destroy_for_testing(clock);
-    ts::return_to_sender(scenario, cap);
-    ts::return_shared(trail);
-}
-
+/// Cleanup trail and clock after test.
 public(package) fun cleanup_trail_and_clock(trail: AuditTrail<Data>, clock: Clock) {
     iota::clock::destroy_for_testing(clock);
     ts::return_shared(trail);

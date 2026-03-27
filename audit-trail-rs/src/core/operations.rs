@@ -173,7 +173,7 @@ where
     let function = Identifier::from_str(method.as_ref())
         .map_err(|e| Error::InvalidArgument(format!("Invalid method name '{}': {e}", method.as_ref())))?;
 
-    ptb.programmable_move_call(client.package_id(), ident_str!("main").into(), function, tag, args);
+    ptb.programmable_move_call(client.package_id(), ident_str!("audit_trail").into(), function, tag, args);
 
     Ok(ptb.finish())
 }
@@ -203,7 +203,7 @@ where
     let function = iota_interaction::types::Identifier::from_str(method.as_ref())
         .map_err(|e| Error::InvalidArgument(format!("Invalid method name '{}': {e}", method.as_ref())))?;
 
-    ptb.programmable_move_call(client.package_id(), ident_str!("main").into(), function, tag, args);
+    ptb.programmable_move_call(client.package_id(), ident_str!("audit_trail").into(), function, tag, args);
 
     Ok(ptb.finish())
 }
