@@ -167,7 +167,9 @@ impl EventPermission {
             "Migrate" => Ok(Permission::Migrate),
             "AddRecordTags" => Ok(Permission::AddRecordTags),
             "DeleteRecordTags" => Ok(Permission::DeleteRecordTags),
-            other => Err(E::custom(format!("unknown permission variant `{other}` in event payload"))),
+            other => Err(E::custom(format!(
+                "unknown permission variant `{other}` in event payload"
+            ))),
         }
     }
 }
