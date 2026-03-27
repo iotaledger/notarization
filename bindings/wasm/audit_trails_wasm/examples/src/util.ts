@@ -1,10 +1,6 @@
 // Copyright 2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-import { Ed25519KeypairSigner } from "@iota/iota-interaction-ts/node/test_utils";
-import { IotaClient } from "@iota/iota-sdk/client";
-import { getFaucetHost, requestIotaFromFaucetV0 } from "@iota/iota-sdk/faucet";
-import { Ed25519Keypair } from "@iota/iota-sdk/keypairs/ed25519";
 import {
     AuditTrailClient,
     AuditTrailClientReadOnly,
@@ -12,6 +8,10 @@ import {
     LockingWindow,
     TimeLock,
 } from "@iota/audit-trails/node";
+import { Ed25519KeypairSigner } from "@iota/iota-interaction-ts/node/test_utils";
+import { IotaClient } from "@iota/iota-sdk/client";
+import { getFaucetHost, requestIotaFromFaucetV0 } from "@iota/iota-sdk/faucet";
+import { Ed25519Keypair } from "@iota/iota-sdk/keypairs/ed25519";
 
 export const IOTA_AUDIT_TRAIL_PKG_ID = globalThis?.process?.env?.IOTA_AUDIT_TRAIL_PKG_ID || "";
 export const NETWORK_NAME_FAUCET = globalThis?.process?.env?.NETWORK_NAME_FAUCET || "localnet";
