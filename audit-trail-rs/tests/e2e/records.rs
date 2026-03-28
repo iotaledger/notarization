@@ -1,10 +1,10 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use audit_trails::core::types::{
+use audit_trail::core::types::{
     CapabilityIssueOptions, Data, InitialRecord, LockingConfig, LockingWindow, Permission, RoleTags, TimeLock,
 };
-use audit_trails::error::Error;
+use audit_trail::error::Error;
 use iota_interaction::types::base_types::ObjectID;
 use product_common::core_client::CoreClient;
 

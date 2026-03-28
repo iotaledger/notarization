@@ -3,7 +3,7 @@
 
 use std::collections::HashSet;
 
-use audit_trails::core::types::{CapabilityIssueOptions, Data, Permission, PermissionSet, RoleTags};
+use audit_trail::core::types::{CapabilityIssueOptions, Data, Permission, PermissionSet, RoleTags};
 use iota_interaction::types::base_types::IotaAddress;
 use product_common::core_client::CoreClient;
 

@@ -83,7 +83,7 @@ impl AuditTrailClient<NoSigner> {
     ///
     /// # Examples
     /// ```rust,ignore
-    /// # use audit_trails::client::AuditTrailClient;
+    /// # use audit_trail::client::AuditTrailClient;
     ///
     /// # #[tokio::main]
     /// # async fn main() -> anyhow::Result<()> {
