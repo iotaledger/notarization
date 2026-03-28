@@ -47,7 +47,7 @@ export async function createLocked(): Promise<void> {
     console.log("Notarization ID: ", notarization.id);
     console.log("Notarization Method: ", notarization.method);
     console.log("State data value type: ", notarization.state.data.valueType);
-    console.log("State data value length: ", notarization.state.data.valueLength);
+    console.log("State data value byte size: ", notarization.state.data.valueByteSize);
     console.log(
         notarization.state.data.valueType === "String"
             ? `State data as string: "${notarization.state.data.toString()}"`

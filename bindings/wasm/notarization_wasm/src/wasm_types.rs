@@ -53,7 +53,7 @@ impl WasmData {
     /// # Returns:
     /// * For `Uint8Array` values: The number of bytes in the Uint8Array
     /// * For `String` values: The length of the String, in bytes
-    #[wasm_bindgen(getter, js_name = valueLength)]
+    #[wasm_bindgen(getter, js_name = valueByteSize)]
     pub fn value_byte_size(&self) -> usize {
         match &self.0 {
             Data::Bytes(bytes) => bytes.len(),
