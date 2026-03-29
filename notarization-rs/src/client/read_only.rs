@@ -112,12 +112,12 @@ impl NotarizationClientReadOnly {
         let (network, notarization_pkg_id) = {
             let package_registry = package::notarization_package_registry().await;
             let package_id = package_registry
-        .package_id(&network)
-        .ok_or_else(|| {
-        Error::InvalidConfig(format!(
-            "no information for a published `notarization` package on network {network}; try to use `NotarizationClientReadOnly::new_with_package_id`"
-            ))
-        })?;
+            .package_id(&network)
+            .ok_or_else(|| {
+            Error::InvalidConfig(format!(
+                "no information for a published `notarization` package on network {network}; try to use `NotarizationClientReadOnly::new_with_package_id`"
+                ))
+            })?;
             let network = match chain_id.as_str() {
                 product_common::package_registry::MAINNET_CHAIN_ID => {
                     NetworkName::try_from("iota").expect("valid network name")

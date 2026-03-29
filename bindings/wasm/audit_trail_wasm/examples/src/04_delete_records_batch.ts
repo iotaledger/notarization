@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { strict as assert } from "assert";
-import { Data } from "../../web";
+import { Data } from "@iota/audit-trail/node";
 import { createTrailWithSeedRecord, getFundedClient, TEST_GAS_BUDGET } from "./util";
 
 export async function deleteRecordsBatch(): Promise<void> {
