@@ -44,7 +44,7 @@ dependencies = [
 
 [[move.package]]
 id = "TfComponents"
-source = { git = "https://github.com/iotaledger/product-core.git", rev = "feat/tf-compoenents-dev", subdir = "components_move" }
+source = { local = "../../product-core/components_move" }
 
 dependencies = [
   { id = "Iota", name = "Iota" },
