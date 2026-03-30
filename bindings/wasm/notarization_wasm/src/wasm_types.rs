@@ -35,6 +35,32 @@ impl WasmData {
         }
     }
 
+    /// Retrieves the type of the value as `String`.
+    ///
+    /// # Returns:
+    /// * `Uint8Array` for binary values
+    /// * `String` for string values
+    #[wasm_bindgen(getter, js_name = valueType)]
+    pub fn value_type(&self) -> String {
+        match &self.0 {
+            Data::Bytes(_) => "Uint8Array".to_string(),
+            Data::Text(_) => "String".to_string(),
+        }
+    }
+
+    /// Retrieves the byte size of the value.
+    ///
+    /// # Returns:
+    /// * For `Uint8Array` values: The number of bytes in the Uint8Array
+    /// * For `String` values: The length of the String, in bytes
+    #[wasm_bindgen(getter, js_name = valueByteSize)]
+    pub fn value_byte_size(&self) -> usize {
+        match &self.0 {
+            Data::Bytes(bytes) => bytes.len(),
+            Data::Text(text) => text.len(),
+        }
+    }
+
     /// Converts the data to a string representation.
     ///
     /// # Returns
