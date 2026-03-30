@@ -2,26 +2,27 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { strict as assert } from "assert";
-import { Data } from "../../web";
-import { createTrailWithSeedRecord, getFundedClient, TEST_GAS_BUDGET } from "./util";
+import { Data } from "@iota/audit-trails/node";
+import { createTrailWithSeedRecord, getFundedClient, grantSelfRecordPermissions, TEST_GAS_BUDGET } from "./util";
 
 export async function addAndListRecords(): Promise<void> {
     console.log("Adding records and reading them back with pagination");
 
     const client = await getFundedClient();
     const { output: trail } = await createTrailWithSeedRecord(client);
+    await grantSelfRecordPermissions(client, trail.id);
     const records = client.trail(trail.id).records();
 
     const addedString = await records
         .add(Data.fromString("record 2"), "second")
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(client);
-    const addedBytes = await records
-        .add(Data.fromBytes(Uint8Array.from([1, 2, 3, 4])), "third")
+    const addedThird = await records
+        .add(Data.fromString("record 3"), "third")
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(client);
 
-    console.log("Added records:", addedString.output, addedBytes.output);
+    console.log("Added records:", addedString.output, addedThird.output);
 
     const allRecords = await records.list();
     const firstPage = await records.listPage(undefined, 2);
