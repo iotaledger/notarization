@@ -1,7 +1,7 @@
 // Copyright (c) 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-/// Audit Trails with role-based access control and timelock
+/// Audit Trail with role-based access control and timelock
 /// A trail is a tamper-proof, sequential chain of notarized records where each
 /// entry references its predecessor, ensuring verifiable continuity and
 /// integrity.

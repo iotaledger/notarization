@@ -1,5 +1,5 @@
 [package]
-name = "audit_trail"
+name = "IotaAuditTrail"
 edition = "2024.beta"
 
 [dependencies]

@@ -1,1 +1,1 @@
-# IOTA Audit Trails (WIP)
+# IOTA Audit Trail (WIP)

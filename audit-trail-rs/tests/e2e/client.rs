@@ -7,11 +7,11 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use anyhow::{Context, anyhow};
-use audit_trails::core::types::{
+use audit_trail::core::types::{
     Capability, CapabilityIssueOptions, CapabilityIssued, Data, InitialRecord, Permission, PermissionSet, RoleCreated,
     RoleTags,
 };
-use audit_trails::{AuditTrailClient, PackageOverrides};
+use audit_trail::{AuditTrailClient, PackageOverrides};
 use iota_interaction::types::base_types::{IotaAddress, ObjectID, ObjectRef};
 use iota_interaction::types::crypto::PublicKey;
 use iota_interaction::{IOTA_LOCAL_NETWORK_URL, IotaClient, IotaClientBuilder};
