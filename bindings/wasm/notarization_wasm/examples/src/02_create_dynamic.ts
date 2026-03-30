@@ -42,6 +42,8 @@ export async function createDynamic(): Promise<void> {
     console.log("----------------------------------------------------");
     console.log("Notarization ID: ", notarization.id);
     console.log("Notarization Method: ", notarization.method);
+    console.log("State data value type: ", notarization.state.data.valueType);
+    console.log("State data value byte size: ", notarization.state.data.valueByteSize);
     console.log(
         `State data as string: "${notarization.state.data.toString()}" or as bytes: [${notarization.state.data.toBytes()}]`,
     );
