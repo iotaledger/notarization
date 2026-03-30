@@ -1,5 +1,5 @@
 [package]
-name = "audit_trails_wasm"
+name = "audit_trail_wasm"
 version = "0.1.0-alpha"
 authors = ["IOTA Stiftung"]
 edition = "2021"
@@ -10,14 +10,14 @@ publish = false
 readme = "README.md"
 repository = "https://github.com/iotaledger/notarization.git"
 resolver = "2"
-description = "Web Assembly bindings for the audit_trails crate."
+description = "Web Assembly bindings for the audit_trail crate."
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 anyhow = "1.0.95"
-audit_trails = { path = "../../../audit-trail-rs", default-features = false, features = ["gas-station", "default-http-client"] }
+audit_trail = { path = "../../../audit-trail-rs", default-features = false, features = ["gas-station", "default-http-client"] }
 bcs = "0.1.6"
 console_error_panic_hook = { version = "0.1" }
 iota_interaction = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/tf-compoenents-dev", package = "iota_interaction", default-features = false }

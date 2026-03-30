@@ -1,6 +1,6 @@
-# IOTA Audit Trails WASM Examples
+# IOTA Audit Trail WASM Examples
 
-The examples in this folder demonstrate the Core MVP flow of the `@iota/audit-trails` package:
+The examples in this folder demonstrate the Core MVP flow of the `@iota/audit-trail` package:
 
 - create a trail
 - fetch a trail

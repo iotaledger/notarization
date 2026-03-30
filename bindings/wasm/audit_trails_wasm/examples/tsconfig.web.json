@@ -11,7 +11,7 @@
     "moduleResolution": "node",
     "skipLibCheck": true,
     "paths": {
-      "@iota/audit-trails/node": [
+      "@iota/audit-trail/node": [
         "../web"
       ]
     }

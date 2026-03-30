@@ -3,9 +3,9 @@
   "compilerOptions": {
     "baseUrl": "./",
     "paths": {
-      "~audit_trails_wasm": [
-        "../web/audit_trails_wasm",
-        "./audit_trails_wasm.js"
+      "~audit_trail_wasm": [
+        "../web/audit_trail_wasm",
+        "./audit_trail_wasm.js"
       ],
       "@iota/iota-interaction-ts/*": [
         "../node_modules/@iota/iota-interaction-ts/web/*",

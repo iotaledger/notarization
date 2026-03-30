@@ -1,7 +1,7 @@
 // Copyright 2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-import { Data } from "@iota/audit-trails/node";
+import { Data } from "@iota/audit-trail/node";
 import { strict as assert } from "assert";
 import { createTrailWithSeedRecord, getFundedClient, grantSelfRecordPermissions, TEST_GAS_BUDGET } from "./util";
 

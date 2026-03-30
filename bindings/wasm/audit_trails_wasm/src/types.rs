@@ -3,7 +3,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use audit_trails::core::types::{
+use audit_trail::core::types::{
     AuditTrailCreated, AuditTrailDeleted, Capability, CapabilityAdminPermissions, CapabilityDestroyed,
     CapabilityIssueOptions, CapabilityIssued, CapabilityRevoked, Data, ImmutableMetadata, LockingConfig, LockingWindow,
     PaginatedRecord, Permission, PermissionSet, Record, RecordAdded, RecordCorrection, RecordDeleted, Role,

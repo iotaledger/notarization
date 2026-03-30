@@ -1,7 +1,7 @@
 // Copyright 2020-2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-//! Core types and builders for audit trails.
+//! Core types and builders for audit trail.
 
 pub mod access;
 pub mod builder;

@@ -1,10 +1,10 @@
 [package]
-name = "audit_trails"
+name = "audit_trail"
 version = "0.1.0-alpha"
 authors.workspace = true
 edition.workspace = true
 homepage.workspace = true
-keywords = ["iota", "tangle", "utxo", "audit-trail", "audit-trails"]
+keywords = ["iota", "tangle", "utxo", "audit-trail", "audit-trail"]
 license.workspace = true
 readme = "./README.md"
 repository.workspace = true

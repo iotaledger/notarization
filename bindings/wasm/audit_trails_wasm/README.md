@@ -1,6 +1,6 @@
-# IOTA Audit Trails WASM Library
+# IOTA Audit Trail WASM Library
 
-`audit_trails_wasm` provides the Rust-to-WASM bindings for the `audit_trails` crate and is published to JavaScript consumers as `@iota/audit-trails`.
+`audit_trail_wasm` provides the Rust-to-WASM bindings for the `audit_trail` crate and is published to JavaScript consumers as `@iota/audit-trail`.
 
 The current MVP surface includes:
 

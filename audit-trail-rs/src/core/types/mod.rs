@@ -1,7 +1,7 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-//! Core data types for audit trails.
+//! Core data types for audit trail.
 
 pub mod audit_trail;
 pub mod event;

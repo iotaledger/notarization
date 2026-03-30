@@ -1,7 +1,7 @@
 // Copyright 2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use audit_trails::core::builder::AuditTrailBuilder;
+use audit_trail::core::builder::AuditTrailBuilder;
 use iota_interaction_ts::wasm_error::Result;
 use product_common::bindings::transaction::WasmTransactionBuilder;
 use product_common::bindings::utils::{into_transaction_builder, parse_wasm_iota_address};

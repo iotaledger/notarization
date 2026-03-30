@@ -1,7 +1,7 @@
 // Copyright 2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use audit_trails::{AuditTrailClientReadOnly, PackageOverrides};
+use audit_trail::{AuditTrailClientReadOnly, PackageOverrides};
 use iota_interaction_ts::bindings::WasmIotaClient;
 use iota_interaction_ts::wasm_error::{Result, WasmResult};
 use product_common::bindings::utils::parse_wasm_object_id;

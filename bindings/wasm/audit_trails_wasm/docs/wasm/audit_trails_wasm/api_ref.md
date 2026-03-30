@@ -1,8 +1,8 @@
-[**@iota/audit-trails API documentation**](../api_ref.md)
+[**@iota/audit-trail API documentation**](../api_ref.md)
 
 ---
 
-# audit\_trails\_wasm
+# audit\_trail\_wasm
 
 ## Classes
 

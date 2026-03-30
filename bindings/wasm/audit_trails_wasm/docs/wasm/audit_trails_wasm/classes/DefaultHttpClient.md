@@ -1,4 +1,4 @@
-[**@iota/audit-trails API documentation**](../../api_ref.md)
+[**@iota/audit-trail API documentation**](../../api_ref.md)
 
 ---
 

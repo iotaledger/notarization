@@ -9,7 +9,7 @@ rust-version = "1.85"
 [workspace]
 resolver = "2"
 members = ["audit-trail-rs", "examples", "notarization-rs"]
-exclude = ["bindings/wasm/notarization_wasm", "bindings/wasm/audit_trails_wasm"]
+exclude = ["bindings/wasm/notarization_wasm", "bindings/wasm/audit_trail_wasm"]
 
 [workspace.dependencies]
 anyhow = "1.0"

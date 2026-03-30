@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::anyhow;
-use audit_trails::{AuditTrailClient, AuditTrailClientReadOnly, PackageOverrides};
+use audit_trail::{AuditTrailClient, AuditTrailClientReadOnly, PackageOverrides};
 use iota_interaction_ts::bindings::{WasmIotaClient, WasmPublicKey, WasmTransactionSigner};
 use iota_interaction_ts::wasm_error::{wasm_error, Result, WasmResult};
 use product_common::bindings::utils::parse_wasm_object_id;
