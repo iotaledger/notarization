@@ -1,4 +1,10 @@
 {
-  "aliases": {},
-  "envs": {}
+  "aliases": {
+    "testnet": "2304aa97"
+  },
+  "envs": {
+    "2304aa97": [
+      "0x7655d346145e2ba7fcb6a5c63b4b9ec18a92c435364206e5c3f3dfd8cb95d98d"
+    ]
+  }
 }
