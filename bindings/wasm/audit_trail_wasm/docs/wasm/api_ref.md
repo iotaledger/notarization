@@ -1,6 +1,6 @@
 **@iota/audit-trail API documentation**
 
----
+***
 
 # @iota/audit-trail API documentation
 
