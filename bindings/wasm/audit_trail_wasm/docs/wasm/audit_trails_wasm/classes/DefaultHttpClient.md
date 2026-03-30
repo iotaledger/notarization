@@ -1,6 +1,6 @@
 [**@iota/audit-trail API documentation**](../../api_ref.md)
 
----
+***
 
 # Class: DefaultHttpClient
 
