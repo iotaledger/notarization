@@ -165,6 +165,7 @@ public fun create<D: store + copy>(
 
     let trail_uid = object::new(ctx);
     let trail_id = object::uid_to_inner(&trail_uid);
+    let mut tags = record_tags::new_tag_registry(tags);
 
     let mut records = linked_table::new<u64, Record<D>>(ctx);
     let mut sequence_number = 0;
@@ -176,6 +177,12 @@ public fun create<D: store + copy>(
             creator,
             timestamp,
         );
+
+        if (record::tag(&record).is_some()) {
+            let initial_tag = option::borrow(record::tag(&record));
+            assert!(record_tags::contains(&tags, initial_tag), ERecordTagNotDefined);
+            record_tags::increment_usage_count(&mut tags, initial_tag);
+        };
 
         linked_table::push_back(&mut records, 0, record);
         sequence_number = 1;
@@ -202,8 +209,6 @@ public fun create<D: store + copy>(
         capability_admin_permissions,
         ctx,
     );
-
-    let tags = record_tags::new_tag_registry(tags);
 
     let trail = AuditTrail {
         id: trail_uid,

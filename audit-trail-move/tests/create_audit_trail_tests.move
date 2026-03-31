@@ -186,6 +186,107 @@ fun test_create_with_initial_record() {
 }
 
 #[test]
+fun test_create_with_tagged_initial_record_tracks_tag_usage() {
+    let user = @0xC;
+    let mut scenario = ts::begin(user);
+
+    {
+        let mut clock = clock::create_for_testing(ts::ctx(&mut scenario));
+        clock.set_for_testing(initial_time_for_testing());
+
+        let locking_config = locking::new(
+            locking::window_none(),
+            timelock::none(),
+            timelock::none(),
+        );
+        let initial_record = record::new_initial_record(
+            record::new_text(string::utf8(b"Tagged initial record")),
+            option::none(),
+            option::some(string::utf8(b"finance")),
+        );
+
+        let (admin_cap, trail_id) = main::create(
+            option::some(initial_record),
+            locking_config,
+            option::none(),
+            option::none(),
+            vector[string::utf8(b"finance")],
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        assert!(admin_cap.role() == initial_admin_role_name(), 0);
+        assert!(admin_cap.target_key() == trail_id, 1);
+        admin_cap.destroy_for_testing();
+        clock::destroy_for_testing(clock);
+    };
+
+    ts::next_tx(&mut scenario, user);
+    {
+        let trail = ts::take_shared<AuditTrail<Data>>(&scenario);
+        let finance_tag = string::utf8(b"finance");
+
+        assert!(trail.record_count() == 1, 2);
+        assert!(trail.tags().usage_count(&finance_tag) == option::some(1), 3);
+        assert!(trail.tags().is_in_use(&finance_tag), 4);
+
+        ts::return_shared(trail);
+    };
+
+    ts::end(scenario);
+}
+
+#[test, expected_failure(abort_code = audit_trail::main::ERecordTagInUse)]
+fun test_create_with_tagged_initial_record_blocks_tag_removal() {
+    let admin = @0xD;
+    let mut scenario = ts::begin(admin);
+
+    {
+        let mut clock = clock::create_for_testing(ts::ctx(&mut scenario));
+        clock.set_for_testing(initial_time_for_testing());
+
+        let locking_config = locking::new(
+            locking::window_none(),
+            timelock::none(),
+            timelock::none(),
+        );
+        let initial_record = record::new_initial_record(
+            record::new_text(string::utf8(b"Tagged initial record")),
+            option::none(),
+            option::some(string::utf8(b"finance")),
+        );
+
+        let (admin_cap, _) = main::create(
+            option::some(initial_record),
+            locking_config,
+            option::none(),
+            option::none(),
+            vector[string::utf8(b"finance")],
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        transfer::public_transfer(admin_cap, admin);
+        clock::destroy_for_testing(clock);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
+        trail.remove_record_tag(
+            &admin_cap,
+            string::utf8(b"finance"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
+    };
+
+    ts::end(scenario);
+}
+
+#[test]
 fun test_create_minimal_metadata() {
     let user = @0xC;
     let mut scenario = ts::begin(user);
