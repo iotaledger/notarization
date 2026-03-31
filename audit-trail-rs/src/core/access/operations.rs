@@ -6,8 +6,8 @@ use iota_interaction::types::transaction::{ObjectArg, ProgrammableTransaction};
 use iota_interaction::{OptionalSync, ident_str};
 use product_common::core_client::CoreClientReadOnly;
 
+use crate::core::internal::{trail as trail_reader, tx};
 use crate::core::types::{CapabilityIssueOptions, Permission, PermissionSet, RoleTags};
-use crate::core::{operations, utils};
 use crate::error::Error;
 
 pub(super) struct AccessOps;
@@ -26,14 +26,14 @@ impl AccessOps {
     {
         assert_role_tags_defined(client, trail_id, &role_tags).await?;
 
-        operations::build_trail_transaction(
+        tx::build_trail_transaction(
             client,
             trail_id,
             owner,
             Permission::AddRoles,
             "create_role",
             |ptb, _| {
-                let role = utils::ptb_pure(ptb, "role", name)?;
+                let role = tx::ptb_pure(ptb, "role", name)?;
                 let perms_vec = permissions.to_move_vec(client.package_id(), ptb)?;
                 let perms = ptb.programmable_move_call(
                     client.package_id(),
@@ -46,13 +46,13 @@ impl AccessOps {
                     Some(role_tags) => {
                         let role_tags_arg = role_tags.to_ptb(ptb, client.package_id())?;
 
-                        utils::option_to_move(Some(role_tags_arg), RoleTags::tag(client.package_id()), ptb)
+                        tx::option_to_move(Some(role_tags_arg), RoleTags::tag(client.package_id()), ptb)
                             .map_err(|e| Error::InvalidArgument(format!("failed to build role_tags option: {e}")))?
                     }
-                    None => utils::option_to_move(None, RoleTags::tag(client.package_id()), ptb)
+                    None => tx::option_to_move(None, RoleTags::tag(client.package_id()), ptb)
                         .map_err(|e| Error::InvalidArgument(format!("failed to build role_tags option: {e}")))?,
                 };
-                let clock = utils::get_clock_ref(ptb);
+                let clock = tx::get_clock_ref(ptb);
 
                 Ok(vec![role, perms, role_tags_arg, clock])
             },
@@ -73,14 +73,14 @@ impl AccessOps {
     {
         assert_role_tags_defined(client, trail_id, &role_tags).await?;
 
-        operations::build_trail_transaction(
+        tx::build_trail_transaction(
             client,
             trail_id,
             owner,
             Permission::UpdateRoles,
             "update_role_permissions",
             |ptb, _| {
-                let role = utils::ptb_pure(ptb, "role", name)?;
+                let role = tx::ptb_pure(ptb, "role", name)?;
                 let perms_vec = permissions.to_move_vec(client.package_id(), ptb)?;
 
                 let perms = ptb.programmable_move_call(
@@ -93,14 +93,14 @@ impl AccessOps {
                 let role_tags_arg = match role_tags {
                     Some(role_tags) => {
                         let role_tags_arg = role_tags.to_ptb(ptb, client.package_id())?;
-                        utils::option_to_move(Some(role_tags_arg), RoleTags::tag(client.package_id()), ptb)
+                        tx::option_to_move(Some(role_tags_arg), RoleTags::tag(client.package_id()), ptb)
                             .map_err(|e| Error::InvalidArgument(format!("failed to build role_tags option: {e}")))?
                     }
-                    None => utils::option_to_move(None, RoleTags::tag(client.package_id()), ptb)
+                    None => tx::option_to_move(None, RoleTags::tag(client.package_id()), ptb)
                         .map_err(|e| Error::InvalidArgument(format!("failed to build role_tags option: {e}")))?,
                 };
 
-                let clock = utils::get_clock_ref(ptb);
+                let clock = tx::get_clock_ref(ptb);
 
                 Ok(vec![role, perms, role_tags_arg, clock])
             },
@@ -117,15 +117,15 @@ impl AccessOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        operations::build_trail_transaction(
+        tx::build_trail_transaction(
             client,
             trail_id,
             owner,
             Permission::DeleteRoles,
             "delete_role",
             |ptb, _| {
-                let role = utils::ptb_pure(ptb, "role", name)?;
-                let clock = utils::get_clock_ref(ptb);
+                let role = tx::ptb_pure(ptb, "role", name)?;
+                let clock = tx::get_clock_ref(ptb);
 
                 Ok(vec![role, clock])
             },
@@ -143,18 +143,18 @@ impl AccessOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        operations::build_trail_transaction(
+        tx::build_trail_transaction(
             client,
             trail_id,
             owner,
             Permission::AddCapabilities,
             "new_capability",
             |ptb, _| {
-                let role = utils::ptb_pure(ptb, "role", role_name)?;
-                let issued_to = utils::ptb_pure(ptb, "issued_to", options.issued_to)?;
-                let valid_from = utils::ptb_pure(ptb, "valid_from", options.valid_from_ms)?;
-                let valid_until = utils::ptb_pure(ptb, "valid_until", options.valid_until_ms)?;
-                let clock = utils::get_clock_ref(ptb);
+                let role = tx::ptb_pure(ptb, "role", role_name)?;
+                let issued_to = tx::ptb_pure(ptb, "issued_to", options.issued_to)?;
+                let valid_from = tx::ptb_pure(ptb, "valid_from", options.valid_from_ms)?;
+                let valid_until = tx::ptb_pure(ptb, "valid_until", options.valid_until_ms)?;
+                let clock = tx::get_clock_ref(ptb);
 
                 Ok(vec![role, issued_to, valid_from, valid_until, clock])
             },
@@ -172,16 +172,16 @@ impl AccessOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        operations::build_trail_transaction(
+        tx::build_trail_transaction(
             client,
             trail_id,
             owner,
             Permission::RevokeCapabilities,
             "revoke_capability",
             |ptb, _| {
-                let cap = utils::ptb_pure(ptb, "capability_id", capability_id)?;
-                let valid_until = utils::ptb_pure(ptb, "capability_valid_until", capability_valid_until)?;
-                let clock = utils::get_clock_ref(ptb);
+                let cap = tx::ptb_pure(ptb, "capability_id", capability_id)?;
+                let valid_until = tx::ptb_pure(ptb, "capability_valid_until", capability_valid_until)?;
+                let clock = tx::get_clock_ref(ptb);
 
                 Ok(vec![cap, valid_until, clock])
             },
@@ -198,9 +198,9 @@ impl AccessOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        let capability_ref = utils::get_object_ref_by_id(client, &capability_id).await?;
+        let capability_ref = tx::get_object_ref_by_id(client, &capability_id).await?;
 
-        operations::build_trail_transaction(
+        tx::build_trail_transaction(
             client,
             trail_id,
             owner,
@@ -210,7 +210,7 @@ impl AccessOps {
                 let cap_to_destroy = ptb
                     .obj(ObjectArg::ImmOrOwnedObject(capability_ref))
                     .map_err(|e| Error::InvalidArgument(format!("Failed to create capability argument: {e}")))?;
-                let clock = utils::get_clock_ref(ptb);
+                let clock = tx::get_clock_ref(ptb);
 
                 Ok(vec![cap_to_destroy, clock])
             },
@@ -226,8 +226,8 @@ impl AccessOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        let cap_ref = utils::get_object_ref_by_id(client, &capability_id).await?;
-        operations::build_trail_transaction_with_cap_ref(
+        let cap_ref = tx::get_object_ref_by_id(client, &capability_id).await?;
+        tx::build_trail_transaction_with_cap_ref(
             client,
             trail_id,
             cap_ref,
@@ -247,16 +247,16 @@ impl AccessOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        operations::build_trail_transaction(
+        tx::build_trail_transaction(
             client,
             trail_id,
             owner,
             Permission::RevokeCapabilities,
             "revoke_initial_admin_capability",
             |ptb, _| {
-                let cap = utils::ptb_pure(ptb, "capability_id", capability_id)?;
-                let valid_until = utils::ptb_pure(ptb, "capability_valid_until", capability_valid_until)?;
-                let clock = utils::get_clock_ref(ptb);
+                let cap = tx::ptb_pure(ptb, "capability_id", capability_id)?;
+                let valid_until = tx::ptb_pure(ptb, "capability_valid_until", capability_valid_until)?;
+                let clock = tx::get_clock_ref(ptb);
 
                 Ok(vec![cap, valid_until, clock])
             },
@@ -272,14 +272,14 @@ impl AccessOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        operations::build_trail_transaction(
+        tx::build_trail_transaction(
             client,
             trail_id,
             owner,
             Permission::RevokeCapabilities,
             "cleanup_revoked_capabilities",
             |ptb, _| {
-                let clock = utils::get_clock_ref(ptb);
+                let clock = tx::get_clock_ref(ptb);
                 Ok(vec![clock])
             },
         )
@@ -295,7 +295,7 @@ where
         return Ok(());
     };
 
-    let trail = operations::get_audit_trail(trail_id, client).await?;
+    let trail = trail_reader::get_audit_trail(trail_id, client).await?;
     let undefined_tags = role_tags
         .tags
         .iter()

@@ -8,8 +8,8 @@ use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use iota_interaction::types::transaction::{Argument, ProgrammableTransaction};
 
+use crate::core::internal::tx;
 use crate::core::types::{ImmutableMetadata, InitialRecord, LockingConfig};
-use crate::core::utils;
 use crate::error::Error;
 
 pub(super) struct CreateOps;
@@ -47,7 +47,7 @@ impl CreateOps {
         let data_tag = initial_record.data.tag();
         let initial_record_tag = InitialRecord::tag(audit_trail_package_id, &data_tag);
         let initial_record_arg = initial_record.into_ptb(&mut ptb, audit_trail_package_id)?;
-        let initial_record = utils::option_to_move(Some(initial_record_arg), initial_record_tag, &mut ptb)
+        let initial_record = tx::option_to_move(Some(initial_record_arg), initial_record_tag, &mut ptb)
             .map_err(|e| Error::InvalidArgument(format!("failed to build initial_record option: {e}")))?;
         let locking_config = locking_config.to_ptb(&mut ptb, audit_trail_package_id, tf_components_package_id)?;
 
@@ -56,21 +56,21 @@ impl CreateOps {
         let trail_metadata = match trail_metadata {
             Some(metadata) => {
                 let metadata_arg = metadata.to_ptb(&mut ptb, audit_trail_package_id)?;
-                utils::option_to_move(Some(metadata_arg), immutable_metadata_tag, &mut ptb)
+                tx::option_to_move(Some(metadata_arg), immutable_metadata_tag, &mut ptb)
                     .map_err(|e| Error::InvalidArgument(format!("failed to build trail_metadata option: {e}")))?
             }
-            None => utils::option_to_move(None, immutable_metadata_tag, &mut ptb)
+            None => tx::option_to_move(None, immutable_metadata_tag, &mut ptb)
                 .map_err(|e| Error::InvalidArgument(format!("failed to build trail_metadata option: {e}")))?,
         };
 
-        let updatable_metadata = utils::ptb_pure(&mut ptb, "updatable_metadata", updatable_metadata)?;
+        let updatable_metadata = tx::ptb_pure(&mut ptb, "updatable_metadata", updatable_metadata)?;
 
         let record_tags = {
             let mut record_tags = record_tags.into_iter().collect::<Vec<_>>();
             record_tags.sort();
-            utils::ptb_pure(&mut ptb, "record_tags", record_tags)?
+            tx::ptb_pure(&mut ptb, "record_tags", record_tags)?
         };
-        let clock = utils::get_clock_ref(&mut ptb);
+        let clock = tx::get_clock_ref(&mut ptb);
 
         let result = ptb.programmable_move_call(
             audit_trail_package_id,

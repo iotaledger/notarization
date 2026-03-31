@@ -6,8 +6,8 @@ use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::transaction::ProgrammableTransaction;
 use product_common::core_client::CoreClientReadOnly;
 
+use crate::core::internal::tx;
 use crate::core::types::{LockingConfig, LockingWindow, Permission, TimeLock};
-use crate::core::{operations, utils};
 use crate::error::Error;
 
 pub(super) struct LockingOps;
@@ -26,7 +26,7 @@ impl LockingOps {
             .tf_components_package_id()
             .expect("TfComponents package ID should be present for audit trail clients");
 
-        operations::build_trail_transaction(
+        tx::build_trail_transaction(
             client,
             trail_id,
             owner,
@@ -34,7 +34,7 @@ impl LockingOps {
             "update_locking_config",
             |ptb, _| {
                 let config = new_config.to_ptb(ptb, client.package_id(), tf_components_package_id)?;
-                let clock = utils::get_clock_ref(ptb);
+                let clock = tx::get_clock_ref(ptb);
 
                 Ok(vec![config, clock])
             },
@@ -51,7 +51,7 @@ impl LockingOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        operations::build_trail_transaction(
+        tx::build_trail_transaction(
             client,
             trail_id,
             owner,
@@ -59,7 +59,7 @@ impl LockingOps {
             "update_delete_record_window",
             |ptb, _| {
                 let window = new_delete_record_window.to_ptb(ptb, client.package_id())?;
-                let clock = utils::get_clock_ref(ptb);
+                let clock = tx::get_clock_ref(ptb);
 
                 Ok(vec![window, clock])
             },
@@ -79,7 +79,7 @@ impl LockingOps {
         let tf_components_package_id = client
             .tf_components_package_id()
             .expect("TfComponents package ID should be present for audit trail clients");
-        operations::build_trail_transaction(
+        tx::build_trail_transaction(
             client,
             trail_id,
             owner,
@@ -87,7 +87,7 @@ impl LockingOps {
             "update_delete_trail_lock",
             |ptb, _| {
                 let delete_trail_lock = new_delete_trail_lock.to_ptb(ptb, tf_components_package_id)?;
-                let clock = utils::get_clock_ref(ptb);
+                let clock = tx::get_clock_ref(ptb);
 
                 Ok(vec![delete_trail_lock, clock])
             },
@@ -107,7 +107,7 @@ impl LockingOps {
         let tf_components_package_id = client
             .tf_components_package_id()
             .expect("TfComponents package ID should be present for audit trail clients");
-        operations::build_trail_transaction(
+        tx::build_trail_transaction(
             client,
             trail_id,
             owner,
@@ -115,7 +115,7 @@ impl LockingOps {
             "update_write_lock",
             |ptb, _| {
                 let write_lock = new_write_lock.to_ptb(ptb, tf_components_package_id)?;
-                let clock = utils::get_clock_ref(ptb);
+                let clock = tx::get_clock_ref(ptb);
 
                 Ok(vec![write_lock, clock])
             },
@@ -131,9 +131,9 @@ impl LockingOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        operations::build_read_only_transaction(client, trail_id, "is_record_locked", |ptb| {
-            let sequence_number = utils::ptb_pure(ptb, "sequence_number", sequence_number)?;
-            let clock = utils::get_clock_ref(ptb);
+        tx::build_read_only_transaction(client, trail_id, "is_record_locked", |ptb| {
+            let sequence_number = tx::ptb_pure(ptb, "sequence_number", sequence_number)?;
+            let clock = tx::get_clock_ref(ptb);
 
             Ok(vec![sequence_number, clock])
         })

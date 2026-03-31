@@ -3,17 +3,16 @@
 
 use std::collections::{BTreeMap, HashMap};
 
-use iota_interaction::rpc_types::{IotaData as _, IotaObjectDataOptions};
 use iota_interaction::types::TypeTag;
 use iota_interaction::types::base_types::ObjectID;
-use iota_interaction::types::collection_types::{LinkedTable, LinkedTableNode};
-use iota_interaction::types::dynamic_field::{DynamicFieldName, Field};
-use iota_interaction::{IotaClientTrait, IotaKeySignature, OptionalSync};
+use iota_interaction::types::collection_types::LinkedTable;
+use iota_interaction::{IotaKeySignature, OptionalSync};
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use product_common::transaction::transaction_builder::TransactionBuilder;
 use secret_storage::Signer;
 use serde::de::DeserializeOwned;
 
+use crate::core::internal::{linked_table, trail as trail_reader};
 use crate::core::trail::{AuditTrailFull, AuditTrailReadOnly};
 use crate::core::types::{Data, PaginatedRecord, Record};
 use crate::error::Error;
@@ -147,7 +146,7 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
     where
         C: AuditTrailReadOnly,
     {
-        crate::core::operations::get_audit_trail(self.trail_id, self.client)
+        trail_reader::get_audit_trail(self.trail_id, self.client)
             .await
             .map(|on_chain_trail| on_chain_trail.records)
     }
@@ -180,7 +179,7 @@ where
             )));
         }
 
-        let node = fetch_linked_table_node::<_, V>(client, table.id, key).await?;
+        let node = linked_table::fetch_node::<_, u64, V>(client, table.id, &key, TypeTag::U64).await?;
 
         cursor = node.next;
         items.insert(key, node.value);
@@ -223,54 +222,4 @@ where
     }
 
     Ok(entries.into_iter().collect())
-}
-
-async fn fetch_linked_table_node<C, V>(
-    client: &C,
-    table_id: ObjectID,
-    key: u64,
-) -> Result<LinkedTableNode<u64, V>, Error>
-where
-    C: CoreClientReadOnly + OptionalSync,
-    V: DeserializeOwned,
-{
-    let name = DynamicFieldName {
-        type_: TypeTag::U64,
-        value: serde_json::Value::String(key.to_string()),
-    };
-
-    let data = client
-        .client_adapter()
-        .read_api()
-        .get_dynamic_field_object_v2(table_id, name, Some(IotaObjectDataOptions::bcs_lossless()))
-        .await
-        .map_err(|err| Error::RpcError(err.to_string()))?
-        .data
-        .ok_or_else(|| {
-            Error::UnexpectedApiResponse(format!(
-                "dynamic-field object not found for linked-table id {table_id} and key {key}"
-            ))
-        })?;
-
-    let field: Field<u64, LinkedTableNode<u64, V>> = data
-        .bcs
-        .ok_or_else(|| {
-            Error::UnexpectedApiResponse(format!(
-                "linked-table node {} missing bcs object content",
-                data.object_id
-            ))
-        })?
-        .try_into_move()
-        .ok_or_else(|| {
-            Error::UnexpectedApiResponse(format!(
-                "linked-table node {} bcs content is not a move object",
-                data.object_id
-            ))
-        })?
-        .deserialize()
-        .map_err(|err| {
-            Error::UnexpectedApiResponse(format!("failed to decode linked-table node {}; {err}", data.object_id))
-        })?;
-
-    Ok(field.value)
 }

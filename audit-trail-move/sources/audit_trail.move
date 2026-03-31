@@ -18,7 +18,7 @@ use audit_trail::{
         set_write_lock
     },
     permission::{Self, Permission},
-    record::{Self, Record},
+    record::{Self, Record, InitialRecord},
     record_tags::{Self, RoleTags, TagRegistry}
 };
 use iota::{clock::{Self, Clock}, event, linked_table::{Self, LinkedTable}, vec_set::VecSet};
@@ -152,7 +152,7 @@ public fun new_trail_metadata(name: String, description: Option<String>): Immuta
 ///   roles and issue capabilities to other users.
 /// * Trail ID
 public fun create<D: store + copy>(
-    initial_record: Option<record::InitialRecord<D>>,
+    initial_record: Option<InitialRecord<D>>,
     locking_config: LockingConfig,
     trail_metadata: Option<ImmutableMetadata>,
     updatable_metadata: Option<String>,

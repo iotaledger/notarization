@@ -11,7 +11,7 @@ use iota_interaction::types::transaction::Argument;
 use iota_interaction::types::{MOVE_STDLIB_PACKAGE_ID, TypeTag};
 use serde::{Deserialize, Deserializer, Serialize};
 
-use crate::core::utils;
+use crate::core::internal::tx;
 use crate::error::Error;
 
 /// Page of records loaded through linked-table traversal.
@@ -59,8 +59,8 @@ impl InitialRecord {
     pub(in crate::core) fn into_ptb(self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
         let data_tag = self.data.tag();
         let data = self.data.into_ptb(ptb, "initial_record_data")?;
-        let metadata = utils::ptb_pure(ptb, "initial_record_metadata", self.metadata)?;
-        let tag = utils::ptb_pure(ptb, "initial_record_tag", self.tag)?;
+        let metadata = tx::ptb_pure(ptb, "initial_record_metadata", self.metadata)?;
+        let tag = tx::ptb_pure(ptb, "initial_record_tag", self.tag)?;
 
         Ok(ptb.programmable_move_call(
             package_id,
@@ -135,8 +135,8 @@ impl Data {
     /// Creates a PTB argument for `D` where `D` is the concrete Move data type.
     pub(in crate::core) fn into_ptb(self, ptb: &mut Ptb, name: &str) -> Result<Argument, Error> {
         match self {
-            Data::Bytes(bytes) => utils::ptb_pure(ptb, name, bytes),
-            Data::Text(text) => utils::ptb_pure(ptb, name, text),
+            Data::Bytes(bytes) => tx::ptb_pure(ptb, name, bytes),
+            Data::Text(text) => tx::ptb_pure(ptb, name, text),
         }
     }
 

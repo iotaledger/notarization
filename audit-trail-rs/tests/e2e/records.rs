@@ -173,6 +173,121 @@ async fn add_tagged_record_requires_trail_defined_tag() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+async fn add_record_skips_revoked_capability_when_valid_one_exists() -> anyhow::Result<()> {
+    let admin = get_funded_test_client().await?;
+    let writer = get_funded_test_client().await?;
+    let trail_id = admin.create_test_trail(Data::text("records-revoked-selector")).await?;
+    let records = writer.trail(trail_id).records();
+    let role_name = "RecordWriter";
+
+    admin
+        .create_role(trail_id, role_name, [Permission::AddRecord], None)
+        .await?;
+    let stale_cap = admin
+        .issue_cap(
+            trail_id,
+            role_name,
+            CapabilityIssueOptions {
+                issued_to: Some(writer.sender_address()),
+                ..CapabilityIssueOptions::default()
+            },
+        )
+        .await?;
+
+    admin
+        .trail(trail_id)
+        .access()
+        .revoke_capability(stale_cap.capability_id, stale_cap.valid_until)
+        .build_and_execute(&admin)
+        .await?;
+
+    admin
+        .issue_cap(
+            trail_id,
+            role_name,
+            CapabilityIssueOptions {
+                issued_to: Some(writer.sender_address()),
+                ..CapabilityIssueOptions::default()
+            },
+        )
+        .await?;
+
+    let added = records
+        .add(Data::text("writer record"), None, None)
+        .build_and_execute(&writer)
+        .await?
+        .output;
+
+    assert_eq!(added.sequence_number, 1);
+    assert_text_data(records.get(1).await?.data, "writer record");
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn add_tagged_record_skips_revoked_capability_when_valid_one_exists() -> anyhow::Result<()> {
+    let admin = get_funded_test_client().await?;
+    let writer = get_funded_test_client().await?;
+    let trail_id = admin
+        .create_test_trail_with_tags(Data::text("records-revoked-tagged"), ["finance"])
+        .await?;
+    let records = writer.trail(trail_id).records();
+    let role_name = "TaggedWriter";
+    admin
+        .create_role(
+            trail_id,
+            role_name,
+            [Permission::AddRecord],
+            Some(RoleTags::new(["finance"])),
+        )
+        .await?;
+
+    let stale_cap = admin
+        .issue_cap(
+            trail_id,
+            role_name,
+            CapabilityIssueOptions {
+                issued_to: Some(writer.sender_address()),
+                ..CapabilityIssueOptions::default()
+            },
+        )
+        .await?;
+
+    admin
+        .trail(trail_id)
+        .access()
+        .revoke_capability(stale_cap.capability_id, stale_cap.valid_until)
+        .build_and_execute(&admin)
+        .await?;
+
+    admin
+        .issue_cap(
+            trail_id,
+            role_name,
+            CapabilityIssueOptions {
+                issued_to: Some(writer.sender_address()),
+                ..CapabilityIssueOptions::default()
+            },
+        )
+        .await?;
+
+    let added = records
+        .add(
+            Data::text("finance entry"),
+            Some("tagged".to_string()),
+            Some("finance".to_string()),
+        )
+        .build_and_execute(&writer)
+        .await?
+        .output;
+
+    assert_eq!(added.sequence_number, 1);
+    assert_eq!(records.get(1).await?.tag, Some("finance".to_string()));
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn add_record_rejects_mismatched_data_type() -> anyhow::Result<()> {
     let client = get_funded_test_client().await?;
     let trail_id = client.create_test_trail(Data::text("text-trail")).await?;
