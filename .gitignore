@@ -6,6 +6,7 @@
 *.code-workspace
 
 .idea
+.history
 .DS_Store
 /notarization-move/build/*
 /bindings/wasm/notarization_wasm/docs/*
