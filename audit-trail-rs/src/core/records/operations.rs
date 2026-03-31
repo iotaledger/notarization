@@ -24,6 +24,7 @@ impl RecordsOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
+        let package_id = client.package_id();
         if let Some(tag) = record_tag.clone() {
             let trail = trail_reader::get_audit_trail(trail_id, client).await?;
             if !trail.tags.contains_key(&tag) {
@@ -34,9 +35,9 @@ impl RecordsOps {
             let cap_ref = find_capable_cap_for_tag(client, owner, trail_id, &trail, &tag).await?;
 
             tx::build_trail_transaction_with_cap_ref(client, trail_id, cap_ref, "add_record", |ptb, trail_tag| {
-                data.ensure_matches_tag(trail_tag)?;
+                data.ensure_matches_tag(trail_tag, package_id)?;
 
-                let data_arg = data.into_ptb(ptb, "stored_data")?;
+                let data_arg = data.into_ptb(ptb, package_id)?;
                 let metadata = tx::ptb_pure(ptb, "record_metadata", record_metadata)?;
                 let tag_arg = tx::ptb_pure(ptb, "record_tag", Some(tag))?;
                 let clock = tx::get_clock_ref(ptb);
@@ -51,9 +52,9 @@ impl RecordsOps {
                 Permission::AddRecord,
                 "add_record",
                 |ptb, trail_tag| {
-                    data.ensure_matches_tag(trail_tag)?;
+                    data.ensure_matches_tag(trail_tag, package_id)?;
 
-                    let data_arg = data.into_ptb(ptb, "stored_data")?;
+                    let data_arg = data.into_ptb(ptb, package_id)?;
                     let metadata = tx::ptb_pure(ptb, "record_metadata", record_metadata)?;
                     let tag = tx::ptb_pure(ptb, "record_tag", Option::<String>::None)?;
                     let clock = tx::get_clock_ref(ptb);
