@@ -3,9 +3,12 @@
 
 use std::collections::{BTreeMap, HashMap};
 
+use iota_interaction::move_core_types::annotated_value::MoveValue;
+use iota_interaction::rpc_types::IotaMoveValue;
 use iota_interaction::types::TypeTag;
 use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::types::collection_types::LinkedTable;
+use iota_interaction::types::dynamic_field::DynamicFieldName;
 use iota_interaction::{IotaKeySignature, OptionalSync};
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use product_common::transaction::transaction_builder::TransactionBuilder;
@@ -179,7 +182,15 @@ where
             )));
         }
 
-        let node = linked_table::fetch_node::<_, u64, V>(client, table.id, &key, TypeTag::U64).await?;
+        let node = linked_table::fetch_node::<_, u64, V>(
+            client,
+            table.id,
+            DynamicFieldName {
+                type_: TypeTag::U64,
+                value: IotaMoveValue::from(MoveValue::U64(key)).to_json_value(),
+            },
+        )
+        .await?;
 
         cursor = node.next;
         items.insert(key, node.value);

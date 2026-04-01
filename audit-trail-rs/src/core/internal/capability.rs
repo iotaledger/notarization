@@ -1,8 +1,9 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 
+use iota_interaction::rpc_types::{IotaMoveStruct, IotaMoveValue};
 use iota_interaction::move_types::language_storage::StructTag;
 use iota_interaction::rpc_types::{
     IotaObjectDataFilter, IotaObjectDataOptions, IotaObjectResponseQuery, IotaParsedData,
@@ -10,6 +11,7 @@ use iota_interaction::rpc_types::{
 use iota_interaction::types::TypeTag;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID, ObjectRef};
 use iota_interaction::types::id::ID;
+use iota_interaction::types::dynamic_field::DynamicFieldName;
 use iota_interaction::{IotaClientTrait, OptionalSync};
 use product_common::core_client::CoreClientReadOnly;
 
@@ -111,12 +113,43 @@ async fn revoked_capability_ids<C>(client: &C, trail: &OnChainAuditTrail) -> Res
 where
     C: CoreClientReadOnly + OptionalSync,
 {
-    linked_table::collect_keys::<_, ObjectID, u64>(
-        client,
-        &trail.roles.revoked_capabilities,
-        TypeTag::Struct(Box::new(ID::type_())),
-    )
-    .await
+    let table = &trail.roles.revoked_capabilities;
+    let expected = table.size as usize;
+    let mut cursor = table.head;
+    let mut keys = HashSet::with_capacity(expected);
+
+    while let Some(key) = cursor {
+        if !keys.insert(key) {
+            return Err(Error::UnexpectedApiResponse(format!(
+                "cycle detected while traversing linked-table {table_id}; repeated key {key}",
+                table_id = table.id
+            )));
+        }
+
+        let node = linked_table::fetch_node::<_, ObjectID, u64>(
+            client,
+            table.id,
+            DynamicFieldName {
+                type_: TypeTag::Struct(Box::new(ID::type_())),
+                value: IotaMoveStruct::WithFields(BTreeMap::from([(
+                    "bytes".to_string(),
+                    IotaMoveValue::Address(IotaAddress::from(key)),
+                )]))
+                .to_json_value(),
+            },
+        )
+        .await?;
+        cursor = node.next;
+    }
+
+    if keys.len() != expected {
+        return Err(Error::UnexpectedApiResponse(format!(
+            "linked-table traversal mismatch; expected {expected} entries, got {}",
+            keys.len()
+        )));
+    }
+
+    Ok(keys)
 }
 
 fn capability_matches<P>(
