@@ -10,43 +10,43 @@ path = "utils/utils.rs"
 
 [[example]]
 name = "01_create_locked_notarization"
-path = "01_create_locked_notarization.rs"
+path = "notarization/01_create_locked_notarization.rs"
 
 [[example]]
 name = "02_create_dynamic_notarization"
-path = "02_create_dynamic_notarization.rs"
+path = "notarization/02_create_dynamic_notarization.rs"
 
 [[example]]
 name = "03_update_dynamic_notarization"
-path = "03_update_dynamic_notarization.rs"
+path = "notarization/03_update_dynamic_notarization.rs"
 
 [[example]]
 name = "04_destroy_notarization"
-path = "04_destroy_notarization.rs"
+path = "notarization/04_destroy_notarization.rs"
 
 [[example]]
 name = "05_update_state"
-path = "05_update_state.rs"
+path = "notarization/05_update_state.rs"
 
 [[example]]
 name = "06_update_metadata"
-path = "06_update_metadata.rs"
+path = "notarization/06_update_metadata.rs"
 
 [[example]]
 name = "07_transfer_dynamic_notarization"
-path = "07_transfer_dynamic_notarization.rs"
+path = "notarization/07_transfer_dynamic_notarization.rs"
 
 [[example]]
 name = "08_access_read_only_methods"
-path = "08_access_read_only_methods.rs"
+path = "notarization/08_access_read_only_methods.rs"
 
 [[example]]
 name = "01_iot_weather_station"
-path = "real-world/01_iot_weather_station.rs"
+path = "notarization/real-world/01_iot_weather_station.rs"
 
 [[example]]
 name = "02_legal_contract"
-path = "real-world/02_legal_contract.rs"
+path = "notarization/real-world/02_legal_contract.rs"
 
 [dependencies]
 anyhow.workspace = true
