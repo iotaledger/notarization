@@ -94,6 +94,15 @@ impl WasmNotarizationClient {
             .collect()
     }
 
+    /// Retrieves the [`TfComponents`] package ID for the current network, if available.
+    ///
+    /// # Returns
+    /// The package ID as a string, or `undefined` when no package applies.
+    #[wasm_bindgen(js_name = tfComponentsPackageId)]
+    pub fn tf_components_package_id(&self) -> Option<String> {
+        None
+    }
+
     /// Retrieves the IOTA client instance.
     ///
     /// # Returns
