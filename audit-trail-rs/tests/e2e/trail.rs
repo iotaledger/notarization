@@ -47,12 +47,7 @@ async fn create_trail_with_default_builder_settings() -> anyhow::Result<()> {
 async fn create_empty_trail_with_default_builder_settings() -> anyhow::Result<()> {
     let client = get_funded_test_client().await?;
 
-    let created = client
-        .create_trail()
-        .finish()
-        .build_and_execute(&client)
-        .await?
-        .output;
+    let created = client.create_trail().finish().build_and_execute(&client).await?.output;
 
     assert_eq!(created.creator, client.sender_address());
 

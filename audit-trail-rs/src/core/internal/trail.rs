@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use iota_interaction::rpc_types::{IotaData as _, IotaObjectDataOptions};
+use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::{IotaClientTrait, OptionalSync};
 use product_common::core_client::CoreClientReadOnly;
 
 use crate::core::types::OnChainAuditTrail;
 use crate::error::Error;
-use iota_interaction::types::base_types::ObjectID;
 
 pub(crate) async fn get_audit_trail<C>(trail_id: ObjectID, client: &C) -> Result<OnChainAuditTrail, Error>
 where

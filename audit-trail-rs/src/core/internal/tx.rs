@@ -17,8 +17,7 @@ use iota_interaction::{IotaClientTrait, OptionalSync, ident_str};
 use product_common::core_client::CoreClientReadOnly;
 use serde::Serialize;
 
-use super::capability;
-use super::trail as trail_reader;
+use super::{capability, trail as trail_reader};
 use crate::core::types::Permission;
 use crate::error::Error;
 

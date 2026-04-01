@@ -3,20 +3,18 @@
 
 use std::collections::{BTreeMap, HashSet};
 
-use iota_interaction::rpc_types::{IotaMoveStruct, IotaMoveValue};
 use iota_interaction::move_types::language_storage::StructTag;
 use iota_interaction::rpc_types::{
-    IotaObjectDataFilter, IotaObjectDataOptions, IotaObjectResponseQuery, IotaParsedData,
+    IotaMoveStruct, IotaMoveValue, IotaObjectDataFilter, IotaObjectDataOptions, IotaObjectResponseQuery, IotaParsedData,
 };
 use iota_interaction::types::TypeTag;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID, ObjectRef};
-use iota_interaction::types::id::ID;
 use iota_interaction::types::dynamic_field::DynamicFieldName;
+use iota_interaction::types::id::ID;
 use iota_interaction::{IotaClientTrait, OptionalSync};
 use product_common::core_client::CoreClientReadOnly;
 
-use super::linked_table;
-use super::tx;
+use super::{linked_table, tx};
 use crate::core::types::{Capability, OnChainAuditTrail, Permission};
 use crate::error::Error;
 

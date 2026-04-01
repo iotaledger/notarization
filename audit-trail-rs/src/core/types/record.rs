@@ -5,10 +5,10 @@ use std::collections::{BTreeMap, HashSet};
 use std::str::FromStr;
 
 use iota_interaction::ident_str;
+use iota_interaction::types::TypeTag;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
 use iota_interaction::types::transaction::Argument;
-use iota_interaction::types::TypeTag;
 use serde::{Deserialize, Serialize};
 
 use crate::core::internal::tx;
@@ -56,7 +56,7 @@ impl InitialRecord {
             "{package_id}::record::InitialRecord<{}>",
             Data::tag(package_id)
         ))
-            .expect("invalid TypeTag for InitialRecord")
+        .expect("invalid TypeTag for InitialRecord")
     }
 
     pub(in crate::core) fn into_ptb(self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
@@ -224,8 +224,8 @@ mod tests {
 
     #[test]
     fn data_bcs_roundtrip_preserves_bytes_variant() {
-        let encoded = bcs::to_bytes(&Data::Bytes(vec![0x47, 0x49, 0x46, 0x38, 0x39, 0x61]))
-            .expect("failed to encode Data");
+        let encoded =
+            bcs::to_bytes(&Data::Bytes(vec![0x47, 0x49, 0x46, 0x38, 0x39, 0x61])).expect("failed to encode Data");
         let data = bcs::from_bytes::<Data>(&encoded).expect("failed to decode Data");
         assert_eq!(data, Data::Bytes(vec![0x47, 0x49, 0x46, 0x38, 0x39, 0x61]));
     }
