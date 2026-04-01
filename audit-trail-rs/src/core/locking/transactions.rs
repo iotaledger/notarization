@@ -14,6 +14,7 @@ use super::operations::LockingOps;
 use crate::core::types::{LockingConfig, LockingWindow, TimeLock};
 use crate::error::Error;
 
+/// Transaction that replaces the full locking configuration.
 #[derive(Debug, Clone)]
 pub struct UpdateLockingConfig {
     trail_id: ObjectID,
@@ -23,6 +24,7 @@ pub struct UpdateLockingConfig {
 }
 
 impl UpdateLockingConfig {
+    /// Creates an `UpdateLockingConfig` transaction builder payload.
     pub fn new(trail_id: ObjectID, owner: IotaAddress, config: LockingConfig) -> Self {
         Self {
             trail_id,
@@ -61,6 +63,7 @@ impl Transaction for UpdateLockingConfig {
     }
 }
 
+/// Transaction that updates the delete-record window.
 #[derive(Debug, Clone)]
 pub struct UpdateDeleteRecordWindow {
     trail_id: ObjectID,
@@ -70,6 +73,7 @@ pub struct UpdateDeleteRecordWindow {
 }
 
 impl UpdateDeleteRecordWindow {
+    /// Creates an `UpdateDeleteRecordWindow` transaction builder payload.
     pub fn new(trail_id: ObjectID, owner: IotaAddress, window: LockingWindow) -> Self {
         Self {
             trail_id,
@@ -108,6 +112,7 @@ impl Transaction for UpdateDeleteRecordWindow {
     }
 }
 
+/// Transaction that updates the delete-trail lock.
 #[derive(Debug, Clone)]
 pub struct UpdateDeleteTrailLock {
     trail_id: ObjectID,
@@ -117,6 +122,7 @@ pub struct UpdateDeleteTrailLock {
 }
 
 impl UpdateDeleteTrailLock {
+    /// Creates an `UpdateDeleteTrailLock` transaction builder payload.
     pub fn new(trail_id: ObjectID, owner: IotaAddress, lock: TimeLock) -> Self {
         Self {
             trail_id,
@@ -155,6 +161,7 @@ impl Transaction for UpdateDeleteTrailLock {
     }
 }
 
+/// Transaction that updates the write lock.
 #[derive(Debug, Clone)]
 pub struct UpdateWriteLock {
     trail_id: ObjectID,
@@ -164,6 +171,7 @@ pub struct UpdateWriteLock {
 }
 
 impl UpdateWriteLock {
+    /// Creates an `UpdateWriteLock` transaction builder payload.
     pub fn new(trail_id: ObjectID, owner: IotaAddress, lock: TimeLock) -> Self {
         Self {
             trail_id,

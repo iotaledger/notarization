@@ -13,6 +13,7 @@ use tokio::sync::OnceCell;
 use super::operations::TagsOps;
 use crate::error::Error;
 
+/// Transaction that adds a record tag to the trail registry.
 #[derive(Debug, Clone)]
 pub struct AddRecordTag {
     trail_id: ObjectID,
@@ -22,6 +23,7 @@ pub struct AddRecordTag {
 }
 
 impl AddRecordTag {
+    /// Creates an `AddRecordTag` transaction builder payload.
     pub fn new(trail_id: ObjectID, owner: IotaAddress, tag: String) -> Self {
         Self {
             trail_id,
@@ -60,6 +62,7 @@ impl Transaction for AddRecordTag {
     }
 }
 
+/// Transaction that removes a record tag from the trail registry.
 #[derive(Debug, Clone)]
 pub struct RemoveRecordTag {
     trail_id: ObjectID,
@@ -69,6 +72,7 @@ pub struct RemoveRecordTag {
 }
 
 impl RemoveRecordTag {
+    /// Creates a `RemoveRecordTag` transaction builder payload.
     pub fn new(trail_id: ObjectID, owner: IotaAddress, tag: String) -> Self {
         Self {
             trail_id,

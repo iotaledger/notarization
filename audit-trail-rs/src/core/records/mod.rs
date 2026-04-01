@@ -1,6 +1,8 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! Record read and mutation APIs for audit trails.
+
 use std::collections::{BTreeMap, HashMap};
 
 use iota_interaction::move_core_types::annotated_value::MoveValue;
@@ -29,6 +31,7 @@ use self::operations::RecordsOps;
 
 const MAX_LIST_PAGE_LIMIT: usize = 1_000;
 
+/// Record API scoped to a specific trail.
 #[derive(Debug, Clone)]
 pub struct TrailRecords<'a, C, D = Data> {
     pub(crate) client: &'a C,
@@ -45,6 +48,11 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
         }
     }
 
+    /// Loads a single record by sequence number.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the record cannot be loaded or deserialized.
     pub async fn get(&self, sequence_number: u64) -> Result<Record<D>, Error>
     where
         C: AuditTrailReadOnly,
@@ -54,6 +62,7 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
         self.client.execute_read_only_transaction(tx).await
     }
 
+    /// Builds a transaction that appends a record to the trail.
     pub fn add<S>(&self, data: D, metadata: Option<String>, tag: Option<String>) -> TransactionBuilder<AddRecord>
     where
         C: AuditTrailFull + CoreClient<S>,
@@ -64,6 +73,7 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
         TransactionBuilder::new(AddRecord::new(self.trail_id, owner, data.into(), metadata, tag))
     }
 
+    /// Builds a transaction that deletes a single record.
     pub fn delete<S>(&self, sequence_number: u64) -> TransactionBuilder<DeleteRecord>
     where
         C: AuditTrailFull + CoreClient<S>,
@@ -73,6 +83,7 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
         TransactionBuilder::new(DeleteRecord::new(self.trail_id, owner, sequence_number))
     }
 
+    /// Builds a transaction that deletes up to `limit` records in one operation.
     pub fn delete_records_batch<S>(&self, limit: u64) -> TransactionBuilder<DeleteRecordsBatch>
     where
         C: AuditTrailFull + CoreClient<S>,
@@ -82,6 +93,11 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
         TransactionBuilder::new(DeleteRecordsBatch::new(self.trail_id, owner, limit))
     }
 
+    /// Placeholder for a future correction helper.
+    ///
+    /// # Errors
+    ///
+    /// Always returns [`Error::NotImplemented`].
     pub async fn correct(&self, _replaces: Vec<u64>, _data: D, _metadata: Option<String>) -> Result<(), Error>
     where
         C: AuditTrailFull,
@@ -89,6 +105,11 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
         Err(Error::NotImplemented("TrailRecords::correct"))
     }
 
+    /// Returns the number of records currently stored in the trail.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the count cannot be computed from the current on-chain state.
     pub async fn record_count(&self) -> Result<u64, Error>
     where
         C: AuditTrailReadOnly,

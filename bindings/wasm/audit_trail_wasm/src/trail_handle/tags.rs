@@ -12,6 +12,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::trail::{WasmAddRecordTag, WasmRemoveRecordTag};
 
+/// Tag-registry API scoped to a specific trail.
 #[derive(Clone)]
 #[wasm_bindgen(js_name = TrailTags, inspectable)]
 pub struct WasmTrailTags {
@@ -20,6 +21,7 @@ pub struct WasmTrailTags {
 }
 
 impl WasmTrailTags {
+    /// Returns the writable client for tag mutations.
     fn require_write(&self) -> Result<&AuditTrailClient<WasmTransactionSigner>> {
         self.full.as_ref().ok_or_else(|| {
             wasm_error(anyhow!(
@@ -31,12 +33,14 @@ impl WasmTrailTags {
 
 #[wasm_bindgen(js_class = TrailTags)]
 impl WasmTrailTags {
+    /// Builds a transaction that adds a tag to the trail registry.
     #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<AddRecordTag>")]
     pub fn add(&self, tag: String) -> Result<WasmTransactionBuilder> {
         let tx = self.require_write()?.trail(self.trail_id).tags().add(tag).into_inner();
         Ok(into_transaction_builder(WasmAddRecordTag(tx)))
     }
 
+    /// Builds a transaction that removes a tag from the trail registry.
     #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<RemoveRecordTag>")]
     pub fn remove(&self, tag: String) -> Result<WasmTransactionBuilder> {
         let tx = self

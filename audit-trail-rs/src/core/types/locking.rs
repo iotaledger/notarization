@@ -13,8 +13,11 @@ use crate::error::Error;
 /// Locking configuration for the audit trail.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct LockingConfig {
+    /// Delete-window policy applied to individual records.
     pub delete_record_window: LockingWindow,
+    /// Time lock that gates deletion of the entire trail.
     pub delete_trail_lock: TimeLock,
+    /// Time lock that gates record writes.
     pub write_lock: TimeLock,
 }
 
@@ -47,10 +50,15 @@ impl LockingConfig {
 /// Must match `tf_components::timelock::TimeLock` variant order for BCS compatibility.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum TimeLock {
+    /// Unlocks at the given Unix timestamp in seconds.
     UnlockAt(u32),
+    /// Unlocks at the given Unix timestamp in milliseconds.
     UnlockAtMs(u64),
+    /// Remains locked until the protected object is explicitly destroyed.
     UntilDestroyed,
+    /// Represents an always-locked state.
     Infinite,
+    /// Disables the time lock.
     #[default]
     None,
 }
@@ -110,12 +118,17 @@ impl TimeLock {
 /// Defines a locking window (none, time based, or count based).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum LockingWindow {
+    /// No delete window is enforced.
     #[default]
     None,
+    /// Records may be deleted only within the given number of seconds since creation.
     TimeBased {
+        /// Window size in seconds.
         seconds: u64,
     },
+    /// Records may be deleted only within the first `count` subsequent records.
     CountBased {
+        /// Number of subsequent records after which deletion is no longer allowed.
         count: u64,
     },
 }

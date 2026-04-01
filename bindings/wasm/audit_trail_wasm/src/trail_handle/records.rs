@@ -14,6 +14,7 @@ use wasm_bindgen::prelude::*;
 use crate::trail::{WasmAddRecord, WasmDeleteRecord, WasmDeleteRecordsBatch};
 use crate::types::{WasmData, WasmEmpty, WasmPaginatedRecord, WasmRecord};
 
+/// Record API scoped to a specific trail.
 #[derive(Clone)]
 #[wasm_bindgen(js_name = TrailRecords, inspectable)]
 pub struct WasmTrailRecords {
@@ -37,6 +38,7 @@ impl WasmTrailRecords {
 
 #[wasm_bindgen(js_class = TrailRecords)]
 impl WasmTrailRecords {
+    /// Loads one record by sequence number.
     pub async fn get(&self, sequence_number: u64) -> Result<WasmRecord> {
         let record = self
             .read_only
@@ -48,6 +50,7 @@ impl WasmTrailRecords {
         Ok(record.into())
     }
 
+    /// Returns the number of records currently stored in the trail.
     #[wasm_bindgen(js_name = recordCount)]
     pub async fn record_count(&self) -> Result<u64> {
         self.read_only
@@ -58,6 +61,7 @@ impl WasmTrailRecords {
             .wasm_result()
     }
 
+    /// Lists all records in sequence-number order.
     pub async fn list(&self) -> Result<Vec<WasmRecord>> {
         let mut records: Vec<_> = self
             .read_only
@@ -72,6 +76,7 @@ impl WasmTrailRecords {
         Ok(records.into_iter().map(|(_, record)| record.into()).collect())
     }
 
+    /// Lists all records while enforcing a maximum number of entries.
     #[wasm_bindgen(js_name = listWithLimit)]
     pub async fn list_with_limit(&self, max_entries: usize) -> Result<Vec<WasmRecord>> {
         let mut records: Vec<_> = self
@@ -87,6 +92,7 @@ impl WasmTrailRecords {
         Ok(records.into_iter().map(|(_, record)| record.into()).collect())
     }
 
+    /// Loads one page of records starting at `cursor`.
     #[wasm_bindgen(js_name = listPage)]
     pub async fn list_page(&self, cursor: Option<u64>, limit: usize) -> Result<WasmPaginatedRecord> {
         let page = self
@@ -99,6 +105,7 @@ impl WasmTrailRecords {
         Ok(page.into())
     }
 
+    /// Executes the correction helper for a record payload.
     pub async fn correct(&self, replaces: Vec<u64>, data: WasmData, metadata: Option<String>) -> Result<WasmEmpty> {
         self.require_write()?
             .trail(self.trail_id)
@@ -109,6 +116,7 @@ impl WasmTrailRecords {
         Ok(WasmEmpty)
     }
 
+    /// Builds a record-add transaction.
     #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<AddRecord>")]
     pub fn add(&self, data: WasmData, metadata: Option<String>, tag: Option<String>) -> Result<WasmTransactionBuilder> {
         let tx = self
@@ -120,6 +128,7 @@ impl WasmTrailRecords {
         Ok(into_transaction_builder(WasmAddRecord(tx)))
     }
 
+    /// Builds a single-record delete transaction.
     #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<DeleteRecord>")]
     pub fn delete(&self, sequence_number: u64) -> Result<WasmTransactionBuilder> {
         let tx = self
@@ -131,6 +140,7 @@ impl WasmTrailRecords {
         Ok(into_transaction_builder(WasmDeleteRecord(tx)))
     }
 
+    /// Builds a batched record-delete transaction.
     #[wasm_bindgen(js_name = deleteBatch, unchecked_return_type = "TransactionBuilder<DeleteRecordsBatch>")]
     pub fn delete_batch(&self, limit: u64) -> Result<WasmTransactionBuilder> {
         let tx = self

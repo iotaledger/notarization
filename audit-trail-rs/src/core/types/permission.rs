@@ -13,27 +13,46 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::Error;
 
-/// Permission enum matching the Move permission module.
+/// Audit-trail permission variants mirrored from the Move permission module.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub enum Permission {
+    /// Allows deleting the entire trail.
     DeleteAuditTrail,
+    /// Allows deleting all records in batch form.
     DeleteAllRecords,
+    /// Allows adding records.
     AddRecord,
+    /// Allows deleting individual records.
     DeleteRecord,
+    /// Allows creating correction records.
     CorrectRecord,
+    /// Allows updating the full locking configuration.
     UpdateLockingConfig,
+    /// Allows updating the delete-record window.
     UpdateLockingConfigForDeleteRecord,
+    /// Allows updating the delete-trail time lock.
     UpdateLockingConfigForDeleteTrail,
+    /// Allows updating the write lock.
     UpdateLockingConfigForWrite,
+    /// Allows creating roles.
     AddRoles,
+    /// Allows updating roles.
     UpdateRoles,
+    /// Allows deleting roles.
     DeleteRoles,
+    /// Allows issuing capabilities.
     AddCapabilities,
+    /// Allows revoking capabilities.
     RevokeCapabilities,
+    /// Allows updating mutable metadata.
     UpdateMetadata,
+    /// Allows deleting mutable metadata.
     DeleteMetadata,
+    /// Allows migrating the trail to a newer package version.
     Migrate,
+    /// Allows adding trail-owned record tags.
     AddRecordTags,
+    /// Allows deleting trail-owned record tags.
     DeleteRecordTags,
 }
 
@@ -75,9 +94,10 @@ impl Permission {
     }
 }
 
-/// Convenience wrapper for permission sets.
+/// Convenience wrapper around a set of [`Permission`] values.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct PermissionSet {
+    /// Permissions granted by this set.
     pub permissions: HashSet<Permission>,
 }
 
@@ -92,6 +112,7 @@ impl PermissionSet {
 
         Ok(ptb.command(Command::MakeMoveVec(Some(permission_type.into()), permission_args)))
     }
+    /// Returns the recommended role-administration permissions.
     pub fn admin_permissions() -> Self {
         Self {
             permissions: HashSet::from([
@@ -106,6 +127,7 @@ impl PermissionSet {
         }
     }
 
+    /// Returns the permissions needed to administer records.
     pub fn record_admin_permissions() -> Self {
         Self {
             permissions: HashSet::from([
@@ -116,6 +138,7 @@ impl PermissionSet {
         }
     }
 
+    /// Returns the permissions needed to administer locking rules.
     pub fn locking_admin_permissions() -> Self {
         Self {
             permissions: HashSet::from([
@@ -127,24 +150,28 @@ impl PermissionSet {
         }
     }
 
+    /// Returns the permissions needed to administer roles.
     pub fn role_admin_permissions() -> Self {
         Self {
             permissions: HashSet::from([Permission::AddRoles, Permission::UpdateRoles, Permission::DeleteRoles]),
         }
     }
 
+    /// Returns the permissions needed to administer record tags.
     pub fn tag_admin_permissions() -> Self {
         Self {
             permissions: HashSet::from([Permission::AddRecordTags, Permission::DeleteRecordTags]),
         }
     }
 
+    /// Returns the permissions needed to issue and revoke capabilities.
     pub fn cap_admin_permissions() -> Self {
         Self {
             permissions: HashSet::from_iter(vec![Permission::AddCapabilities, Permission::RevokeCapabilities]),
         }
     }
 
+    /// Returns the permissions needed to administer mutable metadata.
     pub fn metadata_admin_permissions() -> Self {
         Self {
             permissions: HashSet::from_iter(vec![Permission::UpdateMetadata, Permission::DeleteMetadata]),

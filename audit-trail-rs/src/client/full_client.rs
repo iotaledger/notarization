@@ -1,9 +1,10 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-//! A full client wrapper for audit trail interactions.
+//! Signing client support for audit-trail interactions.
 //!
-//! This client includes signing capabilities for executing transactions.
+//! [`AuditTrailClient`] combines an [`AuditTrailClientReadOnly`] with a signer so the crate can
+//! build typed write transactions against the connected network.
 
 use std::ops::Deref;
 
@@ -32,10 +33,9 @@ use crate::iota_interaction_adapter::IotaClientAdapter;
 #[non_exhaustive]
 pub struct NoSigner;
 
-/// The error that results from a failed attempt at creating an [IdentityClient]
-/// from a given [IotaClient].
+/// Error returned when constructing an [`AuditTrailClient`] from an IOTA client fails.
 #[derive(Debug, thiserror::Error)]
-#[error("failed to create an 'IdentityClient' from the given 'IotaClient'")]
+#[error("failed to create an 'AuditTrailClient' from the given 'IotaClient'")]
 #[non_exhaustive]
 pub struct FromIotaClientError {
     /// Type of failure for this error.
@@ -43,12 +43,12 @@ pub struct FromIotaClientError {
     pub kind: FromIotaClientErrorKind,
 }
 
-/// Types of failure for [FromIotaClientError].
+/// Categories of failure for [`FromIotaClientError`].
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum FromIotaClientErrorKind {
     /// A package ID is required, but was not supplied.
-    #[error("an IOTA Identity package ID must be supplied when connecting to an unofficial IOTA network")]
+    #[error("an audit-trail package ID must be supplied when connecting to an unofficial IOTA network")]
     MissingPackageId,
     /// Network ID resolution through an RPC call failed.
     #[error("failed to resolve the network the given client is connected to")]
@@ -71,15 +71,16 @@ impl<S> Deref for AuditTrailClient<S> {
 }
 
 impl AuditTrailClient<NoSigner> {
-    /// Creates a new [AuditTrailClient], with **no** signing capabilities, from the given [IotaClient].
+    /// Creates a new client with no signing capabilities from an IOTA client.
     ///
     /// # Warning
-    /// Passing `package_overrides` is **only** required when connecting to a custom IOTA network
-    /// or when testing against explicitly deployed package pairs.
     ///
-    /// Relying on a custom Audit Trail package when connected to an official IOTA network is **highly
-    /// discouraged** and is sure to result in compatibility issues when interacting with other official
-    /// IOTA Trust Framework's products.
+    /// Passing `package_overrides` is only needed when connecting to a custom IOTA network or
+    /// when testing against explicitly deployed package pairs.
+    ///
+    /// Relying on a custom audit-trail package while connected to an official IOTA network is
+    /// strongly discouraged and can lead to compatibility problems with other official IOTA Trust
+    /// Framework products.
     ///
     /// # Examples
     /// ```rust,ignore
@@ -122,7 +123,11 @@ impl AuditTrailClient<NoSigner> {
 }
 
 impl<S> AuditTrailClient<S> {
-    /// Creates a new client with signing capabilities from an existing read-only client.
+    /// Creates a signing client from an existing read-only client and signer.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the signer public key cannot be loaded.
     pub async fn new(client: AuditTrailClientReadOnly, signer: S) -> Result<Self, Error>
     where
         S: Signer<IotaKeySignature>,
@@ -139,7 +144,11 @@ impl<S> AuditTrailClient<S> {
         })
     }
 
-    /// Sets a new signer for this client.
+    /// Replaces the signer used by this client.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the replacement signer public key cannot be loaded.
     pub async fn with_signer<NewS>(self, signer: NewS) -> Result<AuditTrailClient<NewS>, secret_storage::Error>
     where
         NewS: Signer<IotaKeySignature>,
@@ -152,10 +161,12 @@ impl<S> AuditTrailClient<S> {
             signer,
         })
     }
+    /// Returns the underlying read-only client view.
     pub fn read_only(&self) -> &AuditTrailClientReadOnly {
         &self.read_client
     }
 
+    /// Returns a typed handle bound to a specific trail object ID.
     pub fn trail<'a>(&'a self, trail_id: ObjectID) -> AuditTrailHandle<'a, Self> {
         AuditTrailHandle::new(self, trail_id)
     }
@@ -165,16 +176,15 @@ impl<S> AuditTrailClient<S> {
         self.read_client.tf_components_package_id()
     }
 
-    /// Creates a builder for an audit trail.
+    /// Creates a builder for a new audit trail.
+    ///
+    /// When the client has a signer, the builder is pre-populated with that signer's address as
+    /// the initial admin.
     pub fn create_trail(&self) -> AuditTrailBuilder {
         AuditTrailBuilder {
             admin: self.public_key.as_ref().map(IotaAddress::from),
             ..AuditTrailBuilder::default()
         }
-    }
-
-    pub async fn delete_trail(&self, _trail_id: ObjectID) -> Result<(), Error> {
-        Err(Error::NotImplemented("AuditTrailClient::delete_trail"))
     }
 }
 
@@ -239,6 +249,7 @@ impl<S> AuditTrailReadOnly for AuditTrailClient<S>
 where
     S: Signer<IotaKeySignature> + OptionalSync,
 {
+    /// Delegates read-only execution to the wrapped [`AuditTrailClientReadOnly`].
     async fn execute_read_only_transaction<T: DeserializeOwned>(
         &self,
         tx: ProgrammableTransaction,

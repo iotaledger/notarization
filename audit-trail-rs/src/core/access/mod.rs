@@ -1,6 +1,8 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! Role and capability management APIs for audit trails.
+
 use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::{IotaKeySignature, OptionalSync};
 use product_common::core_client::CoreClient;
@@ -18,6 +20,7 @@ pub use transactions::{
     IssueCapability, RevokeCapability, RevokeInitialAdminCapability, UpdateRole,
 };
 
+/// Access-control API scoped to a specific trail.
 #[derive(Debug, Clone)]
 pub struct TrailAccess<'a, C> {
     pub(crate) client: &'a C,
@@ -29,7 +32,7 @@ impl<'a, C> TrailAccess<'a, C> {
         Self { client, trail_id }
     }
 
-    /// Returns a handle bound to a specific role name.
+    /// Returns a role-scoped handle for the given role name.
     pub fn for_role(&self, name: impl Into<String>) -> RoleHandle<'a, C> {
         RoleHandle::new(self.client, self.trail_id, name.into())
     }
@@ -111,6 +114,7 @@ impl<'a, C> TrailAccess<'a, C> {
     }
 }
 
+/// Role-scoped access-control API.
 #[derive(Debug, Clone)]
 pub struct RoleHandle<'a, C> {
     pub(crate) client: &'a C,
@@ -123,6 +127,7 @@ impl<'a, C> RoleHandle<'a, C> {
         Self { client, trail_id, name }
     }
 
+    /// Returns the role name represented by this handle.
     pub fn name(&self) -> &str {
         &self.name
     }

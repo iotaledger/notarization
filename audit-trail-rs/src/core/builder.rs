@@ -14,11 +14,17 @@ use crate::core::create::CreateTrail;
 /// Builder for creating an audit trail.
 #[derive(Debug, Clone, Default)]
 pub struct AuditTrailBuilder {
+    /// Initial admin address that should receive the initial admin capability.
     pub admin: Option<IotaAddress>,
+    /// Optional initial record created together with the trail.
     pub initial_record: Option<InitialRecord>,
+    /// Locking rules to apply at creation time.
     pub locking_config: LockingConfig,
+    /// Immutable metadata stored once at creation time.
     pub trail_metadata: Option<ImmutableMetadata>,
+    /// Mutable metadata stored on the trail object.
     pub updatable_metadata: Option<String>,
+    /// Canonical list of record tags owned by the trail.
     pub record_tags: HashSet<String>,
 }
 

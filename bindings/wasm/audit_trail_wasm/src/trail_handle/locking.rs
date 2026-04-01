@@ -15,6 +15,7 @@ use crate::trail::{
 };
 use crate::types::{WasmLockingConfig, WasmLockingWindow, WasmTimeLock};
 
+/// Locking API scoped to a specific trail.
 #[derive(Clone)]
 #[wasm_bindgen(js_name = TrailLocking, inspectable)]
 pub struct WasmTrailLocking {
@@ -38,6 +39,7 @@ impl WasmTrailLocking {
 
 #[wasm_bindgen(js_class = TrailLocking)]
 impl WasmTrailLocking {
+    /// Builds a transaction that replaces the full locking configuration.
     #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<UpdateLockingConfig>")]
     pub fn update(&self, config: WasmLockingConfig) -> Result<WasmTransactionBuilder> {
         let tx = self
@@ -49,6 +51,7 @@ impl WasmTrailLocking {
         Ok(into_transaction_builder(WasmUpdateLockingConfig(tx)))
     }
 
+    /// Builds a transaction that updates only the delete-record window.
     #[wasm_bindgen(js_name = updateDeleteRecordWindow, unchecked_return_type = "TransactionBuilder<UpdateDeleteRecordWindow>")]
     pub fn update_delete_record_window(&self, window: WasmLockingWindow) -> Result<WasmTransactionBuilder> {
         let tx = self
@@ -60,6 +63,7 @@ impl WasmTrailLocking {
         Ok(into_transaction_builder(WasmUpdateDeleteRecordWindow(tx)))
     }
 
+    /// Builds a transaction that updates only the delete-trail lock.
     #[wasm_bindgen(js_name = updateDeleteTrailLock, unchecked_return_type = "TransactionBuilder<UpdateDeleteTrailLock>")]
     pub fn update_delete_trail_lock(&self, lock: WasmTimeLock) -> Result<WasmTransactionBuilder> {
         let tx = self
@@ -71,6 +75,7 @@ impl WasmTrailLocking {
         Ok(into_transaction_builder(WasmUpdateDeleteTrailLock(tx)))
     }
 
+    /// Builds a transaction that updates only the write lock.
     #[wasm_bindgen(js_name = updateWriteLock, unchecked_return_type = "TransactionBuilder<UpdateWriteLock>")]
     pub fn update_write_lock(&self, lock: WasmTimeLock) -> Result<WasmTransactionBuilder> {
         let tx = self
@@ -82,6 +87,7 @@ impl WasmTrailLocking {
         Ok(into_transaction_builder(WasmUpdateWriteLock(tx)))
     }
 
+    /// Returns whether a record is currently locked against deletion.
     #[wasm_bindgen(js_name = isRecordLocked)]
     pub async fn is_record_locked(&self, sequence_number: u64) -> Result<bool> {
         self.read_only

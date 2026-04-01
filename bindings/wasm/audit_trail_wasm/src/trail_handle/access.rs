@@ -18,6 +18,7 @@ use crate::trail::{
 };
 use crate::types::{WasmCapabilityIssueOptions, WasmPermissionSet, WasmRoleTags};
 
+/// Access-control API scoped to a specific trail.
 #[derive(Clone)]
 #[wasm_bindgen(js_name = TrailAccess, inspectable)]
 pub struct WasmTrailAccess {
@@ -40,6 +41,7 @@ impl WasmTrailAccess {
 
 #[wasm_bindgen(js_class = TrailAccess)]
 impl WasmTrailAccess {
+    /// Returns a role-scoped handle for the given role name.
     #[wasm_bindgen(js_name = forRole)]
     pub fn for_role(&self, name: String) -> WasmRoleHandle {
         WasmRoleHandle {
@@ -49,6 +51,7 @@ impl WasmTrailAccess {
         }
     }
 
+    /// Builds a capability-revocation transaction.
     #[wasm_bindgen(js_name = revokeCapability, unchecked_return_type = "TransactionBuilder<RevokeCapability>")]
     pub fn revoke_capability(
         &self,
@@ -65,6 +68,7 @@ impl WasmTrailAccess {
         Ok(into_transaction_builder(WasmRevokeCapability(tx)))
     }
 
+    /// Builds a capability-destruction transaction.
     #[wasm_bindgen(js_name = destroyCapability, unchecked_return_type = "TransactionBuilder<DestroyCapability>")]
     pub fn destroy_capability(&self, capability_id: WasmObjectID) -> Result<WasmTransactionBuilder> {
         let capability_id = parse_wasm_object_id(&capability_id)?;
@@ -77,6 +81,7 @@ impl WasmTrailAccess {
         Ok(into_transaction_builder(WasmDestroyCapability(tx)))
     }
 
+    /// Builds an initial-admin-capability destruction transaction.
     #[wasm_bindgen(js_name = destroyInitialAdminCapability, unchecked_return_type = "TransactionBuilder<DestroyInitialAdminCapability>")]
     pub fn destroy_initial_admin_capability(&self, capability_id: WasmObjectID) -> Result<WasmTransactionBuilder> {
         let capability_id = parse_wasm_object_id(&capability_id)?;
@@ -89,6 +94,7 @@ impl WasmTrailAccess {
         Ok(into_transaction_builder(WasmDestroyInitialAdminCapability(tx)))
     }
 
+    /// Builds an initial-admin-capability revocation transaction.
     #[wasm_bindgen(js_name = revokeInitialAdminCapability, unchecked_return_type = "TransactionBuilder<RevokeInitialAdminCapability>")]
     pub fn revoke_initial_admin_capability(
         &self,
@@ -105,6 +111,7 @@ impl WasmTrailAccess {
         Ok(into_transaction_builder(WasmRevokeInitialAdminCapability(tx)))
     }
 
+    /// Builds a cleanup transaction for expired revoked-capability entries.
     #[wasm_bindgen(js_name = cleanupRevokedCapabilities, unchecked_return_type = "TransactionBuilder<CleanupRevokedCapabilities>")]
     pub fn cleanup_revoked_capabilities(&self) -> Result<WasmTransactionBuilder> {
         let tx = self
@@ -117,6 +124,7 @@ impl WasmTrailAccess {
     }
 }
 
+/// Role-scoped access-control API.
 #[derive(Clone)]
 #[wasm_bindgen(js_name = RoleHandle, inspectable)]
 pub struct WasmRoleHandle {
@@ -140,11 +148,13 @@ impl WasmRoleHandle {
 
 #[wasm_bindgen(js_class = RoleHandle)]
 impl WasmRoleHandle {
+    /// Returns the role name represented by this handle.
     #[wasm_bindgen(getter)]
     pub fn name(&self) -> String {
         self.name.clone()
     }
 
+    /// Builds a role-creation transaction.
     #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<CreateRole>")]
     pub fn create(
         &self,
@@ -161,6 +171,7 @@ impl WasmRoleHandle {
         Ok(into_transaction_builder(WasmCreateRole(tx)))
     }
 
+    /// Builds a capability-issuance transaction for this role.
     #[wasm_bindgen(js_name = issueCapability, unchecked_return_type = "TransactionBuilder<IssueCapability>")]
     pub fn issue_capability(&self, options: WasmCapabilityIssueOptions) -> Result<WasmTransactionBuilder> {
         let tx = self
@@ -173,6 +184,7 @@ impl WasmRoleHandle {
         Ok(into_transaction_builder(WasmIssueCapability(tx)))
     }
 
+    /// Builds a role-update transaction for this role.
     #[wasm_bindgen(js_name = updatePermissions, unchecked_return_type = "TransactionBuilder<UpdateRole>")]
     pub fn update_permissions(
         &self,
@@ -189,6 +201,7 @@ impl WasmRoleHandle {
         Ok(into_transaction_builder(WasmUpdateRole(tx)))
     }
 
+    /// Builds a role-deletion transaction for this role.
     #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<DeleteRole>")]
     pub fn delete(&self) -> Result<WasmTransactionBuilder> {
         let tx = self

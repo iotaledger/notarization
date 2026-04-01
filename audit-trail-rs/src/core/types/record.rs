@@ -17,32 +17,58 @@ use crate::error::Error;
 /// Page of records loaded through linked-table traversal.
 #[derive(Debug, Clone)]
 pub struct PaginatedRecord<D = Data> {
+    /// Records included in the current page, keyed by sequence number.
     pub records: BTreeMap<u64, Record<D>>,
+    /// Cursor to pass to the next [`TrailRecords::list_page`](crate::core::records::TrailRecords::list_page) call.
     pub next_cursor: Option<u64>,
+    /// Indicates whether another page may be available.
     pub has_next_page: bool,
 }
 
 /// A single record in the audit trail.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Record<D = Data> {
+    /// Record payload stored on-chain.
     pub data: D,
+    /// Optional application-defined metadata.
     pub metadata: Option<String>,
+    /// Optional trail-owned tag attached to the record.
     pub tag: Option<String>,
+    /// Monotonic record sequence number inside the trail.
     pub sequence_number: u64,
+    /// Address that added the record.
     pub added_by: IotaAddress,
+    /// Millisecond timestamp at which the record was added.
     pub added_at: u64,
+    /// Correction relationships for this record.
     pub correction: RecordCorrection,
 }
 
 /// Input used when creating a trail with an initial record.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct InitialRecord<D = Data> {
+    /// Initial payload to store in the trail.
     pub data: D,
+    /// Optional application-defined metadata.
     pub metadata: Option<String>,
+    /// Optional initial tag from the trail-owned registry.
     pub tag: Option<String>,
 }
 
 impl InitialRecord {
+    /// Creates a new initial record.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use audit_trail::core::types::{Data, InitialRecord};
+    ///
+    /// let record = InitialRecord::new(Data::text("hello"), Some("seed".to_string()), Some("inbox".to_string()));
+    ///
+    /// assert_eq!(record.data, Data::text("hello"));
+    /// assert_eq!(record.metadata.as_deref(), Some("seed"));
+    /// assert_eq!(record.tag.as_deref(), Some("inbox"));
+    /// ```
     pub fn new(data: impl Into<Data>, metadata: Option<String>, tag: Option<String>) -> Self {
         Self {
             data: data.into(),
@@ -78,11 +104,14 @@ impl InitialRecord {
 /// Bidirectional correction tracking for audit records.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct RecordCorrection {
+    /// Sequence numbers that this record supersedes.
     pub replaces: HashSet<u64>,
+    /// Sequence number of the record that supersedes this one, if any.
     pub is_replaced_by: Option<u64>,
 }
 
 impl RecordCorrection {
+    /// Creates a correction value that replaces the given sequence numbers.
     pub fn with_replaces(replaces: HashSet<u64>) -> Self {
         Self {
             replaces,
@@ -90,10 +119,24 @@ impl RecordCorrection {
         }
     }
 
+    /// Returns `true` when this record supersedes at least one earlier record.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use std::collections::HashSet;
+    ///
+    /// use audit_trail::core::types::RecordCorrection;
+    ///
+    /// let correction = RecordCorrection::with_replaces(HashSet::from([1, 2]));
+    ///
+    /// assert!(correction.is_correction());
+    /// ```
     pub fn is_correction(&self) -> bool {
         !self.replaces.is_empty()
     }
 
+    /// Returns `true` when this record has itself been replaced by a later record.
     pub fn is_replaced(&self) -> bool {
         self.is_replaced_by.is_some()
     }
@@ -102,7 +145,9 @@ impl RecordCorrection {
 /// Supported record data types.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Data {
+    /// Arbitrary binary payload.
     Bytes(Vec<u8>),
+    /// UTF-8 text payload.
     Text(String),
 }
 
@@ -153,11 +198,27 @@ impl Data {
     }
 
     /// Creates a new `Data` from bytes.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use audit_trail::core::types::Data;
+    ///
+    /// assert_eq!(Data::bytes([1_u8, 2, 3]), Data::Bytes(vec![1, 2, 3]));
+    /// ```
     pub fn bytes(data: impl Into<Vec<u8>>) -> Self {
         Self::Bytes(data.into())
     }
 
     /// Creates a new `Data` from text.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use audit_trail::core::types::Data;
+    ///
+    /// assert_eq!(Data::text("hello"), Data::Text("hello".to_string()));
+    /// ```
     pub fn text(data: impl Into<String>) -> Self {
         Self::Text(data.into())
     }

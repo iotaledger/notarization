@@ -14,6 +14,7 @@ use super::operations::TrailOps;
 use crate::core::types::{AuditTrailDeleted, Event};
 use crate::error::Error;
 
+/// Transaction that migrates a trail to the latest supported package version.
 #[derive(Debug, Clone)]
 pub struct Migrate {
     trail_id: ObjectID,
@@ -22,6 +23,7 @@ pub struct Migrate {
 }
 
 impl Migrate {
+    /// Creates a `Migrate` transaction builder payload.
     pub fn new(trail_id: ObjectID, owner: IotaAddress) -> Self {
         Self {
             trail_id,
@@ -59,6 +61,7 @@ impl Transaction for Migrate {
     }
 }
 
+/// Transaction that updates mutable trail metadata.
 #[derive(Debug, Clone)]
 pub struct UpdateMetadata {
     trail_id: ObjectID,
@@ -68,6 +71,7 @@ pub struct UpdateMetadata {
 }
 
 impl UpdateMetadata {
+    /// Creates an `UpdateMetadata` transaction builder payload.
     pub fn new(trail_id: ObjectID, owner: IotaAddress, metadata: Option<String>) -> Self {
         Self {
             trail_id,
@@ -106,6 +110,7 @@ impl Transaction for UpdateMetadata {
     }
 }
 
+/// Transaction that deletes an empty trail.
 #[derive(Debug, Clone)]
 pub struct DeleteAuditTrail {
     trail_id: ObjectID,
@@ -114,6 +119,7 @@ pub struct DeleteAuditTrail {
 }
 
 impl DeleteAuditTrail {
+    /// Creates a `DeleteAuditTrail` transaction builder payload.
     pub fn new(trail_id: ObjectID, owner: IotaAddress) -> Self {
         Self {
             trail_id,

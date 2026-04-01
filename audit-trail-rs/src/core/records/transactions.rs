@@ -16,17 +16,24 @@ use crate::error::Error;
 
 // ===== AddRecord =====
 
+/// Transaction that appends a record to a trail.
 #[derive(Debug, Clone)]
 pub struct AddRecord {
+    /// Trail object ID that will receive the record.
     pub trail_id: ObjectID,
+    /// Address authorizing the write.
     pub owner: IotaAddress,
+    /// Record payload to append.
     pub data: Data,
+    /// Optional application-defined metadata.
     pub metadata: Option<String>,
+    /// Optional trail-owned tag to attach to the record.
     pub tag: Option<String>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl AddRecord {
+    /// Creates an `AddRecord` transaction builder payload.
     pub fn new(
         trail_id: ObjectID,
         owner: IotaAddress,
@@ -101,15 +108,20 @@ impl Transaction for AddRecord {
 
 // ===== DeleteRecord =====
 
+/// Transaction that deletes a single record.
 #[derive(Debug, Clone)]
 pub struct DeleteRecord {
+    /// Trail object ID containing the record.
     pub trail_id: ObjectID,
+    /// Address authorizing the deletion.
     pub owner: IotaAddress,
+    /// Sequence number of the record to delete.
     pub sequence_number: u64,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl DeleteRecord {
+    /// Creates a `DeleteRecord` transaction builder payload.
     pub fn new(trail_id: ObjectID, owner: IotaAddress, sequence_number: u64) -> Self {
         Self {
             trail_id,
@@ -168,15 +180,20 @@ impl Transaction for DeleteRecord {
 
 // ===== DeleteRecordsBatch =====
 
+/// Transaction that deletes multiple records in a batch operation.
 #[derive(Debug, Clone)]
 pub struct DeleteRecordsBatch {
+    /// Trail object ID containing the records.
     pub trail_id: ObjectID,
+    /// Address authorizing the deletion.
     pub owner: IotaAddress,
+    /// Maximum number of records to delete in this batch.
     pub limit: u64,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl DeleteRecordsBatch {
+    /// Creates a `DeleteRecordsBatch` transaction builder payload.
     pub fn new(trail_id: ObjectID, owner: IotaAddress, limit: u64) -> Self {
         Self {
             trail_id,

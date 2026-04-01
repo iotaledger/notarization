@@ -19,6 +19,7 @@ use crate::error::Error;
 
 // ===== CreateRole =====
 
+/// Transaction that creates a role on a trail.
 #[derive(Debug, Clone)]
 pub struct CreateRole {
     trail_id: ObjectID,
@@ -30,6 +31,7 @@ pub struct CreateRole {
 }
 
 impl CreateRole {
+    /// Creates a `CreateRole` transaction builder payload.
     pub fn new(
         trail_id: ObjectID,
         owner: IotaAddress,
@@ -102,6 +104,7 @@ impl Transaction for CreateRole {
     }
 }
 
+/// Transaction that updates an existing role.
 #[derive(Debug, Clone)]
 pub struct UpdateRole {
     trail_id: ObjectID,
@@ -113,6 +116,7 @@ pub struct UpdateRole {
 }
 
 impl UpdateRole {
+    /// Creates an `UpdateRole` transaction builder payload.
     pub fn new(
         trail_id: ObjectID,
         owner: IotaAddress,
@@ -185,6 +189,7 @@ impl Transaction for UpdateRole {
     }
 }
 
+/// Transaction that deletes a role.
 #[derive(Debug, Clone)]
 pub struct DeleteRole {
     trail_id: ObjectID,
@@ -194,6 +199,7 @@ pub struct DeleteRole {
 }
 
 impl DeleteRole {
+    /// Creates a `DeleteRole` transaction builder payload.
     pub fn new(trail_id: ObjectID, owner: IotaAddress, name: String) -> Self {
         Self {
             trail_id,
@@ -250,6 +256,7 @@ impl Transaction for DeleteRole {
     }
 }
 
+/// Transaction that issues a capability for a role.
 #[derive(Debug, Clone)]
 pub struct IssueCapability {
     trail_id: ObjectID,
@@ -260,6 +267,7 @@ pub struct IssueCapability {
 }
 
 impl IssueCapability {
+    /// Creates an `IssueCapability` transaction builder payload.
     pub fn new(trail_id: ObjectID, owner: IotaAddress, role: String, options: CapabilityIssueOptions) -> Self {
         Self {
             trail_id,
@@ -324,6 +332,7 @@ impl Transaction for IssueCapability {
     }
 }
 
+/// Transaction that revokes a capability.
 #[derive(Debug, Clone)]
 pub struct RevokeCapability {
     trail_id: ObjectID,
@@ -334,6 +343,7 @@ pub struct RevokeCapability {
 }
 
 impl RevokeCapability {
+    /// Creates a `RevokeCapability` transaction builder payload.
     pub fn new(
         trail_id: ObjectID,
         owner: IotaAddress,
@@ -403,6 +413,7 @@ impl Transaction for RevokeCapability {
     }
 }
 
+/// Transaction that destroys a capability object.
 #[derive(Debug, Clone)]
 pub struct DestroyCapability {
     trail_id: ObjectID,
@@ -412,6 +423,7 @@ pub struct DestroyCapability {
 }
 
 impl DestroyCapability {
+    /// Creates a `DestroyCapability` transaction builder payload.
     pub fn new(trail_id: ObjectID, owner: IotaAddress, capability_id: ObjectID) -> Self {
         Self {
             trail_id,
@@ -470,6 +482,7 @@ impl Transaction for DestroyCapability {
 
 // ===== DestroyInitialAdminCapability =====
 
+/// Transaction that destroys an initial-admin capability without an auth capability.
 #[derive(Debug, Clone)]
 pub struct DestroyInitialAdminCapability {
     trail_id: ObjectID,
@@ -478,6 +491,7 @@ pub struct DestroyInitialAdminCapability {
 }
 
 impl DestroyInitialAdminCapability {
+    /// Creates a `DestroyInitialAdminCapability` transaction builder payload.
     pub fn new(trail_id: ObjectID, capability_id: ObjectID) -> Self {
         Self {
             trail_id,
@@ -535,6 +549,7 @@ impl Transaction for DestroyInitialAdminCapability {
 
 // ===== RevokeInitialAdminCapability =====
 
+/// Transaction that revokes an initial-admin capability.
 #[derive(Debug, Clone)]
 pub struct RevokeInitialAdminCapability {
     trail_id: ObjectID,
@@ -545,6 +560,7 @@ pub struct RevokeInitialAdminCapability {
 }
 
 impl RevokeInitialAdminCapability {
+    /// Creates a `RevokeInitialAdminCapability` transaction builder payload.
     pub fn new(
         trail_id: ObjectID,
         owner: IotaAddress,
@@ -614,6 +630,7 @@ impl Transaction for RevokeInitialAdminCapability {
     }
 }
 
+/// Transaction that cleans up expired revoked-capability entries.
 #[derive(Debug, Clone)]
 pub struct CleanupRevokedCapabilities {
     trail_id: ObjectID,
@@ -622,6 +639,7 @@ pub struct CleanupRevokedCapabilities {
 }
 
 impl CleanupRevokedCapabilities {
+    /// Creates a `CleanupRevokedCapabilities` transaction builder payload.
     pub fn new(trail_id: ObjectID, owner: IotaAddress) -> Self {
         Self {
             trail_id,

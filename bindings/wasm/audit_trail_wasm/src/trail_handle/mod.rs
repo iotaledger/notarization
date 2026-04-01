@@ -1,6 +1,8 @@
 // Copyright 2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! Trail-scoped wasm handle wrappers.
+
 mod access;
 mod locking;
 mod records;
@@ -21,6 +23,10 @@ use wasm_bindgen::prelude::*;
 
 use crate::trail::{WasmDeleteAuditTrail, WasmMigrate, WasmOnChainAuditTrail, WasmUpdateMetadata};
 
+/// Handle bound to a specific audit-trail object.
+///
+/// `AuditTrailHandle` keeps one trail ID together with the originating client so all trail-scoped
+/// reads and transaction builders can be discovered from a single JS/TS value.
 #[derive(Clone)]
 #[wasm_bindgen(js_name = AuditTrailHandle, inspectable)]
 pub struct WasmAuditTrailHandle {
@@ -60,17 +66,22 @@ impl WasmAuditTrailHandle {
 
 #[wasm_bindgen(js_class = AuditTrailHandle)]
 impl WasmAuditTrailHandle {
+    /// Loads the full on-chain trail object.
+    ///
+    /// Each call fetches a fresh snapshot from chain state.
     pub async fn get(&self) -> Result<WasmOnChainAuditTrail> {
         let trail = self.read_only.trail(self.trail_id).get().await.wasm_result()?;
         Ok(trail.into())
     }
 
+    /// Builds a migration transaction for this trail.
     #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<Migrate>")]
     pub fn migrate(&self) -> Result<WasmTransactionBuilder> {
         let tx = self.require_write()?.trail(self.trail_id).migrate().into_inner();
         Ok(into_transaction_builder(WasmMigrate(tx)))
     }
 
+    /// Builds a delete transaction for this trail.
     #[wasm_bindgen(js_name = deleteAuditTrail, unchecked_return_type = "TransactionBuilder<DeleteAuditTrail>")]
     pub fn delete_audit_trail(&self) -> Result<WasmTransactionBuilder> {
         let tx = self
@@ -81,6 +92,7 @@ impl WasmAuditTrailHandle {
         Ok(into_transaction_builder(WasmDeleteAuditTrail(tx)))
     }
 
+    /// Builds a mutable-metadata update transaction for this trail.
     #[wasm_bindgen(js_name = updateMetadata, unchecked_return_type = "TransactionBuilder<UpdateMetadata>")]
     pub fn update_metadata(&self, metadata: Option<String>) -> Result<WasmTransactionBuilder> {
         let tx = self
@@ -91,6 +103,7 @@ impl WasmAuditTrailHandle {
         Ok(into_transaction_builder(WasmUpdateMetadata(tx)))
     }
 
+    /// Returns the record API scoped to this trail.
     pub fn records(&self) -> WasmTrailRecords {
         WasmTrailRecords {
             read_only: self.read_only.clone(),
@@ -99,6 +112,7 @@ impl WasmAuditTrailHandle {
         }
     }
 
+    /// Returns the access-control API scoped to this trail.
     pub fn access(&self) -> WasmTrailAccess {
         WasmTrailAccess {
             full: self.full.clone(),
@@ -106,6 +120,7 @@ impl WasmAuditTrailHandle {
         }
     }
 
+    /// Returns the locking API scoped to this trail.
     pub fn locking(&self) -> WasmTrailLocking {
         WasmTrailLocking {
             read_only: self.read_only.clone(),
@@ -114,6 +129,7 @@ impl WasmAuditTrailHandle {
         }
     }
 
+    /// Returns the tag-registry API scoped to this trail.
     pub fn tags(&self) -> WasmTrailTags {
         WasmTrailTags {
             full: self.full.clone(),

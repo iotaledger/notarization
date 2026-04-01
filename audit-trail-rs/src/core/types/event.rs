@@ -13,102 +13,157 @@ use super::{Permission, PermissionSet, RoleTags};
 /// Generic wrapper for audit trail events.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Event<D> {
+    /// Parsed event payload.
     #[serde(flatten)]
     pub data: D,
 }
 
+/// Event emitted when a trail is created.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AuditTrailCreated {
+    /// Newly created trail object ID.
     pub trail_id: ObjectID,
+    /// Address that created the trail.
     pub creator: IotaAddress,
+    /// Millisecond event timestamp.
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub timestamp: u64,
 }
 
+/// Event emitted when a trail is deleted.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AuditTrailDeleted {
+    /// Deleted trail object ID.
     pub trail_id: ObjectID,
+    /// Millisecond event timestamp.
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub timestamp: u64,
 }
 
+/// Event emitted when a record is added.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RecordAdded {
+    /// Trail object ID receiving the new record.
     pub trail_id: ObjectID,
+    /// Sequence number assigned to the new record.
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub sequence_number: u64,
+    /// Address that added the record.
     pub added_by: IotaAddress,
+    /// Millisecond event timestamp.
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub timestamp: u64,
 }
 
+/// Event emitted when a record is deleted.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RecordDeleted {
+    /// Trail object ID from which the record was deleted.
     pub trail_id: ObjectID,
+    /// Sequence number of the deleted record.
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub sequence_number: u64,
+    /// Address that deleted the record.
     pub deleted_by: IotaAddress,
+    /// Millisecond event timestamp.
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub timestamp: u64,
 }
 
+/// Event emitted when a capability is issued.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CapabilityIssued {
+    /// Trail object ID protected by the capability.
     pub target_key: ObjectID,
+    /// Newly created capability object ID.
     pub capability_id: ObjectID,
+    /// Role granted by the capability.
     pub role: String,
+    /// Address receiving the capability, if one is assigned.
     pub issued_to: Option<IotaAddress>,
+    /// Millisecond timestamp at which the capability becomes valid.
     #[serde(deserialize_with = "deserialize_option_number_from_string")]
     pub valid_from: Option<u64>,
+    /// Millisecond timestamp at which the capability expires.
     #[serde(deserialize_with = "deserialize_option_number_from_string")]
     pub valid_until: Option<u64>,
 }
 
+/// Event emitted when a capability object is destroyed.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CapabilityDestroyed {
+    /// Trail object ID protected by the capability.
     pub target_key: ObjectID,
+    /// Destroyed capability object ID.
     pub capability_id: ObjectID,
+    /// Role granted by the capability.
     pub role: String,
+    /// Address that held the capability, if any.
     pub issued_to: Option<IotaAddress>,
+    /// Millisecond timestamp at which the capability became valid.
     #[serde(deserialize_with = "deserialize_option_number_from_string")]
     pub valid_from: Option<u64>,
+    /// Millisecond timestamp at which the capability expired.
     #[serde(deserialize_with = "deserialize_option_number_from_string")]
     pub valid_until: Option<u64>,
 }
 
+/// Event emitted when a capability is revoked.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CapabilityRevoked {
+    /// Trail object ID protected by the capability.
     pub target_key: ObjectID,
+    /// Revoked capability object ID.
     pub capability_id: ObjectID,
+    /// Millisecond timestamp retained for denylist cleanup.
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub valid_until: u64,
 }
 
+/// Event emitted when a role is created.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct RoleCreated {
+    /// Trail object ID that owns the role.
     pub trail_id: ObjectID,
+    /// Role name.
     pub role: String,
+    /// Permissions granted by the new role.
     pub permissions: PermissionSet,
+    /// Optional record-tag restrictions stored as role data.
     pub data: Option<RoleTags>,
+    /// Address that created the role.
     pub created_by: IotaAddress,
+    /// Millisecond event timestamp.
     pub timestamp: u64,
 }
 
+/// Event emitted when a role is updated.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct RoleUpdated {
+    /// Trail object ID that owns the role.
     pub trail_id: ObjectID,
+    /// Role name.
     pub role: String,
+    /// Updated permissions for the role.
     pub permissions: PermissionSet,
+    /// Updated record-tag restrictions, if any.
     pub data: Option<RoleTags>,
+    /// Address that updated the role.
     pub updated_by: IotaAddress,
+    /// Millisecond event timestamp.
     pub timestamp: u64,
 }
 
+/// Event emitted when a role is deleted.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct RoleDeleted {
+    /// Trail object ID that owned the role.
     pub trail_id: ObjectID,
+    /// Role name.
     pub role: String,
+    /// Address that deleted the role.
     pub deleted_by: IotaAddress,
+    /// Millisecond event timestamp.
     pub timestamp: u64,
 }
 

@@ -19,12 +19,20 @@ use crate::error::Error;
 /// Output of a create trail transaction.
 #[derive(Debug, Clone)]
 pub struct TrailCreated {
+    /// Newly created trail object ID.
     pub trail_id: ObjectID,
+    /// Address that created the trail.
     pub creator: IotaAddress,
+    /// Millisecond timestamp emitted by the creation event.
     pub timestamp: u64,
 }
 
 impl TrailCreated {
+    /// Loads the newly created trail object from the ledger.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the trail cannot be fetched or deserialized.
     pub async fn fetch_audit_trail<C>(&self, client: &C) -> Result<OnChainAuditTrail, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
