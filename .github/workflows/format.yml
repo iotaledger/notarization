@@ -49,6 +49,9 @@ jobs:
       - name: wasm fmt check notarization_wasm
         run: cargo +nightly fmt --manifest-path ./bindings/wasm/notarization_wasm/Cargo.toml --all -- --check
 
+      - name: wasm fmt check audit_trail_wasm
+        run: cargo +nightly fmt --manifest-path ./bindings/wasm/audit_trail_wasm/Cargo.toml --all -- --check
+
       - name: fmt check with dprint
         run: dprint check
 
@@ -61,6 +64,10 @@ jobs:
       - name: Install prettier-plugin-move
         run: npm i @mysten/prettier-plugin-move
 
-      - name: prettier-move check
+      - name: prettier-move check notarization-move
         working-directory: notarization-move
+        run: npx prettier-move -c **/*.move
+
+      - name: prettier-move check audit-trail-move
+        working-directory: audit-trail-move
         run: npx prettier-move -c **/*.move
