@@ -14,8 +14,8 @@ use iota_interaction::{MoveType, ident_str};
 use serde::{Deserialize, Serialize};
 
 use super::permission::Permission;
-use crate::core::utils;
-use crate::core::utils::{deserialize_vec_map, deserialize_vec_set};
+use crate::core::internal::move_collections::{deserialize_vec_map, deserialize_vec_set};
+use crate::core::internal::tx;
 use crate::error::Error;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RoleMap {
@@ -92,7 +92,7 @@ impl RoleTags {
     pub(in crate::core) fn to_ptb(&self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
         let mut tags = self.tags.iter().cloned().collect::<Vec<_>>();
         tags.sort();
-        let tags_arg = utils::ptb_pure(ptb, "tags", tags)?;
+        let tags_arg = tx::ptb_pure(ptb, "tags", tags)?;
 
         Ok(ptb.programmable_move_call(
             package_id,

@@ -6,8 +6,8 @@ use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::transaction::ProgrammableTransaction;
 use product_common::core_client::CoreClientReadOnly;
 
+use crate::core::internal::tx;
 use crate::core::types::Permission;
-use crate::core::{operations, utils};
 use crate::error::Error;
 
 pub(super) struct TagsOps;
@@ -22,15 +22,15 @@ impl TagsOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        operations::build_trail_transaction(
+        tx::build_trail_transaction(
             client,
             trail_id,
             owner,
             Permission::AddRecordTags,
             "add_record_tag",
             |ptb, _| {
-                let tag_arg = utils::ptb_pure(ptb, "tag", tag)?;
-                let clock = utils::get_clock_ref(ptb);
+                let tag_arg = tx::ptb_pure(ptb, "tag", tag)?;
+                let clock = tx::get_clock_ref(ptb);
                 Ok(vec![tag_arg, clock])
             },
         )
@@ -46,15 +46,15 @@ impl TagsOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        operations::build_trail_transaction(
+        tx::build_trail_transaction(
             client,
             trail_id,
             owner,
             Permission::DeleteRecordTags,
             "remove_record_tag",
             |ptb, _| {
-                let tag_arg = utils::ptb_pure(ptb, "tag", tag)?;
-                let clock = utils::get_clock_ref(ptb);
+                let tag_arg = tx::ptb_pure(ptb, "tag", tag)?;
+                let clock = tx::get_clock_ref(ptb);
                 Ok(vec![tag_arg, clock])
             },
         )

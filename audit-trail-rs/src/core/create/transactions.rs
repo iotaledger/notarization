@@ -12,7 +12,7 @@ use tokio::sync::OnceCell;
 
 use super::operations::{CreateOps, CreateTrailArgs};
 use crate::core::builder::AuditTrailBuilder;
-use crate::core::operations;
+use crate::core::internal::trail as trail_reader;
 use crate::core::types::{AuditTrailCreated, Event, OnChainAuditTrail};
 use crate::error::Error;
 
@@ -29,7 +29,7 @@ impl TrailCreated {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        operations::get_audit_trail(self.trail_id, client).await
+        trail_reader::get_audit_trail(self.trail_id, client).await
     }
 }
 

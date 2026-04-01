@@ -6,8 +6,8 @@ use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::transaction::ProgrammableTransaction;
 use product_common::core_client::CoreClientReadOnly;
 
+use crate::core::internal::{capability, trail as trail_reader, tx};
 use crate::core::types::{Data, OnChainAuditTrail, Permission};
-use crate::core::{operations, utils};
 use crate::error::Error;
 
 pub(super) struct RecordsOps;
@@ -24,8 +24,9 @@ impl RecordsOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
+        let package_id = client.package_id();
         if let Some(tag) = record_tag.clone() {
-            let trail = operations::get_audit_trail(trail_id, client).await?;
+            let trail = trail_reader::get_audit_trail(trail_id, client).await?;
             if !trail.tags.contains_key(&tag) {
                 return Err(Error::InvalidArgument(format!(
                     "record tag '{tag}' is not defined for trail {trail_id}"
@@ -33,36 +34,30 @@ impl RecordsOps {
             }
             let cap_ref = find_capable_cap_for_tag(client, owner, trail_id, &trail, &tag).await?;
 
-            operations::build_trail_transaction_with_cap_ref(
-                client,
-                trail_id,
-                cap_ref,
-                "add_record",
-                |ptb, trail_tag| {
-                    data.ensure_matches_tag(trail_tag)?;
+            tx::build_trail_transaction_with_cap_ref(client, trail_id, cap_ref, "add_record", |ptb, trail_tag| {
+                data.ensure_matches_tag(trail_tag, package_id)?;
 
-                    let data_arg = data.into_ptb(ptb, "stored_data")?;
-                    let metadata = utils::ptb_pure(ptb, "record_metadata", record_metadata)?;
-                    let tag_arg = utils::ptb_pure(ptb, "record_tag", Some(tag))?;
-                    let clock = utils::get_clock_ref(ptb);
-                    Ok(vec![data_arg, metadata, tag_arg, clock])
-                },
-            )
+                let data_arg = data.into_ptb(ptb, package_id)?;
+                let metadata = tx::ptb_pure(ptb, "record_metadata", record_metadata)?;
+                let tag_arg = tx::ptb_pure(ptb, "record_tag", Some(tag))?;
+                let clock = tx::get_clock_ref(ptb);
+                Ok(vec![data_arg, metadata, tag_arg, clock])
+            })
             .await
         } else {
-            operations::build_trail_transaction(
+            tx::build_trail_transaction(
                 client,
                 trail_id,
                 owner,
                 Permission::AddRecord,
                 "add_record",
                 |ptb, trail_tag| {
-                    data.ensure_matches_tag(trail_tag)?;
+                    data.ensure_matches_tag(trail_tag, package_id)?;
 
-                    let data_arg = data.into_ptb(ptb, "stored_data")?;
-                    let metadata = utils::ptb_pure(ptb, "record_metadata", record_metadata)?;
-                    let tag = utils::ptb_pure(ptb, "record_tag", Option::<String>::None)?;
-                    let clock = utils::get_clock_ref(ptb);
+                    let data_arg = data.into_ptb(ptb, package_id)?;
+                    let metadata = tx::ptb_pure(ptb, "record_metadata", record_metadata)?;
+                    let tag = tx::ptb_pure(ptb, "record_tag", Option::<String>::None)?;
+                    let clock = tx::get_clock_ref(ptb);
                     Ok(vec![data_arg, metadata, tag, clock])
                 },
             )
@@ -79,15 +74,15 @@ impl RecordsOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        operations::build_trail_transaction(
+        tx::build_trail_transaction(
             client,
             trail_id,
             owner,
             Permission::DeleteRecord,
             "delete_record",
             |ptb, _| {
-                let seq = utils::ptb_pure(ptb, "sequence_number", sequence_number)?;
-                let clock = utils::get_clock_ref(ptb);
+                let seq = tx::ptb_pure(ptb, "sequence_number", sequence_number)?;
+                let clock = tx::get_clock_ref(ptb);
                 Ok(vec![seq, clock])
             },
         )
@@ -103,15 +98,15 @@ impl RecordsOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        operations::build_trail_transaction(
+        tx::build_trail_transaction(
             client,
             trail_id,
             owner,
             Permission::DeleteAllRecords,
             "delete_records_batch",
             |ptb, _| {
-                let limit_arg = utils::ptb_pure(ptb, "limit", limit)?;
-                let clock = utils::get_clock_ref(ptb);
+                let limit_arg = tx::ptb_pure(ptb, "limit", limit)?;
+                let clock = tx::get_clock_ref(ptb);
                 Ok(vec![limit_arg, clock])
             },
         )
@@ -126,8 +121,8 @@ impl RecordsOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        operations::build_read_only_transaction(client, trail_id, "get_record", |ptb| {
-            let seq = utils::ptb_pure(ptb, "sequence_number", sequence_number)?;
+        tx::build_read_only_transaction(client, trail_id, "get_record", |ptb| {
+            let seq = tx::ptb_pure(ptb, "sequence_number", sequence_number)?;
             Ok(vec![seq])
         })
         .await
@@ -137,7 +132,7 @@ impl RecordsOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        operations::build_read_only_transaction(client, trail_id, "record_count", |_| Ok(vec![])).await
+        tx::build_read_only_transaction(client, trail_id, "record_count", |_| Ok(vec![])).await
     }
 }
 
@@ -162,7 +157,7 @@ where
         .map(|(name, _)| name.clone())
         .collect::<std::collections::HashSet<_>>();
 
-    let cap = operations::find_owned_capability(client, owner, |cap| {
+    let cap = capability::find_owned_capability(client, owner, trail, |cap| {
         cap.target_key == trail_id && valid_roles.contains(&cap.role)
     })
     .await?
@@ -174,5 +169,5 @@ where
     })?;
 
     let object_id = *cap.id.object_id();
-    utils::get_object_ref_by_id(client, &object_id).await
+    tx::get_object_ref_by_id(client, &object_id).await
 }

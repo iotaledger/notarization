@@ -6,8 +6,8 @@ use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::transaction::ProgrammableTransaction;
 use product_common::core_client::CoreClientReadOnly;
 
+use crate::core::internal::tx;
 use crate::core::types::Permission;
-use crate::core::{operations, utils};
 use crate::error::Error;
 
 pub(super) struct TrailOps;
@@ -21,8 +21,8 @@ impl TrailOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        operations::build_trail_transaction(client, trail_id, owner, Permission::Migrate, "migrate", |ptb, _| {
-            let clock = utils::get_clock_ref(ptb);
+        tx::build_trail_transaction(client, trail_id, owner, Permission::Migrate, "migrate", |ptb, _| {
+            let clock = tx::get_clock_ref(ptb);
             Ok(vec![clock])
         })
         .await
@@ -37,15 +37,15 @@ impl TrailOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        operations::build_trail_transaction(
+        tx::build_trail_transaction(
             client,
             trail_id,
             owner,
             Permission::UpdateMetadata,
             "update_metadata",
             |ptb, _| {
-                let metadata_arg = utils::ptb_pure(ptb, "new_metadata", metadata)?;
-                let clock = utils::get_clock_ref(ptb);
+                let metadata_arg = tx::ptb_pure(ptb, "new_metadata", metadata)?;
+                let clock = tx::get_clock_ref(ptb);
                 Ok(vec![metadata_arg, clock])
             },
         )
@@ -60,14 +60,14 @@ impl TrailOps {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        operations::build_trail_transaction(
+        tx::build_trail_transaction(
             client,
             trail_id,
             owner,
             Permission::DeleteAuditTrail,
             "delete_audit_trail",
             |ptb, _| {
-                let clock = utils::get_clock_ref(ptb);
+                let clock = tx::get_clock_ref(ptb);
                 Ok(vec![clock])
             },
         )

@@ -15,7 +15,8 @@ use serde::{Deserialize, Serialize};
 
 use super::locking::LockingConfig;
 use super::role_map::RoleMap;
-use crate::core::utils::{self, deserialize_vec_map};
+use crate::core::internal::move_collections::deserialize_vec_map;
+use crate::core::internal::tx;
 use crate::error::Error;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -83,8 +84,8 @@ impl ImmutableMetadata {
     ///
     /// To be used when creating a new `ImmutableMetadata` object on the ledger.
     pub(in crate::core) fn to_ptb(&self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
-        let name = utils::ptb_pure(ptb, "name", &self.name)?;
-        let description = utils::ptb_pure(ptb, "description", &self.description)?;
+        let name = tx::ptb_pure(ptb, "name", &self.name)?;
+        let description = tx::ptb_pure(ptb, "description", &self.description)?;
 
         Ok(ptb.programmable_move_call(
             package_id,

@@ -7,7 +7,7 @@ use iota_interaction::types::programmable_transaction_builder::ProgrammableTrans
 use iota_interaction::types::transaction::Argument;
 use serde::{Deserialize, Serialize};
 
-use crate::core::utils;
+use crate::core::internal::tx;
 use crate::error::Error;
 
 /// Locking configuration for the audit trail.
@@ -80,8 +80,8 @@ impl TimeLock {
                 vec![],
             )),
             Self::UnlockAt(unix_time) => {
-                let unix_time = utils::ptb_pure(ptb, "unix_time", *unix_time)?;
-                let clock = utils::get_clock_ref(ptb);
+                let unix_time = tx::ptb_pure(ptb, "unix_time", *unix_time)?;
+                let clock = tx::get_clock_ref(ptb);
 
                 Ok(ptb.programmable_move_call(
                     package_id,
@@ -92,8 +92,8 @@ impl TimeLock {
                 ))
             }
             Self::UnlockAtMs(unix_time_ms) => {
-                let unix_time_ms = utils::ptb_pure(ptb, "unix_time_ms", *unix_time_ms)?;
-                let clock = utils::get_clock_ref(ptb);
+                let unix_time_ms = tx::ptb_pure(ptb, "unix_time_ms", *unix_time_ms)?;
+                let clock = tx::get_clock_ref(ptb);
 
                 Ok(ptb.programmable_move_call(
                     package_id,
@@ -134,7 +134,7 @@ impl LockingWindow {
                 vec![],
             )),
             Self::TimeBased { seconds } => {
-                let seconds = utils::ptb_pure(ptb, "seconds", *seconds)?;
+                let seconds = tx::ptb_pure(ptb, "seconds", *seconds)?;
                 Ok(ptb.programmable_move_call(
                     package_id,
                     ident_str!("locking").into(),
@@ -144,7 +144,7 @@ impl LockingWindow {
                 ))
             }
             Self::CountBased { count } => {
-                let count = utils::ptb_pure(ptb, "count", *count)?;
+                let count = tx::ptb_pure(ptb, "count", *count)?;
                 Ok(ptb.programmable_move_call(
                     package_id,
                     ident_str!("locking").into(),

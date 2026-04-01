@@ -44,6 +44,26 @@ async fn create_trail_with_default_builder_settings() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+async fn create_empty_trail_with_default_builder_settings() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+
+    let created = client.create_trail().finish().build_and_execute(&client).await?.output;
+
+    assert_eq!(created.creator, client.sender_address());
+
+    let on_chain = created.fetch_audit_trail(&client).await?;
+    assert_eq!(on_chain.id.object_id(), &created.trail_id);
+    assert_eq!(on_chain.creator, client.sender_address());
+    assert_eq!(on_chain.sequence_number, 0);
+    assert_eq!(on_chain.locking_config, config_with_window(LockingWindow::None));
+    assert!(on_chain.immutable_metadata.is_none());
+    assert!(on_chain.updatable_metadata.is_none());
+    assert_eq!(client.trail(created.trail_id).records().record_count().await?, 0);
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn create_trail_with_metadata_and_time_lock() -> anyhow::Result<()> {
     let client = get_funded_test_client().await?;
 

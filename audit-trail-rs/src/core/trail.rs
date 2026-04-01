@@ -10,6 +10,7 @@ use secret_storage::Signer;
 use serde::de::DeserializeOwned;
 
 use crate::core::access::TrailAccess;
+use crate::core::internal::trail as trail_reader;
 use crate::core::locking::TrailLocking;
 use crate::core::records::TrailRecords;
 use crate::core::tags::TrailTags;
@@ -51,7 +52,7 @@ impl<'a, C> AuditTrailHandle<'a, C> {
     where
         C: AuditTrailReadOnly,
     {
-        crate::core::operations::get_audit_trail(self.trail_id, self.client).await
+        trail_reader::get_audit_trail(self.trail_id, self.client).await
     }
 
     /// Updates the trail's updatable metadata.
