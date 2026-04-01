@@ -36,10 +36,10 @@ Each toolkit is split into:
 
 ## Packages
 
-| Toolkit | Move Package | Rust SDK | Wasm SDK |
-| ------- | ------------ | -------- | -------- |
+| Toolkit      | Move Package                               | Rust SDK                               | Wasm SDK                                                               |
+| ------------ | ------------------------------------------ | -------------------------------------- | ---------------------------------------------------------------------- |
 | Notarization | [`notarization-move`](./notarization-move) | [`notarization-rs`](./notarization-rs) | [`bindings/wasm/notarization_wasm`](./bindings/wasm/notarization_wasm) |
-| Audit Trail | [`audit-trail-move`](./audit-trail-move) | [`audit-trail-rs`](./audit-trail-rs) | [`bindings/wasm/audit_trail_wasm`](./bindings/wasm/audit_trail_wasm) |
+| Audit Trail  | [`audit-trail-move`](./audit-trail-move)   | [`audit-trail-rs`](./audit-trail-rs)   | [`bindings/wasm/audit_trail_wasm`](./bindings/wasm/audit_trail_wasm)   |
 
 ## Documentation And Resources
 

@@ -63,7 +63,11 @@ impl InitialRecord {
     /// ```rust
     /// use audit_trail::core::types::{Data, InitialRecord};
     ///
-    /// let record = InitialRecord::new(Data::text("hello"), Some("seed".to_string()), Some("inbox".to_string()));
+    /// let record = InitialRecord::new(
+    ///     Data::text("hello"),
+    ///     Some("seed".to_string()),
+    ///     Some("inbox".to_string()),
+    /// );
     ///
     /// assert_eq!(record.data, Data::text("hello"));
     /// assert_eq!(record.metadata.as_deref(), Some("seed"));
