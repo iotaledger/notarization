@@ -6,37 +6,6 @@ instance, which is mapped to the Notarization object on the ledger and can be us
 
 You can find the full IOTA Notarization documentation [here](https://docs.iota.org/developer/iota-notarization).
 
-Following Notarization methods are currently provided:
-
-- Dynamic Notarization
-- Locked Notarization
-
-These Notarization methods are implemented using a single Notarization Move object, stored on the IOTA Ledger.
-The Method specific behavior is achieved via configuration of this object.
-
-To minimize the need for config settings, the Notarization methods reduce the number of available configuration
-parameters while using method specific fixed settings for several parameters, resulting in the typical method
-specific behaviour. Here, Notarization methods can be seen as prepared configuration sets to facilitate
-Notarization usage for often needed use cases.
-
-Here is an overview of the most important configuration parameters for each of these methods:
-
-| Method  | Locking exists  | delete_lock*     | update_lock             | transfer_lock           |
-| ------- | --------------- | ---------------- | ----------------------- | ----------------------- |
-| Dynamic | Optional [conf] | None [static]    | None [static]           | Optional [conf]         |
-| Locked  | Yes [static]    | Optional* [conf] | UntilDestroyed [static] | UntilDestroyed [static] |
-
-Explanation of terms and symbols for the table above:
-
-- [conf]: Configurable parameter.
-- [static]: Fixed or static parameter.
-- Optional:
-  - Locks: The lock can be set to UnlockAt or UntilDestroyed.
-  - Locking exists: If no locking is used, there will be no [`LockMetadata`] stored with the Notarization object
-    Otherwise [`LockMetadata`] will be created automatically. If no [`LockMetadata`] exist, the behaviour is
-    equivalent to existing [`LockMetadata`] with all locks set to [`None`].
-  - *: delete_lock can not be set to `UntilDestroyed`.
-
 ## Process Flows
 
 The following workflows demonstrate how NotarizationBuilder and Notarization instances can be used to create, update and

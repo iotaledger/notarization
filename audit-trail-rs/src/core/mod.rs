@@ -5,14 +5,14 @@
 //!
 //! The modules in this namespace make up the main domain-facing API:
 //!
-//! - [`access`] exposes role and capability management
-//! - [`builder`] configures trail creation
-//! - [`create`] contains the creation transaction types
-//! - [`locking`] manages trail locking rules
-//! - [`records`] reads and mutates trail records
-//! - [`tags`] manages the trail-owned record-tag registry
-//! - [`trail`] provides the high-level typed handle bound to a specific trail
-//! - [`types`] contains serializable value types shared across the crate
+//! - [`crate::core::access`] exposes role and capability management
+//! - [`crate::core::builder`] configures trail creation
+//! - [`crate::core::create`] contains the creation transaction types
+//! - [`crate::core::locking`] manages trail locking rules
+//! - [`crate::core::records`] reads and mutates trail records
+//! - [`crate::core::tags`] manages the trail-owned record-tag registry
+//! - [`crate::core::trail`] provides the high-level typed handle bound to a specific trail
+//! - [`crate::core::types`] contains serializable value types shared across the crate
 
 /// Role and capability management APIs.
 pub mod access;

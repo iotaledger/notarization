@@ -1,6 +1,8 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! Internal record-operation helpers that build trail-scoped programmable transactions.
+
 use iota_interaction::OptionalSync;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::transaction::ProgrammableTransaction;
@@ -10,6 +12,7 @@ use crate::core::internal::{capability, trail as trail_reader, tx};
 use crate::core::types::{Data, OnChainAuditTrail, Permission};
 use crate::error::Error;
 
+/// Internal namespace for record-related transaction construction.
 pub(super) struct RecordsOps;
 
 impl RecordsOps {
@@ -136,6 +139,10 @@ impl RecordsOps {
     }
 }
 
+/// Finds an `AddRecord` capability that is also allowed to write records with `tag`.
+///
+/// Tagged record writes require both the base `AddRecord` permission and a role whose associated
+/// record-tag policy explicitly allows the requested tag.
 async fn find_capable_cap_for_tag<C>(
     client: &C,
     owner: IotaAddress,

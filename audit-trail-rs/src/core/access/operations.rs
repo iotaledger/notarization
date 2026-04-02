@@ -1,6 +1,8 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! Internal access-control helpers that build role and capability transactions.
+
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::transaction::{ObjectArg, ProgrammableTransaction};
 use iota_interaction::{OptionalSync, ident_str};
@@ -10,6 +12,7 @@ use crate::core::internal::{trail as trail_reader, tx};
 use crate::core::types::{CapabilityIssueOptions, Permission, PermissionSet, RoleTags};
 use crate::error::Error;
 
+/// Internal namespace for role and capability transaction construction.
 pub(super) struct AccessOps;
 
 impl AccessOps {
@@ -287,6 +290,10 @@ impl AccessOps {
     }
 }
 
+/// Verifies that every requested role tag already exists in the trail tag registry.
+///
+/// Roles may only reference tags that are defined on the trail itself so later record-tag checks
+/// stay consistent with the registry stored on-chain.
 async fn assert_role_tags_defined<C>(client: &C, trail_id: ObjectID, role_tags: &Option<RoleTags>) -> Result<(), Error>
 where
     C: CoreClientReadOnly + OptionalSync,

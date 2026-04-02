@@ -9,7 +9,6 @@
 <p align="center">
   <a href="#introduction">Introduction</a> ◈
   <a href="#documentation-and-resources">Documentation & Resources</a> ◈
-  <a href="#feature-overview">Feature Overview</a> ◈
   <a href="#bindings">Bindings</a> ◈
   <a href="#contributing">Contributing</a>
 </p>
@@ -44,43 +43,6 @@ The crate provides:
 - [Repository Examples](https://github.com/iotaledger/notarization/tree/main/examples/README.md): End-to-end examples across the broader repository.
 
 This README is also used as the crate-level rustdoc entry point, while the source files provide detailed API documentation for all public types and methods.
-
-## Feature Overview
-
-The public API is organized around a small set of entry points:
-
-- [`AuditTrailClientReadOnly`] for package resolution, trail-scoped reads, and inspected transactions
-- [`AuditTrailClient`] for signed write flows
-- [`AuditTrailHandle`] for operations scoped to one trail object
-- [`AuditTrailBuilder`] for configuring trail creation
-- [`core::types`] for domain types such as [`Data`], [`Record`], [`LockingConfig`], and [`PermissionSet`]
-
-Typical flow:
-
-1. Construct an [`AuditTrailClientReadOnly`] or [`AuditTrailClient`].
-2. Resolve a trail with [`AuditTrailClientReadOnly::trail`] or [`AuditTrailClient::trail`].
-3. Read state with [`AuditTrailHandle::get`] or move into one of the trail subsystems:
-   - [`AuditTrailHandle::records`]
-   - [`AuditTrailHandle::locking`]
-   - [`AuditTrailHandle::access`]
-   - [`AuditTrailHandle::tags`]
-4. For writes, build a typed transaction from the client, trail handle, or subsystem handle and execute it through the surrounding transaction infrastructure.
-
-The crate deliberately separates transaction construction from submission so applications can keep signing, sponsorship, gas selection, and batching policy outside the SDK.
-
-Pure value types expose executable doctests where the behavior is self-contained and stable:
-
-```rust
-use audit_trail::core::types::{Data, InitialRecord};
-
-let record = InitialRecord::new(Data::text("hello"), Some("first write".to_string()), None);
-
-assert_eq!(record.data, Data::text("hello"));
-assert_eq!(record.metadata.as_deref(), Some("first write"));
-assert!(record.tag.is_none());
-```
-
-If you are integrating against a custom deployment, use [`PackageOverrides`] during client construction so the crate does not rely on the built-in package registry for that environment.
 
 ## Bindings
 

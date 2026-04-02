@@ -1,6 +1,8 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! Internal helpers that build record-tag registry transactions.
+
 use iota_interaction::OptionalSync;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::transaction::ProgrammableTransaction;
@@ -10,6 +12,7 @@ use crate::core::internal::tx;
 use crate::core::types::Permission;
 use crate::error::Error;
 
+/// Internal namespace for tag-registry transaction construction.
 pub(super) struct TagsOps;
 
 impl TagsOps {

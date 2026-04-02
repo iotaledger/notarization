@@ -1,6 +1,8 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! Internal helpers that build locking-related programmable transactions.
+
 use iota_interaction::OptionalSync;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::transaction::ProgrammableTransaction;
@@ -10,6 +12,7 @@ use crate::core::internal::tx;
 use crate::core::types::{LockingConfig, LockingWindow, Permission, TimeLock};
 use crate::error::Error;
 
+/// Internal namespace for locking transaction construction.
 pub(super) struct LockingOps;
 
 impl LockingOps {
