@@ -50,7 +50,9 @@ npm run test:browser  # Cypress browser tests
 ```
 
 ### Running Examples
-Examples require the notarization package to be published first. From the repo root:
+Examples require the relevant Move package to be published first.
+
+**Notarization examples** — from the repo root:
 ```bash
 # Publish the package and capture the package ID
 export IOTA_NOTARIZATION_PKG_ID=$(./notarization-move/scripts/publish_package.sh)
@@ -58,11 +60,82 @@ export IOTA_NOTARIZATION_PKG_ID=$(./notarization-move/scripts/publish_package.sh
 # Run a specific example
 cargo run --release --example <example_name_goes_here>
 ```
-To run all examples. From the repo root::
+To run all notarization examples:
 ```bash
 # Make sure IOTA_NOTARIZATION_PKG_ID is set as shown above
-./examples/run.sh 
+./examples/run.sh
 ```
+
+**Audit Trail examples** — from the repo root:
+```bash
+# Publish the package; on localnet both vars are set to the same package ID
+eval $(./audit-trail-move/scripts/publish_package.sh)
+
+# Run a specific example
+cargo run --release --example <example_name_goes_here>
+```
+
+The `eval` form is required because the publish script prints shell `export` statements for two variables:
+- `IOTA_AUDIT_TRAIL_PKG_ID` — the audit trail package ID
+- `IOTA_TF_COMPONENTS_PKG_ID` — the TfComponents package ID (equals `IOTA_AUDIT_TRAIL_PKG_ID` on localnet)
+
+## Developing Examples
+
+### Adding a new example
+1. Create the source file under `examples/notarization/` or `examples/audit-trail/`.
+2. Add an `[[example]]` entry to `examples/Cargo.toml` pointing to the new file.
+3. Use `examples::get_funded_notarization_client()` (notarization) or `examples::get_funded_audit_trail_client()` (audit trail) from `examples/utils/utils.rs` to obtain a funded, signed client. Do not inline client construction in example files.
+
+### Audit Trail example patterns
+Reference implementation: `examples/audit-trail/01_create_audit_trail.rs`
+
+**Client setup** — `get_funded_audit_trail_client()` reads `IOTA_AUDIT_TRAIL_PKG_ID` and `IOTA_TF_COMPONENTS_PKG_ID` from the environment and returns `AuditTrailClient<InMemSigner>`.
+
+**Creating a trail** — use the builder returned by `client.create_trail()`:
+```rust
+let created = client
+    .create_trail()
+    .with_trail_metadata(ImmutableMetadata::new("name".into(), Some("description".into())))
+    .with_updatable_metadata("mutable status string")
+    .with_initial_record(InitialRecord::new(Data::text("content"), Some("metadata".into()), None))
+    .finish()
+    .build_and_execute(&client)
+    .await?
+    .output; // TrailCreated { trail_id, creator, timestamp }
+```
+The creator automatically receives an Admin capability object in their wallet.
+
+**Defining a role** — use the trail handle's access API with the implicit Admin capability:
+```rust
+client
+    .trail(trail_id)
+    .access()
+    .for_role("RecordAdmin")
+    .create(PermissionSet::record_admin_permissions(), None)
+    .build_and_execute(&client)
+    .await?;
+```
+`PermissionSet` convenience constructors: `admin_permissions()`, `record_admin_permissions()`, `locking_admin_permissions()`, `tag_admin_permissions()`, `cap_admin_permissions()`, `metadata_admin_permissions()`.
+
+**Issuing a capability** — mint a capability object for a role:
+```rust
+let cap = client
+    .trail(trail_id)
+    .access()
+    .for_role("RecordAdmin")
+    .issue_capability(CapabilityIssueOptions::default())
+    .build_and_execute(&client)
+    .await?
+    .output; // CapabilityIssued { capability_id, target_key, role, issued_to, valid_from, valid_until }
+```
+Use `CapabilityIssueOptions { issued_to, valid_from_ms, valid_until_ms }` to restrict who may use the capability or set a validity window.
+
+**Key types** (from `audit_trail::core::types`): `Data`, `InitialRecord`, `ImmutableMetadata`, `LockingConfig`, `LockingWindow`, `TimeLock`, `Permission`, `PermissionSet`, `CapabilityIssueOptions`, `RoleTags`.
+
+### Notarization example patterns
+Reference implementations: `examples/notarization/01_create_locked_notarization.rs` and `examples/notarization/02_create_dynamic_notarization.rs`.
+
+Use `examples::get_funded_notarization_client()` to get a `NotarizationClient<InMemSigner>`. Read `audit-trail-rs/tests/e2e/` for detailed usage of every API surface.
 
 ## Workspace Structure
 
@@ -108,7 +181,8 @@ Code uses `#[cfg(target_arch = "wasm32")]` guards to conditionally compile for W
 
 - Tests require an IOTA sandbox running locally
 - Always use `--test-threads=1` (tests share sandbox state)
-- Examples require `IOTA_NOTARIZATION_PKG_ID` environment variable set to the deployed package ID
+- Notarization examples require `IOTA_NOTARIZATION_PKG_ID` environment variable set to the deployed package ID
+- Audit trail examples require `IOTA_AUDIT_TRAIL_PKG_ID` (and `IOTA_TF_COMPONENTS_PKG_ID` on localnet) — use `eval $(./audit-trail-move/scripts/publish_package.sh)` to set both
 - WASM browser tests use Cypress
 
 ## Rust Version

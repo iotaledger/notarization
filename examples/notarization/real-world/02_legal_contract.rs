@@ -19,7 +19,7 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
-use examples::get_funded_client;
+use examples::get_funded_notarization_client;
 use notarization::core::types::{State, TimeLock};
 use serde_json::json;
 use sha2::{Digest, Sha256};
@@ -29,7 +29,7 @@ async fn main() -> Result<()> {
     println!("⚖️  Legal Contract - Locked Notarization Example");
     println!("===============================================\n");
 
-    let notarization_client = get_funded_client().await?;
+    let notarization_client = get_funded_notarization_client().await?;
 
     // Get current timestamp
     let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();

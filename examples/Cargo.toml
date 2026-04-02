@@ -48,8 +48,13 @@ path = "notarization/real-world/01_iot_weather_station.rs"
 name = "02_legal_contract"
 path = "notarization/real-world/02_legal_contract.rs"
 
+[[example]]
+name = "01_create_audit_trail"
+path = "audit-trail/01_create_audit_trail.rs"
+
 [dependencies]
 anyhow.workspace = true
+audit_trail = { path = "../audit-trail-rs" }
 chrono = { workspace = true }
 iota-sdk = { workspace = true }
 iota_interaction = { workspace = true }

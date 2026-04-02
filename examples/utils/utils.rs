@@ -1,38 +1,78 @@
-// Copyright 2020-2025 IOTA Stiftung
+// Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Context;
-use iota_sdk::{IOTA_LOCAL_NETWORK_URL, IotaClientBuilder};
+use iota_interaction::types::base_types::ObjectID;
+use audit_trail::{AuditTrailClient, PackageOverrides};
+use iota_sdk::{IotaClientBuilder, IOTA_LOCAL_NETWORK_URL};
 use notarization::client::{NotarizationClient, NotarizationClientReadOnly};
 use product_common::test_utils::{InMemSigner, request_funds};
 
-pub async fn get_read_only_client() -> anyhow::Result<NotarizationClientReadOnly> {
+async fn get_iota_client() -> anyhow::Result<iota_sdk::IotaClient> {
     let api_endpoint = std::env::var("API_ENDPOINT").unwrap_or_else(|_| IOTA_LOCAL_NETWORK_URL.to_string());
-    let iota_client = IotaClientBuilder::default()
+    IotaClientBuilder::default()
         .build(&api_endpoint)
         .await
-        .map_err(|err| anyhow::anyhow!(format!("failed to connect to network; {}", err)))?;
+        .map_err(|err| anyhow::anyhow!("failed to connect to network; {}", err))
+}
 
-    let package_id = std::env::var("IOTA_NOTARIZATION_PKG_ID")
-        .map_err(|e| {
-            anyhow::anyhow!("env variable IOTA_NOTARIZATION_PKG_ID must be set in order to run the examples").context(e)
-        })
-        .and_then(|pkg_str| pkg_str.parse().context("invalid package id"))?;
+fn get_package_id_from_env(env_var_name: &str) -> anyhow::Result<ObjectID   > {
+    let value = std::env::var(env_var_name)
+        .with_context(|| format!("env variable '{env_var_name}' must be set in order to run the examples"))?;
+
+    value
+        .parse()
+        .with_context(|| format!("invalid package id in {env_var_name}"))
+}
+
+pub async fn get_notarization_read_only_client() -> anyhow::Result<NotarizationClientReadOnly> {
+    let iota_client = get_iota_client().await?;
+
+    let package_id = get_package_id_from_env("IOTA_NOTARIZATION_PKG_ID")?;
 
     NotarizationClientReadOnly::new_with_pkg_id(iota_client, package_id)
         .await
         .context("failed to create a read-only NotarizationClient")
 }
 
-pub async fn get_funded_client() -> Result<NotarizationClient<InMemSigner>, anyhow::Error> {
+pub async fn get_funded_notarization_client() -> Result<NotarizationClient<InMemSigner>, anyhow::Error> {
     let signer = InMemSigner::new();
     let sender_address = signer.get_address().await?;
 
     request_funds(&sender_address).await?;
 
-    let read_only_client = get_read_only_client().await?;
+    let read_only_client = get_notarization_read_only_client().await?;
     let notarization_client: NotarizationClient<InMemSigner> =
         NotarizationClient::new(read_only_client, signer).await?;
 
     Ok(notarization_client)
+}
+
+pub async fn get_funded_audit_trail_client() -> Result<AuditTrailClient<InMemSigner>, anyhow::Error> {
+    let iota_client = get_iota_client().await?;
+
+    let audit_trail_pkg_id =
+        get_package_id_from_env("IOTA_AUDIT_TRAIL_PKG_ID")?;
+
+    let tf_components_pkg_id =
+      get_package_id_from_env("IOTA_TF_COMPONENTS_PKG_ID")?;
+
+    let signer = InMemSigner::new();
+    let sender_address = signer.get_address().await?;
+    request_funds(&sender_address).await?;
+
+    let client = AuditTrailClient::from_iota_client(
+        iota_client,
+        Some(PackageOverrides {
+            audit_trail_package_id: Some(audit_trail_pkg_id),
+            tf_components_package_id: Some(tf_components_pkg_id),
+        }),
+    )
+    .await
+    .map_err(|e| anyhow::anyhow!("failed to create AuditTrailClient: {e}"))?;
+
+    client
+        .with_signer(signer)
+        .await
+        .map_err(|e| anyhow::anyhow!("failed to attach signer to AuditTrailClient: {e}"))
 }

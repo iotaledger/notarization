@@ -4,14 +4,14 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
-use examples::get_funded_client;
+use examples::get_funded_notarization_client;
 use notarization::core::types::{State, TimeLock};
 
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("Demonstrating read-only methods for notarization inspection");
 
-    let notarization_client = get_funded_client().await?;
+    let notarization_client = get_funded_notarization_client().await?;
 
     // Create a comprehensive dynamic notarization for testing
     println!("Creating a dynamic notarization with comprehensive metadata...");

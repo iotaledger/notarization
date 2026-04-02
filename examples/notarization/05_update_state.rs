@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use examples::get_funded_client;
+use examples::get_funded_notarization_client;
 use notarization::core::types::State;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("Demonstrating state updates on dynamic notarization");
 
-    let notarization_client = get_funded_client().await?;
+    let notarization_client = get_funded_notarization_client().await?;
 
     println!("Creating a dynamic notarization for state updates...");
 

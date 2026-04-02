@@ -32,10 +32,10 @@ use crate::iota_interaction_adapter::IotaClientAdapter;
 #[non_exhaustive]
 pub struct NoSigner;
 
-/// The error that results from a failed attempt at creating an [IdentityClient]
+/// The error that results from a failed attempt at creating an [AuditTrailClient]
 /// from a given [IotaClient].
 #[derive(Debug, thiserror::Error)]
-#[error("failed to create an 'IdentityClient' from the given 'IotaClient'")]
+#[error("failed to create an 'AuditTrailClient' from the given 'IotaClient'")]
 #[non_exhaustive]
 pub struct FromIotaClientError {
     /// Type of failure for this error.

@@ -19,7 +19,7 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
-use examples::get_funded_client;
+use examples::get_funded_notarization_client;
 use notarization::core::types::State;
 use serde_json::json;
 
@@ -28,7 +28,7 @@ async fn main() -> Result<()> {
     println!("🌡️ IoT Weather Station - Dynamic Notarization Example");
     println!("=====================================================\n");
 
-    let notarization_client = get_funded_client().await?;
+    let notarization_client = get_funded_notarization_client().await?;
 
     let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
 
