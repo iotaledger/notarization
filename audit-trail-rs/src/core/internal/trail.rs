@@ -1,6 +1,8 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! Helpers for fetching and decoding the shared on-chain audit-trail object.
+
 use iota_interaction::rpc_types::{IotaData as _, IotaObjectDataOptions};
 use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::{IotaClientTrait, OptionalSync};
@@ -9,6 +11,7 @@ use product_common::core_client::CoreClientReadOnly;
 use crate::core::types::OnChainAuditTrail;
 use crate::error::Error;
 
+/// Loads the shared audit-trail object and decodes it into [`OnChainAuditTrail`].
 pub(crate) async fn get_audit_trail<C>(trail_id: ObjectID, client: &C) -> Result<OnChainAuditTrail, Error>
 where
     C: CoreClientReadOnly + OptionalSync,

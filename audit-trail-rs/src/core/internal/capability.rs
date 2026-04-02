@@ -1,6 +1,8 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! Capability discovery helpers used by internal transaction builders.
+
 use std::collections::{BTreeMap, HashSet};
 
 use iota_interaction::move_types::language_storage::StructTag;
@@ -18,6 +20,10 @@ use super::{linked_table, tx};
 use crate::core::types::{Capability, OnChainAuditTrail, Permission};
 use crate::error::Error;
 
+/// Finds an owned capability object that grants `permission` for `trail_id` and returns its object
+/// reference.
+///
+/// The lookup is restricted to roles on `trail` that include the requested permission.
 pub(crate) async fn find_capable_cap<C>(
     client: &C,
     owner: IotaAddress,
@@ -51,6 +57,10 @@ where
     tx::get_object_ref_by_id(client, &object_id).await
 }
 
+/// Searches the owner's capability objects and returns the first one matching `predicate`.
+///
+/// Revoked capabilities are filtered out before the predicate is applied to the remaining
+/// candidates.
 pub(crate) async fn find_owned_capability<C, P>(
     client: &C,
     owner: IotaAddress,
@@ -107,6 +117,10 @@ where
     Ok(None)
 }
 
+/// Traverses the revoked-capabilities linked table and collects every revoked capability ID.
+///
+/// The traversal validates that the linked-table shape is acyclic and that the number of visited
+/// entries matches the size recorded on-chain.
 async fn revoked_capability_ids<C>(client: &C, trail: &OnChainAuditTrail) -> Result<HashSet<ObjectID>, Error>
 where
     C: CoreClientReadOnly + OptionalSync,
@@ -150,6 +164,10 @@ where
     Ok(keys)
 }
 
+/// Returns whether a capability is a usable match for the current owner and predicate.
+///
+/// A capability only matches when it satisfies the caller-provided predicate, has not been
+/// revoked, and is either unbound or explicitly issued to `owner`.
 fn capability_matches<P>(
     cap: &Capability,
     owner: IotaAddress,

@@ -1,6 +1,8 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! Shared transaction-building helpers used by the internal audit-trail operations.
+
 use std::str::FromStr;
 
 use iota_interaction::rpc_types::IotaObjectDataOptions;
@@ -21,6 +23,7 @@ use super::{capability, trail as trail_reader};
 use crate::core::types::Permission;
 use crate::error::Error;
 
+/// Returns the canonical immutable clock object argument.
 pub(crate) fn get_clock_ref(ptb: &mut Ptb) -> Argument {
     ptb.obj(ObjectArg::SharedObject {
         id: IOTA_CLOCK_OBJECT_ID,
@@ -30,6 +33,8 @@ pub(crate) fn get_clock_ref(ptb: &mut Ptb) -> Argument {
     .expect("network has a singleton clock instantiated")
 }
 
+/// Serializes a pure programmable-transaction argument and annotates serialization failures with
+/// the logical argument name.
 pub(crate) fn ptb_pure<T>(ptb: &mut Ptb, name: &str, value: T) -> Result<Argument, Error>
 where
     T: Serialize + core::fmt::Debug,
@@ -41,6 +46,7 @@ where
     })
 }
 
+/// Wraps an optional argument into the corresponding Move `std::option::Option<T>` value.
 pub(crate) fn option_to_move(
     option: Option<Argument>,
     tag: TypeTag,
@@ -67,6 +73,8 @@ pub(crate) fn option_to_move(
     Ok(arg)
 }
 
+/// Builds a writable trail transaction after resolving both the trail object and a matching
+/// capability for `owner`.
 pub(crate) async fn build_trail_transaction<C, F>(
     client: &C,
     trail_id: ObjectID,
@@ -84,6 +92,8 @@ where
     build_trail_transaction_with_cap_ref(client, trail_id, cap_ref, method, additional_args).await
 }
 
+/// Builds a writable trail transaction when the caller already has the capability object
+/// reference.
 pub(crate) async fn build_trail_transaction_with_cap_ref<C, F>(
     client: &C,
     trail_id: ObjectID,
@@ -118,6 +128,7 @@ where
     Ok(ptb.finish())
 }
 
+/// Builds a read-only trail transaction that borrows the shared trail object immutably.
 pub(crate) async fn build_read_only_transaction<C, F>(
     client: &C,
     trail_id: ObjectID,
@@ -148,6 +159,10 @@ where
     Ok(ptb.finish())
 }
 
+/// Extracts the generic record payload type from the on-chain trail object type.
+///
+/// Audit-trail Move entry points are generic over the record payload type, so transaction builders
+/// need this type tag to invoke the correct specialization.
 pub(crate) async fn get_type_tag<C>(client: &C, object_id: &ObjectID) -> Result<TypeTag, Error>
 where
     C: CoreClientReadOnly + OptionalSync,
@@ -174,6 +189,7 @@ where
         .map_err(|e| Error::FailedToParseTag(format!("Failed to parse tag '{type_param_str}': {e}")))
 }
 
+/// Extracts the innermost generic type parameter from a full Move object type string.
 fn parse_type(full_type: &str) -> Result<String, Error> {
     if let (Some(start), Some(end)) = (full_type.find('<'), full_type.rfind('>')) {
         Ok(full_type[start + 1..end].to_string())
@@ -184,6 +200,7 @@ fn parse_type(full_type: &str) -> Result<String, Error> {
     }
 }
 
+/// Fetches the current object reference for `object_id`.
 pub(crate) async fn get_object_ref_by_id(
     client: &impl CoreClientReadOnly,
     object_id: &ObjectID,
@@ -202,6 +219,10 @@ pub(crate) async fn get_object_ref_by_id(
     Ok(data.object_ref())
 }
 
+/// Resolves a shared object argument for use in a programmable transaction.
+///
+/// This validates that the fetched object is shared and returns the appropriate mutability flag for
+/// the planned call.
 pub(crate) async fn get_shared_object_arg(
     client: &impl CoreClientReadOnly,
     object_id: &ObjectID,

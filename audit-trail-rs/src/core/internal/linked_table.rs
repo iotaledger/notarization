@@ -1,6 +1,8 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! Helpers for reading Move `LinkedTable` nodes through dynamic fields.
+
 use iota_interaction::rpc_types::{IotaData as _, IotaObjectDataOptions};
 use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::types::collection_types::LinkedTableNode;
@@ -11,6 +13,10 @@ use serde::de::DeserializeOwned;
 
 use crate::error::Error;
 
+/// Fetches and decodes a single linked-table node stored as a dynamic field under `table_id`.
+///
+/// The caller provides the fully encoded Move field name so this helper can stay generic over the
+/// linked-table key and value types.
 pub(crate) async fn fetch_node<C, K, V>(
     client: &C,
     table_id: ObjectID,
