@@ -69,19 +69,19 @@ Use **IOTA Audit Trail** when you need shared audit records with permissions, ca
 
 ## Toolkits
 
-| Toolkit | Best for | Move Package | Rust SDK | Wasm SDK |
-| ------- | -------- | ------------ | -------- | -------- |
-| Notarization | Proof objects for documents, hashes, and updatable notarized state | [`notarization-move`](./notarization-move) | [`notarization-rs`](./notarization-rs) | [`notarization_wasm`](./bindings/wasm/notarization_wasm) |
-| Audit Trail | Shared sequential records with roles, capabilities, tagging, and locking | [`audit-trail-move`](./audit-trail-move) | [`audit-trail-rs`](./audit-trail-rs) | [`audit_trail_wasm`](./bindings/wasm/audit_trail_wasm) |
+| Toolkit      | Best for                                                                 | Move Package                               | Rust SDK                               | Wasm SDK                                                 |
+| ------------ | ------------------------------------------------------------------------ | ------------------------------------------ | -------------------------------------- | -------------------------------------------------------- |
+| Notarization | Proof objects for documents, hashes, and updatable notarized state       | [`notarization-move`](./notarization-move) | [`notarization-rs`](./notarization-rs) | [`notarization_wasm`](./bindings/wasm/notarization_wasm) |
+| Audit Trail  | Shared sequential records with roles, capabilities, tagging, and locking | [`audit-trail-move`](./audit-trail-move)   | [`audit-trail-rs`](./audit-trail-rs)   | [`audit_trail_wasm`](./bindings/wasm/audit_trail_wasm)   |
 
 ### Which one should I use?
 
-| Need | Best fit |
-| ---- | -------- |
-| Immutable or updatable proof object for arbitrary data | Notarization |
-| Simple proof-of-existence or latest-state notarization flow | Notarization |
-| Shared sequential records with roles, capabilities, and record tag policy | Audit Trail |
-| Team or system audit log with governance and operational controls | Audit Trail |
+| Need                                                                      | Best fit     |
+| ------------------------------------------------------------------------- | ------------ |
+| Immutable or updatable proof object for arbitrary data                    | Notarization |
+| Simple proof-of-existence or latest-state notarization flow               | Notarization |
+| Shared sequential records with roles, capabilities, and record tag policy | Audit Trail  |
+| Team or system audit log with governance and operational controls         | Audit Trail  |
 
 ## Documentation And Resources
 

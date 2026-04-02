@@ -748,12 +748,7 @@ async fn delete_records_batch_requires_delete_all_records_permission() -> anyhow
     let records = operator.trail(trail_id).records();
 
     admin
-        .create_role(
-            trail_id,
-            "TrailDeleteOnly",
-            [Permission::DeleteAuditTrail],
-            None,
-        )
+        .create_role(trail_id, "TrailDeleteOnly", [Permission::DeleteAuditTrail], None)
         .await?;
     admin
         .issue_cap(

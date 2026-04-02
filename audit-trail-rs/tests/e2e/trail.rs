@@ -389,12 +389,7 @@ async fn revoked_capability_cannot_update_metadata() -> anyhow::Result<()> {
     let trail_id = admin.create_test_trail(Data::text("trail-update-meta-revoked")).await?;
 
     admin
-        .create_role(
-            trail_id,
-            "MetadataAdmin",
-            vec![Permission::UpdateMetadata],
-            None,
-        )
+        .create_role(trail_id, "MetadataAdmin", vec![Permission::UpdateMetadata], None)
         .await?;
     let issued = admin
         .issue_cap(

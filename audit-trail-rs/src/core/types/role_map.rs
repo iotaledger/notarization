@@ -165,11 +165,11 @@ impl MoveType for Capability {
 
 #[cfg(test)]
 mod tests {
+    use iota_interaction::types::base_types::{IotaAddress, dbg_object_id};
+    use iota_interaction::types::id::UID;
     use serde_json::json;
 
     use super::Capability;
-    use iota_interaction::types::base_types::{IotaAddress, dbg_object_id};
-    use iota_interaction::types::id::UID;
 
     #[test]
     fn capability_deserializes_string_encoded_time_constraints() {
