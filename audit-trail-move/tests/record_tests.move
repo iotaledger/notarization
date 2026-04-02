@@ -1235,6 +1235,302 @@ fun test_delete_record_count_locked() {
     ts::end(scenario);
 }
 
+#[test]
+fun test_delete_record_after_time_lock_expires() {
+    let admin = @0xAD;
+    let mut scenario = ts::begin(admin);
+
+    {
+        let locking_config = locking::new(
+            locking::window_time_based(3600),
+            timelock::none(),
+            timelock::none(),
+        );
+        let (admin_cap, _) = setup_test_audit_trail(
+            &mut scenario,
+            locking_config,
+            std::option::some(record::new_text(string::utf8(b"Locked record"))),
+        );
+        transfer::public_transfer(admin_cap, admin);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
+
+        trail
+            .access_mut()
+            .create_role(
+                &admin_cap,
+                string::utf8(b"RecordAdmin"),
+                permission::record_admin_permissions(),
+                std::option::none(),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
+
+        let record_cap = test_utils::new_capability_without_restrictions(
+            trail.access_mut(),
+            &admin_cap,
+            &string::utf8(b"RecordAdmin"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        transfer::public_transfer(record_cap, admin);
+        admin_cap.destroy_for_testing();
+        cleanup_trail_and_clock(trail, clock);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let trail = ts::take_shared<AuditTrail<Data>>(&scenario);
+        let mut clock = clock::create_for_testing(ts::ctx(&mut scenario));
+
+        clock.set_for_testing(initial_time_for_testing() + 3600 * 1000);
+        assert!(!trail.is_record_locked(0, &clock), 0);
+
+        clock::destroy_for_testing(clock);
+        ts::return_shared(trail);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let mut trail = ts::take_shared<AuditTrail<Data>>(&scenario);
+        let record_cap = ts::take_from_sender<Capability>(&scenario);
+
+        let mut clock = clock::create_for_testing(ts::ctx(&mut scenario));
+        clock.set_for_testing(initial_time_for_testing() + 3601 * 1000);
+
+        assert!(trail.has_record(0), 1);
+        assert!(!trail.is_record_locked(0, &clock), 2);
+
+        trail.delete_record(&record_cap, 0, &clock, ts::ctx(&mut scenario));
+
+        assert!(!trail.has_record(0), 3);
+
+        clock::destroy_for_testing(clock);
+        record_cap.destroy_for_testing();
+        ts::return_shared(trail);
+    };
+
+    ts::end(scenario);
+}
+
+#[test]
+fun test_count_based_locking_old_record_can_delete() {
+    let admin = @0xAD;
+    let mut scenario = ts::begin(admin);
+
+    {
+        let locking_config = locking::new(
+            locking::window_count_based(2),
+            timelock::none(),
+            timelock::none(),
+        );
+        let (admin_cap, _) = setup_test_audit_trail(
+            &mut scenario,
+            locking_config,
+            std::option::none(),
+        );
+        transfer::public_transfer(admin_cap, admin);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let (admin_cap, mut trail, mut clock) = fetch_capability_trail_and_clock(&mut scenario);
+
+        trail
+            .access_mut()
+            .create_role(
+                &admin_cap,
+                string::utf8(b"RecordAdmin"),
+                permission::record_admin_permissions(),
+                std::option::none(),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
+
+        let record_cap = test_utils::new_capability_without_restrictions(
+            trail.access_mut(),
+            &admin_cap,
+            &string::utf8(b"RecordAdmin"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        clock.set_for_testing(initial_time_for_testing() + 1000);
+
+        let mut i = 0u64;
+        while (i < 5) {
+            trail.add_record(
+                &record_cap,
+                record::new_text(string::utf8(b"Record")),
+                std::option::none(),
+                std::option::none(),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
+            i = i + 1;
+        };
+
+        transfer::public_transfer(record_cap, admin);
+        admin_cap.destroy_for_testing();
+        cleanup_trail_and_clock(trail, clock);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let mut trail = ts::take_shared<AuditTrail<Data>>(&scenario);
+        let record_cap = ts::take_from_sender<Capability>(&scenario);
+
+        let mut clock = clock::create_for_testing(ts::ctx(&mut scenario));
+        clock.set_for_testing(initial_time_for_testing() + 7200 * 1000);
+
+        assert!(!trail.is_record_locked(0, &clock), 0);
+        assert!(trail.has_record(0), 1);
+
+        trail.delete_record(&record_cap, 0, &clock, ts::ctx(&mut scenario));
+
+        assert!(!trail.has_record(0), 2);
+
+        clock::destroy_for_testing(clock);
+        record_cap.destroy_for_testing();
+        ts::return_shared(trail);
+    };
+
+    ts::end(scenario);
+}
+
+// ===== Delete Records Batch Tests =====
+
+#[test]
+fun test_delete_records_batch_bypasses_record_lock() {
+    let admin = @0xAD;
+    let mut scenario = ts::begin(admin);
+
+    {
+        let locking_config = locking::new(
+            locking::window_time_based(3600),
+            timelock::none(),
+            timelock::none(),
+        );
+        let (admin_cap, _) = setup_test_audit_trail(
+            &mut scenario,
+            locking_config,
+            std::option::some(record::new_text(string::utf8(b"Locked"))),
+        );
+        transfer::public_transfer(admin_cap, admin);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let (admin_cap, mut trail, mut clock) = fetch_capability_trail_and_clock(&mut scenario);
+        let delete_all_role = string::utf8(b"DeleteAllRecordsAdmin");
+        let delete_all_perms = permission::from_vec(vector[permission::delete_all_records()]);
+
+        trail
+            .access_mut()
+            .create_role(
+                &admin_cap,
+                delete_all_role,
+                delete_all_perms,
+                std::option::none(),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
+
+        let delete_all_cap = test_utils::new_capability_without_restrictions(
+            trail.access_mut(),
+            &admin_cap,
+            &string::utf8(b"DeleteAllRecordsAdmin"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        clock.set_for_testing(initial_time_for_testing() + 1000);
+        let deleted = trail.delete_records_batch(
+            &delete_all_cap,
+            10,
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+        assert!(deleted == 1, 0);
+        assert!(trail.record_count() == 0, 1);
+
+        delete_all_cap.destroy_for_testing();
+        cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
+    };
+
+    ts::end(scenario);
+}
+
+#[test]
+#[expected_failure(abort_code = audit_trail::role_map::ECapabilityPermissionDenied)]
+fun test_delete_records_batch_requires_delete_all_records_permission() {
+    let admin = @0xAD;
+    let mut scenario = ts::begin(admin);
+
+    {
+        let locking_config = locking::new(
+            locking::window_none(),
+            timelock::none(),
+            timelock::none(),
+        );
+        let (admin_cap, _) = setup_test_audit_trail(
+            &mut scenario,
+            locking_config,
+            std::option::some(record::new_text(string::utf8(b"Record"))),
+        );
+        transfer::public_transfer(admin_cap, admin);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
+
+        let perms = permission::from_vec(vector[permission::delete_audit_trail()]);
+        trail
+            .access_mut()
+            .create_role(
+                &admin_cap,
+                string::utf8(b"TrailDeleteOnly"),
+                perms,
+                std::option::none(),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
+
+        let delete_only_cap = test_utils::new_capability_without_restrictions(
+            trail.access_mut(),
+            &admin_cap,
+            &string::utf8(b"TrailDeleteOnly"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        transfer::public_transfer(delete_only_cap, admin);
+        admin_cap.destroy_for_testing();
+        cleanup_trail_and_clock(trail, clock);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let delete_only_cap = ts::take_from_sender<Capability>(&scenario);
+        let mut trail = ts::take_shared<AuditTrail<Data>>(&scenario);
+        let mut clock = clock::create_for_testing(ts::ctx(&mut scenario));
+        clock.set_for_testing(initial_time_for_testing() + 1000);
+
+        trail.delete_records_batch(&delete_only_cap, 10, &clock, ts::ctx(&mut scenario));
+
+        clock::destroy_for_testing(clock);
+        delete_only_cap.destroy_for_testing();
+        ts::return_shared(trail);
+    };
+
+    ts::end(scenario);
+}
+
 // ===== Query Function Tests =====
 
 #[test]
