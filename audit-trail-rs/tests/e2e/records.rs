@@ -7,6 +7,7 @@ use audit_trail::core::types::{
 use audit_trail::error::Error;
 use iota_interaction::types::base_types::ObjectID;
 use product_common::core_client::CoreClient;
+use tokio::time::{Duration, sleep};
 
 use crate::client::{TestClient, get_funded_test_client};
 
@@ -173,6 +174,38 @@ async fn add_tagged_record_requires_trail_defined_tag() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+async fn add_record_requires_add_record_permission() -> anyhow::Result<()> {
+    let admin = get_funded_test_client().await?;
+    let writer = get_funded_test_client().await?;
+    let trail_id = admin.create_test_trail(Data::text("records-add-permission")).await?;
+    let records = writer.trail(trail_id).records();
+
+    admin
+        .create_role(trail_id, "NoAddRecord", [Permission::DeleteRecord], None)
+        .await?;
+    admin
+        .issue_cap(
+            trail_id,
+            "NoAddRecord",
+            CapabilityIssueOptions {
+                issued_to: Some(writer.sender_address()),
+                ..CapabilityIssueOptions::default()
+            },
+        )
+        .await?;
+
+    let denied = records
+        .add(Data::text("should fail"), None, None)
+        .build_and_execute(&writer)
+        .await;
+
+    assert!(denied.is_err(), "adding without AddRecord permission must fail");
+    assert_eq!(admin.trail(trail_id).records().record_count().await?, 1);
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn add_record_skips_revoked_capability_when_valid_one_exists() -> anyhow::Result<()> {
     let admin = get_funded_test_client().await?;
     let writer = get_funded_test_client().await?;
@@ -220,6 +253,46 @@ async fn add_record_skips_revoked_capability_when_valid_one_exists() -> anyhow::
 
     assert_eq!(added.sequence_number, 1);
     assert_text_data(records.get(1).await?.data, "writer record");
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn revoked_capability_cannot_add_record_without_fallback() -> anyhow::Result<()> {
+    let admin = get_funded_test_client().await?;
+    let writer = get_funded_test_client().await?;
+    let trail_id = admin.create_test_trail(Data::text("records-revoked-hard-fail")).await?;
+    let records = writer.trail(trail_id).records();
+    let role_name = "RecordWriter";
+
+    admin
+        .create_role(trail_id, role_name, [Permission::AddRecord], None)
+        .await?;
+    let issued = admin
+        .issue_cap(
+            trail_id,
+            role_name,
+            CapabilityIssueOptions {
+                issued_to: Some(writer.sender_address()),
+                ..CapabilityIssueOptions::default()
+            },
+        )
+        .await?;
+
+    admin
+        .trail(trail_id)
+        .access()
+        .revoke_capability(issued.capability_id, issued.valid_until)
+        .build_and_execute(&admin)
+        .await?;
+
+    let denied = records
+        .add(Data::text("should fail"), None, None)
+        .build_and_execute(&writer)
+        .await;
+
+    assert!(denied.is_err(), "revoked capabilities must not authorize writes");
+    assert_eq!(admin.trail(trail_id).records().record_count().await?, 1);
 
     Ok(())
 }
@@ -283,6 +356,98 @@ async fn add_tagged_record_skips_revoked_capability_when_valid_one_exists() -> a
 
     assert_eq!(added.sequence_number, 1);
     assert_eq!(records.get(1).await?.tag, Some("finance".to_string()));
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn add_record_respects_valid_from_constraint() -> anyhow::Result<()> {
+    let admin = get_funded_test_client().await?;
+    let writer = get_funded_test_client().await?;
+    let trail_id = admin.create_test_trail(Data::text("records-valid-from")).await?;
+    let records = writer.trail(trail_id).records();
+    let role_name = "RecordWriter";
+
+    admin
+        .create_role(trail_id, role_name, [Permission::AddRecord], None)
+        .await?;
+    let valid_from_ms = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)?
+        .as_millis() as u64
+        + 15_000;
+    admin
+        .issue_cap(
+            trail_id,
+            role_name,
+            CapabilityIssueOptions {
+                issued_to: Some(writer.sender_address()),
+                valid_from_ms: Some(valid_from_ms),
+                valid_until_ms: None,
+            },
+        )
+        .await?;
+
+    let denied = records
+        .add(Data::text("too early"), None, None)
+        .build_and_execute(&writer)
+        .await;
+    assert!(denied.is_err(), "writes before valid_from must fail");
+
+    sleep(Duration::from_secs(16)).await;
+
+    let added = records
+        .add(Data::text("on time"), None, None)
+        .build_and_execute(&writer)
+        .await?
+        .output;
+
+    assert_eq!(added.sequence_number, 1);
+    assert_text_data(records.get(1).await?.data, "on time");
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn add_record_respects_valid_until_constraint() -> anyhow::Result<()> {
+    let admin = get_funded_test_client().await?;
+    let writer = get_funded_test_client().await?;
+    let trail_id = admin.create_test_trail(Data::text("records-valid-until")).await?;
+    let records = writer.trail(trail_id).records();
+    let role_name = "RecordWriter";
+
+    admin
+        .create_role(trail_id, role_name, [Permission::AddRecord], None)
+        .await?;
+    let valid_until_ms = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)?
+        .as_millis() as u64
+        + 15_000;
+    admin
+        .issue_cap(
+            trail_id,
+            role_name,
+            CapabilityIssueOptions {
+                issued_to: Some(writer.sender_address()),
+                valid_from_ms: None,
+                valid_until_ms: Some(valid_until_ms),
+            },
+        )
+        .await?;
+
+    let added = records
+        .add(Data::text("before expiry"), None, None)
+        .build_and_execute(&writer)
+        .await?
+        .output;
+    assert_eq!(added.sequence_number, 1);
+
+    sleep(Duration::from_secs(16)).await;
+
+    let denied = records
+        .add(Data::text("after expiry"), None, None)
+        .build_and_execute(&writer)
+        .await;
+    assert!(denied.is_err(), "writes after valid_until must fail");
 
     Ok(())
 }
@@ -571,6 +736,42 @@ async fn delete_records_batch_respects_limit_and_deletes_oldest_first() -> anyho
         .await?
         .output;
     assert_eq!(deleted_empty, 0, "deleting from an empty trail should return zero");
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn delete_records_batch_requires_delete_all_records_permission() -> anyhow::Result<()> {
+    let admin = get_funded_test_client().await?;
+    let operator = get_funded_test_client().await?;
+    let trail_id = admin.create_test_trail(Data::text("batch-delete-permission")).await?;
+    let records = operator.trail(trail_id).records();
+
+    admin
+        .create_role(
+            trail_id,
+            "TrailDeleteOnly",
+            [Permission::DeleteAuditTrail],
+            None,
+        )
+        .await?;
+    admin
+        .issue_cap(
+            trail_id,
+            "TrailDeleteOnly",
+            CapabilityIssueOptions {
+                issued_to: Some(operator.sender_address()),
+                ..CapabilityIssueOptions::default()
+            },
+        )
+        .await?;
+
+    let denied = records.delete_records_batch(10).build_and_execute(&operator).await;
+    assert!(
+        denied.is_err(),
+        "batch deletion must require DeleteAllRecords permission"
+    );
+    assert_eq!(admin.trail(trail_id).records().record_count().await?, 1);
 
     Ok(())
 }

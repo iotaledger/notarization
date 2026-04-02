@@ -12,6 +12,7 @@ use iota_interaction::types::programmable_transaction_builder::ProgrammableTrans
 use iota_interaction::types::transaction::Argument;
 use iota_interaction::{MoveType, ident_str};
 use serde::{Deserialize, Serialize};
+use serde_aux::field_attributes::deserialize_option_number_from_string;
 
 use super::permission::Permission;
 use crate::core::internal::move_collections::{deserialize_vec_map, deserialize_vec_set};
@@ -139,8 +140,10 @@ pub struct Capability {
     /// Capability holder, if the capability is assigned to an address.
     pub issued_to: Option<IotaAddress>,
     /// Millisecond timestamp at which the capability becomes valid.
+    #[serde(deserialize_with = "deserialize_option_number_from_string")]
     pub valid_from: Option<u64>,
     /// Millisecond timestamp at which the capability expires.
+    #[serde(deserialize_with = "deserialize_option_number_from_string")]
     pub valid_until: Option<u64>,
 }
 
@@ -157,5 +160,55 @@ impl Capability {
 impl MoveType for Capability {
     fn move_type(package: ObjectID) -> TypeTag {
         Self::type_tag(package)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::Capability;
+    use iota_interaction::types::base_types::{IotaAddress, dbg_object_id};
+    use iota_interaction::types::id::UID;
+
+    #[test]
+    fn capability_deserializes_string_encoded_time_constraints() {
+        let issued_to = IotaAddress::random_for_testing_only();
+        let capability = Capability {
+            id: UID::new(dbg_object_id(1)),
+            target_key: dbg_object_id(2),
+            role: "Writer".to_string(),
+            issued_to: Some(issued_to),
+            valid_from: None,
+            valid_until: None,
+        };
+
+        let mut value = serde_json::to_value(capability).expect("capability serializes");
+        value["valid_from"] = json!("1700000000000");
+        value["valid_until"] = json!("1700000005000");
+
+        let decoded: Capability = serde_json::from_value(value).expect("capability deserializes");
+
+        assert_eq!(decoded.valid_from, Some(1_700_000_000_000));
+        assert_eq!(decoded.valid_until, Some(1_700_000_005_000));
+        assert_eq!(decoded.issued_to, Some(issued_to));
+    }
+
+    #[test]
+    fn capability_deserializes_absent_time_constraints() {
+        let capability = Capability {
+            id: UID::new(dbg_object_id(4)),
+            target_key: dbg_object_id(5),
+            role: "Writer".to_string(),
+            issued_to: None,
+            valid_from: None,
+            valid_until: None,
+        };
+
+        let value = serde_json::to_value(capability).expect("capability serializes");
+        let decoded: Capability = serde_json::from_value(value).expect("capability deserializes");
+
+        assert_eq!(decoded.valid_from, None);
+        assert_eq!(decoded.valid_until, None);
     }
 }

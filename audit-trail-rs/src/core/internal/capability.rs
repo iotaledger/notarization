@@ -201,8 +201,8 @@ mod tests {
         let valid_roles = HashSet::from(["Writer".to_string()]);
         let revoked_ids = HashSet::from([revoked_cap_id]);
 
-        let revoked_cap = make_capability(revoked_cap_id, trail_id, "Writer", None);
-        let valid_cap = make_capability(valid_cap_id, trail_id, "Writer", None);
+        let revoked_cap = make_capability(revoked_cap_id, trail_id, "Writer", None, None, None);
+        let valid_cap = make_capability(valid_cap_id, trail_id, "Writer", None, None, None);
 
         assert!(!capability_matches(&revoked_cap, owner, &revoked_ids, &|cap| cap
             .matches_target_and_role(trail_id, &valid_roles)));
@@ -216,21 +216,71 @@ mod tests {
         let other_owner = IotaAddress::random_for_testing_only();
         let trail_id = dbg_object_id(4);
         let valid_roles = HashSet::from(["Writer".to_string()]);
-        let cap = make_capability(dbg_object_id(5), trail_id, "Writer", Some(other_owner));
+        let cap = make_capability(dbg_object_id(5), trail_id, "Writer", Some(other_owner), None, None);
 
         assert!(!capability_matches(&cap, owner, &HashSet::new(), &|candidate| {
             candidate.matches_target_and_role(trail_id, &valid_roles)
         }));
     }
 
-    fn make_capability(id: ObjectID, trail_id: ObjectID, role: &str, issued_to: Option<IotaAddress>) -> Capability {
+    #[test]
+    fn capability_matches_accepts_unbound_capability_for_matching_role() {
+        let owner = IotaAddress::random_for_testing_only();
+        let trail_id = dbg_object_id(6);
+        let valid_roles = HashSet::from(["Writer".to_string()]);
+        let cap = make_capability(dbg_object_id(7), trail_id, "Writer", None, None, None);
+
+        assert!(capability_matches(&cap, owner, &HashSet::new(), &|candidate| {
+            candidate.matches_target_and_role(trail_id, &valid_roles)
+        }));
+    }
+
+    #[test]
+    fn capability_matches_rejects_non_matching_role() {
+        let owner = IotaAddress::random_for_testing_only();
+        let trail_id = dbg_object_id(8);
+        let valid_roles = HashSet::from(["Writer".to_string()]);
+        let cap = make_capability(dbg_object_id(9), trail_id, "Reader", None, None, None);
+
+        assert!(!capability_matches(&cap, owner, &HashSet::new(), &|candidate| {
+            candidate.matches_target_and_role(trail_id, &valid_roles)
+        }));
+    }
+
+    #[test]
+    fn capability_matches_leaves_time_constraints_to_on_chain_validation() {
+        let owner = IotaAddress::random_for_testing_only();
+        let trail_id = dbg_object_id(10);
+        let valid_roles = HashSet::from(["Writer".to_string()]);
+        let cap = make_capability(
+            dbg_object_id(11),
+            trail_id,
+            "Writer",
+            Some(owner),
+            Some(1_700_000_000_000),
+            Some(1_700_000_005_000),
+        );
+
+        assert!(capability_matches(&cap, owner, &HashSet::new(), &|candidate| {
+            candidate.matches_target_and_role(trail_id, &valid_roles)
+        }));
+    }
+
+    fn make_capability(
+        id: ObjectID,
+        trail_id: ObjectID,
+        role: &str,
+        issued_to: Option<IotaAddress>,
+        valid_from: Option<u64>,
+        valid_until: Option<u64>,
+    ) -> Capability {
         Capability {
             id: UID::new(id),
             target_key: trail_id,
             role: role.to_string(),
             issued_to,
-            valid_from: None,
-            valid_until: None,
+            valid_from,
+            valid_until,
         }
     }
 }
