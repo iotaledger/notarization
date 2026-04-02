@@ -742,8 +742,8 @@ async fn delete_records_batch_with_matching_role_tag_access_succeeds() -> anyhow
         .build_and_execute(&client)
         .await?
         .output;
-    assert_eq!(deleted, 1);
-    assert_eq!(records.record_count().await?, 1);
+    assert_eq!(deleted, 2);
+    assert_eq!(records.record_count().await?, 0);
     assert!(records.get(1).await.is_err());
 
     Ok(())
