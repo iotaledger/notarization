@@ -272,9 +272,10 @@ fun test_delete_records_batch_with_matching_role_tags() {
             .create_role(
                 &admin_cap,
                 string::utf8(b"TaggedDeleteAll"),
-                permission::from_vec(
-                    vector[permission::add_record(), permission::delete_all_records()],
-                ),
+                permission::from_vec(vector[
+                    permission::add_record(),
+                    permission::delete_all_records(),
+                ]),
                 std::option::some(record_tags::new_role_tags(vector[string::utf8(b"finance")])),
                 &clock,
                 ts::ctx(&mut scenario),
