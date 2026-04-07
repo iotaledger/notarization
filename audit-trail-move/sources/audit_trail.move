@@ -349,6 +349,11 @@ public fun delete_record<D: store + copy + drop>(
             ctx,
         );
     assert!(linked_table::contains(&self.records, sequence_number), ERecordNotFound);
+    assert_record_tag_allowed(
+        self,
+        cap,
+        record::tag(linked_table::borrow(&self.records, sequence_number)),
+    );
     assert!(!self.is_record_locked(sequence_number, clock), ERecordLocked);
 
     let caller = ctx.sender();
@@ -396,6 +401,12 @@ public fun delete_records_batch<D: store + copy + drop>(
     let trail_id = self.id();
 
     while (deleted < limit && !self.records.is_empty()) {
+        let next_sequence_number = option::destroy_some(*linked_table::front(&self.records));
+        assert_record_tag_allowed(
+            self,
+            cap,
+            record::tag(linked_table::borrow(&self.records, next_sequence_number)),
+        );
         let (sequence_number, record) = self.records.pop_front();
 
         if (record::tag(&record).is_some()) {
