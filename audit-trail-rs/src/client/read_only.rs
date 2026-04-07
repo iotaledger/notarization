@@ -33,9 +33,9 @@ use crate::package;
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct PackageOverrides {
     /// Override for the audit-trail package itself.
-    pub audit_trail_package_id: Option<ObjectID>,
+    pub audit_trail: Option<ObjectID>,
     /// Override for the `tf_components` package used by time locks and capabilities.
-    pub tf_components_package_id: Option<ObjectID>,
+    pub tf_component: Option<ObjectID>,
 }
 
 /// A read-only client for interacting with audit-trail objects on a specific network.

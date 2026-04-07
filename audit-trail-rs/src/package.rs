@@ -85,7 +85,7 @@ pub(crate) async fn resolve_package_ids(
     let chain_id = network.as_ref().to_string();
     let package_registry = audit_trail_package_registry().await;
     let audit_trail_package_id = package_overrides
-        .audit_trail_package_id
+        .audit_trail
         .or_else(|| package_registry.package_id(network))
         .ok_or_else(|| {
             Error::InvalidConfig(format!(
@@ -105,12 +105,12 @@ pub(crate) async fn resolve_package_ids(
     drop(package_registry);
 
     let env = Env::new_with_alias(chain_id.clone(), resolved_network.as_ref());
-    if let Some(audit_trail_package_id) = package_overrides.audit_trail_package_id {
+    if let Some(audit_trail_package_id) = package_overrides.audit_trail {
         audit_trail_package_registry_mut()
             .await
             .insert_env_history(env.clone(), vec![audit_trail_package_id]);
     }
-    if let Some(tf_components_package_id) = package_overrides.tf_components_package_id {
+    if let Some(tf_components_package_id) = package_overrides.tf_component {
         tf_components_override_registry_mut()
             .await
             .insert_env_history(env, vec![tf_components_package_id]);
