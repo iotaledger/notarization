@@ -16,7 +16,7 @@ use crate::core::internal::trail as trail_reader;
 use crate::core::types::{AuditTrailCreated, Event, OnChainAuditTrail};
 use crate::error::Error;
 
-/// Output of a create trail transaction.
+/// Output of a successful trail-creation transaction.
 #[derive(Debug, Clone)]
 pub struct TrailCreated {
     /// Newly created trail object ID.
@@ -42,6 +42,9 @@ impl TrailCreated {
 }
 
 /// A transaction that creates a new audit trail.
+///
+/// The builder state is normalized into the exact Move `create` call shape, including tag-registry setup,
+/// optional initial-record creation, and initial-admin capability assignment.
 #[derive(Debug, Clone)]
 pub struct CreateTrail {
     builder: AuditTrailBuilder,

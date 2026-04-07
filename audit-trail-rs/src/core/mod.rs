@@ -3,7 +3,7 @@
 
 //! Core handles, builders, transactions, and domain types for audit trails.
 //!
-//! The modules in this namespace make up the main domain-facing API:
+//! This namespace contains the main trail-facing Rust API:
 //!
 //! - [`crate::core::access`] exposes role and capability management
 //! - [`crate::core::builder`] configures trail creation

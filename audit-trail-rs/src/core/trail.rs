@@ -1,7 +1,7 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-//! High-level trail handle types and trail-scoped transactions.
+//! High-level trail handles and trail-scoped transactions.
 
 use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::types::transaction::ProgrammableTransaction;
@@ -24,7 +24,7 @@ mod transactions;
 
 pub use transactions::{DeleteAuditTrail, Migrate, UpdateMetadata};
 
-/// Marker trait for read-only audit trail clients.
+/// Marker trait for read-only audit-trail clients.
 #[doc(hidden)]
 #[cfg_attr(not(feature = "send-sync"), async_trait::async_trait(?Send))]
 #[cfg_attr(feature = "send-sync", async_trait::async_trait)]
@@ -34,15 +34,14 @@ pub trait AuditTrailReadOnly: CoreClientReadOnly + OptionalSync {
     -> Result<T, Error>;
 }
 
-/// Marker trait for full (read-write) audit trail clients.
+/// Marker trait for full audit-trail clients.
 #[doc(hidden)]
 pub trait AuditTrailFull: AuditTrailReadOnly {}
 
-/// A typed handle bound to a specific audit trail and client.
+/// A typed handle bound to one trail ID and one client.
 ///
-/// `AuditTrailHandle` is the main trail-scoped entry point. It keeps the trail ID together with
-/// the client so that record, locking, access-control, tag, and metadata operations can all hang
-/// off one typed value.
+/// This is the main trail-scoped entry point. It keeps the trail identity together with the client so record,
+/// locking, access, tag, migration, and metadata operations all share one typed handle.
 #[derive(Debug, Clone)]
 pub struct AuditTrailHandle<'a, C> {
     pub(crate) client: &'a C,
@@ -56,7 +55,7 @@ impl<'a, C> AuditTrailHandle<'a, C> {
 
     /// Loads the full on-chain audit trail object.
     ///
-    /// Each call fetches a fresh snapshot from chain state.
+    /// Each call fetches a fresh snapshot from chain state rather than reusing cached client-side data.
     pub async fn get(&self) -> Result<OnChainAuditTrail, Error>
     where
         C: AuditTrailReadOnly,
@@ -64,7 +63,9 @@ impl<'a, C> AuditTrailHandle<'a, C> {
         trail_reader::get_audit_trail(self.trail_id, self.client).await
     }
 
-    /// Updates the trail's updatable metadata.
+    /// Updates the trail's mutable metadata field.
+    ///
+    /// Passing `None` clears the field on-chain.
     pub fn update_metadata<S>(&self, metadata: Option<String>) -> TransactionBuilder<UpdateMetadata>
     where
         C: AuditTrailFull + CoreClient<S>,
@@ -74,7 +75,7 @@ impl<'a, C> AuditTrailHandle<'a, C> {
         TransactionBuilder::new(UpdateMetadata::new(self.trail_id, owner, metadata))
     }
 
-    /// Migrates the trail to the latest package version.
+    /// Migrates the trail to the latest package version supported by this crate.
     pub fn migrate<S>(&self) -> TransactionBuilder<Migrate>
     where
         C: AuditTrailFull + CoreClient<S>,
@@ -84,9 +85,9 @@ impl<'a, C> AuditTrailHandle<'a, C> {
         TransactionBuilder::new(Migrate::new(self.trail_id, owner))
     }
 
-    /// Deletes the audit trail object.
+    /// Deletes the trail object.
     ///
-    /// The trail must be empty before deletion.
+    /// Deletion requires the trail to be empty and to satisfy the trail-delete lock rules.
     pub fn delete_audit_trail<S>(&self) -> TransactionBuilder<DeleteAuditTrail>
     where
         C: AuditTrailFull + CoreClient<S>,
@@ -98,14 +99,14 @@ impl<'a, C> AuditTrailHandle<'a, C> {
 
     /// Returns the record API scoped to this trail.
     ///
-    /// Use this for record reads and record-oriented transaction builders.
+    /// Use this for record reads, appends, and deletions.
     pub fn records(&self) -> TrailRecords<'a, C, Data> {
         TrailRecords::new(self.client, self.trail_id)
     }
 
     /// Returns the locking API scoped to this trail.
     ///
-    /// Use this for checking and updating trail-level locking rules.
+    /// Use this for inspecting lock state and updating locking rules.
     pub fn locking(&self) -> TrailLocking<'a, C> {
         TrailLocking::new(self.client, self.trail_id)
     }
@@ -119,7 +120,7 @@ impl<'a, C> AuditTrailHandle<'a, C> {
 
     /// Returns the tag-registry API scoped to this trail.
     ///
-    /// Use this for managing the set of tags available to records in this trail.
+    /// Use this for managing the canonical tag registry that record writes and role tags must reference.
     pub fn tags(&self) -> TrailTags<'a, C> {
         TrailTags::new(self.client, self.trail_id)
     }

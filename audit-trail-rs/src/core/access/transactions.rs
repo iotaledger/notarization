@@ -1,6 +1,11 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! Transaction payloads for audit-trail role and capability administration.
+//!
+//! These types cache the generated programmable transaction, delegate PTB construction to
+//! [`super::operations::AccessOps`], and decode the matching Move events into typed Rust outputs.
+
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::{IotaTransactionBlockEffects, IotaTransactionBlockEvents};
@@ -20,6 +25,9 @@ use crate::error::Error;
 // ===== CreateRole =====
 
 /// Transaction that creates a role on a trail.
+///
+/// This maps to the audit-trail `create_role` Move entry point and therefore requires an authorization
+/// capability with `AddRoles`.
 #[derive(Debug, Clone)]
 pub struct CreateRole {
     trail_id: ObjectID,
@@ -32,6 +40,8 @@ pub struct CreateRole {
 
 impl CreateRole {
     /// Creates a `CreateRole` transaction builder payload.
+    ///
+    /// `role_tags`, when present, are serialized as Move `record_tags::RoleTags` role data.
     pub fn new(
         trail_id: ObjectID,
         owner: IotaAddress,
@@ -105,6 +115,9 @@ impl Transaction for CreateRole {
 }
 
 /// Transaction that updates an existing role.
+///
+/// This updates both the permission set and the optional role-tag data stored for the role. The entry point
+/// requires `UpdateRoles`.
 #[derive(Debug, Clone)]
 pub struct UpdateRole {
     trail_id: ObjectID,
@@ -190,6 +203,8 @@ impl Transaction for UpdateRole {
 }
 
 /// Transaction that deletes a role.
+///
+/// The reserved initial-admin role cannot be deleted even if the caller holds `DeleteRoles`.
 #[derive(Debug, Clone)]
 pub struct DeleteRole {
     trail_id: ObjectID,
@@ -257,6 +272,9 @@ impl Transaction for DeleteRole {
 }
 
 /// Transaction that issues a capability for a role.
+///
+/// This mints a new capability object for `role` against `trail_id`. Optional issuance restrictions are
+/// copied into the capability object and later enforced on-chain.
 #[derive(Debug, Clone)]
 pub struct IssueCapability {
     trail_id: ObjectID,
@@ -333,6 +351,9 @@ impl Transaction for IssueCapability {
 }
 
 /// Transaction that revokes a capability.
+///
+/// Revocation writes the capability ID into the trail's revoked-capability denylist. Supplying
+/// `capability_valid_until` preserves the same expiry boundary later used by denylist cleanup.
 #[derive(Debug, Clone)]
 pub struct RevokeCapability {
     trail_id: ObjectID,
@@ -414,6 +435,9 @@ impl Transaction for RevokeCapability {
 }
 
 /// Transaction that destroys a capability object.
+///
+/// This path is for ordinary capabilities. Initial-admin capabilities must use
+/// [`DestroyInitialAdminCapability`] instead.
 #[derive(Debug, Clone)]
 pub struct DestroyCapability {
     trail_id: ObjectID,
@@ -483,6 +507,8 @@ impl Transaction for DestroyCapability {
 // ===== DestroyInitialAdminCapability =====
 
 /// Transaction that destroys an initial-admin capability without an auth capability.
+///
+/// Initial-admin capability IDs are tracked separately and cannot be removed through the generic destroy path.
 #[derive(Debug, Clone)]
 pub struct DestroyInitialAdminCapability {
     trail_id: ObjectID,
@@ -550,6 +576,8 @@ impl Transaction for DestroyInitialAdminCapability {
 // ===== RevokeInitialAdminCapability =====
 
 /// Transaction that revokes an initial-admin capability.
+///
+/// This is the dedicated revoke path for capability IDs recognized as active initial-admin capabilities.
 #[derive(Debug, Clone)]
 pub struct RevokeInitialAdminCapability {
     trail_id: ObjectID,
@@ -631,6 +659,9 @@ impl Transaction for RevokeInitialAdminCapability {
 }
 
 /// Transaction that cleans up expired revoked-capability entries.
+///
+/// This does not revoke additional capabilities. It only prunes denylist entries whose stored expiry has
+/// already elapsed.
 #[derive(Debug, Clone)]
 pub struct CleanupRevokedCapabilities {
     trail_id: ObjectID,

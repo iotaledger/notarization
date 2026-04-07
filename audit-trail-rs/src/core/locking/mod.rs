@@ -21,6 +21,9 @@ pub use transactions::{UpdateDeleteRecordWindow, UpdateDeleteTrailLock, UpdateLo
 use self::operations::LockingOps;
 
 /// Locking API scoped to a specific trail.
+///
+/// This handle updates the trail's locking configuration and queries whether an individual record is currently
+/// locked against deletion.
 #[derive(Debug, Clone)]
 pub struct TrailLocking<'a, C> {
     pub(crate) client: &'a C,
@@ -33,6 +36,9 @@ impl<'a, C> TrailLocking<'a, C> {
     }
 
     /// Replaces the full locking configuration for the trail.
+    ///
+    /// This overwrites all three locking dimensions at once: record delete window, trail delete lock, and
+    /// write lock.
     pub fn update<S>(&self, config: LockingConfig) -> TransactionBuilder<UpdateLockingConfig>
     where
         C: AuditTrailFull + CoreClient<S>,

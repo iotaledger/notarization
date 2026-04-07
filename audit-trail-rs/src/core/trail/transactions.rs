@@ -1,6 +1,8 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! Transaction payloads for trail-level metadata, migration, and deletion operations.
+
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::{IotaTransactionBlockEffects, IotaTransactionBlockEvents};
@@ -14,7 +16,10 @@ use super::operations::TrailOps;
 use crate::core::types::{AuditTrailDeleted, Event};
 use crate::error::Error;
 
-/// Transaction that migrates a trail to the latest supported package version.
+/// Transaction that migrates a trail to the latest package version supported by this crate.
+///
+/// This requires `Migrate` on the trail and succeeds only when the on-chain package version is older than the
+/// current supported version.
 #[derive(Debug, Clone)]
 pub struct Migrate {
     trail_id: ObjectID,
@@ -62,6 +67,8 @@ impl Transaction for Migrate {
 }
 
 /// Transaction that updates mutable trail metadata.
+///
+/// Passing `None` clears the mutable metadata field.
 #[derive(Debug, Clone)]
 pub struct UpdateMetadata {
     trail_id: ObjectID,
@@ -111,6 +118,9 @@ impl Transaction for UpdateMetadata {
 }
 
 /// Transaction that deletes an empty trail.
+///
+/// Deletion still depends on the trail-delete permission, an empty record set, and the configured trail-delete
+/// lock.
 #[derive(Debug, Clone)]
 pub struct DeleteAuditTrail {
     trail_id: ObjectID,

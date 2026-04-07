@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Internal helpers that build trail-level programmable transactions.
+//!
+//! These helpers select the required trail-level permission and encode the corresponding metadata, migration,
+//! and deletion calls.
 
 use iota_interaction::OptionalSync;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
@@ -16,6 +19,7 @@ use crate::error::Error;
 pub(super) struct TrailOps;
 
 impl TrailOps {
+    /// Builds the `migrate` call.
     pub(super) async fn migrate<C>(
         client: &C,
         trail_id: ObjectID,
@@ -31,6 +35,7 @@ impl TrailOps {
         .await
     }
 
+    /// Builds the `update_metadata` call.
     pub(super) async fn update_metadata<C>(
         client: &C,
         trail_id: ObjectID,
@@ -55,6 +60,7 @@ impl TrailOps {
         .await
     }
 
+    /// Builds the `delete_audit_trail` call.
     pub(super) async fn delete_audit_trail<C>(
         client: &C,
         trail_id: ObjectID,

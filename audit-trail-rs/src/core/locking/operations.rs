@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Internal helpers that build locking-related programmable transactions.
+//!
+//! These helpers serialize locking values into the Move shapes used by the trail package and select the
+//! corresponding locking-update permissions.
 
 use iota_interaction::OptionalSync;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
@@ -16,6 +19,7 @@ use crate::error::Error;
 pub(super) struct LockingOps;
 
 impl LockingOps {
+    /// Builds the `update_locking_config` call.
     pub(super) async fn update_locking_config<C>(
         client: &C,
         trail_id: ObjectID,
@@ -45,6 +49,7 @@ impl LockingOps {
         .await
     }
 
+    /// Builds the `update_delete_record_window` call.
     pub(super) async fn update_delete_record_window<C>(
         client: &C,
         trail_id: ObjectID,
@@ -70,6 +75,7 @@ impl LockingOps {
         .await
     }
 
+    /// Builds the `update_delete_trail_lock` call.
     pub(super) async fn update_delete_trail_lock<C>(
         client: &C,
         trail_id: ObjectID,
@@ -98,6 +104,7 @@ impl LockingOps {
         .await
     }
 
+    /// Builds the `update_write_lock` call.
     pub(super) async fn update_write_lock<C>(
         client: &C,
         trail_id: ObjectID,
@@ -126,6 +133,7 @@ impl LockingOps {
         .await
     }
 
+    /// Builds the read-only `is_record_locked` call.
     pub(super) async fn is_record_locked<C>(
         client: &C,
         trail_id: ObjectID,

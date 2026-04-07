@@ -1,6 +1,11 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! Transaction payloads for record writes and deletions.
+//!
+//! These types cache the generated programmable transaction, delegate PTB construction to
+//! [`super::operations::RecordsOps`], and decode record events into typed Rust outputs.
+
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::{IotaTransactionBlockEffects, IotaTransactionBlockEvents};
@@ -17,6 +22,9 @@ use crate::error::Error;
 // ===== AddRecord =====
 
 /// Transaction that appends a record to a trail.
+///
+/// Tagged writes require the tag to exist in the trail registry and a capability whose role explicitly allows
+/// that tag in addition to `AddRecord`.
 #[derive(Debug, Clone)]
 pub struct AddRecord {
     /// Trail object ID that will receive the record.
@@ -109,6 +117,9 @@ impl Transaction for AddRecord {
 // ===== DeleteRecord =====
 
 /// Transaction that deletes a single record.
+///
+/// This uses the single-record delete entry point, which remains subject to record-locking and tag-aware
+/// authorization checks.
 #[derive(Debug, Clone)]
 pub struct DeleteRecord {
     /// Trail object ID containing the record.
@@ -181,6 +192,9 @@ impl Transaction for DeleteRecord {
 // ===== DeleteRecordsBatch =====
 
 /// Transaction that deletes multiple records in a batch operation.
+///
+/// The Move entry point deletes records from the front of the trail up to `limit` and reports the number of
+/// deleted records through the emitted `RecordDeleted` events.
 #[derive(Debug, Clone)]
 pub struct DeleteRecordsBatch {
     /// Trail object ID containing the records.

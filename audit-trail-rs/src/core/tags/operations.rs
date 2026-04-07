@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Internal helpers that build record-tag registry transactions.
+//!
+//! These helpers encode updates to the trail-owned tag registry and select the corresponding tag-management
+//! permissions.
 
 use iota_interaction::OptionalSync;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
@@ -16,6 +19,7 @@ use crate::error::Error;
 pub(super) struct TagsOps;
 
 impl TagsOps {
+    /// Builds the `add_record_tag` call.
     pub(super) async fn add_record_tag<C>(
         client: &C,
         trail_id: ObjectID,
@@ -40,6 +44,7 @@ impl TagsOps {
         .await
     }
 
+    /// Builds the `remove_record_tag` call.
     pub(super) async fn remove_record_tag<C>(
         client: &C,
         trail_id: ObjectID,

@@ -3,9 +3,8 @@
 
 //! Shared serializable domain types for audit trails.
 //!
-//! These types mirror the on-chain data model closely enough to deserialize ledger state and
-//! events, while still providing a Rust-native API for builders, permission management, and
-//! higher-level client flows.
+//! These types stay close to the on-chain data model so they can deserialize ledger state and events while also
+//! serving as the typed inputs and outputs of the Rust client API.
 
 /// On-chain trail metadata types.
 pub mod audit_trail;

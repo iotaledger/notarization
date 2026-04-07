@@ -19,7 +19,10 @@ use crate::core::internal::move_collections::{deserialize_vec_map, deserialize_v
 use crate::core::internal::tx;
 use crate::error::Error;
 
-/// On-chain role and capability configuration for a trail.
+/// Role and capability configuration stored on a trail.
+///
+/// This mirrors the access-control state maintained by the Move package, including the reserved initial-admin
+/// role, the revoked-capability denylist, and the role data used for tag-aware authorization.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RoleMap {
     /// Trail object ID that this role map protects.
@@ -50,7 +53,7 @@ pub struct Role {
     pub data: Option<RoleTags>,
 }
 
-/// Defines the permissions required to administer roles in this RoleMap.
+/// Permissions required to administer roles in the trail's access-control state.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RoleAdminPermissions {
     /// Permission required to create roles.
@@ -61,7 +64,7 @@ pub struct RoleAdminPermissions {
     pub update: Permission,
 }
 
-/// Defines the permissions required to administer capabilities in this RoleMap.
+/// Permissions required to administer capabilities in the trail's access-control state.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CapabilityAdminPermissions {
     /// Permission required to issue capabilities.
@@ -71,6 +74,9 @@ pub struct CapabilityAdminPermissions {
 }
 
 /// Capability issuance options used by the role-based API.
+///
+/// These fields only configure restrictions on the issued capability object. Matching against the current
+/// caller and timestamp happens when the capability is later used.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CapabilityIssueOptions {
     /// Address that should own the capability, if any.
@@ -81,10 +87,9 @@ pub struct CapabilityIssueOptions {
     pub valid_until_ms: Option<u64>,
 }
 
-/// Allowlisted record tags stored as role data on the Move side.
+/// Allowlisted record tags stored as role data.
 ///
-/// The Rust name stays `RecordTags` for API continuity, but it maps to the
-/// Move `record_tags::RoleTags` type.
+/// The Rust name stays `RecordTags` for API continuity, but it maps to Move `record_tags::RoleTags`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct RoleTags {
     /// Allowlisted record tags for the role.
@@ -94,6 +99,8 @@ pub struct RoleTags {
 
 impl RoleTags {
     /// Creates role-tag restrictions from an iterator of tag names.
+    ///
+    /// The set is deduplicated, and PTB encoding later sorts the tags for deterministic serialization.
     pub fn new<I, S>(tags: I) -> Self
     where
         I: IntoIterator<Item = S>,
@@ -129,6 +136,9 @@ impl RoleTags {
 }
 
 /// Capability data returned by the Move capability module.
+///
+/// A capability grants exactly one role against exactly one trail and may additionally restrict who may use it
+/// and during which time window it is valid.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Capability {
     /// Capability object ID.
