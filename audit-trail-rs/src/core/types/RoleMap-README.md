@@ -1,13 +1,13 @@
-# RoleMap — Role-Based Access Control for Audit Trails
+# Role-Based Access Control for Audit Trails
 
-A `RoleMap` is the access control registry embedded in every audit trail.
-It defines who may perform which operations by combining two primitives:
+Audit trails provide an access control registry (a.k.a. `RoleMap`), defining who may perform which
+operations by combining two primitives:
 
 - **Roles** — named permission sets stored on the trail.
 - **Capabilities** — on-chain objects held by users, each linked to one role.
 
 Every operation on a trail (adding a record, deleting a role, revoking a
-capability, …) requires the caller to present a `Capability`.  The `RoleMap`
+capability, …) requires the caller to present a `Capability`.  The audit trail
 validates the capability before allowing the operation.
 
 ---
@@ -16,7 +16,7 @@ validates the capability before allowing the operation.
 
 ### Roles
 
-A role is a named set of `Permission` values, for example:
+A role is a named and configurable set of `Permission` values, for example:
 
 | Role name       | Permissions                                 |
 |:----------------|:--------------------------------------------|
@@ -26,8 +26,8 @@ A role is a named set of `Permission` values, for example:
 | `Auditor`       | *(read-only — no write permissions needed)*  |
 
 Roles are identified by a unique string name within the trail.  Multiple
-capabilities can be issued for the same role, one per user or service that
-should share that access level.
+capabilities can be issued for the same role, to allow users or services to share
+that access level.
 
 Roles may optionally carry a `RoleTags` allowlist (see [Record Tags](#record-tags-and-roletags)).
 
@@ -43,20 +43,22 @@ A `Capability` is an on-chain object owned by a wallet address.  It records:
 | `valid_from`  | Optional Unix-ms timestamp before which the cap is not yet active.    |
 | `valid_until` | Optional Unix-ms timestamp after which the cap expires.               |
 
-Possessing a capability does **not** automatically grant access.  The `RoleMap`
+Possessing a capability does **not** automatically grant access.  The audit trail
 validates all fields above on every call before the operation is executed.
 
 ### The Admin Role
 
-When a trail is created, the `RoleMap` initialises with exactly one role —
+When a trail is created, the access control registry is initialized with exactly one role —
 the **initial admin role** (named `"Admin"`).  A corresponding capability
 object is minted and transferred to the trail creator (or a custom address
 supplied via `with_admin`).
 
 The Admin role is protected by two invariants:
 1. It can **never be deleted**.
-2. Its permission set can only be updated to a set that still includes all
-   configured role- and capability-admin permissions.
+2. Although its permission set can be updated, it needs to include a minimum set of
+   permissions to manage the trail's access control (AddRoles, UpdateRoles, DeleteRoles,
+   AddCapabilities, RevokeCapabilities). Removing any of these permissions from the Admin
+   role will fail.
 
 Initial admin capabilities are tracked in `initial_admin_cap_ids` and must be
 managed through dedicated entry-points (`revoke_initial_admin_capability`,
@@ -64,7 +66,7 @@ managed through dedicated entry-points (`revoke_initial_admin_capability`,
 
 ---
 
-## Lifecycle
+## Lifecycle Example
 
 ### 1 — Trail is created
 
@@ -109,7 +111,7 @@ Admin Capability + revoke_capability(cap_id, valid_until)
     ──►  RoleMap.revoked_capabilities: { cap_id → valid_until_ms }
 ```
 
-The capability object still exists on-chain but is rejected by
+Please note: Revoked capability objects still exist on-chain but will be rejected by
 `assert_capability_valid`.  The holder can no longer use it.
 
 ---
@@ -244,19 +246,29 @@ before it can be used on a record or referenced by a role.
 ### Why use tags?
 
 Tags enable fine-grained access control beyond simple permission checks.  For
-example, a legal department may only be allowed to read records tagged
+example, a legal department may only be allowed to access records tagged
 `"legal"`, while the finance team works with records tagged `"finance"`.
 
 ### How tags interact with roles
 
 A role may carry an optional `RoleTags` allowlist.  When a capability holder
-adds a record with a tag, the `RoleMap` checks that:
+adds a record with a tag, the audit trail checks that:
 
 1. The tag is registered in the trail's tag registry.
 2. The role associated with the capability includes the requested tag in its
    `RoleTags` allowlist.
 
 If either check fails the transaction is rejected.
+
+The same checks apply when a record having a tag is updated or deleted.
+
+Please note:
+* Tags only restrict the use of tagged records to roles that explicitly
+  grant access to those tags in the associated `RoleTags` allowlist.
+* Tags do not grant access permission themselves. A role still needs the relevant
+  permissions (e.g. `AddRecord`) to perform operations on tagged records.
+* A role without any `RoleTags` can operate on any record not having tags, as long
+  as it has the necessary permissions.
 
 ### Example — tagged records
 
@@ -308,7 +320,7 @@ records tagged `"legal"`.
 
 ## Denylist Management
 
-The `RoleMap` uses a **denylist** (not an allowlist) for revocation.  This
+The audit trail uses a **denylist** (not an allowlist) for revocation.  This
 keeps on-chain storage proportional to the number of *currently revoked*
 capabilities, not the total number ever issued.
 
@@ -338,3 +350,10 @@ Implications:
 | `cap_admin_permissions()`     | AddCapabilities, RevokeCapabilities                                            |
 | `tag_admin_permissions()`     | AddRecordTags, DeleteRecordTags                                                |
 | `metadata_admin_permissions()`| UpdateMetadata, DeleteMetadata                                                 |
+
+Please note:
+* These constructors are just for convenience and do not enforce any invariants.
+  For example, you could (not recommended) create a role named `NormalUser` with
+ `PermissionSet::admin_permissions()`
+* You can create custom permission sets by constructing a `PermissionSet` with
+  an arbitrary combination of permissions.
