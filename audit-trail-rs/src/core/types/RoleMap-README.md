@@ -360,6 +360,24 @@ transferred.
 
 If `issued_to` is not set, any holder of the capability object may use it.
 
+### 7 — `ERecordTagNotDefined` / `ERecordTagNotAllowed`
+
+This check is performed by the audit trail **after** all `RoleMap` checks
+(1–6) have passed.  It only applies to record operations (add, correct,
+delete) that involve a tagged record.
+
+When a record carries a tag, two additional conditions must hold:
+
+1. The tag must be registered in the trail's **tag registry**
+   (`ERecordTagNotDefined`).
+2. The role associated with the capability must include the tag in its
+   `RoleTags` allowlist (`ERecordTagNotAllowed`).  A role without any
+   `RoleTags` is **not** permitted to operate on tagged records.
+
+If the record has no tag, this check is skipped.  See
+[Record Tags and RoleTags](#record-tags-and-roletags) for a full explanation
+and examples.
+
 ### Summary
 
 | # | Check                   | Error                               | Skippable |
@@ -370,6 +388,7 @@ If `issued_to` is not set, any holder of the capability object may use it.
 | 4 | ID in revoked denylist  | `ECapabilityHasBeenRevoked`         | No        |
 | 5 | Outside validity window | `ECapabilityTimeConstraintsNotMet`  | Yes — only if `valid_from` or `valid_until` is set |
 | 6 | `issued_to` mismatch    | `ECapabilityIssuedToMismatch`       | Yes — only if `issued_to` is set |
+| 7 | Record tag not allowed  | `ERecordTagNotDefined` / `ERecordTagNotAllowed` | Yes — only for record operations on tagged records |
 
 ---
 
@@ -379,9 +398,9 @@ If `issued_to` is not set, any holder of the capability object may use it.
 
 When a capability is revoked it is **not deleted from the chain** — the
 on-chain `Capability` object still exists in the holder's wallet.  Instead,
-the capability's ID is added to a **denylist** stored inside the RoleMap
-(`revoked_capabilities: LinkedTable<ID, u64>`).  Every call to
-`assert_capability_valid` checks the denylist and rejects any capability whose
+the capability's ID is added to a **denylist** stored inside the audit trail.
+During every call to an access restricted audit trail function, the internally
+called `assert_capability_valid` function checks the denylist and rejects any capability whose
 ID appears in it (error `ECapabilityHasBeenRevoked`).
 
 The denylist approach (as opposed to an allowlist of all issued capabilities)
@@ -398,7 +417,8 @@ indefinitely".
 ### How Time-Restricted Capabilities Affect Management
 
 Capabilities can carry optional `valid_from` and `valid_until` timestamps.
-These fields are enforced by `assert_capability_valid`: a capability whose
+These fields are enforced by the internally used `assert_capability_valid`:
+a capability whose
 time window has not yet started or has already passed is rejected with
 `ECapabilityTimeConstraintsNotMet`, regardless of whether it appears in the
 denylist.
@@ -412,8 +432,9 @@ The `cleanup_revoked_capabilities` function exploits this property.  It
 iterates through the denylist and removes every entry whose stored
 `valid_until` value is **non-zero** and **less than** the current clock time.
 Entries with `valid_until == 0` (capabilities that were issued without an
-expiry or where the revoker did not supply the `valid_until` value) are
-kept because the corresponding capabilities never expire on their own.
+expiry or where the revoker did not supply the `valid_until` value during the
+`revoke_capability` call) are kept because the corresponding capabilities never
+expire on their own.
 
 **Best practice:** always set a `valid_until` when issuing capabilities.
 Even a generous validity window (e.g. one year) ensures that the
@@ -422,8 +443,8 @@ capability expires, rather than occupying storage indefinitely.
 
 ### Off-Chain Tracking Requirements
 
-Because the RoleMap uses a denylist and not an allowlist, it does **not**
-maintain an on-chain registry of all issued capabilities.  Tracking every
+Because the audit trail uses a denylist and not an allowlist, it does **not**
+maintain an on-chain registry of all issued capabilities. Tracking every
 issued capability on-chain would increase storage costs and slow down
 validity checks.
 
@@ -442,9 +463,16 @@ This design shifts the bookkeeping responsibility to the user:
    attempt to revoke the same capability twice (which would abort with
    `ECapabilityToRevokeHasAlreadyBeenRevoked`).
 
+The off-chain capability registry can also be used to manage capability renewal:
+when a capability is about to expire, a new capability is automatically issued for the
+holder with an updated validity window. The old capability can be revoked or destroyed
+at the same time. This process can be fully automated by a background service that
+monitors capability expirations and performs renewals as needed.
+
 For deployments that only issue a small number of capabilities, a simplified
 approach is acceptable: track only the issued capability IDs and pass
-`None` for `cap_to_revoke_valid_until` when revoking.  The trade-off is that
+`None` for `cap_to_revoke_valid_until` when revoking capabilities using the
+`revoke_capability` function. The trade-off is that
 those denylist entries will never be automatically cleaned up — they persist
 until the capability object is explicitly destroyed.
 
@@ -466,12 +494,13 @@ permission.
 
 **Recommendations for keeping the denylist short:**
 
-- Always provide the `valid_until` value when revoking a capability so that
+- Always provide the `cap_to_revoke_valid_until` value that matches the `valid_until` of the
+  revoked capability when revoking a capability so that
   the entry becomes eligible for automatic cleanup.
 - Call `cleanup_revoked_capabilities` periodically (e.g. as a maintenance
   transaction) to reclaim storage.
 - When a revoked capability is no longer needed at all, have the holder call
-  `destroy_capability` to delete the on-chain object.  Destroying a
+  `destroy_capability` to delete the on-chain object. Destroying a
   capability also removes it from the denylist if it was listed there.
 
 ---
@@ -492,6 +521,6 @@ permission.
 Please note:
 * These constructors are just for convenience and do not enforce any invariants.
   For example, you could (not recommended) create a role named `NormalUser` with
- `PermissionSet::admin_permissions()`
+ `PermissionSet::admin_permissions()`.
 * You can create custom permission sets by constructing a `PermissionSet` with
   an arbitrary combination of permissions.
