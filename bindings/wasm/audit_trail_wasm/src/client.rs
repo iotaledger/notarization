@@ -49,8 +49,8 @@ impl WasmAuditTrailClient {
             AuditTrailClientReadOnly::new_with_package_overrides(
                 iota_client,
                 PackageOverrides {
-                    audit_trail_package_id: Some(package_id),
-                    tf_components_package_id: None,
+                    audit_trail: Some(package_id),
+                    tf_component: None,
                 },
             )
             .await

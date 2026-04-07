@@ -43,12 +43,12 @@ impl TryFrom<WasmPackageOverrides> for PackageOverrides {
 
     fn try_from(value: WasmPackageOverrides) -> std::result::Result<Self, Self::Error> {
         Ok(Self {
-            audit_trail_package_id: value
+            audit_trail: value
                 .audit_trail_package_id
                 .as_ref()
                 .map(parse_wasm_object_id)
                 .transpose()?,
-            tf_components_package_id: value
+            tf_component: value
                 .tf_components_package_id
                 .as_ref()
                 .map(parse_wasm_object_id)
@@ -107,8 +107,8 @@ impl WasmAuditTrailClientReadOnly {
         let client = AuditTrailClientReadOnly::new_with_package_overrides(
             iota_client,
             PackageOverrides {
-                audit_trail_package_id: Some(package_id),
-                tf_components_package_id: None,
+                audit_trail: Some(package_id),
+                tf_component: None,
             },
         )
         .await
