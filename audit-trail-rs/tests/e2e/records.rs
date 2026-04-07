@@ -396,6 +396,91 @@ async fn delete_record_removes_entry_and_keeps_sequence_monotonic() -> anyhow::R
 }
 
 #[tokio::test]
+async fn delete_tagged_record_requires_matching_role_tag_access() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let trail_id = client
+        .create_test_trail_with_tags(Data::text("delete-tagged-deny"), ["finance"])
+        .await?;
+
+    client
+        .create_role(
+            trail_id,
+            "TaggedWriter",
+            [Permission::AddRecord],
+            Some(RoleTags::new(["finance"])),
+        )
+        .await?;
+    client
+        .create_role(trail_id, "DeleteOnly", [Permission::DeleteRecord], None)
+        .await?;
+    client
+        .issue_cap(trail_id, "TaggedWriter", CapabilityIssueOptions::default())
+        .await?;
+    client
+        .issue_cap(trail_id, "DeleteOnly", CapabilityIssueOptions::default())
+        .await?;
+
+    client
+        .trail(trail_id)
+        .records()
+        .add(Data::text("tagged record"), None, Some("finance".to_string()))
+        .build_and_execute(&client)
+        .await?;
+
+    let denied = client
+        .trail(trail_id)
+        .records()
+        .delete(1)
+        .build_and_execute(&client)
+        .await;
+
+    assert!(
+        denied.is_err(),
+        "tagged deletes should require matching role tag access"
+    );
+    assert_eq!(client.trail(trail_id).records().record_count().await?, 2);
+    assert_eq!(
+        client.trail(trail_id).records().get(1).await?.tag.as_deref(),
+        Some("finance")
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn delete_tagged_record_with_matching_role_tag_access_succeeds() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let trail_id = client
+        .create_test_trail_with_tags(Data::text("delete-tagged-allow"), ["finance"])
+        .await?;
+    let records = client.trail(trail_id).records();
+
+    client
+        .create_role(
+            trail_id,
+            "TaggedRecordAdmin",
+            [Permission::AddRecord, Permission::DeleteRecord],
+            Some(RoleTags::new(["finance"])),
+        )
+        .await?;
+    client
+        .issue_cap(trail_id, "TaggedRecordAdmin", CapabilityIssueOptions::default())
+        .await?;
+
+    records
+        .add(Data::text("tagged record"), None, Some("finance".to_string()))
+        .build_and_execute(&client)
+        .await?;
+
+    let deleted = records.delete(1).build_and_execute(&client).await?.output;
+    assert_eq!(deleted.sequence_number, 1);
+    assert_eq!(records.record_count().await?, 1);
+    assert!(records.get(1).await.is_err());
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn delete_record_requires_delete_permission() -> anyhow::Result<()> {
     let client = get_funded_test_client().await?;
     let trail_id = client.create_test_trail(Data::text("delete-perm")).await?;
@@ -571,6 +656,95 @@ async fn delete_records_batch_respects_limit_and_deletes_oldest_first() -> anyho
         .await?
         .output;
     assert_eq!(deleted_empty, 0, "deleting from an empty trail should return zero");
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn delete_records_batch_requires_matching_role_tag_access() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let trail_id = client
+        .create_test_trail_with_tags(Data::text("batch-delete-tagged-deny"), ["finance"])
+        .await?;
+
+    client
+        .create_role(
+            trail_id,
+            "TaggedWriter",
+            [Permission::AddRecord],
+            Some(RoleTags::new(["finance"])),
+        )
+        .await?;
+    client
+        .create_role(trail_id, "DeleteAllWithoutTags", [Permission::DeleteAllRecords], None)
+        .await?;
+    client
+        .issue_cap(trail_id, "TaggedWriter", CapabilityIssueOptions::default())
+        .await?;
+    client
+        .issue_cap(trail_id, "DeleteAllWithoutTags", CapabilityIssueOptions::default())
+        .await?;
+
+    client
+        .trail(trail_id)
+        .records()
+        .add(Data::text("tagged record"), None, Some("finance".to_string()))
+        .build_and_execute(&client)
+        .await?;
+
+    let denied = client
+        .trail(trail_id)
+        .records()
+        .delete_records_batch(10)
+        .build_and_execute(&client)
+        .await;
+
+    assert!(
+        denied.is_err(),
+        "tagged batch deletes should require matching role tag access"
+    );
+    assert_eq!(client.trail(trail_id).records().record_count().await?, 2);
+    assert_eq!(
+        client.trail(trail_id).records().get(1).await?.tag.as_deref(),
+        Some("finance")
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn delete_records_batch_with_matching_role_tag_access_succeeds() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let trail_id = client
+        .create_test_trail_with_tags(Data::text("batch-delete-tagged-allow"), ["finance"])
+        .await?;
+    let records = client.trail(trail_id).records();
+
+    client
+        .create_role(
+            trail_id,
+            "TaggedDeleteAll",
+            [Permission::AddRecord, Permission::DeleteAllRecords],
+            Some(RoleTags::new(["finance"])),
+        )
+        .await?;
+    client
+        .issue_cap(trail_id, "TaggedDeleteAll", CapabilityIssueOptions::default())
+        .await?;
+
+    records
+        .add(Data::text("tagged record"), None, Some("finance".to_string()))
+        .build_and_execute(&client)
+        .await?;
+
+    let deleted = records
+        .delete_records_batch(10)
+        .build_and_execute(&client)
+        .await?
+        .output;
+    assert_eq!(deleted, 2);
+    assert_eq!(records.record_count().await?, 0);
+    assert!(records.get(1).await.is_err());
 
     Ok(())
 }
