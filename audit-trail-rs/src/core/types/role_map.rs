@@ -12,12 +12,12 @@ use iota_interaction::types::programmable_transaction_builder::ProgrammableTrans
 use iota_interaction::types::transaction::Argument;
 use iota_interaction::{MoveType, ident_str};
 use serde::{Deserialize, Serialize};
+use serde_aux::field_attributes::deserialize_option_number_from_string;
 
 use super::permission::Permission;
 use crate::core::internal::move_collections::{deserialize_vec_map, deserialize_vec_set};
 use crate::core::internal::tx;
 use crate::error::Error;
-use serde_aux::field_attributes::deserialize_option_number_from_string;
 
 /// The role and capability registry attached to an audit trail.
 ///
@@ -71,18 +71,16 @@ use serde_aux::field_attributes::deserialize_option_number_from_string;
 ///
 /// **Issuing** a capability requires the `capability_admin_permissions.add` permission.
 /// [`CapabilityIssueOptions`] allow restricting a newly minted capability further:
-/// - `issued_to` — binds the capability to a specific wallet address; the Move runtime
-///   rejects use by any other sender.
-/// - `valid_from_ms` / `valid_until_ms` — a Unix-millisecond validity window; use outside
-///   this range is rejected.
+/// - `issued_to` — binds the capability to a specific wallet address; the Move runtime rejects use by any other sender.
+/// - `valid_from_ms` / `valid_until_ms` — a Unix-millisecond validity window; use outside this range is rejected.
 ///
 /// **Revoking** a capability requires the `capability_admin_permissions.revoke` permission.
 /// Revocation adds the capability's ID to the [`revoked_capabilities`](RoleMap::revoked_capabilities)
 /// denylist; the object itself continues to exist on-chain but is refused by
 /// `assert_capability_valid`.  The caller must provide:
 /// - the capability's object ID, and
-/// - optionally its `valid_until` value, which allows the denylist entry to be cleaned up
-///   automatically once it expires via [`AuditTrailHandle::access().cleanup_revoked_capabilities`].
+/// - optionally its `valid_until` value, which allows the denylist entry to be cleaned up automatically once it expires
+///   via [`AuditTrailHandle::access().cleanup_revoked_capabilities`].
 ///
 /// Because the `RoleMap` uses a denylist (not an allowlist), it does **not** track all
 /// issued capabilities on-chain.  Callers are responsible for maintaining an off-chain
@@ -103,8 +101,8 @@ use serde_aux::field_attributes::deserialize_option_number_from_string;
 ///
 /// Two invariants protect it from accidental lock-out:
 /// - The initial admin **role** can never be deleted.
-/// - Updating its permissions is only permitted if the new permission set still includes all
-///   configured role and capability admin permissions.
+/// - Updating its permissions is only permitted if the new permission set still includes all configured role and
+///   capability admin permissions.
 ///
 /// Initial admin **capabilities** are tracked separately in
 /// [`initial_admin_cap_ids`](RoleMap::initial_admin_cap_ids) and must be managed through
@@ -127,7 +125,6 @@ use serde_aux::field_attributes::deserialize_option_number_from_string;
 ///
 /// Each role may optionally include a [`RoleTags`] allowlist that grants the holders of that
 /// role's capability access to records tagged with that specific tag.
-///
 ///
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RoleMap {

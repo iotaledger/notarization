@@ -19,11 +19,11 @@ In case of running the examples against an existing network, this network needs 
 
 You'll need one or more of the following environment variables depending on your setup:
 
-| Name                       | Required for local node | Required for testnet | Required for other node |
-| -------------------------- | :---------------------: | :------------------: | :---------------------: |
-| IOTA_AUDIT_TRAIL_PKG_ID    |            x            |          x           |            x            |
-| IOTA_TF_COMPONENTS_PKG_ID  |            x            |                      |                         |
-| API_ENDPOINT               |                         |          x           |            x            |
+| Name                      | Required for local node | Required for testnet | Required for other node |
+| ------------------------- | :---------------------: | :------------------: | :---------------------: |
+| IOTA_AUDIT_TRAIL_PKG_ID   |            x            |          x           |            x            |
+| IOTA_TF_COMPONENTS_PKG_ID |            x            |                      |                         |
+| API_ENDPOINT              |                         |          x           |            x            |
 
 > **Note:** On localnet both `IOTA_AUDIT_TRAIL_PKG_ID` and `IOTA_TF_COMPONENTS_PKG_ID` resolve to the same package ID because the TfComponents dependency is published together with the audit trail package.
 
@@ -56,31 +56,31 @@ IOTA_AUDIT_TRAIL_PKG_ID=0x... IOTA_TF_COMPONENTS_PKG_ID=0x... cargo run --releas
 
 ## Examples
 
-| Name                                                                                                                                    | Information                                                                                                     |
-| :-------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------- |
-| [01_create_audit_trail](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/01_create_audit_trail.rs) | Creates an audit trail, defines a `RecordAdmin` role using the Admin capability, and issues a capability for it. |
-| [02_add_and_read_records](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/02_add_and_read_records.rs) | Adds follow-up records to a trail, then loads them back individually and through paginated reads. |
-| [03_update_metadata](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/03_update_metadata.rs) | Updates and clears the trail's mutable metadata while preserving immutable metadata. |
-| [04_configure_locking](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/04_configure_locking.rs) | Configures write and delete locks, then shows how those rules affect record creation. |
-| [05_manage_access](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/05_manage_access.rs) | Creates and updates a role, then demonstrates constrained capability issuance, revoke and destroy flows, denylist cleanup, and final role removal. |
-| [06_delete_records](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/06_delete_records.rs) | Deletes an individual record and then removes the remaining records in a batch. |
-| [07_access_read_only_methods](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/07_access_read_only_methods.rs) | Reads back trail metadata, locking state, record counts, and paginated record data. |
-| [08_delete_audit_trail](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/08_delete_audit_trail.rs) | Empties a trail and then deletes it, showing that non-empty trails cannot be removed. |
+| Name                                                                                                                                    | Information                                                                                                                                        |
+| :-------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [01_create_audit_trail](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/01_create_audit_trail.rs)             | Creates an audit trail, defines a `RecordAdmin` role using the Admin capability, and issues a capability for it.                                   |
+| [02_add_and_read_records](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/02_add_and_read_records.rs)         | Adds follow-up records to a trail, then loads them back individually and through paginated reads.                                                  |
+| [03_update_metadata](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/03_update_metadata.rs)                   | Updates and clears the trail's mutable metadata while preserving immutable metadata.                                                               |
+| [04_configure_locking](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/04_configure_locking.rs)               | Configures write and delete locks, then shows how those rules affect record creation.                                                              |
+| [05_manage_access](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/05_manage_access.rs)                       | Creates and updates a role, then demonstrates constrained capability issuance, revoke and destroy flows, denylist cleanup, and final role removal. |
+| [06_delete_records](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/06_delete_records.rs)                     | Deletes an individual record and then removes the remaining records in a batch.                                                                    |
+| [07_access_read_only_methods](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/07_access_read_only_methods.rs) | Reads back trail metadata, locking state, record counts, and paginated record data.                                                                |
+| [08_delete_audit_trail](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/08_delete_audit_trail.rs)             | Empties a trail and then deletes it, showing that non-empty trails cannot be removed.                                                              |
 
 ## Advanced Examples
 
-| Name                                                                                                                                    | Information                                                                                                     |
-| :-------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------- |
-| [09_tagged_records](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/advanced/09_tagged_records.rs) | Uses role tags and address-bound capabilities to restrict who may add tagged records. |
+| Name                                                                                                                                         | Information                                                                             |
+| :------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------- |
+| [09_tagged_records](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/advanced/09_tagged_records.rs)                 | Uses role tags and address-bound capabilities to restrict who may add tagged records.   |
 | [10_capability_constraints](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/advanced/10_capability_constraints.rs) | Shows address-bound capability use and how revocation immediately blocks future writes. |
-| [11_manage_record_tags](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/advanced/11_manage_record_tags.rs) | Delegates record-tag administration and shows that in-use tags cannot be removed. |
+| [11_manage_record_tags](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/advanced/11_manage_record_tags.rs)         | Delegates record-tag administration and shows that in-use tags cannot be removed.       |
 
 ## Real-World Examples
 
-| Name                                                                                                                                    | Information                                                                                                     |
-| :-------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------- |
-| [01_customs_clearance](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/real-world/01_customs_clearance.rs) | Models customs clearance with role-tag restrictions, delegated capabilities, denied inspection writes, and a final write lock. |
-| [02_clinical_trial](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/real-world/02_clinical_trial.rs) | Models a Phase III clinical trial with time-constrained capabilities, mid-study tag additions, deletion-window enforcement, time-locked datasets, and read-only regulator verification. |
+| Name                                                                                                                                 | Information                                                                                                                                                                             |
+| :----------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [01_customs_clearance](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/real-world/01_customs_clearance.rs) | Models customs clearance with role-tag restrictions, delegated capabilities, denied inspection writes, and a final write lock.                                                          |
+| [02_clinical_trial](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/real-world/02_clinical_trial.rs)       | Models a Phase III clinical trial with time-constrained capabilities, mid-study tag additions, deletion-window enforcement, time-locked datasets, and read-only regulator verification. |
 
 ## Key Concepts
 
@@ -106,14 +106,14 @@ Access to trail operations is controlled via roles and capabilities:
 
 `PermissionSet` convenience constructors cover common role configurations:
 
-| Constructor                      | Permissions granted                                                              |
-| :-------------------------------- | :------------------------------------------------------------------------------- |
-| `admin_permissions()`             | AddRoles, UpdateRoles, DeleteRoles, AddCapabilities, RevokeCapabilities, AddRecordTags, DeleteRecordTags |
-| `record_admin_permissions()`      | AddRecord, DeleteRecord, CorrectRecord                                           |
-| `locking_admin_permissions()`     | UpdateLockingConfig (and all sub-variants)                                       |
-| `cap_admin_permissions()`         | AddCapabilities, RevokeCapabilities                                              |
-| `tag_admin_permissions()`         | AddRecordTags, DeleteRecordTags                                                  |
-| `metadata_admin_permissions()`    | UpdateMetadata, DeleteMetadata                                                   |
+| Constructor                    | Permissions granted                                                                                      |
+| :----------------------------- | :------------------------------------------------------------------------------------------------------- |
+| `admin_permissions()`          | AddRoles, UpdateRoles, DeleteRoles, AddCapabilities, RevokeCapabilities, AddRecordTags, DeleteRecordTags |
+| `record_admin_permissions()`   | AddRecord, DeleteRecord, CorrectRecord                                                                   |
+| `locking_admin_permissions()`  | UpdateLockingConfig (and all sub-variants)                                                               |
+| `cap_admin_permissions()`      | AddCapabilities, RevokeCapabilities                                                                      |
+| `tag_admin_permissions()`      | AddRecordTags, DeleteRecordTags                                                                          |
+| `metadata_admin_permissions()` | UpdateMetadata, DeleteMetadata                                                                           |
 
 ### Capability Constraints
 

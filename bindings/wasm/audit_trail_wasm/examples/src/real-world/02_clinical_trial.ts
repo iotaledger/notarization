@@ -39,12 +39,19 @@ export async function clinicalTrial(): Promise<void> {
     const { output: created } = await client
         .createTrail()
         .withRecordTags(["enrollment", "safety", "efficacy"])
-        .withTrailMetadata("Protocol CTR-2026-03742", "Phase III: Efficacy of Drug X vs Placebo in Moderate-to-Severe Asthma")
+        .withTrailMetadata(
+            "Protocol CTR-2026-03742",
+            "Phase III: Efficacy of Drug X vs Placebo in Moderate-to-Severe Asthma",
+        )
         .withUpdatableMetadata("Phase: Enrollment")
         .withLockingConfig(
             new LockingConfig(LockingWindow.withCountBased(BigInt(3)), TimeLock.withNone(), TimeLock.withNone()),
         )
-        .withInitialRecordString("Clinical trial CTR-2026-03742 opened for enrollment", "event:trial_opened", "enrollment")
+        .withInitialRecordString(
+            "Clinical trial CTR-2026-03742 opened for enrollment",
+            "event:trial_opened",
+            "enrollment",
+        )
         .finish()
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(client);
@@ -121,7 +128,11 @@ export async function clinicalTrial(): Promise<void> {
     const efficacyRecord = await client
         .trail(trailId)
         .records()
-        .add(Data.fromString("Week 12: FEV1 improvement of 320 mL over baseline for P-101"), "event:efficacy_observed", "efficacy")
+        .add(
+            Data.fromString("Week 12: FEV1 improvement of 320 mL over baseline for P-101"),
+            "event:efficacy_observed",
+            "efficacy",
+        )
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(client);
 
@@ -141,7 +152,7 @@ export async function clinicalTrial(): Promise<void> {
         .add("pk")
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(client);
-    console.log('Added tag "pk" (pharmacokinetics) to the trail.');
+    console.log("Added tag \"pk\" (pharmacokinetics) to the trail.");
 
     await issueTaggedRecordRole(client, trailId, "PkAnalyst", "pk");
 
@@ -173,7 +184,11 @@ export async function clinicalTrial(): Promise<void> {
         false,
         "recent records must be protected by the count-based deletion window",
     );
-    console.log("Record", pkRecord.output.sequenceNumber, "is within the deletion window (newest 3) and cannot be deleted.\n");
+    console.log(
+        "Record",
+        pkRecord.output.sequenceNumber,
+        "is within the deletion window (newest 3) and cannot be deleted.\n",
+    );
 
     // 7. Monitor updates study phase metadata
     console.log("--- Metadata Update ---");
@@ -210,7 +225,11 @@ export async function clinicalTrial(): Promise<void> {
         .buildAndExecute(client);
 
     const finalLocking = await client.trail(trailId).get();
-    console.log("Delete-trail lock set to", finalLocking.lockingConfig.deleteTrailLock.type, "— trail cannot be deleted.\n");
+    console.log(
+        "Delete-trail lock set to",
+        finalLocking.lockingConfig.deleteTrailLock.type,
+        "— trail cannot be deleted.\n",
+    );
 
     // 9. Regulator read-only verification
     console.log("--- Regulator Verification ---");

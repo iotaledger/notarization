@@ -1,7 +1,14 @@
 // Copyright 2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-import { CapabilityIssueOptions, Data, LockingConfig, LockingWindow, PermissionSet, TimeLock } from "@iota/audit-trail/node";
+import {
+    CapabilityIssueOptions,
+    Data,
+    LockingConfig,
+    LockingWindow,
+    PermissionSet,
+    TimeLock,
+} from "@iota/audit-trail/node";
 import { strict as assert } from "assert";
 import { createTrailWithSeedRecord, getFundedClient, TEST_GAS_BUDGET } from "./util";
 

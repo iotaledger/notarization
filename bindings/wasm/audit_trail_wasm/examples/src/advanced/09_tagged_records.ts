@@ -40,7 +40,13 @@ export async function taggedRecords(): Promise<void> {
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(admin);
 
-    console.log("Issued FinanceWriter capability", issued.output.capabilityId, "to", financeWriter.senderAddress(), "\n");
+    console.log(
+        "Issued FinanceWriter capability",
+        issued.output.capabilityId,
+        "to",
+        financeWriter.senderAddress(),
+        "\n",
+    );
 
     const financeRecords = financeWriter.trail(trailId).records();
 
@@ -50,7 +56,7 @@ export async function taggedRecords(): Promise<void> {
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(financeWriter);
 
-    console.log("Added tagged record at sequence number", added.output.sequenceNumber, 'with tag "finance".\n');
+    console.log("Added tagged record at sequence number", added.output.sequenceNumber, "with tag \"finance\".\n");
 
     // Attempt to add a record with a different tag — should fail
     let wrongTagSucceeded = false;

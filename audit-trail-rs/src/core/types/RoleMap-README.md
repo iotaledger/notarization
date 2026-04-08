@@ -7,7 +7,7 @@ operations by combining two primitives:
 - **Capabilities** — on-chain objects held by users, each linked to one role.
 
 Every operation on a trail (adding a record, deleting a role, revoking a
-capability, …) requires the caller to present a `Capability`.  The audit trail
+capability, …) requires the caller to present a `Capability`. The audit trail
 validates the capability before allowing the operation.
 
 ---
@@ -18,14 +18,14 @@ validates the capability before allowing the operation.
 
 A role is a named and configurable set of `Permission` values, for example:
 
-| Role name       | Permissions                                 |
-|:----------------|:--------------------------------------------|
-| `Admin`         | AddRoles, UpdateRoles, DeleteRoles, AddCapabilities, RevokeCapabilities, AddRecordTags, DeleteRecordTags |
-| `RecordAdmin`   | AddRecord, DeleteRecord, CorrectRecord       |
-| `LockingAdmin`  | UpdateLockingConfig (and sub-variants)       |
-| `Auditor`       | *(read-only — no write permissions needed)*  |
+| Role name      | Permissions                                                                                              |
+| :------------- | :------------------------------------------------------------------------------------------------------- |
+| `Admin`        | AddRoles, UpdateRoles, DeleteRoles, AddCapabilities, RevokeCapabilities, AddRecordTags, DeleteRecordTags |
+| `RecordAdmin`  | AddRecord, DeleteRecord, CorrectRecord                                                                   |
+| `LockingAdmin` | UpdateLockingConfig (and sub-variants)                                                                   |
+| `Auditor`      | _(read-only — no write permissions needed)_                                                              |
 
-Roles are identified by a unique string name within the trail.  Multiple
+Roles are identified by a unique string name within the trail. Multiple
 capabilities can be issued for the same role, to allow users or services to share
 that access level.
 
@@ -33,27 +33,28 @@ Roles may optionally carry a `RoleTags` allowlist (see [Record Tags](#record-tag
 
 ### Capabilities
 
-A `Capability` is an on-chain object owned by a wallet address.  It records:
+A `Capability` is an on-chain object owned by a wallet address. It records:
 
-| Field         | Meaning                                                               |
-|:--------------|:----------------------------------------------------------------------|
-| `target_key`  | The `ObjectID` of the trail this capability is valid for.             |
-| `role`        | The role name — determines which permissions the holder has.          |
-| `issued_to`   | Optional address binding; only that address may present the cap.      |
-| `valid_from`  | Optional Unix-ms timestamp before which the cap is not yet active.    |
-| `valid_until` | Optional Unix-ms timestamp after which the cap expires.               |
+| Field         | Meaning                                                            |
+| :------------ | :----------------------------------------------------------------- |
+| `target_key`  | The `ObjectID` of the trail this capability is valid for.          |
+| `role`        | The role name — determines which permissions the holder has.       |
+| `issued_to`   | Optional address binding; only that address may present the cap.   |
+| `valid_from`  | Optional Unix-ms timestamp before which the cap is not yet active. |
+| `valid_until` | Optional Unix-ms timestamp after which the cap expires.            |
 
-Possessing a capability does **not** automatically grant access.  The audit trail
+Possessing a capability does **not** automatically grant access. The audit trail
 validates all fields above on every call before the operation is executed.
 
 ### The Admin Role
 
 When a trail is created, the access control registry is initialized with exactly one role —
-the **initial admin role** (named `"Admin"`).  A corresponding capability
+the **initial admin role** (named `"Admin"`). A corresponding capability
 object is minted and transferred to the trail creator (or a custom address
 supplied via `with_admin`).
 
 The Admin role is protected by two invariants:
+
 1. It can **never be deleted**.
 2. Although its permission set can be updated, it needs to include a minimum set of
    permissions to manage the trail's access control (AddRoles, UpdateRoles, DeleteRoles,
@@ -112,7 +113,7 @@ Admin Capability + revoke_capability(cap_id, valid_until)
 ```
 
 Please note: Revoked capability objects still exist on-chain but will be rejected by
-`assert_capability_valid`.  The holder can no longer use it.
+`assert_capability_valid`. The holder can no longer use it.
 
 ---
 
@@ -239,19 +240,19 @@ client
 
 ## Record Tags and RoleTags
 
-Tags are string labels that can be attached to individual records.  They are
+Tags are string labels that can be attached to individual records. They are
 managed through a **tag registry** on the trail: a tag must be registered
 before it can be used on a record or referenced by a role.
 
 ### Why use tags?
 
-Tags enable fine-grained access control beyond simple permission checks.  For
+Tags enable fine-grained access control beyond simple permission checks. For
 example, a legal department may only be allowed to access records tagged
 `"legal"`, while the finance team works with records tagged `"finance"`.
 
 ### How tags interact with roles
 
-A role may carry an optional `RoleTags` allowlist.  When a capability holder
+A role may carry an optional `RoleTags` allowlist. When a capability holder
 adds a record with a tag, the audit trail checks that:
 
 1. The tag is registered in the trail's tag registry.
@@ -263,11 +264,12 @@ If either check fails the transaction is rejected.
 The same checks apply when a record having a tag is updated or deleted.
 
 Please note:
-* Tags only restrict the use of tagged records to roles that explicitly
+
+- Tags only restrict the use of tagged records to roles that explicitly
   grant access to those tags in the associated `RoleTags` allowlist.
-* Tags do not grant access permission themselves. A role still needs the relevant
+- Tags do not grant access permission themselves. A role still needs the relevant
   permissions (e.g. `AddRecord`) to perform operations on tagged records.
-* A role without any `RoleTags` can operate on any record not having tags, as long
+- A role without any `RoleTags` can operate on any record not having tags, as long
   as it has the necessary permissions.
 
 ### Example — tagged records
@@ -312,35 +314,35 @@ The checks run in the order listed below; the transaction aborts on the
 ### 1 — `ECapabilityTargetKeyMismatch`
 
 The capability's `target_key` must match the `target_key` of the RoleMap
-(which is typically the `ObjectID` of the audit trail).  This prevents a
+(which is typically the `ObjectID` of the audit trail). This prevents a
 capability issued for one trail from being used on a different trail.
 
 ### 2 — `ERoleDoesNotExist`
 
-The role name stored in the capability must still exist in the RoleMap.  If
+The role name stored in the capability must still exist in the RoleMap. If
 an admin deleted the role after the capability was issued, the capability
 becomes unusable — even though it was never explicitly revoked.
 
 ### 3 — `ECapabilityPermissionDenied`
 
 The role's current permission set must contain the permission required by the
-operation being performed.  For example, calling `add_record` requires the
-`AddRecord` permission.  If the role was updated after the capability was
+operation being performed. For example, calling `add_record` requires the
+`AddRecord` permission. If the role was updated after the capability was
 issued and the required permission was removed, existing capabilities for
 that role will start failing this check.
 
 ### 4 — `ECapabilityHasBeenRevoked`
 
 The capability's ID must **not** appear in the `revoked_capabilities`
-denylist.  A capability that has been revoked via `revoke_capability` (or
+denylist. A capability that has been revoked via `revoke_capability` (or
 `revoke_initial_admin_capability`) is permanently rejected, even if it is
-still within its validity window.  See
+still within its validity window. See
 [Managing Revoked Capabilities](#managing-revoked-capabilities) for details.
 
 ### 5 — `ECapabilityTimeConstraintsNotMet`
 
 This check only runs when the capability has a `valid_from` and/or
-`valid_until` field set.  The current on-chain clock time must satisfy:
+`valid_until` field set. The current on-chain clock time must satisfy:
 
 - `valid_from`: current time **>=** `valid_from` (the capability is not yet
   active before this timestamp).
@@ -354,7 +356,7 @@ considered valid at any point in time.
 
 This check only runs when the capability has a non-empty `issued_to` field.
 The address of the transaction sender must match the `issued_to` address
-stored in the capability.  This binds the capability to a specific wallet,
+stored in the capability. This binds the capability to a specific wallet,
 preventing it from being used by anyone else even if the on-chain object is
 transferred.
 
@@ -363,7 +365,7 @@ If `issued_to` is not set, any holder of the capability object may use it.
 ### 7 — `ERecordTagNotDefined` / `ERecordTagNotAllowed`
 
 This check is performed by the audit trail **after** all `RoleMap` checks
-(1–6) have passed.  It only applies to record operations (add, correct,
+(1–6) have passed. It only applies to record operations (add, correct,
 delete) that involve a tagged record.
 
 When a record carries a tag, two additional conditions must hold:
@@ -371,24 +373,24 @@ When a record carries a tag, two additional conditions must hold:
 1. The tag must be registered in the trail's **tag registry**
    (`ERecordTagNotDefined`).
 2. The role associated with the capability must include the tag in its
-   `RoleTags` allowlist (`ERecordTagNotAllowed`).  A role without any
+   `RoleTags` allowlist (`ERecordTagNotAllowed`). A role without any
    `RoleTags` is **not** permitted to operate on tagged records.
 
-If the record has no tag, this check is skipped.  See
+If the record has no tag, this check is skipped. See
 [Record Tags and RoleTags](#record-tags-and-roletags) for a full explanation
 and examples.
 
 ### Summary
 
-| # | Check                   | Error                               | Skippable |
-|:--|:------------------------|:------------------------------------|:----------|
-| 1 | `target_key` mismatch   | `ECapabilityTargetKeyMismatch`      | No        |
-| 2 | Role does not exist     | `ERoleDoesNotExist`                 | No        |
-| 3 | Permission not in role  | `ECapabilityPermissionDenied`       | No        |
-| 4 | ID in revoked denylist  | `ECapabilityHasBeenRevoked`         | No        |
-| 5 | Outside validity window | `ECapabilityTimeConstraintsNotMet`  | Yes — only if `valid_from` or `valid_until` is set |
-| 6 | `issued_to` mismatch    | `ECapabilityIssuedToMismatch`       | Yes — only if `issued_to` is set |
-| 7 | Record tag not allowed  | `ERecordTagNotDefined` / `ERecordTagNotAllowed` | Yes — only for record operations on tagged records |
+| #  | Check                   | Error                                           | Skippable                                          |
+| :- | :---------------------- | :---------------------------------------------- | :------------------------------------------------- |
+| 1  | `target_key` mismatch   | `ECapabilityTargetKeyMismatch`                  | No                                                 |
+| 2  | Role does not exist     | `ERoleDoesNotExist`                             | No                                                 |
+| 3  | Permission not in role  | `ECapabilityPermissionDenied`                   | No                                                 |
+| 4  | ID in revoked denylist  | `ECapabilityHasBeenRevoked`                     | No                                                 |
+| 5  | Outside validity window | `ECapabilityTimeConstraintsNotMet`              | Yes — only if `valid_from` or `valid_until` is set |
+| 6  | `issued_to` mismatch    | `ECapabilityIssuedToMismatch`                   | Yes — only if `issued_to` is set                   |
+| 7  | Record tag not allowed  | `ERecordTagNotDefined` / `ERecordTagNotAllowed` | Yes — only for record operations on tagged records |
 
 ---
 
@@ -397,7 +399,7 @@ and examples.
 ### The `revoked_capabilities` Denylist
 
 When a capability is revoked it is **not deleted from the chain** — the
-on-chain `Capability` object still exists in the holder's wallet.  Instead,
+on-chain `Capability` object still exists in the holder's wallet. Instead,
 the capability's ID is added to a **denylist** stored inside the audit trail.
 During every call to an access restricted audit trail function, the internally
 called `assert_capability_valid` function checks the denylist and rejects any capability whose
@@ -405,12 +407,12 @@ ID appears in it (error `ECapabilityHasBeenRevoked`).
 
 The denylist approach (as opposed to an allowlist of all issued capabilities)
 was chosen deliberately: it keeps on-chain storage proportional to the number
-of *currently revoked* capabilities rather than the total number ever issued.
+of _currently revoked_ capabilities rather than the total number ever issued.
 This is important for deployments that issue large numbers of capabilities over
 time.
 
 Each denylist entry maps a revoked capability ID to a `valid_until` timestamp
-(Unix milliseconds).  If the revoked capability had no `valid_until` field, the
+(Unix milliseconds). If the revoked capability had no `valid_until` field, the
 stored value is `0`, which signals "no expiry — keep in the denylist
 indefinitely".
 
@@ -425,10 +427,10 @@ denylist.
 
 This has an important consequence for revocation: **once a capability's
 `valid_until` timestamp has passed, the capability is naturally expired and
-can no longer be used — even if it was never explicitly revoked.**  Its
+can no longer be used — even if it was never explicitly revoked.** Its
 denylist entry therefore becomes redundant and can be safely removed.
 
-The `cleanup_revoked_capabilities` function exploits this property.  It
+The `cleanup_revoked_capabilities` function exploits this property. It
 iterates through the denylist and removes every entry whose stored
 `valid_until` value is **non-zero** and **less than** the current clock time.
 Entries with `valid_until == 0` (capabilities that were issued without an
@@ -454,7 +456,7 @@ This design shifts the bookkeeping responsibility to the user:
    least the capability `ID`, the `role` it was issued for, the `issued_to`
    address (if any), and the `valid_from` / `valid_until` timestamps.
 2. **When revoking**, supply the correct capability ID and its `valid_until`
-   value (via the `cap_to_revoke_valid_until` parameter).  The
+   value (via the `cap_to_revoke_valid_until` parameter). The
    `revoke_capability` function does **not** verify that the supplied ID
    actually refers to a real, previously-issued capability — if you pass a
    random ID, it will be silently added to the denylist without error.
@@ -479,7 +481,7 @@ until the capability object is explicitly destroyed.
 ### Cleaning Up the Denylist
 
 Over time the denylist can accumulate entries for capabilities that have
-already naturally expired.  The `cleanup_revoked_capabilities` function
+already naturally expired. The `cleanup_revoked_capabilities` function
 removes these stale entries:
 
 1. It walks through every entry in the `revoked_capabilities` linked table.
@@ -509,18 +511,19 @@ permission.
 
 `PermissionSet` provides convenience constructors for common role profiles:
 
-| Constructor                   | Permissions                                                                    |
-|:------------------------------|:-------------------------------------------------------------------------------|
-| `admin_permissions()`         | AddRoles, UpdateRoles, DeleteRoles, AddCapabilities, RevokeCapabilities, AddRecordTags, DeleteRecordTags |
-| `record_admin_permissions()`  | AddRecord, DeleteRecord, CorrectRecord                                         |
-| `locking_admin_permissions()` | UpdateLockingConfig (and all sub-variants)                                     |
-| `cap_admin_permissions()`     | AddCapabilities, RevokeCapabilities                                            |
-| `tag_admin_permissions()`     | AddRecordTags, DeleteRecordTags                                                |
-| `metadata_admin_permissions()`| UpdateMetadata, DeleteMetadata                                                 |
+| Constructor                    | Permissions                                                                                              |
+| :----------------------------- | :------------------------------------------------------------------------------------------------------- |
+| `admin_permissions()`          | AddRoles, UpdateRoles, DeleteRoles, AddCapabilities, RevokeCapabilities, AddRecordTags, DeleteRecordTags |
+| `record_admin_permissions()`   | AddRecord, DeleteRecord, CorrectRecord                                                                   |
+| `locking_admin_permissions()`  | UpdateLockingConfig (and all sub-variants)                                                               |
+| `cap_admin_permissions()`      | AddCapabilities, RevokeCapabilities                                                                      |
+| `tag_admin_permissions()`      | AddRecordTags, DeleteRecordTags                                                                          |
+| `metadata_admin_permissions()` | UpdateMetadata, DeleteMetadata                                                                           |
 
 Please note:
-* These constructors are just for convenience and do not enforce any invariants.
+
+- These constructors are just for convenience and do not enforce any invariants.
   For example, you could (not recommended) create a role named `NormalUser` with
- `PermissionSet::admin_permissions()`.
-* You can create custom permission sets by constructing a `PermissionSet` with
+  `PermissionSet::admin_permissions()`.
+- You can create custom permission sets by constructing a `PermissionSet` with
   an arbitrary combination of permissions.

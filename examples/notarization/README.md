@@ -42,8 +42,8 @@ IOTA_NOTARIZATION_PKG_ID=0x... cargo run --release --example 01_create_locked_no
 
 The following basic CRUD (Create, Read, Update, Delete) examples are available:
 
-| Name                                                                                                                                  | Information                                                                       |
-| :------------------------------------------------------------------------------------------------------------------------------------ | :-------------------------------------------------------------------------------- |
+| Name                                                                                                                                               | Information                                                                       |
+| :------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------- |
 | [01_create_locked_notarization](https://github.com/iotaledger/notarization/tree/main/examples/notarization/01_create_locked_notarization.rs)       | Demonstrates how to create a locked notarization with delete locks.               |
 | [02_create_dynamic_notarization](https://github.com/iotaledger/notarization/tree/main/examples/notarization/02_create_dynamic_notarization.rs)     | Demonstrates how to create dynamic notarizations with and without transfer locks. |
 | [03_update_dynamic_notarization](https://github.com/iotaledger/notarization/tree/main/examples/notarization/03_update_dynamic_notarization.rs)     | Demonstrates that dynamic notarizations can be updated                            |
@@ -57,8 +57,8 @@ The following basic CRUD (Create, Read, Update, Delete) examples are available:
 
 The following examples demonstrate practical use cases with proper field usage:
 
-| Name                                                                                                                   | Information                                                                        |
-| :--------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------- |
+| Name                                                                                                                                | Information                                                                        |
+| :---------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------- |
 | [iot_weather_station](https://github.com/iotaledger/notarization/tree/main/examples/notarization/real-world/iot_weather_station.rs) | IoT weather station using dynamic notarization for continuous sensor data updates. |
 | [legal_contract](https://github.com/iotaledger/notarization/tree/main/examples/notarization/real-world/legal_contract.rs)           | Legal contract using locked notarization for immutable document hash attestation.  |
 

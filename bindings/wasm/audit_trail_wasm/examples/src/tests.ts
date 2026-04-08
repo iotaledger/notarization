@@ -17,7 +17,7 @@ import { manageRecordTags } from "./advanced/11_manage_record_tags";
 import { customsClearance } from "./real-world/01_customs_clearance";
 import { clinicalTrial } from "./real-world/02_clinical_trial";
 
-describe("Audit trail wasm node examples", function () {
+describe("Audit trail wasm node examples", function() {
     afterEach(() => {
         console.log("\n----------------------------------------------------\n");
     });

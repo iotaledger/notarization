@@ -13,8 +13,8 @@
 //! - record tags: `enrollment`, `safety`, `efficacy`, `pk` (added mid-study)
 //! - roles and capabilities: each role writes only its designated tag
 //! - time-constrained capabilities: Monitor access is windowed to the study period
-//! - locking: a deletion window protects recent records; a time-lock freezes the
-//!   dataset after the Data Safety Board completes its review
+//! - locking: a deletion window protects recent records; a time-lock freezes the dataset after the Data Safety Board
+//!   completes its review
 //! - read-only verification: a regulator inspects the trail without write access
 
 use anyhow::{Result, ensure};

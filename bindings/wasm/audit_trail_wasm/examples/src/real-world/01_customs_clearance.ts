@@ -107,7 +107,11 @@ export async function customsClearance(): Promise<void> {
     const exportFiled = await client
         .trail(trailId)
         .records()
-        .add(Data.fromString("Export declaration filed with German customs"), "event:export_declaration_filed", "export")
+        .add(
+            Data.fromString("Export declaration filed with German customs"),
+            "event:export_declaration_filed",
+            "export",
+        )
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(client);
 
@@ -138,14 +142,22 @@ export async function customsClearance(): Promise<void> {
         await client
             .trail(trailId)
             .records()
-            .add(Data.fromString("Import broker attempted to record an inspection result"), "event:invalid_inspection_write", "inspection")
+            .add(
+                Data.fromString("Import broker attempted to record an inspection result"),
+                "event:invalid_inspection_write",
+                "inspection",
+            )
             .withGasBudget(TEST_GAS_BUDGET)
             .buildAndExecute(client);
         inspectionDenied = true;
     } catch {
         // Expected
     }
-    assert.equal(inspectionDenied, false, "inspection-tagged writes should fail before an inspection-scoped capability exists");
+    assert.equal(
+        inspectionDenied,
+        false,
+        "inspection-tagged writes should fail before an inspection-scoped capability exists",
+    );
     console.log("Inspection write was correctly denied before the inspector role existed.\n");
 
     // 8. Create inspector role and add inspection record
@@ -154,7 +166,11 @@ export async function customsClearance(): Promise<void> {
     const inspectionDone = await client
         .trail(trailId)
         .records()
-        .add(Data.fromString("Customs inspection completed with no discrepancies"), "event:inspection_completed", "inspection")
+        .add(
+            Data.fromString("Customs inspection completed with no discrepancies"),
+            "event:inspection_completed",
+            "inspection",
+        )
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(client);
     console.log("Inspector added record", inspectionDone.output.sequenceNumber + ".\n");

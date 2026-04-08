@@ -42,7 +42,7 @@ export async function manageRecordTags(): Promise<void> {
     await trailHandle.tags().add("legal").withGasBudget(TEST_GAS_BUDGET).buildAndExecute(client);
 
     let onChain = await trailHandle.get();
-    console.log('Registry after adding "legal":', onChain.tags.map((t) => t.tag), "\n");
+    console.log("Registry after adding \"legal\":", onChain.tags.map((t) => t.tag), "\n");
     assert.ok(onChain.tags.some((t) => t.tag === "finance"));
     assert.ok(onChain.tags.some((t) => t.tag === "legal"));
 
@@ -81,7 +81,7 @@ export async function manageRecordTags(): Promise<void> {
     await trailHandle.tags().remove("legal").withGasBudget(TEST_GAS_BUDGET).buildAndExecute(client);
 
     onChain = await trailHandle.get();
-    console.log('Registry after removing "legal":', onChain.tags.map((t) => t.tag), "\n");
+    console.log("Registry after removing \"legal\":", onChain.tags.map((t) => t.tag), "\n");
     assert.ok(onChain.tags.some((t) => t.tag === "finance"), "finance tag should still exist");
     assert.ok(!onChain.tags.some((t) => t.tag === "legal"), "legal tag should be removed");
 
