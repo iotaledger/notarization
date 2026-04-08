@@ -17,11 +17,13 @@ on:
       - ".github/workflows/shared-build-wasm.yml"
       - ".github/actions/**"
       - "**.rs"
+      - "**.move"
       - "**.toml"
       - "**.lock"
       - "bindings/**"
       - "!bindings/**.md"
       - "bindings/wasm/notarization_wasm/README.md" # the Readme contain txm tests
+      - "bindings/wasm/audit_trail_wasm/README.md"
 
   schedule:
     # * is a special character in YAML so you have to quote this string
@@ -239,7 +241,7 @@ jobs:
       wasm-crate-name: audit_trail_wasm
 
   test-wasm-notarization:
-    needs: build-wasm-notarization
+    needs: [build-wasm-notarization, check-for-run-condition]
     if: ${{ needs.check-for-run-condition.outputs.should-run == 'true' }}
     runs-on: ubuntu-24.04
     strategy:
@@ -281,7 +283,7 @@ jobs:
         working-directory: bindings/wasm/notarization_wasm
 
   test-wasm-audit-trail:
-    needs: build-wasm-audit-trail
+    needs: [build-wasm-audit-trail, check-for-run-condition]
     if: ${{ needs.check-for-run-condition.outputs.should-run == 'true' }}
     runs-on: ubuntu-24.04
 
@@ -319,7 +321,7 @@ jobs:
         run: npm run test:node
         working-directory: bindings/wasm/audit_trail_wasm
   test-wasm-browser-notarization:
-    needs: build-wasm-notarization
+    needs: [build-wasm-notarization, check-for-run-condition]
     if: ${{ needs.check-for-run-condition.outputs.should-run == 'true' }}
     runs-on: ubuntu-24.04
     strategy:
@@ -370,7 +372,7 @@ jobs:
         run: docker run --network host cypress-test test:browser:${{ matrix.browser }}
 
   test-wasm-browser-audit-trail:
-    needs: build-wasm-audit-trail
+    needs: [build-wasm-audit-trail, check-for-run-condition]
     if: ${{ needs.check-for-run-condition.outputs.should-run == 'true' }}
     runs-on: ubuntu-24.04
     strategy:

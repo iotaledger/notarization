@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {
+    AuditTrailClient,
     CapabilityIssueOptions,
     Data,
     LockingConfig,
@@ -260,7 +261,7 @@ export async function clinicalTrial(): Promise<void> {
 }
 
 async function issueTaggedRecordRole(
-    client: any,
+    client: AuditTrailClient,
     trailId: string,
     roleName: string,
     tag: string,

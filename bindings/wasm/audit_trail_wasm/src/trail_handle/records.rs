@@ -12,7 +12,7 @@ use product_common::bindings::utils::into_transaction_builder;
 use wasm_bindgen::prelude::*;
 
 use crate::trail::{WasmAddRecord, WasmDeleteRecord, WasmDeleteRecordsBatch};
-use crate::types::{WasmData, WasmEmpty, WasmPaginatedRecord, WasmRecord};
+use crate::types::{WasmData, WasmPaginatedRecord, WasmRecord};
 
 #[derive(Clone)]
 #[wasm_bindgen(js_name = TrailRecords, inspectable)]
@@ -97,16 +97,6 @@ impl WasmTrailRecords {
             .await
             .wasm_result()?;
         Ok(page.into())
-    }
-
-    pub async fn correct(&self, replaces: Vec<u64>, data: WasmData, metadata: Option<String>) -> Result<WasmEmpty> {
-        self.require_write()?
-            .trail(self.trail_id)
-            .records()
-            .correct(replaces, data.into(), metadata)
-            .await
-            .wasm_result()?;
-        Ok(WasmEmpty)
     }
 
     #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<AddRecord>")]
