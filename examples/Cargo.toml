@@ -52,6 +52,54 @@ path = "notarization/real-world/02_legal_contract.rs"
 name = "01_create_audit_trail"
 path = "audit-trail/01_create_audit_trail.rs"
 
+[[example]]
+name = "02_add_and_read_records"
+path = "audit-trail/02_add_and_read_records.rs"
+
+[[example]]
+name = "03_update_metadata"
+path = "audit-trail/03_update_metadata.rs"
+
+[[example]]
+name = "04_configure_locking"
+path = "audit-trail/04_configure_locking.rs"
+
+[[example]]
+name = "05_manage_access"
+path = "audit-trail/05_manage_access.rs"
+
+[[example]]
+name = "06_delete_records"
+path = "audit-trail/06_delete_records.rs"
+
+[[example]]
+name = "07_access_read_only_methods"
+path = "audit-trail/07_access_read_only_methods.rs"
+
+[[example]]
+name = "08_delete_audit_trail"
+path = "audit-trail/08_delete_audit_trail.rs"
+
+[[example]]
+name = "09_tagged_records"
+path = "audit-trail/advanced/09_tagged_records.rs"
+
+[[example]]
+name = "10_capability_constraints"
+path = "audit-trail/advanced/10_capability_constraints.rs"
+
+[[example]]
+name = "11_manage_record_tags"
+path = "audit-trail/advanced/11_manage_record_tags.rs"
+
+[[example]]
+name = "01_customs_clearance"
+path = "audit-trail/real-world/01_customs_clearance.rs"
+
+[[example]]
+name = "02_clinical_trial"
+path = "audit-trail/real-world/02_clinical_trial.rs"
+
 [dependencies]
 anyhow.workspace = true
 audit_trail = { path = "../audit-trail-rs" }

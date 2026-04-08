@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Context;
-use iota_interaction::types::base_types::ObjectID;
 use audit_trail::{AuditTrailClient, PackageOverrides};
-use iota_sdk::{IotaClientBuilder, IOTA_LOCAL_NETWORK_URL};
+use iota_interaction::types::base_types::ObjectID;
+use iota_sdk::{IOTA_LOCAL_NETWORK_URL, IotaClientBuilder};
 use notarization::client::{NotarizationClient, NotarizationClientReadOnly};
 use product_common::test_utils::{InMemSigner, request_funds};
 
@@ -16,7 +16,7 @@ async fn get_iota_client() -> anyhow::Result<iota_sdk::IotaClient> {
         .map_err(|err| anyhow::anyhow!("failed to connect to network; {}", err))
 }
 
-fn get_package_id_from_env(env_var_name: &str) -> anyhow::Result<ObjectID   > {
+fn get_package_id_from_env(env_var_name: &str) -> anyhow::Result<ObjectID> {
     let value = std::env::var(env_var_name)
         .with_context(|| format!("env variable '{env_var_name}' must be set in order to run the examples"))?;
 
@@ -51,11 +51,9 @@ pub async fn get_funded_notarization_client() -> Result<NotarizationClient<InMem
 pub async fn get_funded_audit_trail_client() -> Result<AuditTrailClient<InMemSigner>, anyhow::Error> {
     let iota_client = get_iota_client().await?;
 
-    let audit_trail_pkg_id =
-        get_package_id_from_env("IOTA_AUDIT_TRAIL_PKG_ID")?;
+    let audit_trail_pkg_id = get_package_id_from_env("IOTA_AUDIT_TRAIL_PKG_ID")?;
 
-    let tf_components_pkg_id =
-      get_package_id_from_env("IOTA_TF_COMPONENTS_PKG_ID")?;
+    let tf_components_pkg_id = get_package_id_from_env("IOTA_TF_COMPONENTS_PKG_ID")?;
 
     let signer = InMemSigner::new();
     let sender_address = signer.get_address().await?;

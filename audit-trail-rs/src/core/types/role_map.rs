@@ -17,6 +17,8 @@ use super::permission::Permission;
 use crate::core::internal::move_collections::{deserialize_vec_map, deserialize_vec_set};
 use crate::core::internal::tx;
 use crate::error::Error;
+use serde_aux::field_attributes::deserialize_option_number_from_string;
+
 /// The role and capability registry attached to an audit trail.
 ///
 /// A [`RoleMap`] stores every named role defined on the trail, tracks which
@@ -33,7 +35,7 @@ use crate::error::Error;
 /// ## What are Roles
 ///
 /// A role is a named set of [`Permission`]s, optionally paired with a [`RoleTags`] allowlist.
-/// 
+///
 /// Roles are identified by a unique string name within a trail (e.g., `"RecordAdmin"`,
 /// `"Auditor"`, `"LegalReviewer"`). The same role definition can back many independent
 /// [`Capability`] objects — to be owned and used by users or system components that should share the same
@@ -302,9 +304,11 @@ pub struct Capability {
     pub issued_to: Option<IotaAddress>,
     /// Optional start of the validity window (Unix milliseconds).  The
     /// capability is rejected before this timestamp.
+    #[serde(deserialize_with = "deserialize_option_number_from_string")]
     pub valid_from: Option<u64>,
     /// Optional end of the validity window (Unix milliseconds).  The capability
     /// is rejected after this timestamp.
+    #[serde(deserialize_with = "deserialize_option_number_from_string")]
     pub valid_until: Option<u64>,
 }
 
