@@ -1,11 +1,11 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use std::collections::{BTreeMap, HashSet};
+use std::collections::HashSet;
 
 use iota_interaction::move_types::language_storage::StructTag;
 use iota_interaction::rpc_types::{
-    IotaMoveStruct, IotaMoveValue, IotaObjectDataFilter, IotaObjectDataOptions, IotaObjectResponseQuery, IotaParsedData,
+    IotaObjectDataFilter, IotaObjectDataOptions, IotaObjectResponseQuery, IotaParsedData,
 };
 use iota_interaction::types::TypeTag;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID, ObjectRef};
@@ -129,11 +129,7 @@ where
             table.id,
             DynamicFieldName {
                 type_: TypeTag::Struct(Box::new(ID::type_())),
-                value: IotaMoveStruct::WithFields(BTreeMap::from([(
-                    "bytes".to_string(),
-                    IotaMoveValue::Address(IotaAddress::from(key)),
-                )]))
-                .to_json_value(),
+                value: serde_json::Value::String(IotaAddress::from(key).to_string()),
             },
         )
         .await?;

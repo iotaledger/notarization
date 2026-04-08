@@ -12,7 +12,7 @@ use product_common::core_client::CoreClient;
 /// 1. Create and update a custom role.
 /// 2. Issue a constrained capability for that role.
 /// 3. Revoke one capability and destroy another.
-/// 4. Remove the role after its capabilities are no longer needed.
+/// 4. Remove the role after its capability lifecycle is complete.
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("=== Audit Trail: Manage Access ===\n");
@@ -95,6 +95,13 @@ async fn main() -> Result<()> {
         .build_and_execute(&client)
         .await?;
     println!("Destroyed capability {}\n", disposable_capability.capability_id);
+
+    trail
+        .access()
+        .cleanup_revoked_capabilities()
+        .build_and_execute(&client)
+        .await?;
+    println!("Cleaned up revoked capability registry entries.\n");
 
     role.delete().build_and_execute(&client).await?;
 

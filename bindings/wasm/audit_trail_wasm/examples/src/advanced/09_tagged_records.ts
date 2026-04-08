@@ -1,0 +1,71 @@
+// Copyright 2026 IOTA Stiftung
+// SPDX-License-Identifier: Apache-2.0
+
+import { CapabilityIssueOptions, Data, Permission, PermissionSet, RoleTags } from "@iota/audit-trail/node";
+import { strict as assert } from "assert";
+import { getFundedClient, TEST_GAS_BUDGET } from "../util";
+
+/**
+ * Demonstrates how to:
+ * 1. Create a trail with a predefined tag registry.
+ * 2. Define a role that is restricted to one record tag.
+ * 3. Issue a capability bound to a specific wallet address.
+ * 4. Show that the holder can add only records matching the allowed tag.
+ */
+export async function taggedRecords(): Promise<void> {
+    console.log("=== Audit Trail Advanced: Tagged Records ===\n");
+
+    const admin = await getFundedClient();
+    const financeWriter = await getFundedClient();
+
+    const { output: created } = await admin
+        .createTrail()
+        .withRecordTags(["finance", "legal"])
+        .withInitialRecordString("Trail created", "event:created")
+        .finish()
+        .withGasBudget(TEST_GAS_BUDGET)
+        .buildAndExecute(admin);
+
+    const trailId = created.id;
+
+    // Create a role restricted to the "finance" tag
+    const role = admin.trail(trailId).access().forRole("FinanceWriter");
+    await role
+        .create(new PermissionSet([Permission.AddRecord]), new RoleTags(["finance"]))
+        .withGasBudget(TEST_GAS_BUDGET)
+        .buildAndExecute(admin);
+
+    const issued = await role
+        .issueCapability(new CapabilityIssueOptions(financeWriter.senderAddress()))
+        .withGasBudget(TEST_GAS_BUDGET)
+        .buildAndExecute(admin);
+
+    console.log("Issued FinanceWriter capability", issued.output.capabilityId, "to", financeWriter.senderAddress(), "\n");
+
+    const financeRecords = financeWriter.trail(trailId).records();
+
+    // Add a record with the allowed tag
+    const added = await financeRecords
+        .add(Data.fromString("Invoice approved"), "department:finance", "finance")
+        .withGasBudget(TEST_GAS_BUDGET)
+        .buildAndExecute(financeWriter);
+
+    console.log("Added tagged record at sequence number", added.output.sequenceNumber, 'with tag "finance".\n');
+
+    // Attempt to add a record with a different tag — should fail
+    let wrongTagSucceeded = false;
+    try {
+        await financeRecords
+            .add(Data.fromString("Legal review completed"), "department:legal", "legal")
+            .withGasBudget(TEST_GAS_BUDGET)
+            .buildAndExecute(financeWriter);
+        wrongTagSucceeded = true;
+    } catch {
+        // Expected
+    }
+    assert.equal(wrongTagSucceeded, false, "a finance-scoped role must not add a legal-tagged record");
+
+    const financeRecord = await financeRecords.get(added.output.sequenceNumber);
+    console.log("Stored tagged record:", financeRecord);
+    assert.equal(financeRecord.tag, "finance");
+}

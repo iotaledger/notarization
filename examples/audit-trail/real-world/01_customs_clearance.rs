@@ -259,7 +259,10 @@ async fn main() -> Result<()> {
         );
     }
 
-    ensure!(first_page.records.len() == 6, "expected 6 customs records");
+    ensure!(
+        first_page.records.len() == 7,
+        "expected 7 customs records including the initial case-opened record"
+    );
     ensure!(
         trail.get().await?.updatable_metadata.as_deref() == Some("Status: Cleared"),
         "customs case should finish in cleared state"

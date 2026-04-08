@@ -368,3 +368,57 @@ jobs:
 
       - name: Run cypress
         run: docker run --network host cypress-test test:browser:${{ matrix.browser }}
+
+  test-wasm-browser-audit-trail:
+    needs: build-wasm-audit-trail
+    if: ${{ needs.check-for-run-condition.outputs.should-run == 'true' }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chrome, firefox]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 20.x
+
+      - name: Install JS dependencies
+        run: npm ci
+        working-directory: bindings/wasm/audit_trail_wasm
+
+      - name: Download bindings/wasm/audit_trail_wasm artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: audit-trail-wasm-bindings-build
+          path: bindings/wasm/audit_trail_wasm
+
+      - name: Start iota sandbox
+        uses: "./.github/actions/iota/setup"
+        with:
+          iota-version: ${{ env.IOTA_VERSION }}
+
+      - name: publish Audit Trail Move package
+        run: |
+          eval "$(./publish_package.sh)"
+          echo "IOTA_AUDIT_TRAIL_PKG_ID=$IOTA_AUDIT_TRAIL_PKG_ID" >> "$GITHUB_ENV"
+          echo "IOTA_TF_COMPONENTS_PKG_ID=$IOTA_TF_COMPONENTS_PKG_ID" >> "$GITHUB_ENV"
+        working-directory: audit-trail-move/scripts/
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6.2.0
+        with:
+          context: bindings/wasm/
+          file: bindings/wasm/audit_trail_wasm/cypress/Dockerfile
+          push: false
+          tags: cypress-audit-trail:latest
+          load: true
+          build-args: |
+            IOTA_AUDIT_TRAIL_PKG_ID=${{ env.IOTA_AUDIT_TRAIL_PKG_ID }}
+            IOTA_TF_COMPONENTS_PKG_ID=${{ env.IOTA_TF_COMPONENTS_PKG_ID }}
+
+      - name: Run cypress
+        run: docker run --network host cypress-audit-trail test:browser:${{ matrix.browser }}
