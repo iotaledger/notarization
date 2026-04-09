@@ -6,8 +6,9 @@ use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::transaction::ProgrammableTransaction;
 use product_common::core_client::CoreClientReadOnly;
 
-use crate::core::internal::{capability, trail as trail_reader, tx};
-use crate::core::types::{Data, OnChainAuditTrail, Permission};
+use crate::core::internal::capability::find_capable_cap_for_tag;
+use crate::core::internal::{trail as trail_reader, tx};
+use crate::core::types::{Data, Permission};
 use crate::error::Error;
 
 pub(super) struct RecordsOps;
@@ -20,6 +21,7 @@ impl RecordsOps {
         data: Data,
         record_metadata: Option<String>,
         record_tag: Option<String>,
+        selected_capability_id: Option<ObjectID>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -32,7 +34,11 @@ impl RecordsOps {
                     "record tag '{tag}' is not defined for trail {trail_id}"
                 )));
             }
-            let cap_ref = find_capable_cap_for_tag(client, owner, trail_id, &trail, &tag).await?;
+            let cap_ref = if let Some(capability_id) = selected_capability_id {
+                tx::get_object_ref_by_id(client, &capability_id).await?
+            } else {
+                find_capable_cap_for_tag(client, owner, trail_id, &trail, &tag).await?
+            };
 
             tx::build_trail_transaction_with_cap_ref(client, trail_id, cap_ref, "add_record", |ptb, trail_tag| {
                 data.ensure_matches_tag(trail_tag, package_id)?;
@@ -50,6 +56,7 @@ impl RecordsOps {
                 trail_id,
                 owner,
                 Permission::AddRecord,
+                selected_capability_id,
                 "add_record",
                 |ptb, trail_tag| {
                     data.ensure_matches_tag(trail_tag, package_id)?;
@@ -70,6 +77,7 @@ impl RecordsOps {
         trail_id: ObjectID,
         owner: IotaAddress,
         sequence_number: u64,
+        selected_capability_id: Option<ObjectID>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -79,6 +87,7 @@ impl RecordsOps {
             trail_id,
             owner,
             Permission::DeleteRecord,
+            selected_capability_id,
             "delete_record",
             |ptb, _| {
                 let seq = tx::ptb_pure(ptb, "sequence_number", sequence_number)?;
@@ -94,6 +103,7 @@ impl RecordsOps {
         trail_id: ObjectID,
         owner: IotaAddress,
         limit: u64,
+        selected_capability_id: Option<ObjectID>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -103,6 +113,7 @@ impl RecordsOps {
             trail_id,
             owner,
             Permission::DeleteAllRecords,
+            selected_capability_id,
             "delete_records_batch",
             |ptb, _| {
                 let limit_arg = tx::ptb_pure(ptb, "limit", limit)?;
@@ -134,40 +145,4 @@ impl RecordsOps {
     {
         tx::build_read_only_transaction(client, trail_id, "record_count", |_| Ok(vec![])).await
     }
-}
-
-async fn find_capable_cap_for_tag<C>(
-    client: &C,
-    owner: IotaAddress,
-    trail_id: ObjectID,
-    trail: &OnChainAuditTrail,
-    tag: &str,
-) -> Result<iota_interaction::types::base_types::ObjectRef, Error>
-where
-    C: CoreClientReadOnly + OptionalSync,
-{
-    let valid_roles = trail
-        .roles
-        .roles
-        .iter()
-        .filter(|(_, role)| {
-            role.permissions.contains(&Permission::AddRecord)
-                && role.data.as_ref().is_some_and(|record_tags| record_tags.allows(tag))
-        })
-        .map(|(name, _)| name.clone())
-        .collect::<std::collections::HashSet<_>>();
-
-    let cap = capability::find_owned_capability(client, owner, trail, |cap| {
-        cap.target_key == trail_id && valid_roles.contains(&cap.role)
-    })
-    .await?
-    .ok_or_else(|| {
-        Error::InvalidArgument(format!(
-            "no capability with {:?} permission and record tag '{tag}' found for owner {owner} and trail {trail_id}",
-            Permission::AddRecord
-        ))
-    })?;
-
-    let object_id = *cap.id.object_id();
-    tx::get_object_ref_by_id(client, &object_id).await
 }

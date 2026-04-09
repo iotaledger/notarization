@@ -18,6 +18,7 @@ impl LockingOps {
         trail_id: ObjectID,
         owner: IotaAddress,
         new_config: LockingConfig,
+        selected_capability_id: Option<ObjectID>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -31,6 +32,7 @@ impl LockingOps {
             trail_id,
             owner,
             Permission::UpdateLockingConfig,
+            selected_capability_id,
             "update_locking_config",
             |ptb, _| {
                 let config = new_config.to_ptb(ptb, client.package_id(), tf_components_package_id)?;
@@ -47,6 +49,7 @@ impl LockingOps {
         trail_id: ObjectID,
         owner: IotaAddress,
         new_delete_record_window: LockingWindow,
+        selected_capability_id: Option<ObjectID>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -56,6 +59,7 @@ impl LockingOps {
             trail_id,
             owner,
             Permission::UpdateLockingConfigForDeleteRecord,
+            selected_capability_id,
             "update_delete_record_window",
             |ptb, _| {
                 let window = new_delete_record_window.to_ptb(ptb, client.package_id())?;
@@ -72,6 +76,7 @@ impl LockingOps {
         trail_id: ObjectID,
         owner: IotaAddress,
         new_delete_trail_lock: TimeLock,
+        selected_capability_id: Option<ObjectID>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -84,6 +89,7 @@ impl LockingOps {
             trail_id,
             owner,
             Permission::UpdateLockingConfigForDeleteTrail,
+            selected_capability_id,
             "update_delete_trail_lock",
             |ptb, _| {
                 let delete_trail_lock = new_delete_trail_lock.to_ptb(ptb, tf_components_package_id)?;
@@ -100,6 +106,7 @@ impl LockingOps {
         trail_id: ObjectID,
         owner: IotaAddress,
         new_write_lock: TimeLock,
+        selected_capability_id: Option<ObjectID>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -112,6 +119,7 @@ impl LockingOps {
             trail_id,
             owner,
             Permission::UpdateLockingConfigForWrite,
+            selected_capability_id,
             "update_write_lock",
             |ptb, _| {
                 let write_lock = new_write_lock.to_ptb(ptb, tf_components_package_id)?;

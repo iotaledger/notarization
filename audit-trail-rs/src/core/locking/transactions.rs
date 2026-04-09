@@ -19,15 +19,22 @@ pub struct UpdateLockingConfig {
     trail_id: ObjectID,
     owner: IotaAddress,
     config: LockingConfig,
+    selected_capability_id: Option<ObjectID>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl UpdateLockingConfig {
-    pub fn new(trail_id: ObjectID, owner: IotaAddress, config: LockingConfig) -> Self {
+    pub fn new(
+        trail_id: ObjectID,
+        owner: IotaAddress,
+        config: LockingConfig,
+        selected_capability_id: Option<ObjectID>,
+    ) -> Self {
         Self {
             trail_id,
             owner,
             config,
+            selected_capability_id,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -36,7 +43,14 @@ impl UpdateLockingConfig {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        LockingOps::update_locking_config(client, self.trail_id, self.owner, self.config.clone()).await
+        LockingOps::update_locking_config(
+            client,
+            self.trail_id,
+            self.owner,
+            self.config.clone(),
+            self.selected_capability_id,
+        )
+        .await
     }
 }
 
@@ -66,15 +80,22 @@ pub struct UpdateDeleteRecordWindow {
     trail_id: ObjectID,
     owner: IotaAddress,
     window: LockingWindow,
+    selected_capability_id: Option<ObjectID>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl UpdateDeleteRecordWindow {
-    pub fn new(trail_id: ObjectID, owner: IotaAddress, window: LockingWindow) -> Self {
+    pub fn new(
+        trail_id: ObjectID,
+        owner: IotaAddress,
+        window: LockingWindow,
+        selected_capability_id: Option<ObjectID>,
+    ) -> Self {
         Self {
             trail_id,
             owner,
             window,
+            selected_capability_id,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -83,7 +104,14 @@ impl UpdateDeleteRecordWindow {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        LockingOps::update_delete_record_window(client, self.trail_id, self.owner, self.window.clone()).await
+        LockingOps::update_delete_record_window(
+            client,
+            self.trail_id,
+            self.owner,
+            self.window.clone(),
+            self.selected_capability_id,
+        )
+        .await
     }
 }
 
@@ -113,15 +141,22 @@ pub struct UpdateDeleteTrailLock {
     trail_id: ObjectID,
     owner: IotaAddress,
     lock: TimeLock,
+    selected_capability_id: Option<ObjectID>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl UpdateDeleteTrailLock {
-    pub fn new(trail_id: ObjectID, owner: IotaAddress, lock: TimeLock) -> Self {
+    pub fn new(
+        trail_id: ObjectID,
+        owner: IotaAddress,
+        lock: TimeLock,
+        selected_capability_id: Option<ObjectID>,
+    ) -> Self {
         Self {
             trail_id,
             owner,
             lock,
+            selected_capability_id,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -130,7 +165,14 @@ impl UpdateDeleteTrailLock {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        LockingOps::update_delete_trail_lock(client, self.trail_id, self.owner, self.lock.clone()).await
+        LockingOps::update_delete_trail_lock(
+            client,
+            self.trail_id,
+            self.owner,
+            self.lock.clone(),
+            self.selected_capability_id,
+        )
+        .await
     }
 }
 
@@ -160,15 +202,22 @@ pub struct UpdateWriteLock {
     trail_id: ObjectID,
     owner: IotaAddress,
     lock: TimeLock,
+    selected_capability_id: Option<ObjectID>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl UpdateWriteLock {
-    pub fn new(trail_id: ObjectID, owner: IotaAddress, lock: TimeLock) -> Self {
+    pub fn new(
+        trail_id: ObjectID,
+        owner: IotaAddress,
+        lock: TimeLock,
+        selected_capability_id: Option<ObjectID>,
+    ) -> Self {
         Self {
             trail_id,
             owner,
             lock,
+            selected_capability_id,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -177,7 +226,14 @@ impl UpdateWriteLock {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        LockingOps::update_write_lock(client, self.trail_id, self.owner, self.lock.clone()).await
+        LockingOps::update_write_lock(
+            client,
+            self.trail_id,
+            self.owner,
+            self.lock.clone(),
+            self.selected_capability_id,
+        )
+        .await
     }
 }
 

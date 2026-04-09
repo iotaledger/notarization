@@ -22,16 +22,27 @@ pub use transactions::{
 pub struct TrailAccess<'a, C> {
     pub(crate) client: &'a C,
     pub(crate) trail_id: ObjectID,
+    pub(crate) selected_capability_id: Option<ObjectID>,
 }
 
 impl<'a, C> TrailAccess<'a, C> {
-    pub(crate) fn new(client: &'a C, trail_id: ObjectID) -> Self {
-        Self { client, trail_id }
+    pub(crate) fn new(client: &'a C, trail_id: ObjectID, selected_capability_id: Option<ObjectID>) -> Self {
+        Self {
+            client,
+            trail_id,
+            selected_capability_id,
+        }
+    }
+
+    /// Uses the provided capability as the auth capability for subsequent write operations.
+    pub fn using_capability(mut self, capability_id: ObjectID) -> Self {
+        self.selected_capability_id = Some(capability_id);
+        self
     }
 
     /// Returns a handle bound to a specific role name.
     pub fn for_role(&self, name: impl Into<String>) -> RoleHandle<'a, C> {
-        RoleHandle::new(self.client, self.trail_id, name.into())
+        RoleHandle::new(self.client, self.trail_id, name.into(), self.selected_capability_id)
     }
 
     /// Revokes an issued capability.
@@ -53,6 +64,7 @@ impl<'a, C> TrailAccess<'a, C> {
             owner,
             capability_id,
             capability_valid_until,
+            self.selected_capability_id,
         ))
     }
 
@@ -63,7 +75,12 @@ impl<'a, C> TrailAccess<'a, C> {
         S: Signer<IotaKeySignature> + OptionalSync,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(DestroyCapability::new(self.trail_id, owner, capability_id))
+        TransactionBuilder::new(DestroyCapability::new(
+            self.trail_id,
+            owner,
+            capability_id,
+            self.selected_capability_id,
+        ))
     }
 
     /// Destroys an initial admin capability (self-service, no auth cap required).
@@ -97,6 +114,7 @@ impl<'a, C> TrailAccess<'a, C> {
             owner,
             capability_id,
             capability_valid_until,
+            self.selected_capability_id,
         ))
     }
 
@@ -107,7 +125,11 @@ impl<'a, C> TrailAccess<'a, C> {
         S: Signer<IotaKeySignature> + OptionalSync,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(CleanupRevokedCapabilities::new(self.trail_id, owner))
+        TransactionBuilder::new(CleanupRevokedCapabilities::new(
+            self.trail_id,
+            owner,
+            self.selected_capability_id,
+        ))
     }
 }
 
@@ -116,11 +138,28 @@ pub struct RoleHandle<'a, C> {
     pub(crate) client: &'a C,
     pub(crate) trail_id: ObjectID,
     pub(crate) name: String,
+    pub(crate) selected_capability_id: Option<ObjectID>,
 }
 
 impl<'a, C> RoleHandle<'a, C> {
-    pub(crate) fn new(client: &'a C, trail_id: ObjectID, name: String) -> Self {
-        Self { client, trail_id, name }
+    pub(crate) fn new(
+        client: &'a C,
+        trail_id: ObjectID,
+        name: String,
+        selected_capability_id: Option<ObjectID>,
+    ) -> Self {
+        Self {
+            client,
+            trail_id,
+            name,
+            selected_capability_id,
+        }
+    }
+
+    /// Uses the provided capability as the auth capability for subsequent write operations.
+    pub fn using_capability(mut self, capability_id: ObjectID) -> Self {
+        self.selected_capability_id = Some(capability_id);
+        self
     }
 
     pub fn name(&self) -> &str {
@@ -140,6 +179,7 @@ impl<'a, C> RoleHandle<'a, C> {
             self.name.clone(),
             permissions,
             role_tags,
+            self.selected_capability_id,
         ))
     }
 
@@ -150,7 +190,13 @@ impl<'a, C> RoleHandle<'a, C> {
         S: Signer<IotaKeySignature> + OptionalSync,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(IssueCapability::new(self.trail_id, owner, self.name.clone(), options))
+        TransactionBuilder::new(IssueCapability::new(
+            self.trail_id,
+            owner,
+            self.name.clone(),
+            options,
+            self.selected_capability_id,
+        ))
     }
 
     /// Updates permissions and role-tag access rules for this role.
@@ -170,6 +216,7 @@ impl<'a, C> RoleHandle<'a, C> {
             self.name.clone(),
             permissions,
             role_tags,
+            self.selected_capability_id,
         ))
     }
 
@@ -180,6 +227,11 @@ impl<'a, C> RoleHandle<'a, C> {
         S: Signer<IotaKeySignature> + OptionalSync,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(DeleteRole::new(self.trail_id, owner, self.name.clone()))
+        TransactionBuilder::new(DeleteRole::new(
+            self.trail_id,
+            owner,
+            self.name.clone(),
+            self.selected_capability_id,
+        ))
     }
 }
