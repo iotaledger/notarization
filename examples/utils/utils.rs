@@ -3,7 +3,7 @@
 
 use anyhow::Context;
 use audit_trail::{AuditTrailClient, PackageOverrides};
-use iota_interaction::types::base_types::ObjectID;
+use iota_sdk::types::base_types::ObjectID;
 use iota_sdk::{IOTA_LOCAL_NETWORK_URL, IotaClientBuilder};
 use notarization::client::{NotarizationClient, NotarizationClientReadOnly};
 use product_common::test_utils::{InMemSigner, request_funds};

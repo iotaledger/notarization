@@ -14,12 +14,15 @@
 //! - locking: writes are frozen once the shipment is fully cleared
 
 use anyhow::{Result, ensure};
+use audit_trail::AuditTrailClient;
 use audit_trail::core::types::{
     CapabilityIssueOptions, Data, ImmutableMetadata, InitialRecord, LockingConfig, LockingWindow, PermissionSet,
     RoleTags, TimeLock,
 };
 use examples::get_funded_audit_trail_client;
+use iota_sdk::types::base_types::{IotaAddress, ObjectID};
 use product_common::core_client::CoreClient;
+use product_common::test_utils::InMemSigner;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -274,11 +277,11 @@ async fn main() -> Result<()> {
 }
 
 async fn issue_tagged_record_role(
-    client: &audit_trail::AuditTrailClient<product_common::test_utils::InMemSigner>,
-    trail_id: iota_interaction::types::base_types::ObjectID,
+    client: &AuditTrailClient<InMemSigner>,
+    trail_id: ObjectID,
     role_name: &str,
     tag: &str,
-    issued_to: iota_interaction::types::base_types::IotaAddress,
+    issued_to: IotaAddress,
 ) -> Result<()> {
     client
         .trail(trail_id)

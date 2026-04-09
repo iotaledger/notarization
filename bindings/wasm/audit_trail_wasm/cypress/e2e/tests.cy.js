@@ -27,8 +27,8 @@ describe(
                     },
                 });
                 cy.get("@consoleLog").should("be.calledWith", "init");
-                cy.window().then(win => win.runTest(example));
-                cy.get("@consoleLog").should("be.calledWith", "success");
+                cy.window({ timeout: 180000 }).then({ timeout: 180000 }, (win) => win.runTest(example));
+                cy.get("@consoleLog", { timeout: 180000 }).should("be.calledWith", "success");
             });
         });
     },

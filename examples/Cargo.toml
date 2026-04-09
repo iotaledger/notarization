@@ -105,7 +105,6 @@ anyhow.workspace = true
 audit_trail = { path = "../audit-trail-rs" }
 chrono = { workspace = true }
 iota-sdk = { workspace = true }
-iota_interaction = { workspace = true }
 notarization = { path = "../notarization-rs" }
 product_common = { workspace = true, features = ["core-client", "test-utils", "transaction"] }
 serde_json = { workspace = true }
