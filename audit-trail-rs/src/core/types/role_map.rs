@@ -125,7 +125,6 @@ use crate::error::Error;
 ///
 /// Each role may optionally include a [`RoleTags`] allowlist that grants the holders of that
 /// role's capability access to records tagged with that specific tag.
-///
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RoleMap {
     /// The object ID of the audit trail this role map belongs to.
