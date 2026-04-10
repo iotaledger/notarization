@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use std::collections::HashSet;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use iota_interaction::move_types::language_storage::StructTag;
 use iota_interaction::rpc_types::{
@@ -81,10 +80,7 @@ where
     P: Fn(&Capability) -> bool + Send,
 {
     let revoked_capability_ids = revoked_capability_ids(client, trail).await?;
-    let now_ms = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_millis() as u64;
+    let now_ms = now_ms();
     let tf_components_package_id = client
         .tf_components_package_id()
         .expect("TfComponents package ID should be present for audit trail clients");
@@ -208,7 +204,7 @@ pub(crate) async fn find_capable_cap_for_tag<C>(
     trail_id: ObjectID,
     trail: &OnChainAuditTrail,
     tag: &str,
-) -> Result<iota_interaction::types::base_types::ObjectRef, Error>
+) -> Result<ObjectRef, Error>
 where
     C: CoreClientReadOnly + OptionalSync,
 {
@@ -236,6 +232,25 @@ where
 
     let object_id = *cap.id.object_id();
     tx::get_object_ref_by_id(client, &object_id).await
+}
+
+/// Returns the current wall-clock time as milliseconds since the Unix epoch.
+///
+/// Uses `std::time::SystemTime` on native targets and `js_sys::Date::now()` on
+/// `wasm32`, where `SystemTime` is not available.
+pub(crate) fn now_ms() -> u64 {
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis() as u64
+    }
+    #[cfg(target_arch = "wasm32")]
+    {
+        js_sys::Date::now() as u64
+    }
 }
 
 #[cfg(test)]
