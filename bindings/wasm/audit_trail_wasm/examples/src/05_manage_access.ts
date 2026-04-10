@@ -62,7 +62,9 @@ export async function manageAccess(): Promise<void> {
         .trail(trailId)
         .access()
         .forRole("Operations")
-        .issueCapability(new CapabilityIssueOptions(operationsUser.senderAddress(), undefined, BigInt(4_102_444_800_000)))
+        .issueCapability(
+            new CapabilityIssueOptions(operationsUser.senderAddress(), undefined, BigInt(4_102_444_800_000)),
+        )
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(admin);
     console.log("\nIssued constrained capability:");
@@ -74,7 +76,7 @@ export async function manageAccess(): Promise<void> {
     const onChain = await admin.trail(trailId).get();
     const opsRole = onChain.roles.roles.find((r) => r.name === "Operations");
     assert.ok(opsRole, "Operations role must exist");
-    const opsPermSet = new Set(opsRole.permissions.map((p) => p.toString()));
+    const opsPermSet = new Set(opsRole?.permissions.map((p) => p.toString()));
     for (const perm of updatedPermissionValues) {
         assert(opsPermSet.has(perm.toString()), `role should contain ${perm}`);
     }
