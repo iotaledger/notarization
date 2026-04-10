@@ -1,17 +1,25 @@
 // Copyright 2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-import { CapabilityIssueOptions, Data, Permission, PermissionSet, RoleTags } from "@iota/audit-trail/node";
-import { strict as assert } from "assert";
-import { getFundedClient, TEST_GAS_BUDGET } from "../util";
-
 /**
+ * ## Actors
+ *
+ * - **Admin**: Creates the trail, defines the FinanceWriter role restricted to the
+ *   `finance` tag, and issues a capability bound to `financeWriter`'s address.
+ * - **FinanceWriter**: Holds the address-bound capability. Can add `finance`-tagged
+ *   records but is blocked from writing `legal`-tagged records.
+ *
  * Demonstrates how to:
  * 1. Create a trail with a predefined tag registry.
  * 2. Define a role that is restricted to one record tag.
  * 3. Issue a capability bound to a specific wallet address.
  * 4. Show that the holder can add only records matching the allowed tag.
  */
+
+import { CapabilityIssueOptions, Data, Permission, PermissionSet, RoleTags } from "@iota/audit-trail/node";
+import { strict as assert } from "assert";
+import { getFundedClient, TEST_GAS_BUDGET } from "../util";
+
 export async function taggedRecords(): Promise<void> {
     console.log("=== Audit Trail Advanced: Tagged Records ===\n");
 
@@ -28,7 +36,7 @@ export async function taggedRecords(): Promise<void> {
 
     const trailId = created.id;
 
-    // Create a role restricted to the "finance" tag
+    // Create a role restricted to the "finance" tag.
     const role = admin.trail(trailId).access().forRole("FinanceWriter");
     await role
         .create(new PermissionSet([Permission.AddRecord]), new RoleTags(["finance"]))
@@ -48,9 +56,10 @@ export async function taggedRecords(): Promise<void> {
         "\n",
     );
 
+    // The client automatically finds the capability in financeWriter's wallet.
     const financeRecords = financeWriter.trail(trailId).records();
 
-    // Add a record with the allowed tag
+    // Add a record with the allowed tag.
     const added = await financeRecords
         .add(Data.fromString("Invoice approved"), "department:finance", "finance")
         .withGasBudget(TEST_GAS_BUDGET)
@@ -58,7 +67,7 @@ export async function taggedRecords(): Promise<void> {
 
     console.log("Added tagged record at sequence number", added.output.sequenceNumber, "with tag \"finance\".\n");
 
-    // Attempt to add a record with a different tag — should fail
+    // Attempt to add a record with a different tag — should fail.
     let wrongTagSucceeded = false;
     try {
         await financeRecords

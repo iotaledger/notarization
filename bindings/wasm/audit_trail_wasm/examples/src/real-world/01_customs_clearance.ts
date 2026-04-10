@@ -1,6 +1,35 @@
 // Copyright 2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+/**
+ * # Customs Clearance Example
+ *
+ * Models a customs-clearance process for a single shipment.
+ *
+ * ## Actors
+ *
+ * - **Admin**: Creates the trail and sets up all roles and capabilities.
+ * - **DocsOperator**: Handles document submission (invoices, packing lists). Writes only
+ *   `documents`-tagged records.
+ * - **ExportBroker**: Files export declarations and records clearance decisions at the origin.
+ *   Writes only `export`-tagged records.
+ * - **ImportBroker**: Handles duty assessment and import clearance at the destination.
+ *   Writes only `import`-tagged records.
+ * - **Inspector**: Records the outcome of a customs physical inspection. Writes only
+ *   `inspection`-tagged records; the role is created mid-process when an inspection is triggered.
+ * - **Supervisor**: Updates the mutable trail metadata (processing status). No record-write
+ *   permissions.
+ * - **LockingAdmin**: Freezes the trail once the shipment is fully cleared.
+ *
+ * ## How the trail is used
+ *
+ * - immutable_metadata: shipment and declaration identity
+ * - updatable_metadata: current customs-processing status
+ * - record tags: documents, export, import, inspection
+ * - roles and capabilities: each operational role writes only the events it owns
+ * - locking: writes are frozen once the shipment is fully cleared
+ */
+
 import {
     AuditTrailClient,
     CapabilityIssueOptions,
@@ -12,28 +41,25 @@ import {
     TimeLock,
 } from "@iota/audit-trail/node";
 import { strict as assert } from "assert";
+import { createHash } from "crypto";
 import { getFundedClient, TEST_GAS_BUDGET } from "../util";
 
-/**
- * # Customs Clearance Example
- *
- * Models a customs-clearance process for a single shipment.
- *
- * - immutable_metadata: shipment and declaration identity
- * - updatable_metadata: current customs-processing status
- * - record tags: documents, export, import, inspection
- * - roles and capabilities: each operational role writes only the events it owns
- * - locking: writes are frozen once the shipment is fully cleared
- */
 export async function customsClearance(): Promise<void> {
     console.log("=== Customs Clearance ===\n");
 
-    const client = await getFundedClient();
+    const admin = await getFundedClient();
+    const docsOperator = await getFundedClient();
+    const exportBroker = await getFundedClient();
+    const importBroker = await getFundedClient();
+    const supervisor = await getFundedClient();
+    const lockingAdmin = await getFundedClient();
+    const inspector = await getFundedClient();
 
-    // 1. Create the trail
+    // === Create the customs-clearance trail ===
+
     console.log("Creating a customs-clearance trail...");
 
-    const { output: created } = await client
+    const { output: created } = await admin
         .createTrail()
         .withRecordTags(["documents", "export", "import", "inspection"])
         .withTrailMetadata(
@@ -47,65 +73,70 @@ export async function customsClearance(): Promise<void> {
         .withInitialRecordString("Customs clearance case opened for inbound shipment", "event:case_opened", "documents")
         .finish()
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
+        .buildAndExecute(admin);
 
     const trailId = created.id;
 
-    // 2. Create tag-scoped roles
-    await issueTaggedRecordRole(client, trailId, "DocsOperator", "documents");
-    await issueTaggedRecordRole(client, trailId, "ExportBroker", "export");
-    await issueTaggedRecordRole(client, trailId, "ImportBroker", "import");
+    // === Set up roles and capabilities for each actor ===
 
-    // Supervisor can update metadata
-    await client
+    await issueTaggedRecordRole(admin, trailId, "DocsOperator", "documents", docsOperator.senderAddress());
+    await issueTaggedRecordRole(admin, trailId, "ExportBroker", "export", exportBroker.senderAddress());
+    await issueTaggedRecordRole(admin, trailId, "ImportBroker", "import", importBroker.senderAddress());
+
+    // Supervisor can update metadata.
+    await admin
         .trail(trailId)
         .access()
         .forRole("Supervisor")
         .create(PermissionSet.metadataAdminPermissions())
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
-    await client
+        .buildAndExecute(admin);
+    await admin
         .trail(trailId)
         .access()
         .forRole("Supervisor")
-        .issueCapability(new CapabilityIssueOptions(client.senderAddress()))
+        .issueCapability(new CapabilityIssueOptions(supervisor.senderAddress()))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
+        .buildAndExecute(admin);
 
-    // LockingAdmin can manage locking
-    await client
+    // LockingAdmin can manage locking.
+    await admin
         .trail(trailId)
         .access()
         .forRole("LockingAdmin")
         .create(PermissionSet.lockingAdminPermissions())
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
-    await client
+        .buildAndExecute(admin);
+    await admin
         .trail(trailId)
         .access()
         .forRole("LockingAdmin")
-        .issueCapability(new CapabilityIssueOptions(client.senderAddress()))
+        .issueCapability(new CapabilityIssueOptions(lockingAdmin.senderAddress()))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
+        .buildAndExecute(admin);
 
-    // 3. Upload documents
-    const docsUploaded = await client
+    // === Document submission ===
+
+    // Documents are stored off-chain in an access-controlled environment (e.g. a TWIN node).
+    // Only the SHA-256 fingerprint is committed on-chain for tamper-evidence.
+    const invoiceHash = createHash("sha256").update("invoice-SHP-2026-CLEAR-001-v1.pdf").digest();
+    const docsUploaded = await docsOperator
         .trail(trailId)
         .records()
-        .add(Data.fromString("Commercial invoice and packing list uploaded"), "event:documents_uploaded", "documents")
+        .add(Data.fromBytes(invoiceHash), "event:documents_uploaded", "documents")
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
+        .buildAndExecute(docsOperator);
     console.log("Docs operator added record", docsUploaded.output.sequenceNumber + ".\n");
 
-    // 4. Update metadata — awaiting export clearance
-    await client
+    await supervisor
         .trail(trailId)
         .updateMetadata("Status: Awaiting Export Clearance")
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
+        .buildAndExecute(supervisor);
 
-    // 5. Export clearance
-    const exportFiled = await client
+    // === Export clearance ===
+
+    const exportFiled = await exportBroker
         .trail(trailId)
         .records()
         .add(
@@ -114,14 +145,14 @@ export async function customsClearance(): Promise<void> {
             "export",
         )
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
+        .buildAndExecute(exportBroker);
 
-    const exportCleared = await client
+    const exportCleared = await exportBroker
         .trail(trailId)
         .records()
         .add(Data.fromString("Export clearance granted by Hamburg customs office"), "event:export_cleared", "export")
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
+        .buildAndExecute(exportBroker);
 
     console.log(
         "Export broker added records",
@@ -130,17 +161,19 @@ export async function customsClearance(): Promise<void> {
         exportCleared.output.sequenceNumber + ".\n",
     );
 
-    // 6. Update metadata — awaiting import clearance
-    await client
+    await supervisor
         .trail(trailId)
         .updateMetadata("Status: Awaiting Import Clearance")
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
+        .buildAndExecute(supervisor);
 
-    // 7. Attempt an inspection write before the inspector role exists
+    // === Inspection gate ===
+
+    // The import broker does not hold an inspection-scoped capability at this point.
+    // The write attempt must fail to prove that tag-based access control is enforced.
     let inspectionDenied = false;
     try {
-        await client
+        await importBroker
             .trail(trailId)
             .records()
             .add(
@@ -149,7 +182,7 @@ export async function customsClearance(): Promise<void> {
                 "inspection",
             )
             .withGasBudget(TEST_GAS_BUDGET)
-            .buildAndExecute(client);
+            .buildAndExecute(importBroker);
         inspectionDenied = true;
     } catch {
         // Expected
@@ -161,10 +194,10 @@ export async function customsClearance(): Promise<void> {
     );
     console.log("Inspection write was correctly denied before the inspector role existed.\n");
 
-    // 8. Create inspector role and add inspection record
-    await issueTaggedRecordRole(client, trailId, "Inspector", "inspection");
+    // A customs inspection is triggered; the inspector role is created and issued mid-process.
+    await issueTaggedRecordRole(admin, trailId, "Inspector", "inspection", inspector.senderAddress());
 
-    const inspectionDone = await client
+    const inspectionDone = await inspector
         .trail(trailId)
         .records()
         .add(
@@ -173,23 +206,24 @@ export async function customsClearance(): Promise<void> {
             "inspection",
         )
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
+        .buildAndExecute(inspector);
     console.log("Inspector added record", inspectionDone.output.sequenceNumber + ".\n");
 
-    // 9. Import clearance
-    const dutyAssessed = await client
+    // === Import clearance ===
+
+    const dutyAssessed = await importBroker
         .trail(trailId)
         .records()
         .add(Data.fromString("Import duty assessed and paid"), "event:duty_assessed", "import")
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
+        .buildAndExecute(importBroker);
 
-    const importCleared = await client
+    const importCleared = await importBroker
         .trail(trailId)
         .records()
         .add(Data.fromString("Import clearance granted by Nairobi customs"), "event:import_cleared", "import")
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
+        .buildAndExecute(importBroker);
 
     console.log(
         "Import broker added records",
@@ -198,41 +232,39 @@ export async function customsClearance(): Promise<void> {
         importCleared.output.sequenceNumber + ".\n",
     );
 
-    // 10. Mark as cleared
-    await client
+    await supervisor
         .trail(trailId)
         .updateMetadata("Status: Cleared")
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
+        .buildAndExecute(supervisor);
 
-    // 11. Freeze writes
-    await client
+    // === Final lock and verification ===
+
+    await lockingAdmin
         .trail(trailId)
         .locking()
         .updateWriteLock(TimeLock.withInfinite())
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
+        .buildAndExecute(lockingAdmin);
 
-    const afterLock = await client.trail(trailId).get();
+    const afterLock = await admin.trail(trailId).get();
     console.log("Write lock after clearance:", afterLock.lockingConfig.writeLock, "\n");
 
-    // 12. Verify that late writes are rejected
     let lateWriteSucceeded = false;
     try {
-        await client
+        await docsOperator
             .trail(trailId)
             .records()
             .add(Data.fromString("Late customs note after the case was closed"), "event:late_note", "documents")
             .withGasBudget(TEST_GAS_BUDGET)
-            .buildAndExecute(client);
+            .buildAndExecute(docsOperator);
         lateWriteSucceeded = true;
     } catch {
         // Expected
     }
     assert.equal(lateWriteSucceeded, false, "cleared customs trail should reject late writes after the final lock");
 
-    // 13. List all records
-    const firstPage = await client.trail(trailId).records().listPage(undefined, 20);
+    const firstPage = await admin.trail(trailId).records().listPage(undefined, 20);
     console.log("Recorded customs events:");
     for (const record of firstPage.records) {
         console.log(`  #${record.sequenceNumber} | ${record.data} | tag=${record.tag} | ${record.metadata}`);
@@ -240,30 +272,31 @@ export async function customsClearance(): Promise<void> {
 
     assert.equal(firstPage.records.length, 7, "expected 7 customs records including the initial case-opened record");
 
-    const trailState = await client.trail(trailId).get();
+    const trailState = await admin.trail(trailId).get();
     assert.equal(trailState.updatableMetadata, "Status: Cleared", "customs case should finish in cleared state");
 
     console.log("\nCustoms clearance completed successfully.");
 }
 
 async function issueTaggedRecordRole(
-    client: AuditTrailClient,
+    admin: AuditTrailClient,
     trailId: string,
     roleName: string,
     tag: string,
+    issuedTo: string,
 ): Promise<void> {
-    await client
+    await admin
         .trail(trailId)
         .access()
         .forRole(roleName)
         .create(PermissionSet.recordAdminPermissions(), new RoleTags([tag]))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
-    await client
+        .buildAndExecute(admin);
+    await admin
         .trail(trailId)
         .access()
         .forRole(roleName)
-        .issueCapability(new CapabilityIssueOptions(client.senderAddress()))
+        .issueCapability(new CapabilityIssueOptions(issuedTo))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
+        .buildAndExecute(admin);
 }

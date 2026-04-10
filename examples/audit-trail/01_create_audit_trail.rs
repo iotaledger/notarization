@@ -1,6 +1,11 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! ## Actors
+//!
+//! - **Admin**: Creates the trail and holds the built-in Admin capability that is automatically minted on creation.
+//! - **RecordAdmin**: Receives a RecordAdmin capability bound to their address. Writes records in subsequent examples.
+
 use anyhow::Result;
 use audit_trail::core::types::{CapabilityIssueOptions, Data, ImmutableMetadata, InitialRecord, PermissionSet};
 use examples::get_funded_audit_trail_client;
@@ -10,15 +15,18 @@ use product_common::core_client::CoreClient;
 /// 1. Create an audit trail with an initial record and metadata.
 /// 2. Inspect the built-in Admin role that is automatically granted to the creator.
 /// 3. Use the Admin capability to define a `RecordAdmin` role.
-/// 4. Issue a capability for the `RecordAdmin` role.
+/// 4. Issue a capability for the `RecordAdmin` role to a specific address.
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("=== Audit Trail: Create Trail & Define Roles ===\n");
 
-    // Create a funded client. The client's sender address becomes the initial Admin
-    // of any trail it creates.
-    let client = get_funded_audit_trail_client().await?;
-    println!("Client address: {}", client.sender_address());
+    // `admin` creates the trail and holds the Admin capability that is automatically
+    // minted on creation. `record_admin` represents the actor who will later write records.
+    let admin = get_funded_audit_trail_client().await?;
+    let record_admin = get_funded_audit_trail_client().await?;
+
+    println!("Admin address:        {}", admin.sender_address());
+    println!("RecordAdmin address:  {}\n", record_admin.sender_address());
 
     // -------------------------------------------------------------------------
     // Step 1: Create an audit trail
@@ -31,7 +39,7 @@ async fn main() -> Result<()> {
     // object and transfers it to the sender's address. This capability grants
     // full administrative control over the trail (role management, capability
     // issuance, tag management, etc.).
-    let created = client
+    let created = admin
         .create_trail()
         .with_trail_metadata(ImmutableMetadata::new(
             "Product Shipment Audit Trail".to_string(),
@@ -44,7 +52,7 @@ async fn main() -> Result<()> {
             None,
         ))
         .finish()
-        .build_and_execute(&client)
+        .build_and_execute(&admin)
         .await?
         .output;
 
@@ -54,7 +62,7 @@ async fn main() -> Result<()> {
     );
 
     // Fetch the on-chain trail object to inspect the automatically created Admin role.
-    let trail = client.trail(created.trail_id).get().await?;
+    let trail = admin.trail(created.trail_id).get().await?;
     let admin_role_name = &trail.roles.initial_admin_role_name;
     let admin_permissions = &trail.roles.roles[admin_role_name].permissions;
     println!(
@@ -69,12 +77,12 @@ async fn main() -> Result<()> {
     // PermissionSet::record_admin_permissions() grants AddRecord, DeleteRecord,
     // and CorrectRecord permissions.
     let record_admin_role = "RecordAdmin";
-    let role_created = client
+    let role_created = admin
         .trail(created.trail_id)
         .access()
         .for_role(record_admin_role)
         .create(PermissionSet::record_admin_permissions(), None)
-        .build_and_execute(&client)
+        .build_and_execute(&admin)
         .await?
         .output;
 
@@ -86,15 +94,18 @@ async fn main() -> Result<()> {
     // -------------------------------------------------------------------------
     // Step 3: Issue a capability for the RecordAdmin role
     // -------------------------------------------------------------------------
-    // A Capability object is minted on-chain and sent to the caller's address
-    // (or a specified `issued_to` address via CapabilityIssueOptions).
-    // The holder of this capability can add, delete, and correct records on the trail.
-    let capability = client
+    // A Capability object is minted on-chain and transferred to `record_admin`'s
+    // address. Only the holder of that address can use it to write records.
+    let capability = admin
         .trail(created.trail_id)
         .access()
         .for_role(record_admin_role)
-        .issue_capability(CapabilityIssueOptions::default())
-        .build_and_execute(&client)
+        .issue_capability(CapabilityIssueOptions {
+            issued_to: Some(record_admin.sender_address()),
+            valid_from_ms: None,
+            valid_until_ms: None,
+        })
+        .build_and_execute(&admin)
         .await?
         .output;
 

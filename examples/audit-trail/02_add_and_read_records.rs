@@ -1,6 +1,12 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! ## Actors
+//!
+//! - **Admin**: Creates the trail, defines the RecordAdmin role, and issues a capability.
+//! - **RecordAdmin**: Holds the capability and writes records. Reads are also done through this client to demonstrate
+//!   that any address can read, but only the cap holder can write.
+
 use anyhow::{Result, ensure};
 use audit_trail::core::types::{CapabilityIssueOptions, Data, InitialRecord, PermissionSet};
 use examples::get_funded_audit_trail_client;
@@ -15,13 +21,18 @@ use product_common::core_client::CoreClient;
 async fn main() -> Result<()> {
     println!("=== Audit Trail: Add & Read Records ===\n");
 
-    let client = get_funded_audit_trail_client().await?;
-    println!("Client address: {}", client.sender_address());
+    // `admin` creates the trail and manages roles.
+    // `record_admin` holds the RecordAdmin capability and writes records.
+    let admin = get_funded_audit_trail_client().await?;
+    let record_admin = get_funded_audit_trail_client().await?;
+
+    println!("Admin address:        {}", admin.sender_address());
+    println!("RecordAdmin address:  {}\n", record_admin.sender_address());
 
     // -------------------------------------------------------------------------
     // Step 1: Create a trail with one initial record
     // -------------------------------------------------------------------------
-    let created = client
+    let created = admin
         .create_trail()
         .with_initial_record(InitialRecord::new(
             Data::text("Trail opened"),
@@ -29,32 +40,34 @@ async fn main() -> Result<()> {
             None,
         ))
         .finish()
-        .build_and_execute(&client)
+        .build_and_execute(&admin)
         .await?
         .output;
 
     let trail_id = created.trail_id;
-    let records = client.trail(trail_id).records();
-
     println!("Trail created: {trail_id}\n");
 
     // -------------------------------------------------------------------------
     // Step 2: Create a record-admin role and issue a capability for it
     // -------------------------------------------------------------------------
-    client
+    admin
         .trail(trail_id)
         .access()
         .for_role("RecordAdmin")
         .create(PermissionSet::record_admin_permissions(), None)
-        .build_and_execute(&client)
+        .build_and_execute(&admin)
         .await?;
 
-    let capability = client
+    let capability = admin
         .trail(trail_id)
         .access()
         .for_role("RecordAdmin")
-        .issue_capability(CapabilityIssueOptions::default())
-        .build_and_execute(&client)
+        .issue_capability(CapabilityIssueOptions {
+            issued_to: Some(record_admin.sender_address()),
+            valid_from_ms: None,
+            valid_until_ms: None,
+        })
+        .build_and_execute(&admin)
         .await?
         .output;
 
@@ -66,13 +79,16 @@ async fn main() -> Result<()> {
     // -------------------------------------------------------------------------
     // Step 3: Append follow-up records
     // -------------------------------------------------------------------------
+    // The client automatically finds the capability in `record_admin`'s wallet.
+    let records = record_admin.trail(trail_id).records();
+
     let first_added = records
         .add(
             Data::text("Shipment received at warehouse A"),
             Some("event:received".to_string()),
             None,
         )
-        .build_and_execute(&client)
+        .build_and_execute(&record_admin)
         .await?
         .output;
 
@@ -82,7 +98,7 @@ async fn main() -> Result<()> {
             Some("event:dispatched".to_string()),
             None,
         )
-        .build_and_execute(&client)
+        .build_and_execute(&record_admin)
         .await?
         .output;
 

@@ -5,6 +5,19 @@
 //!
 //! This example models a customs-clearance process for a single shipment.
 //!
+//! ## Actors
+//!
+//! - **Admin**: Creates the trail and sets up all roles and capabilities.
+//! - **DocsOperator**: Handles document submission (invoices, packing lists). Writes only `documents`-tagged records.
+//! - **ExportBroker**: Files export declarations and records clearance decisions at the origin. Writes only
+//!   `export`-tagged records.
+//! - **ImportBroker**: Handles duty assessment and import clearance at the destination. Writes only `import`-tagged
+//!   records.
+//! - **Inspector**: Records the outcome of a customs physical inspection. Writes only `inspection`-tagged records; the
+//!   role is created mid-process when an inspection is triggered.
+//! - **Supervisor**: Updates the mutable trail metadata (processing status). No record-write permissions.
+//! - **LockingAdmin**: Freezes the trail once the shipment is fully cleared.
+//!
 //! ## How the trail is used
 //!
 //! - `immutable_metadata`: shipment and declaration identity
@@ -23,16 +36,25 @@ use examples::get_funded_audit_trail_client;
 use iota_sdk::types::base_types::{IotaAddress, ObjectID};
 use product_common::core_client::CoreClient;
 use product_common::test_utils::InMemSigner;
+use sha2::{Digest, Sha256};
 
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("=== Customs Clearance ===\n");
 
-    let client = get_funded_audit_trail_client().await?;
+    let admin = get_funded_audit_trail_client().await?;
+    let docs_operator = get_funded_audit_trail_client().await?;
+    let export_broker = get_funded_audit_trail_client().await?;
+    let import_broker = get_funded_audit_trail_client().await?;
+    let supervisor = get_funded_audit_trail_client().await?;
+    let locking_admin = get_funded_audit_trail_client().await?;
+    let inspector = get_funded_audit_trail_client().await?;
+
+    // === Create the customs-clearance trail ===
 
     println!("Creating a customs-clearance trail...");
 
-    let created = client
+    let created = admin
         .create_trail()
         .with_record_tags(["documents", "export", "import", "inspection"])
         .with_trail_metadata(ImmutableMetadata::new(
@@ -51,75 +73,105 @@ async fn main() -> Result<()> {
             Some("documents".to_string()),
         ))
         .finish()
-        .build_and_execute(&client)
+        .build_and_execute(&admin)
         .await?
         .output;
 
     let trail_id = created.trail_id;
 
-    issue_tagged_record_role(&client, trail_id, "DocsOperator", "documents", client.sender_address()).await?;
-    issue_tagged_record_role(&client, trail_id, "ExportBroker", "export", client.sender_address()).await?;
-    issue_tagged_record_role(&client, trail_id, "ImportBroker", "import", client.sender_address()).await?;
+    // === Set up roles and capabilities for each actor ===
 
-    client
+    issue_tagged_record_role(
+        &admin,
+        trail_id,
+        "DocsOperator",
+        "documents",
+        docs_operator.sender_address(),
+    )
+    .await?;
+    issue_tagged_record_role(
+        &admin,
+        trail_id,
+        "ExportBroker",
+        "export",
+        export_broker.sender_address(),
+    )
+    .await?;
+    issue_tagged_record_role(
+        &admin,
+        trail_id,
+        "ImportBroker",
+        "import",
+        import_broker.sender_address(),
+    )
+    .await?;
+
+    admin
         .trail(trail_id)
         .access()
         .for_role("Supervisor")
         .create(PermissionSet::metadata_admin_permissions(), None)
-        .build_and_execute(&client)
+        .build_and_execute(&admin)
         .await?;
-    client
+    admin
         .trail(trail_id)
         .access()
         .for_role("Supervisor")
         .issue_capability(CapabilityIssueOptions {
-            issued_to: Some(client.sender_address()),
+            issued_to: Some(supervisor.sender_address()),
             valid_from_ms: None,
             valid_until_ms: None,
         })
-        .build_and_execute(&client)
+        .build_and_execute(&admin)
         .await?;
 
-    client
+    admin
         .trail(trail_id)
         .access()
         .for_role("LockingAdmin")
         .create(PermissionSet::locking_admin_permissions(), None)
-        .build_and_execute(&client)
+        .build_and_execute(&admin)
         .await?;
-    client
+    admin
         .trail(trail_id)
         .access()
         .for_role("LockingAdmin")
         .issue_capability(CapabilityIssueOptions {
-            issued_to: Some(client.sender_address()),
+            issued_to: Some(locking_admin.sender_address()),
             valid_from_ms: None,
             valid_until_ms: None,
         })
-        .build_and_execute(&client)
+        .build_and_execute(&admin)
         .await?;
 
-    let docs_uploaded = client
+    // === Document submission ===
+
+    // Documents are stored off-chain in an access-controlled environment (e.g. a TWIN node).
+    // Only the SHA-256 fingerprint is committed on-chain for tamper-evidence.
+    let invoice_hash = Sha256::digest(b"invoice-SHP-2026-CLEAR-001-v1.pdf");
+    let docs_uploaded = docs_operator
         .trail(trail_id)
         .records()
         .add(
-            Data::text("Commercial invoice and packing list uploaded"),
+            Data::bytes(invoice_hash.to_vec()),
             Some("event:documents_uploaded".to_string()),
             Some("documents".to_string()),
         )
-        .build_and_execute(&client)
+        .build_and_execute(&docs_operator)
         .await?
         .output;
 
     println!("Docs operator added record #{}.\n", docs_uploaded.sequence_number);
 
-    client
+    supervisor
         .trail(trail_id)
         .update_metadata(Some("Status: Awaiting Export Clearance".to_string()))
-        .build_and_execute(&client)
+        .build_and_execute(&supervisor)
         .await?;
 
-    let export_filed = client
+    // === Export clearance ===
+
+    let export_filed = export_broker
         .trail(trail_id)
         .records()
         .add(
@@ -127,11 +179,11 @@ async fn main() -> Result<()> {
             Some("event:export_declaration_filed".to_string()),
             Some("export".to_string()),
         )
-        .build_and_execute(&client)
+        .build_and_execute(&export_broker)
         .await?
         .output;
 
-    let export_cleared = client
+    let export_cleared = export_broker
         .trail(trail_id)
         .records()
         .add(
@@ -139,7 +191,7 @@ async fn main() -> Result<()> {
             Some("event:export_cleared".to_string()),
             Some("export".to_string()),
         )
-        .build_and_execute(&client)
+        .build_and_execute(&export_broker)
         .await?
         .output;
 
@@ -148,13 +200,17 @@ async fn main() -> Result<()> {
         export_filed.sequence_number, export_cleared.sequence_number
     );
 
-    client
+    supervisor
         .trail(trail_id)
         .update_metadata(Some("Status: Awaiting Import Clearance".to_string()))
-        .build_and_execute(&client)
+        .build_and_execute(&supervisor)
         .await?;
 
-    let denied_inspection = client
+    // === Inspection gate ===
+
+    // The import broker does not hold an inspection-scoped capability at this point.
+    // The write attempt must fail to prove that tag-based access control is enforced.
+    let denied_inspection = import_broker
         .trail(trail_id)
         .records()
         .add(
@@ -162,7 +218,7 @@ async fn main() -> Result<()> {
             Some("event:invalid_inspection_write".to_string()),
             Some("inspection".to_string()),
         )
-        .build_and_execute(&client)
+        .build_and_execute(&import_broker)
         .await;
 
     ensure!(
@@ -171,9 +227,10 @@ async fn main() -> Result<()> {
     );
     println!("Inspection write was correctly denied before the inspector role existed.\n");
 
-    issue_tagged_record_role(&client, trail_id, "Inspector", "inspection", client.sender_address()).await?;
+    // A customs inspection is triggered; the inspector role is created and issued mid-process.
+    issue_tagged_record_role(&admin, trail_id, "Inspector", "inspection", inspector.sender_address()).await?;
 
-    let inspection_done = client
+    let inspection_done = inspector
         .trail(trail_id)
         .records()
         .add(
@@ -181,13 +238,15 @@ async fn main() -> Result<()> {
             Some("event:inspection_completed".to_string()),
             Some("inspection".to_string()),
         )
-        .build_and_execute(&client)
+        .build_and_execute(&inspector)
         .await?
         .output;
 
     println!("Inspector added record #{}.\n", inspection_done.sequence_number);
 
-    let duty_assessed = client
+    // === Import clearance ===
+
+    let duty_assessed = import_broker
         .trail(trail_id)
         .records()
         .add(
@@ -195,11 +254,11 @@ async fn main() -> Result<()> {
             Some("event:duty_assessed".to_string()),
             Some("import".to_string()),
         )
-        .build_and_execute(&client)
+        .build_and_execute(&import_broker)
         .await?
         .output;
 
-    let import_cleared = client
+    let import_cleared = import_broker
         .trail(trail_id)
         .records()
         .add(
@@ -207,7 +266,7 @@ async fn main() -> Result<()> {
             Some("event:import_cleared".to_string()),
             Some("import".to_string()),
         )
-        .build_and_execute(&client)
+        .build_and_execute(&import_broker)
         .await?
         .output;
 
@@ -216,26 +275,28 @@ async fn main() -> Result<()> {
         duty_assessed.sequence_number, import_cleared.sequence_number
     );
 
-    client
+    supervisor
         .trail(trail_id)
         .update_metadata(Some("Status: Cleared".to_string()))
-        .build_and_execute(&client)
+        .build_and_execute(&supervisor)
         .await?;
 
-    client
+    // === Final lock and verification ===
+
+    locking_admin
         .trail(trail_id)
         .locking()
         .update_write_lock(TimeLock::Infinite)
-        .build_and_execute(&client)
+        .build_and_execute(&locking_admin)
         .await?;
 
-    let after_lock = client.trail(trail_id).get().await?;
+    let after_lock = admin.trail(trail_id).get().await?;
     println!(
         "Write lock after clearance: {:?}\n",
         after_lock.locking_config.write_lock
     );
 
-    let late_note = client
+    let late_note = docs_operator
         .trail(trail_id)
         .records()
         .add(
@@ -243,7 +304,7 @@ async fn main() -> Result<()> {
             Some("event:late_note".to_string()),
             Some("documents".to_string()),
         )
-        .build_and_execute(&client)
+        .build_and_execute(&docs_operator)
         .await;
 
     ensure!(
@@ -251,7 +312,7 @@ async fn main() -> Result<()> {
         "cleared customs trail should reject late writes after the final lock"
     );
 
-    let trail = client.trail(trail_id);
+    let trail = admin.trail(trail_id);
     let first_page = trail.records().list_page(None, 20).await?;
 
     println!("Recorded customs events:");

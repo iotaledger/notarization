@@ -1,6 +1,38 @@
 // Copyright 2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+/**
+ * # Clinical Trial Data-Integrity Example
+ *
+ * Models a Phase III clinical trial where an immutable audit trail
+ * guarantees data integrity, role-scoped access, and time-constrained oversight.
+ *
+ * ## Actors
+ *
+ * - **Admin**: Creates the trail and sets up all roles and capabilities.
+ * - **Enroller**: Writes enrollment events. Restricted to the `enrollment` tag.
+ * - **SafetyOfficer**: Records adverse events and safety observations. Restricted to `safety`.
+ * - **EfficacyReviewer**: Records treatment outcomes. Restricted to `efficacy`.
+ * - **PkAnalyst**: Records pharmacokinetic results. Restricted to the `pk` tag that is added
+ *   mid-study when a PK sub-study is initiated.
+ * - **Monitor**: Updates the mutable study-phase metadata. Access is time-windowed to the
+ *   active study period (90 days from now).
+ * - **DataSafetyBoard**: Controls write and delete locks. Freezes the dataset after review.
+ * - **Regulator**: Read-only verifier. In production this would use `AuditTrailClientReadOnly`
+ *   (no signing key); here a funded client is used to keep the example self-contained.
+ *
+ * ## How the trail is used
+ *
+ * - immutable_metadata: protocol identity and study description
+ * - updatable_metadata: current study phase (updated as the trial progresses)
+ * - record tags: enrollment, safety, efficacy, pk (added mid-study)
+ * - roles and capabilities: each role writes only its designated tag
+ * - time-constrained capabilities: Monitor access is windowed to the study period
+ * - locking: a deletion window protects recent records; a time-lock freezes the
+ *   dataset after the Data Safety Board completes its review
+ * - read-only verification: a regulator inspects the trail without write access
+ */
+
 import {
     AuditTrailClient,
     CapabilityIssueOptions,
@@ -14,30 +46,23 @@ import {
 import { strict as assert } from "assert";
 import { getFundedClient, TEST_GAS_BUDGET } from "../util";
 
-/**
- * # Clinical Trial Data-Integrity Example
- *
- * Models a Phase III clinical trial where an immutable audit trail
- * guarantees data integrity, role-scoped access, and time-constrained oversight.
- *
- * - immutable_metadata: protocol identity and study description
- * - updatable_metadata: current study phase (updated as the trial progresses)
- * - record tags: enrollment, safety, efficacy, pk (added mid-study)
- * - roles and capabilities: each role writes only its designated tag
- * - time-constrained capabilities: Monitor access is windowed to the study period
- * - locking: a deletion window protects recent records; a time-lock freezes the
- *   dataset after the Data Safety Board completes its review
- * - read-only verification: a regulator inspects the trail without write access
- */
 export async function clinicalTrial(): Promise<void> {
     console.log("=== Clinical Trial Data Integrity ===\n");
 
-    const client = await getFundedClient();
+    const admin = await getFundedClient();
+    const enroller = await getFundedClient();
+    const safetyOfficer = await getFundedClient();
+    const efficacyReviewer = await getFundedClient();
+    const pkAnalyst = await getFundedClient();
+    const monitor = await getFundedClient();
+    const dataSafetyBoard = await getFundedClient();
+    const regulator = await getFundedClient();
 
-    // 1. Create the trial trail
+    // === Create the clinical-trial trail ===
+
     console.log("Creating the clinical-trial audit trail...");
 
-    const { output: created } = await client
+    const { output: created } = await admin
         .createTrail()
         .withRecordTags(["enrollment", "safety", "efficacy"])
         .withTrailMetadata(
@@ -55,78 +80,85 @@ export async function clinicalTrial(): Promise<void> {
         )
         .finish()
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
+        .buildAndExecute(admin);
 
     const trailId = created.id;
     console.log("Trail created with ID", trailId, "\n");
 
-    // 2. Define roles with tag-scoped permissions
+    // === Define roles with tag-scoped permissions ===
+
     console.log("Defining study roles...");
 
-    await issueTaggedRecordRole(client, trailId, "Enroller", "enrollment");
-    await issueTaggedRecordRole(client, trailId, "SafetyOfficer", "safety");
-    await issueTaggedRecordRole(client, trailId, "EfficacyReviewer", "efficacy");
+    await issueTaggedRecordRole(admin, trailId, "Enroller", "enrollment", enroller.senderAddress());
+    await issueTaggedRecordRole(admin, trailId, "SafetyOfficer", "safety", safetyOfficer.senderAddress());
+    await issueTaggedRecordRole(admin, trailId, "EfficacyReviewer", "efficacy", efficacyReviewer.senderAddress());
 
-    // Monitor can update metadata (study phase) — valid for 90 days
-    await client
+    // Monitor can update metadata (study phase) — valid for 90 days.
+    await admin
         .trail(trailId)
         .access()
         .forRole("Monitor")
         .create(PermissionSet.metadataAdminPermissions())
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
+        .buildAndExecute(admin);
 
     const nowMs = BigInt(Date.now());
     const studyEndMs = nowMs + BigInt(90 * 24 * 60 * 60 * 1000);
 
-    await client
+    await admin
         .trail(trailId)
         .access()
         .forRole("Monitor")
-        .issueCapability(new CapabilityIssueOptions(client.senderAddress(), nowMs, studyEndMs))
+        .issueCapability(new CapabilityIssueOptions(monitor.senderAddress(), nowMs, studyEndMs))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
+        .buildAndExecute(admin);
 
     console.log("Monitor capability issued (expires at timestamp", studyEndMs + ")\n");
 
-    // Data Safety Board can manage locking
-    await client
+    // Data Safety Board can manage locking.
+    await admin
         .trail(trailId)
         .access()
         .forRole("DataSafetyBoard")
         .create(PermissionSet.lockingAdminPermissions())
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
-    await client
+        .buildAndExecute(admin);
+    await admin
         .trail(trailId)
         .access()
         .forRole("DataSafetyBoard")
-        .issueCapability(new CapabilityIssueOptions(client.senderAddress()))
+        .issueCapability(new CapabilityIssueOptions(dataSafetyBoard.senderAddress()))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
+        .buildAndExecute(admin);
 
-    // 3. Enrollment phase
+    // === Enrollment phase ===
+
     console.log("--- Enrollment Phase ---");
 
-    const enrolled = await client
+    const enrolled = await enroller
         .trail(trailId)
         .records()
         .add(Data.fromString("Patient P-101 enrolled at Site Hamburg"), "event:patient_enrolled", "enrollment")
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
+        .buildAndExecute(enroller);
     console.log("Enroller added record", enrolled.output.sequenceNumber + ".\n");
 
-    // 4. Safety and efficacy records
+    // === Study data collection ===
+
     console.log("--- Study Data Collection ---");
 
-    const safetyEvent = await client
+    const safetyEvent = await safetyOfficer
         .trail(trailId)
         .records()
-        .add(Data.fromString("Adverse event: mild headache reported by Patient P-101"), "event:adverse_event", "safety")
+        .add(
+            Data.fromString("Adverse event: mild headache reported by Patient P-101"),
+            "event:adverse_event",
+            "safety",
+        )
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
+        .buildAndExecute(safetyOfficer);
 
-    const efficacyRecord = await client
+    const efficacyRecord = await efficacyReviewer
         .trail(trailId)
         .records()
         .add(
@@ -135,7 +167,7 @@ export async function clinicalTrial(): Promise<void> {
             "efficacy",
         )
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
+        .buildAndExecute(efficacyReviewer);
 
     console.log(
         "SafetyOfficer added record",
@@ -144,98 +176,98 @@ export async function clinicalTrial(): Promise<void> {
         efficacyRecord.output.sequenceNumber + ".\n",
     );
 
-    // 5. Add a new tag mid-study (pharmacokinetics)
+    // === Mid-study amendment: add pharmacokinetics tag ===
+
     console.log("--- Mid-Study Amendment ---");
 
-    await client
-        .trail(trailId)
-        .tags()
-        .add("pk")
-        .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
+    await admin.trail(trailId).tags().add("pk").withGasBudget(TEST_GAS_BUDGET).buildAndExecute(admin);
     console.log("Added tag \"pk\" (pharmacokinetics) to the trail.");
 
-    await issueTaggedRecordRole(client, trailId, "PkAnalyst", "pk");
+    await issueTaggedRecordRole(admin, trailId, "PkAnalyst", "pk", pkAnalyst.senderAddress());
 
-    const pkRecord = await client
+    const pkRecord = await pkAnalyst
         .trail(trailId)
         .records()
         .add(Data.fromString("PK analysis: Cmax reached at 2.4 h, half-life 8.7 h"), "event:pk_result", "pk")
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
+        .buildAndExecute(pkAnalyst);
     console.log("PkAnalyst added record", pkRecord.output.sequenceNumber + ".\n");
 
-    // 6. Deletion window protects recent records
+    // === Deletion window enforcement ===
+
     console.log("--- Deletion Window Enforcement ---");
 
+    // The PkAnalyst has RecordAdmin permissions, but the count-based deletion window
+    // protects the newest 3 records, so this attempt must fail.
     let deleteSucceeded = false;
     try {
-        await client
+        await pkAnalyst
             .trail(trailId)
             .records()
             .delete(pkRecord.output.sequenceNumber)
             .withGasBudget(TEST_GAS_BUDGET)
-            .buildAndExecute(client);
+            .buildAndExecute(pkAnalyst);
         deleteSucceeded = true;
     } catch {
         // Expected
     }
-    assert.equal(
-        deleteSucceeded,
-        false,
-        "recent records must be protected by the count-based deletion window",
-    );
+    assert.equal(deleteSucceeded, false, "recent records must be protected by the count-based deletion window");
     console.log(
         "Record",
         pkRecord.output.sequenceNumber,
         "is within the deletion window (newest 3) and cannot be deleted.\n",
     );
 
-    // 7. Monitor updates study phase metadata
+    // === Metadata update (Monitor) ===
+
     console.log("--- Metadata Update ---");
 
-    await client
+    await monitor
         .trail(trailId)
         .updateMetadata("Phase: Data Review")
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
+        .buildAndExecute(monitor);
 
-    const trail = await client.trail(trailId).get();
+    const trail = await admin.trail(trailId).get();
     console.log("Study phase updated to:", trail.updatableMetadata, "\n");
 
-    // 8. Data Safety Board locks the study dataset
+    // === Data Safety Board locks the study dataset ===
+
     console.log("--- Data Safety Board Lock ---");
 
     const lockUntilMs = nowMs + BigInt(365 * 24 * 60 * 60 * 1000); // 1 year from now
 
-    await client
+    await dataSafetyBoard
         .trail(trailId)
         .locking()
         .updateWriteLock(TimeLock.withUnlockAtMs(lockUntilMs))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
+        .buildAndExecute(dataSafetyBoard);
 
     console.log("Write lock set to UnlockAtMs(" + lockUntilMs + ") — writes blocked until that timestamp.\n");
 
-    // Lock trail from deletion permanently
-    await client
+    // Lock trail from deletion permanently.
+    await dataSafetyBoard
         .trail(trailId)
         .locking()
         .updateDeleteTrailLock(TimeLock.withInfinite())
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
+        .buildAndExecute(dataSafetyBoard);
 
-    const finalLocking = await client.trail(trailId).get();
+    const finalLocking = await admin.trail(trailId).get();
     console.log(
         "Delete-trail lock set to",
         finalLocking.lockingConfig.deleteTrailLock.type,
         "— trail cannot be deleted.\n",
     );
 
-    // 9. Regulator read-only verification
+    // === Regulator read-only verification ===
+
     console.log("--- Regulator Verification ---");
 
-    const regulatorHandle = client.trail(trailId);
+    // In production the regulator would use AuditTrailClientReadOnly (no signing key).
+    // Here a funded client is used to keep the example self-contained.
+    const regulatorHandle = regulator.trail(trailId);
     const onChain = await regulatorHandle.get();
 
     console.log("Protocol:", onChain.immutableMetadata);
@@ -249,7 +281,6 @@ export async function clinicalTrial(): Promise<void> {
         console.log(`  #${record.sequenceNumber} | tag=${record.tag} | ${record.metadata}`);
     }
 
-    // 10. Assertions
     assert.equal(firstPage.records.length, 5, "expected 5 records (initial + enrolled + safety + efficacy + pk)");
     assert.ok(onChain.tags.some((t) => t.tag === "pk"), "the 'pk' tag must exist after mid-study amendment");
     assert.equal(onChain.lockingConfig.deleteRecordWindow.type, LockingWindow.withCountBased(BigInt(3)).type);
@@ -261,23 +292,24 @@ export async function clinicalTrial(): Promise<void> {
 }
 
 async function issueTaggedRecordRole(
-    client: AuditTrailClient,
+    admin: AuditTrailClient,
     trailId: string,
     roleName: string,
     tag: string,
+    issuedTo: string,
 ): Promise<void> {
-    await client
+    await admin
         .trail(trailId)
         .access()
         .forRole(roleName)
         .create(PermissionSet.recordAdminPermissions(), new RoleTags([tag]))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
-    await client
+        .buildAndExecute(admin);
+    await admin
         .trail(trailId)
         .access()
         .forRole(roleName)
-        .issueCapability(new CapabilityIssueOptions(client.senderAddress()))
+        .issueCapability(new CapabilityIssueOptions(issuedTo))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(client);
+        .buildAndExecute(admin);
 }
