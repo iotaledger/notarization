@@ -101,12 +101,14 @@ async fn main() -> Result<()> {
         .await?;
     println!("Revoked capability {}\n", constrained_capability.capability_id);
 
+    // destroy_capability consumes the capability object, so the signer must own it.
+    // The capability is issued to admin so admin can destroy it directly.
     let disposable_capability = admin
         .trail(trail_id)
         .access()
         .for_role("Operations")
         .issue_capability(CapabilityIssueOptions {
-            issued_to: Some(operations_user.sender_address()),
+            issued_to: Some(admin.sender_address()),
             valid_from_ms: None,
             valid_until_ms: None,
         })

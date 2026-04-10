@@ -88,12 +88,14 @@ export async function manageAccess(): Promise<void> {
         .buildAndExecute(admin);
     console.log("Revoked capability", constrainedCap.output.capabilityId, "\n");
 
-    // 5. Issue a disposable capability and destroy it.
+    // 5. Issue a disposable capability (to admin) and destroy it.
+    // destroyCapability consumes the capability object, so the signer must own it.
+    // The capability is issued to admin so admin can destroy it directly.
     const disposableCap = await admin
         .trail(trailId)
         .access()
         .forRole("Operations")
-        .issueCapability(new CapabilityIssueOptions(operationsUser.senderAddress()))
+        .issueCapability(new CapabilityIssueOptions(admin.senderAddress()))
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(admin);
     await admin
