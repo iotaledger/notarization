@@ -4,8 +4,8 @@
 //! ## Actors
 //!
 //! - **Admin**: Creates the trail and sets up the RecordMaintenance role.
-//! - **RecordMaintainer**: Holds the RecordMaintenance capability. Adds records and then
-//!   deletes them individually and in batch.
+//! - **RecordMaintainer**: Holds the RecordMaintenance capability. Adds records and then deletes them individually and
+//!   in batch.
 
 use std::collections::HashSet;
 

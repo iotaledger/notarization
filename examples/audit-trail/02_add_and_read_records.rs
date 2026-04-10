@@ -4,8 +4,8 @@
 //! ## Actors
 //!
 //! - **Admin**: Creates the trail, defines the RecordAdmin role, and issues a capability.
-//! - **RecordAdmin**: Holds the capability and writes records. Reads are also done through
-//!   this client to demonstrate that any address can read, but only the cap holder can write.
+//! - **RecordAdmin**: Holds the capability and writes records. Reads are also done through this client to demonstrate
+//!   that any address can read, but only the cap holder can write.
 
 use anyhow::{Result, ensure};
 use audit_trail::core::types::{CapabilityIssueOptions, Data, InitialRecord, PermissionSet};

@@ -8,17 +8,14 @@
 //! ## Actors
 //!
 //! - **Admin**: Creates the trail and sets up all roles and capabilities.
-//! - **DocsOperator**: Handles document submission (invoices, packing lists). Writes only
-//!   `documents`-tagged records.
-//! - **ExportBroker**: Files export declarations and records clearance decisions at the origin.
-//!   Writes only `export`-tagged records.
-//! - **ImportBroker**: Handles duty assessment and import clearance at the destination.
-//!   Writes only `import`-tagged records.
-//! - **Inspector**: Records the outcome of a customs physical inspection. Writes only
-//!   `inspection`-tagged records; the role is created mid-process when an inspection is
-//!   triggered.
-//! - **Supervisor**: Updates the mutable trail metadata (processing status). No record-write
-//!   permissions.
+//! - **DocsOperator**: Handles document submission (invoices, packing lists). Writes only `documents`-tagged records.
+//! - **ExportBroker**: Files export declarations and records clearance decisions at the origin. Writes only
+//!   `export`-tagged records.
+//! - **ImportBroker**: Handles duty assessment and import clearance at the destination. Writes only `import`-tagged
+//!   records.
+//! - **Inspector**: Records the outcome of a customs physical inspection. Writes only `inspection`-tagged records; the
+//!   role is created mid-process when an inspection is triggered.
+//! - **Supervisor**: Updates the mutable trail metadata (processing status). No record-write permissions.
 //! - **LockingAdmin**: Freezes the trail once the shipment is fully cleared.
 //!
 //! ## How the trail is used
@@ -84,9 +81,30 @@ async fn main() -> Result<()> {
 
     // === Set up roles and capabilities for each actor ===
 
-    issue_tagged_record_role(&admin, trail_id, "DocsOperator", "documents", docs_operator.sender_address()).await?;
-    issue_tagged_record_role(&admin, trail_id, "ExportBroker", "export", export_broker.sender_address()).await?;
-    issue_tagged_record_role(&admin, trail_id, "ImportBroker", "import", import_broker.sender_address()).await?;
+    issue_tagged_record_role(
+        &admin,
+        trail_id,
+        "DocsOperator",
+        "documents",
+        docs_operator.sender_address(),
+    )
+    .await?;
+    issue_tagged_record_role(
+        &admin,
+        trail_id,
+        "ExportBroker",
+        "export",
+        export_broker.sender_address(),
+    )
+    .await?;
+    issue_tagged_record_role(
+        &admin,
+        trail_id,
+        "ImportBroker",
+        "import",
+        import_broker.sender_address(),
+    )
+    .await?;
 
     admin
         .trail(trail_id)

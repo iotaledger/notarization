@@ -3,10 +3,10 @@
 
 //! ## Actors
 //!
-//! - **Admin**: Creates and updates roles, issues capabilities, revokes and destroys them,
-//!   and finally deletes the role once it is no longer needed.
-//! - **OperationsUser**: The subject of all capability issuance. Capabilities are bound to
-//!   this address to demonstrate that revocation immediately blocks their access.
+//! - **Admin**: Creates and updates roles, issues capabilities, revokes and destroys them, and finally deletes the role
+//!   once it is no longer needed.
+//! - **OperationsUser**: The subject of all capability issuance. Capabilities are bound to this address to demonstrate
+//!   that revocation immediately blocks their access.
 
 use std::collections::HashSet;
 

@@ -3,12 +3,12 @@
 
 //! ## Actors
 //!
-//! - **Admin**: Creates the trail, defines the RecordAdmin role, and issues a capability
-//!   bound specifically to `intended_writer`'s address. Also performs revocation.
-//! - **IntendedWriter**: The authorised holder. Writes a record successfully before
-//!   revocation, then is blocked after the capability is revoked.
-//! - **WrongWriter**: An unauthorised actor who attempts to use the address-bound capability.
-//!   All write attempts are rejected by the Move contract.
+//! - **Admin**: Creates the trail, defines the RecordAdmin role, and issues a capability bound specifically to
+//!   `intended_writer`'s address. Also performs revocation.
+//! - **IntendedWriter**: The authorised holder. Writes a record successfully before revocation, then is blocked after
+//!   the capability is revoked.
+//! - **WrongWriter**: An unauthorised actor who attempts to use the address-bound capability. All write attempts are
+//!   rejected by the Move contract.
 
 use anyhow::{Result, ensure};
 use audit_trail::core::types::{CapabilityIssueOptions, Data, InitialRecord, PermissionSet};

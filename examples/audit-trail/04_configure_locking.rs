@@ -5,8 +5,8 @@
 //!
 //! - **Admin**: Creates the trail and sets up the LockingAdmin and RecordAdmin roles.
 //! - **LockingAdmin**: Controls write and delete locks. Holds the LockingAdmin capability.
-//! - **RecordAdmin**: Writes records. Used to demonstrate that the write lock is enforced
-//!   per-sender, not just checked by the admin.
+//! - **RecordAdmin**: Writes records. Used to demonstrate that the write lock is enforced per-sender, not just checked
+//!   by the admin.
 
 use anyhow::{Result, ensure};
 use audit_trail::core::types::{CapabilityIssueOptions, Data, InitialRecord, LockingWindow, PermissionSet, TimeLock};

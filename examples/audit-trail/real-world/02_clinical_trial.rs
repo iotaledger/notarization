@@ -12,13 +12,13 @@
 //! - **Enroller**: Writes enrollment events. Restricted to the `enrollment` tag.
 //! - **SafetyOfficer**: Records adverse events and safety observations. Restricted to `safety`.
 //! - **EfficacyReviewer**: Records treatment outcomes. Restricted to `efficacy`.
-//! - **PkAnalyst**: Records pharmacokinetic results. Restricted to the `pk` tag that is added
-//!   mid-study when a PK sub-study is initiated.
-//! - **Monitor**: Updates the mutable study-phase metadata. Access is time-windowed to the
-//!   active study period (90 days from now).
+//! - **PkAnalyst**: Records pharmacokinetic results. Restricted to the `pk` tag that is added mid-study when a PK
+//!   sub-study is initiated.
+//! - **Monitor**: Updates the mutable study-phase metadata. Access is time-windowed to the active study period (90 days
+//!   from now).
 //! - **DataSafetyBoard**: Controls write and delete locks. Freezes the dataset after review.
-//! - **Regulator**: Read-only verifier. In production this would use `AuditTrailClientReadOnly`
-//!   (no signing key); here a funded client is used to keep the example self-contained.
+//! - **Regulator**: Read-only verifier. In production this would use `AuditTrailClientReadOnly` (no signing key); here
+//!   a funded client is used to keep the example self-contained.
 //!
 //! ## How the trail is used
 //!
@@ -27,8 +27,8 @@
 //! - record tags: `enrollment`, `safety`, `efficacy`, `pk` (added mid-study)
 //! - roles and capabilities: each role writes only its designated tag
 //! - time-constrained capabilities: Monitor access is windowed to the study period
-//! - locking: a deletion window protects recent records; a time-lock freezes the dataset after
-//!   the Data Safety Board completes its review
+//! - locking: a deletion window protects recent records; a time-lock freezes the dataset after the Data Safety Board
+//!   completes its review
 //! - read-only verification: a regulator inspects the trail without write access
 
 use anyhow::{Result, ensure};
@@ -92,7 +92,14 @@ async fn main() -> Result<()> {
     println!("Defining study roles...");
 
     issue_tagged_record_role(&admin, trail_id, "Enroller", "enrollment", enroller.sender_address()).await?;
-    issue_tagged_record_role(&admin, trail_id, "SafetyOfficer", "safety", safety_officer.sender_address()).await?;
+    issue_tagged_record_role(
+        &admin,
+        trail_id,
+        "SafetyOfficer",
+        "safety",
+        safety_officer.sender_address(),
+    )
+    .await?;
     issue_tagged_record_role(
         &admin,
         trail_id,
@@ -209,12 +216,7 @@ async fn main() -> Result<()> {
     println!("--- Mid-Study Amendment ---");
 
     // Admin adds the new tag and creates a role for the PK analyst.
-    admin
-        .trail(trail_id)
-        .tags()
-        .add("pk")
-        .build_and_execute(&admin)
-        .await?;
+    admin.trail(trail_id).tags().add("pk").build_and_execute(&admin).await?;
     println!("Added tag 'pk' (pharmacokinetics) to the trail.");
 
     issue_tagged_record_role(&admin, trail_id, "PkAnalyst", "pk", pk_analyst.sender_address()).await?;

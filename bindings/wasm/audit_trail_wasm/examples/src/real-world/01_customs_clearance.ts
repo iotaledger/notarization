@@ -40,8 +40,8 @@ import {
     RoleTags,
     TimeLock,
 } from "@iota/audit-trail/node";
-import { createHash } from "crypto";
 import { strict as assert } from "assert";
+import { createHash } from "crypto";
 import { getFundedClient, TEST_GAS_BUDGET } from "../util";
 
 export async function customsClearance(): Promise<void> {

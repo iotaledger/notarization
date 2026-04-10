@@ -4,8 +4,8 @@
 //! ## Actors
 //!
 //! - **Admin**: Creates the trail and sets up the RecordAdmin role.
-//! - **RecordAdmin**: Adds one follow-up record. All subsequent operations are read-only
-//!   and can be performed by any address — no capability required.
+//! - **RecordAdmin**: Adds one follow-up record. All subsequent operations are read-only and can be performed by any
+//!   address — no capability required.
 
 use anyhow::{Result, ensure};
 use audit_trail::core::types::{

@@ -4,11 +4,9 @@
 //! ## Actors
 //!
 //! - **Admin**: Creates the trail and manages roles.
-//! - **TagAdmin**: Holds the TagAdmin capability. Adds and removes entries from the trail's
-//!   tag registry.
-//! - **FinanceWriter**: Holds a `finance`-scoped RecordAdmin capability. Writes a
-//!   `finance`-tagged record that keeps the `finance` tag in use and therefore
-//!   unremovable.
+//! - **TagAdmin**: Holds the TagAdmin capability. Adds and removes entries from the trail's tag registry.
+//! - **FinanceWriter**: Holds a `finance`-scoped RecordAdmin capability. Writes a `finance`-tagged record that keeps
+//!   the `finance` tag in use and therefore unremovable.
 
 use anyhow::{Result, ensure};
 use audit_trail::core::types::{CapabilityIssueOptions, Data, InitialRecord, PermissionSet, RoleTags};
@@ -60,7 +58,12 @@ async fn main() -> Result<()> {
         .build_and_execute(&admin)
         .await?;
 
-    tag_admin.trail(trail_id).tags().add("legal").build_and_execute(&tag_admin).await?;
+    tag_admin
+        .trail(trail_id)
+        .tags()
+        .add("legal")
+        .build_and_execute(&tag_admin)
+        .await?;
 
     let after_add = admin.trail(trail_id).get().await?;
     println!("Registry after adding \"legal\": {:?}\n", after_add.tags.tag_map);
@@ -96,13 +99,23 @@ async fn main() -> Result<()> {
         .build_and_execute(&finance_writer)
         .await?;
 
-    let remove_finance = tag_admin.trail(trail_id).tags().remove("finance").build_and_execute(&tag_admin).await;
+    let remove_finance = tag_admin
+        .trail(trail_id)
+        .tags()
+        .remove("finance")
+        .build_and_execute(&tag_admin)
+        .await;
     ensure!(
         remove_finance.is_err(),
         "a tag referenced by a role or record must not be removable"
     );
 
-    tag_admin.trail(trail_id).tags().remove("legal").build_and_execute(&tag_admin).await?;
+    tag_admin
+        .trail(trail_id)
+        .tags()
+        .remove("legal")
+        .build_and_execute(&tag_admin)
+        .await?;
 
     let after_remove = admin.trail(trail_id).get().await?;
     println!("Registry after removing \"legal\": {:?}\n", after_remove.tags.tag_map);

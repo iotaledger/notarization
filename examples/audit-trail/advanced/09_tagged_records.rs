@@ -3,10 +3,10 @@
 
 //! ## Actors
 //!
-//! - **Admin**: Creates the trail, defines the FinanceWriter role restricted to the
-//!   `finance` tag, and issues a capability bound to `finance_writer`'s address.
-//! - **FinanceWriter**: Holds the address-bound capability. Can add `finance`-tagged
-//!   records but is blocked from writing `legal`-tagged records.
+//! - **Admin**: Creates the trail, defines the FinanceWriter role restricted to the `finance` tag, and issues a
+//!   capability bound to `finance_writer`'s address.
+//! - **FinanceWriter**: Holds the address-bound capability. Can add `finance`-tagged records but is blocked from
+//!   writing `legal`-tagged records.
 
 use anyhow::{Result, ensure};
 use audit_trail::core::types::{CapabilityIssueOptions, Data, InitialRecord, Permission, RoleTags};

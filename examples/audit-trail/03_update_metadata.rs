@@ -4,8 +4,8 @@
 //! ## Actors
 //!
 //! - **Admin**: Creates the trail and sets up the MetadataAdmin role.
-//! - **MetadataAdmin**: Holds the MetadataAdmin capability and updates the trail's mutable
-//!   status field. Has no record-write permissions.
+//! - **MetadataAdmin**: Holds the MetadataAdmin capability and updates the trail's mutable status field. Has no
+//!   record-write permissions.
 
 use anyhow::{Result, ensure};
 use audit_trail::core::types::{CapabilityIssueOptions, Data, ImmutableMetadata, InitialRecord, PermissionSet};

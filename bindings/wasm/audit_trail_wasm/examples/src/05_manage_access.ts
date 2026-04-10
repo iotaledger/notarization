@@ -55,7 +55,9 @@ export async function manageAccess(): Promise<void> {
 
     // 3. Issue a constrained capability bound to operationsUser's address.
     const constrainedCap = await role
-        .issueCapability(new CapabilityIssueOptions(operationsUser.senderAddress(), undefined, BigInt(4_102_444_800_000)))
+        .issueCapability(
+            new CapabilityIssueOptions(operationsUser.senderAddress(), undefined, BigInt(4_102_444_800_000)),
+        )
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(admin);
     console.log("\nIssued constrained capability:");

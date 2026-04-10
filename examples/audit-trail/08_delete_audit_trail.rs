@@ -4,8 +4,8 @@
 //! ## Actors
 //!
 //! - **Admin**: Creates the trail and sets up the MaintenanceAdmin role.
-//! - **MaintenanceAdmin**: Holds delete permissions. Attempts (and fails) to delete the
-//!   non-empty trail, then batch-deletes all records before removing the trail itself.
+//! - **MaintenanceAdmin**: Holds delete permissions. Attempts (and fails) to delete the non-empty trail, then
+//!   batch-deletes all records before removing the trail itself.
 
 use std::collections::HashSet;
 
@@ -65,7 +65,10 @@ async fn main() -> Result<()> {
 
     let maintenance_trail = maintenance_admin.trail(created.trail_id);
 
-    let delete_while_non_empty = maintenance_trail.delete_audit_trail().build_and_execute(&maintenance_admin).await;
+    let delete_while_non_empty = maintenance_trail
+        .delete_audit_trail()
+        .build_and_execute(&maintenance_admin)
+        .await;
     ensure!(delete_while_non_empty.is_err(), "a trail must be empty before deletion");
     println!("Deleting the non-empty trail failed as expected.\n");
 

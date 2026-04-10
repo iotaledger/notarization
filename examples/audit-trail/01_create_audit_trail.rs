@@ -3,10 +3,8 @@
 
 //! ## Actors
 //!
-//! - **Admin**: Creates the trail and holds the built-in Admin capability that is
-//!   automatically minted on creation.
-//! - **RecordAdmin**: Receives a RecordAdmin capability bound to their address. Writes
-//!   records in subsequent examples.
+//! - **Admin**: Creates the trail and holds the built-in Admin capability that is automatically minted on creation.
+//! - **RecordAdmin**: Receives a RecordAdmin capability bound to their address. Writes records in subsequent examples.
 
 use anyhow::Result;
 use audit_trail::core::types::{CapabilityIssueOptions, Data, ImmutableMetadata, InitialRecord, PermissionSet};
