@@ -1,11 +1,19 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! ## Actors
+//!
+//! - **Admin**: Creates the trail and sets up the RecordAdmin role.
+//! - **RecordAdmin**: Adds one follow-up record. All subsequent operations are read-only
+//!   and can be performed by any address — no capability required.
+
 use anyhow::{Result, ensure};
 use audit_trail::core::types::{
-    Data, ImmutableMetadata, InitialRecord, LockingConfig, LockingWindow, PermissionSet, TimeLock,
+    CapabilityIssueOptions, Data, ImmutableMetadata, InitialRecord, LockingConfig, LockingWindow, PermissionSet,
+    TimeLock,
 };
 use examples::get_funded_audit_trail_client;
+use product_common::core_client::CoreClient;
 
 /// Demonstrates how to:
 /// 1. Load the full on-chain trail object.
@@ -16,9 +24,12 @@ use examples::get_funded_audit_trail_client;
 async fn main() -> Result<()> {
     println!("=== Audit Trail: Read-Only Inspection ===\n");
 
-    let client = get_funded_audit_trail_client().await?;
+    // `admin` creates the trail and manages roles.
+    // `record_admin` adds the follow-up record.
+    let admin = get_funded_audit_trail_client().await?;
+    let record_admin = get_funded_audit_trail_client().await?;
 
-    let created = client
+    let created = admin
         .create_trail()
         .with_trail_metadata(ImmutableMetadata::new(
             "Operations Trail".to_string(),
@@ -36,32 +47,39 @@ async fn main() -> Result<()> {
             None,
         ))
         .finish()
-        .build_and_execute(&client)
+        .build_and_execute(&admin)
         .await?
         .output;
 
-    let trail = client.trail(created.trail_id);
+    let trail_id = created.trail_id;
 
-    trail
+    admin
+        .trail(trail_id)
         .access()
         .for_role("RecordAdmin")
         .create(PermissionSet::record_admin_permissions(), None)
-        .build_and_execute(&client)
+        .build_and_execute(&admin)
         .await?;
-    trail
+    admin
+        .trail(trail_id)
         .access()
         .for_role("RecordAdmin")
-        .issue_capability(Default::default())
-        .build_and_execute(&client)
+        .issue_capability(CapabilityIssueOptions {
+            issued_to: Some(record_admin.sender_address()),
+            valid_from_ms: None,
+            valid_until_ms: None,
+        })
+        .build_and_execute(&admin)
         .await?;
 
-    trail
+    record_admin
+        .trail(trail_id)
         .records()
         .add(Data::text("Follow-up record"), Some("event:updated".to_string()), None)
-        .build_and_execute(&client)
+        .build_and_execute(&record_admin)
         .await?;
 
-    let on_chain = trail.get().await?;
+    let on_chain = admin.trail(trail_id).get().await?;
     println!(
         "Trail summary:\n  id = {}\n  creator = {}\n  created_at = {}\n  sequence_number = {}\n  immutable_metadata = {:?}\n  updatable_metadata = {:?}\n",
         on_chain.id.object_id(),
@@ -78,6 +96,7 @@ async fn main() -> Result<()> {
         on_chain.locking_config
     );
 
+    let trail = admin.trail(trail_id);
     let count = trail.records().record_count().await?;
     let initial_record = trail.records().get(0).await?;
     let first_page = trail.records().list_page(None, 10).await?;

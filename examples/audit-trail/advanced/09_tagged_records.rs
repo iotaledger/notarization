@@ -1,6 +1,13 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! ## Actors
+//!
+//! - **Admin**: Creates the trail, defines the FinanceWriter role restricted to the
+//!   `finance` tag, and issues a capability bound to `finance_writer`'s address.
+//! - **FinanceWriter**: Holds the address-bound capability. Can add `finance`-tagged
+//!   records but is blocked from writing `legal`-tagged records.
+
 use anyhow::{Result, ensure};
 use audit_trail::core::types::{CapabilityIssueOptions, Data, InitialRecord, Permission, RoleTags};
 use examples::get_funded_audit_trail_client;
@@ -65,6 +72,9 @@ async fn main() -> Result<()> {
         finance_writer.sender_address()
     );
 
+    // The client automatically scans `finance_writer`'s wallet for a capability object that
+    // targets this trail and carries the required permission. No explicit capability ID is
+    // needed — the lookup happens in the background on every operation.
     let finance_records = finance_writer.trail(trail_id).records();
 
     let added = finance_records

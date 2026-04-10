@@ -31,6 +31,15 @@ NETWORK_URL=http://127.0.0.1:9000 \
 npm run example:node -- 01_create_audit_trail
 ```
 
+### Localnet
+
+On localnet the publish script emits the required `export` statements directly. Use `eval` to set both variables in one step (run from the `audit_trail_wasm/` directory):
+
+```bash
+eval $(../../../audit-trail-move/scripts/publish_package.sh)
+npm run example:node -- 01_create_audit_trail
+```
+
 Available examples:
 
 ### Core

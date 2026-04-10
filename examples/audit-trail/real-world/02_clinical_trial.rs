@@ -6,6 +6,20 @@
 //! This example models a Phase III clinical trial where an immutable audit trail
 //! guarantees data integrity, role-scoped access, and time-constrained oversight.
 //!
+//! ## Actors
+//!
+//! - **Admin**: Creates the trail and sets up all roles and capabilities.
+//! - **Enroller**: Writes enrollment events. Restricted to the `enrollment` tag.
+//! - **SafetyOfficer**: Records adverse events and safety observations. Restricted to `safety`.
+//! - **EfficacyReviewer**: Records treatment outcomes. Restricted to `efficacy`.
+//! - **PkAnalyst**: Records pharmacokinetic results. Restricted to the `pk` tag that is added
+//!   mid-study when a PK sub-study is initiated.
+//! - **Monitor**: Updates the mutable study-phase metadata. Access is time-windowed to the
+//!   active study period (90 days from now).
+//! - **DataSafetyBoard**: Controls write and delete locks. Freezes the dataset after review.
+//! - **Regulator**: Read-only verifier. In production this would use `AuditTrailClientReadOnly`
+//!   (no signing key); here a funded client is used to keep the example self-contained.
+//!
 //! ## How the trail is used
 //!
 //! - `immutable_metadata`: protocol identity and study description
@@ -13,8 +27,8 @@
 //! - record tags: `enrollment`, `safety`, `efficacy`, `pk` (added mid-study)
 //! - roles and capabilities: each role writes only its designated tag
 //! - time-constrained capabilities: Monitor access is windowed to the study period
-//! - locking: a deletion window protects recent records; a time-lock freezes the dataset after the Data Safety Board
-//!   completes its review
+//! - locking: a deletion window protects recent records; a time-lock freezes the dataset after
+//!   the Data Safety Board completes its review
 //! - read-only verification: a regulator inspects the trail without write access
 
 use anyhow::{Result, ensure};
@@ -32,14 +46,21 @@ use product_common::test_utils::InMemSigner;
 async fn main() -> Result<()> {
     println!("=== Clinical Trial Data Integrity ===\n");
 
-    let client = get_funded_audit_trail_client().await?;
+    let admin = get_funded_audit_trail_client().await?;
+    let enroller = get_funded_audit_trail_client().await?;
+    let safety_officer = get_funded_audit_trail_client().await?;
+    let efficacy_reviewer = get_funded_audit_trail_client().await?;
+    let pk_analyst = get_funded_audit_trail_client().await?;
+    let monitor = get_funded_audit_trail_client().await?;
+    let data_safety_board = get_funded_audit_trail_client().await?;
+    let regulator = get_funded_audit_trail_client().await?;
 
     // -----------------------------------------------------------------------
     // 1. Create the trial trail
     // -----------------------------------------------------------------------
     println!("Creating the clinical-trial audit trail...");
 
-    let created = client
+    let created = admin
         .create_trail()
         .with_record_tags(["enrollment", "safety", "efficacy"])
         .with_trail_metadata(ImmutableMetadata::new(
@@ -58,7 +79,7 @@ async fn main() -> Result<()> {
             Some("enrollment".to_string()),
         ))
         .finish()
-        .build_and_execute(&client)
+        .build_and_execute(&admin)
         .await?
         .output;
 
@@ -70,64 +91,64 @@ async fn main() -> Result<()> {
     // -----------------------------------------------------------------------
     println!("Defining study roles...");
 
-    issue_tagged_record_role(&client, trail_id, "Enroller", "enrollment", client.sender_address()).await?;
-    issue_tagged_record_role(&client, trail_id, "SafetyOfficer", "safety", client.sender_address()).await?;
+    issue_tagged_record_role(&admin, trail_id, "Enroller", "enrollment", enroller.sender_address()).await?;
+    issue_tagged_record_role(&admin, trail_id, "SafetyOfficer", "safety", safety_officer.sender_address()).await?;
     issue_tagged_record_role(
-        &client,
+        &admin,
         trail_id,
         "EfficacyReviewer",
         "efficacy",
-        client.sender_address(),
+        efficacy_reviewer.sender_address(),
     )
     .await?;
 
-    // Monitor can update metadata (study phase) but only during the study window
-    client
+    // Monitor can update metadata (study phase) but only during the study window.
+    admin
         .trail(trail_id)
         .access()
         .for_role("Monitor")
         .create(PermissionSet::metadata_admin_permissions(), None)
-        .build_and_execute(&client)
+        .build_and_execute(&admin)
         .await?;
 
     let now_ms = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)?
         .as_millis() as u64;
-    // Monitor access is valid for 90 days from now
+    // Monitor access is valid for 90 days from now.
     let study_end_ms = now_ms + 90 * 24 * 60 * 60 * 1000;
 
-    client
+    admin
         .trail(trail_id)
         .access()
         .for_role("Monitor")
         .issue_capability(CapabilityIssueOptions {
-            issued_to: Some(client.sender_address()),
+            issued_to: Some(monitor.sender_address()),
             valid_from_ms: Some(now_ms),
             valid_until_ms: Some(study_end_ms),
         })
-        .build_and_execute(&client)
+        .build_and_execute(&admin)
         .await?;
 
     println!("Monitor capability issued (valid for 90 days from now, ends at timestamp {study_end_ms})\n");
 
-    // Data Safety Board can manage locking
-    client
+    // Data Safety Board can manage locking.
+    admin
         .trail(trail_id)
         .access()
         .for_role("DataSafetyBoard")
         .create(PermissionSet::locking_admin_permissions(), None)
-        .build_and_execute(&client)
+        .build_and_execute(&admin)
         .await?;
-    client
+    admin
         .trail(trail_id)
         .access()
         .for_role("DataSafetyBoard")
         .issue_capability(CapabilityIssueOptions {
-            issued_to: Some(client.sender_address()),
+            issued_to: Some(data_safety_board.sender_address()),
             valid_from_ms: None,
             valid_until_ms: None,
         })
-        .build_and_execute(&client)
+        .build_and_execute(&admin)
         .await?;
 
     // -----------------------------------------------------------------------
@@ -135,7 +156,7 @@ async fn main() -> Result<()> {
     // -----------------------------------------------------------------------
     println!("--- Enrollment Phase ---");
 
-    let enrolled = client
+    let enrolled = enroller
         .trail(trail_id)
         .records()
         .add(
@@ -143,7 +164,7 @@ async fn main() -> Result<()> {
             Some("event:patient_enrolled".to_string()),
             Some("enrollment".to_string()),
         )
-        .build_and_execute(&client)
+        .build_and_execute(&enroller)
         .await?
         .output;
     println!("Enroller added record #{}.\n", enrolled.sequence_number);
@@ -153,7 +174,7 @@ async fn main() -> Result<()> {
     // -----------------------------------------------------------------------
     println!("--- Study Data Collection ---");
 
-    let safety_event = client
+    let safety_event = safety_officer
         .trail(trail_id)
         .records()
         .add(
@@ -161,11 +182,11 @@ async fn main() -> Result<()> {
             Some("event:adverse_event".to_string()),
             Some("safety".to_string()),
         )
-        .build_and_execute(&client)
+        .build_and_execute(&safety_officer)
         .await?
         .output;
 
-    let efficacy_record = client
+    let efficacy_record = efficacy_reviewer
         .trail(trail_id)
         .records()
         .add(
@@ -173,7 +194,7 @@ async fn main() -> Result<()> {
             Some("event:efficacy_observed".to_string()),
             Some("efficacy".to_string()),
         )
-        .build_and_execute(&client)
+        .build_and_execute(&efficacy_reviewer)
         .await?
         .output;
 
@@ -187,18 +208,18 @@ async fn main() -> Result<()> {
     // -----------------------------------------------------------------------
     println!("--- Mid-Study Amendment ---");
 
-    client
+    // Admin adds the new tag and creates a role for the PK analyst.
+    admin
         .trail(trail_id)
         .tags()
         .add("pk")
-        .build_and_execute(&client)
+        .build_and_execute(&admin)
         .await?;
     println!("Added tag 'pk' (pharmacokinetics) to the trail.");
 
-    // Now create a role for the new tag
-    issue_tagged_record_role(&client, trail_id, "PkAnalyst", "pk", client.sender_address()).await?;
+    issue_tagged_record_role(&admin, trail_id, "PkAnalyst", "pk", pk_analyst.sender_address()).await?;
 
-    let pk_record = client
+    let pk_record = pk_analyst
         .trail(trail_id)
         .records()
         .add(
@@ -206,7 +227,7 @@ async fn main() -> Result<()> {
             Some("event:pk_result".to_string()),
             Some("pk".to_string()),
         )
-        .build_and_execute(&client)
+        .build_and_execute(&pk_analyst)
         .await?
         .output;
     println!("PkAnalyst added record #{}.\n", pk_record.sequence_number);
@@ -216,11 +237,11 @@ async fn main() -> Result<()> {
     // -----------------------------------------------------------------------
     println!("--- Deletion Window Enforcement ---");
 
-    let delete_attempt = client
+    let delete_attempt = pk_analyst
         .trail(trail_id)
         .records()
         .delete(pk_record.sequence_number)
-        .build_and_execute(&client)
+        .build_and_execute(&pk_analyst)
         .await;
 
     ensure!(
@@ -237,14 +258,14 @@ async fn main() -> Result<()> {
     // -----------------------------------------------------------------------
     println!("--- Metadata Update ---");
 
-    client
+    monitor
         .trail(trail_id)
         .update_metadata(Some("Phase: Data Review".to_string()))
-        .build_and_execute(&client)
+        .build_and_execute(&monitor)
         .await?;
 
-    let trail = client.trail(trail_id).get().await?;
-    println!("Study phase updated to: {:?}\n", trail.updatable_metadata);
+    let current_state = admin.trail(trail_id).get().await?;
+    println!("Study phase updated to: {:?}\n", current_state.updatable_metadata);
 
     // -----------------------------------------------------------------------
     // 8. Data Safety Board locks the study dataset
@@ -252,17 +273,17 @@ async fn main() -> Result<()> {
     println!("--- Data Safety Board Lock ---");
 
     // Lock writes until a specific future timestamp (e.g. 1 year from now),
-    // then the dataset becomes permanently locked.
+    // after which the dataset becomes permanently locked.
     let lock_until_ms = now_ms + 365 * 24 * 60 * 60 * 1000; // 1 year from now
 
-    client
+    data_safety_board
         .trail(trail_id)
         .locking()
         .update_write_lock(TimeLock::UnlockAtMs(lock_until_ms))
-        .build_and_execute(&client)
+        .build_and_execute(&data_safety_board)
         .await?;
 
-    let locked_trail = client.trail(trail_id).get().await?;
+    let locked_trail = admin.trail(trail_id).get().await?;
     println!(
         "Write lock set to UnlockAtMs({}) — writes blocked until that timestamp.\n",
         lock_until_ms
@@ -270,14 +291,14 @@ async fn main() -> Result<()> {
     println!("Current locking config: {:?}\n", locked_trail.locking_config);
 
     // Also lock the trail from deletion permanently.
-    client
+    data_safety_board
         .trail(trail_id)
         .locking()
         .update_delete_trail_lock(TimeLock::Infinite)
-        .build_and_execute(&client)
+        .build_and_execute(&data_safety_board)
         .await?;
 
-    let final_locking = client.trail(trail_id).get().await?;
+    let final_locking = admin.trail(trail_id).get().await?;
     println!(
         "Delete-trail lock set to {:?} — trail cannot be deleted.\n",
         final_locking.locking_config.delete_trail_lock
@@ -288,9 +309,8 @@ async fn main() -> Result<()> {
     // -----------------------------------------------------------------------
     println!("--- Regulator Verification ---");
 
-    // In production the regulator would use AuditTrailClientReadOnly (no signer),
-    // but for this example we reuse the funded client to demonstrate read-only methods.
-    let regulator_handle = client.trail(trail_id);
+    // In production the regulator would use AuditTrailClientReadOnly (no signer).
+    let regulator_handle = regulator.trail(trail_id);
 
     let on_chain = regulator_handle.get().await?;
     println!("Protocol: {:?}", on_chain.immutable_metadata);
