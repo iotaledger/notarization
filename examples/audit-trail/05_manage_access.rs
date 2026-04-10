@@ -41,10 +41,12 @@ async fn main() -> Result<()> {
         .await?
         .output;
 
-    let trail = admin.trail(created.trail_id);
-    let role = trail.access().for_role("Operations");
+    let trail_id = created.trail_id;
 
-    let created_role = role
+    let created_role = admin
+        .trail(trail_id)
+        .access()
+        .for_role("Operations")
         .create(PermissionSet::record_admin_permissions(), None)
         .build_and_execute(&admin)
         .await?
@@ -59,14 +61,20 @@ async fn main() -> Result<()> {
         ]),
     };
 
-    let updated_role = role
+    let updated_role = admin
+        .trail(trail_id)
+        .access()
+        .for_role("Operations")
         .update_permissions(updated_permissions.clone(), None)
         .build_and_execute(&admin)
         .await?
         .output;
     println!("Updated role permissions: {:?}\n", updated_role.permissions.permissions);
 
-    let constrained_capability = role
+    let constrained_capability = admin
+        .trail(trail_id)
+        .access()
+        .for_role("Operations")
         .issue_capability(CapabilityIssueOptions {
             issued_to: Some(operations_user.sender_address()),
             valid_from_ms: None,
@@ -81,18 +89,22 @@ async fn main() -> Result<()> {
         constrained_capability.capability_id, constrained_capability.issued_to, constrained_capability.valid_until
     );
 
-    let on_chain = trail.get().await?;
+    let on_chain = admin.trail(trail_id).get().await?;
     let role_definition = on_chain.roles.roles.get("Operations").expect("role must exist");
     ensure!(role_definition.permissions == updated_permissions.permissions);
 
-    trail
+    admin
+        .trail(trail_id)
         .access()
         .revoke_capability(constrained_capability.capability_id, constrained_capability.valid_until)
         .build_and_execute(&admin)
         .await?;
     println!("Revoked capability {}\n", constrained_capability.capability_id);
 
-    let disposable_capability = role
+    let disposable_capability = admin
+        .trail(trail_id)
+        .access()
+        .for_role("Operations")
         .issue_capability(CapabilityIssueOptions {
             issued_to: Some(operations_user.sender_address()),
             valid_from_ms: None,
@@ -102,23 +114,31 @@ async fn main() -> Result<()> {
         .await?
         .output;
 
-    trail
+    admin
+        .trail(trail_id)
         .access()
         .destroy_capability(disposable_capability.capability_id)
         .build_and_execute(&admin)
         .await?;
     println!("Destroyed capability {}\n", disposable_capability.capability_id);
 
-    trail
+    admin
+        .trail(trail_id)
         .access()
         .cleanup_revoked_capabilities()
         .build_and_execute(&admin)
         .await?;
     println!("Cleaned up revoked capability registry entries.\n");
 
-    role.delete().build_and_execute(&admin).await?;
+    admin
+        .trail(trail_id)
+        .access()
+        .for_role("Operations")
+        .delete()
+        .build_and_execute(&admin)
+        .await?;
 
-    let after_delete = trail.get().await?;
+    let after_delete = admin.trail(trail_id).get().await?;
     ensure!(
         !after_delete.roles.roles.contains_key("Operations"),
         "role should be removed from the trail"
