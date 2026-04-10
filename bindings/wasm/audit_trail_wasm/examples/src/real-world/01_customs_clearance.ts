@@ -41,7 +41,6 @@ import {
     TimeLock,
 } from "@iota/audit-trail/node";
 import { strict as assert } from "assert";
-import { createHash } from "crypto";
 import { getFundedClient, TEST_GAS_BUDGET } from "../util";
 
 export async function customsClearance(): Promise<void> {
@@ -119,7 +118,8 @@ export async function customsClearance(): Promise<void> {
 
     // Documents are stored off-chain in an access-controlled environment (e.g. a TWIN node).
     // Only the SHA-256 fingerprint is committed on-chain for tamper-evidence.
-    const invoiceHash = createHash("sha256").update("invoice-SHP-2026-CLEAR-001-v1.pdf").digest();
+    const invoiceBytes = new TextEncoder().encode("invoice-SHP-2026-CLEAR-001-v1.pdf");
+    const invoiceHash = new Uint8Array(await crypto.subtle.digest("SHA-256", invoiceBytes));
     const docsUploaded = await docsOperator
         .trail(trailId)
         .records()

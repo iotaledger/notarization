@@ -30,11 +30,12 @@ export async function manageAccess(): Promise<void> {
 
     const { output: trail } = await createTrailWithSeedRecord(admin);
     const trailId = trail.id;
-    const trailHandle = admin.trail(trailId);
-    const role = trailHandle.access().forRole("Operations");
 
     // 1. Create the role
-    const createdRole = await role
+    const createdRole = await admin
+        .trail(trailId)
+        .access()
+        .forRole("Operations")
         .create(PermissionSet.recordAdminPermissions())
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(admin);
@@ -47,14 +48,20 @@ export async function manageAccess(): Promise<void> {
         Permission.DeleteAllRecords,
     ];
     const updatedPermissions = new PermissionSet(updatedPermissionValues);
-    const updatedRole = await role
+    const updatedRole = await admin
+        .trail(trailId)
+        .access()
+        .forRole("Operations")
         .updatePermissions(updatedPermissions)
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(admin);
     console.log("Updated role permissions:", updatedRole.output.permissions.permissions.map((p) => p.toString()));
 
     // 3. Issue a constrained capability bound to operationsUser's address.
-    const constrainedCap = await role
+    const constrainedCap = await admin
+        .trail(trailId)
+        .access()
+        .forRole("Operations")
         .issueCapability(
             new CapabilityIssueOptions(operationsUser.senderAddress(), undefined, BigInt(4_102_444_800_000)),
         )
@@ -66,28 +73,35 @@ export async function manageAccess(): Promise<void> {
     console.log("  valid_until =", constrainedCap.output.validUntil, "\n");
 
     // Verify the on-chain role matches the updated permissions.
-    const onChain = await trailHandle.get();
+    const onChain = await admin.trail(trailId).get();
     const opsRole = onChain.roles.roles.find((r) => r.name === "Operations");
     assert.ok(opsRole, "Operations role must exist");
-    const opsPermSet = new Set(opsRole.permissions.map((p) => p.toString()));
+    const opsPermSet = new Set(opsRole?.permissions.map((p) => p.toString()));
     for (const perm of updatedPermissionValues) {
         assert(opsPermSet.has(perm.toString()), `role should contain ${perm}`);
     }
 
     // 4. Revoke the constrained capability.
-    await trailHandle
+    await admin
+        .trail(trailId)
         .access()
         .revokeCapability(constrainedCap.output.capabilityId, constrainedCap.output.validUntil)
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(admin);
     console.log("Revoked capability", constrainedCap.output.capabilityId, "\n");
 
-    // 5. Issue a disposable capability and destroy it.
-    const disposableCap = await role
-        .issueCapability(new CapabilityIssueOptions(operationsUser.senderAddress()))
+    // 5. Issue a disposable capability (to admin) and destroy it.
+    // destroyCapability consumes the capability object, so the signer must own it.
+    // The capability is issued to admin so admin can destroy it directly.
+    const disposableCap = await admin
+        .trail(trailId)
+        .access()
+        .forRole("Operations")
+        .issueCapability(new CapabilityIssueOptions(admin.senderAddress()))
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(admin);
-    await trailHandle
+    await admin
+        .trail(trailId)
         .access()
         .destroyCapability(disposableCap.output.capabilityId)
         .withGasBudget(TEST_GAS_BUDGET)
@@ -95,7 +109,8 @@ export async function manageAccess(): Promise<void> {
     console.log("Destroyed capability", disposableCap.output.capabilityId, "\n");
 
     // 6. Clean up the revoked-capability registry entry so the role can be removed.
-    await trailHandle
+    await admin
+        .trail(trailId)
         .access()
         .cleanupRevokedCapabilities()
         .withGasBudget(TEST_GAS_BUDGET)
@@ -103,8 +118,14 @@ export async function manageAccess(): Promise<void> {
     console.log("Cleaned up revoked capability registry entries.\n");
 
     // 7. Delete the role.
-    await role.delete().withGasBudget(TEST_GAS_BUDGET).buildAndExecute(admin);
-    const afterDelete = await trailHandle.get();
+    await admin
+        .trail(trailId)
+        .access()
+        .forRole("Operations")
+        .delete()
+        .withGasBudget(TEST_GAS_BUDGET)
+        .buildAndExecute(admin);
+    const afterDelete = await admin.trail(trailId).get();
     const opsRoleAfterDelete = afterDelete.roles.roles.find((r) => r.name === "Operations");
     assert.equal(opsRoleAfterDelete, undefined, "role should be removed from the trail");
 
