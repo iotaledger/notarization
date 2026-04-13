@@ -22,11 +22,16 @@
     "build:nodejs": "npm run build:src:nodejs && npm run bundle:nodejs && wasm-opt -O node/audit_trail_wasm_bg.wasm -o node/audit_trail_wasm_bg.wasm",
     "build:web": "npm run build:src && npm run bundle:web && wasm-opt -O web/audit_trail_wasm_bg.wasm -o web/audit_trail_wasm_bg.wasm",
     "build:docs": "typedoc && npm run fix_docs",
-    "build:examples:web": "tsc --project ./examples/tsconfig.web.json || node ../build/replace_paths ./examples/tsconfig.web.json dist/web audit_trail_wasm/examples resolve",
+    "build:examples:web": "tsc --project ./examples/tsconfig.web.json && node ../build/replace_paths ./tsconfig.web.json dist audit_trail_wasm/examples resolve",
     "build": "npm run build:web && npm run build:nodejs && npm run build:docs",
     "example:node": "ts-node --project ./examples/tsconfig.node.json -r tsconfig-paths/register ./examples/src/main.ts",
     "test": "npm run test:node",
     "test:node": "ts-mocha -r tsconfig-paths/register -p ./examples/tsconfig.node.json ./examples/src/tests.ts --parallel --jobs 4 --retries 3 --timeout 180000 --exit",
+    "test:browser": "start-server-and-test example:web http://0.0.0.0:5173 'cypress run --headless'",
+    "test:browser:firefox": "start-server-and-test example:web http://0.0.0.0:5173 'cypress run --headless --browser firefox'",
+    "test:browser:chrome": "start-server-and-test example:web http://0.0.0.0:5173 'cypress run --headless --browser chrome'",
+    "example:web": "npm i --prefix ./cypress/app/ && npm run dev --prefix ./cypress/app/ -- --host",
+    "cypress": "cypress open",
     "fmt": "dprint fmt",
     "fix_docs": "find ./docs/wasm/ -type f -name '*.md' -exec sed -E -i.bak -e 's/(\\.md?#([^#]*)?)#/\\1/' {} ';' -exec rm {}.bak ';'"
   },
@@ -40,9 +45,11 @@
   "devDependencies": {
     "@types/mocha": "^9.1.0",
     "@types/node": "^22.0.0",
+    "cypress": "^14.2.0",
     "dprint": "^0.33.0",
     "mocha": "^9.2.0",
     "rimraf": "^6.0.1",
+    "start-server-and-test": "^2.0.11",
     "ts-mocha": "^9.0.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.1.0",
@@ -56,6 +63,9 @@
   },
   "peerDependencies": {
     "@iota/iota-sdk": "^1.11.0"
+  },
+  "config": {
+    "CYPRESS_VERIFY_TIMEOUT": 100000
   },
   "engines": {
     "node": ">=20"

@@ -38,16 +38,24 @@ const MAX_LIST_PAGE_LIMIT: usize = 1_000;
 pub struct TrailRecords<'a, C, D = Data> {
     pub(crate) client: &'a C,
     pub(crate) trail_id: ObjectID,
+    pub(crate) selected_capability_id: Option<ObjectID>,
     pub(crate) _phantom: std::marker::PhantomData<D>,
 }
 
 impl<'a, C, D> TrailRecords<'a, C, D> {
-    pub(crate) fn new(client: &'a C, trail_id: ObjectID) -> Self {
+    pub(crate) fn new(client: &'a C, trail_id: ObjectID, selected_capability_id: Option<ObjectID>) -> Self {
         Self {
             client,
             trail_id,
+            selected_capability_id,
             _phantom: std::marker::PhantomData,
         }
+    }
+
+    /// Uses the provided capability as the auth capability for subsequent write operations.
+    pub fn using_capability(mut self, capability_id: ObjectID) -> Self {
+        self.selected_capability_id = Some(capability_id);
+        self
     }
 
     /// Loads a single record by sequence number.
@@ -75,7 +83,14 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
         D: Into<Data>,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(AddRecord::new(self.trail_id, owner, data.into(), metadata, tag))
+        TransactionBuilder::new(AddRecord::new(
+            self.trail_id,
+            owner,
+            data.into(),
+            metadata,
+            tag,
+            self.selected_capability_id,
+        ))
     }
 
     /// Builds a transaction that deletes a single record.
@@ -87,7 +102,12 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
         S: Signer<IotaKeySignature> + OptionalSync,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(DeleteRecord::new(self.trail_id, owner, sequence_number))
+        TransactionBuilder::new(DeleteRecord::new(
+            self.trail_id,
+            owner,
+            sequence_number,
+            self.selected_capability_id,
+        ))
     }
 
     /// Builds a transaction that deletes up to `limit` records in one operation.
@@ -99,7 +119,12 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
         S: Signer<IotaKeySignature> + OptionalSync,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(DeleteRecordsBatch::new(self.trail_id, owner, limit))
+        TransactionBuilder::new(DeleteRecordsBatch::new(
+            self.trail_id,
+            owner,
+            limit,
+            self.selected_capability_id,
+        ))
     }
 
     /// Placeholder for a future correction helper.

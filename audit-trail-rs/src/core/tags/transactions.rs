@@ -23,16 +23,18 @@ pub struct AddRecordTag {
     trail_id: ObjectID,
     owner: IotaAddress,
     tag: String,
+    selected_capability_id: Option<ObjectID>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl AddRecordTag {
     /// Creates an `AddRecordTag` transaction builder payload.
-    pub fn new(trail_id: ObjectID, owner: IotaAddress, tag: String) -> Self {
+    pub fn new(trail_id: ObjectID, owner: IotaAddress, tag: String, selected_capability_id: Option<ObjectID>) -> Self {
         Self {
             trail_id,
             owner,
             tag,
+            selected_capability_id,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -41,7 +43,14 @@ impl AddRecordTag {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        TagsOps::add_record_tag(client, self.trail_id, self.owner, self.tag.clone()).await
+        TagsOps::add_record_tag(
+            client,
+            self.trail_id,
+            self.owner,
+            self.tag.clone(),
+            self.selected_capability_id,
+        )
+        .await
     }
 }
 
@@ -74,16 +83,18 @@ pub struct RemoveRecordTag {
     trail_id: ObjectID,
     owner: IotaAddress,
     tag: String,
+    selected_capability_id: Option<ObjectID>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl RemoveRecordTag {
     /// Creates a `RemoveRecordTag` transaction builder payload.
-    pub fn new(trail_id: ObjectID, owner: IotaAddress, tag: String) -> Self {
+    pub fn new(trail_id: ObjectID, owner: IotaAddress, tag: String, selected_capability_id: Option<ObjectID>) -> Self {
         Self {
             trail_id,
             owner,
             tag,
+            selected_capability_id,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -92,7 +103,14 @@ impl RemoveRecordTag {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        TagsOps::remove_record_tag(client, self.trail_id, self.owner, self.tag.clone()).await
+        TagsOps::remove_record_tag(
+            client,
+            self.trail_id,
+            self.owner,
+            self.tag.clone(),
+            self.selected_capability_id,
+        )
+        .await
     }
 }
 

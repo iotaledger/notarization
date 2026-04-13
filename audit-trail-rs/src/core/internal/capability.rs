@@ -2,12 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Capability discovery helpers used by internal transaction builders.
-
-use std::collections::{BTreeMap, HashSet};
+use std::collections::HashSet;
 
 use iota_interaction::move_types::language_storage::StructTag;
 use iota_interaction::rpc_types::{
-    IotaMoveStruct, IotaMoveValue, IotaObjectDataFilter, IotaObjectDataOptions, IotaObjectResponseQuery, IotaParsedData,
+    IotaObjectDataFilter, IotaObjectDataOptions, IotaObjectResponseQuery, IotaParsedData,
 };
 use iota_interaction::types::TypeTag;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID, ObjectRef};
@@ -72,6 +71,7 @@ where
     P: Fn(&Capability) -> bool + Send,
 {
     let revoked_capability_ids = revoked_capability_ids(client, trail).await?;
+    let now_ms = now_ms();
     let tf_components_package_id = client
         .tf_components_package_id()
         .expect("TfComponents package ID should be present for audit trail clients");
@@ -103,7 +103,7 @@ where
                 };
                 serde_json::from_value(move_object.fields.to_json_value()).ok()
             })
-            .find(|cap| capability_matches(cap, owner, &revoked_capability_ids, &predicate));
+            .find(|cap| capability_matches(cap, owner, now_ms, &revoked_capability_ids, &predicate));
         cursor = page.next_cursor;
 
         if maybe_cap.is_some() {
@@ -143,11 +143,7 @@ where
             table.id,
             DynamicFieldName {
                 type_: TypeTag::Struct(Box::new(ID::type_())),
-                value: IotaMoveStruct::WithFields(BTreeMap::from([(
-                    "bytes".to_string(),
-                    IotaMoveValue::Address(IotaAddress::from(key)),
-                )]))
-                .to_json_value(),
+                value: serde_json::Value::String(IotaAddress::from(key).to_string()),
             },
         )
         .await?;
@@ -171,6 +167,7 @@ where
 fn capability_matches<P>(
     cap: &Capability,
     owner: IotaAddress,
+    now_ms: u64,
     revoked_capability_ids: &HashSet<ObjectID>,
     predicate: &P,
 ) -> bool
@@ -180,6 +177,68 @@ where
     predicate(cap)
         && !revoked_capability_ids.contains(cap.id.object_id())
         && cap.issued_to.map(|issued_to| issued_to == owner).unwrap_or(true)
+        && cap.valid_from.is_none_or(|valid_from| now_ms >= valid_from)
+        && cap.valid_until.is_none_or(|valid_until| now_ms <= valid_until)
+}
+
+/// Finds an owned capability for adding a tagged record.
+///
+/// Tagged writes have stricter lookup rules than ordinary permission-based
+/// operations: the selected role must grant `AddRecord` and its configured
+/// `RoleTags` must allow the requested record tag.
+pub(crate) async fn find_capable_cap_for_tag<C>(
+    client: &C,
+    owner: IotaAddress,
+    trail_id: ObjectID,
+    trail: &OnChainAuditTrail,
+    tag: &str,
+) -> Result<ObjectRef, Error>
+where
+    C: CoreClientReadOnly + OptionalSync,
+{
+    let valid_roles = trail
+        .roles
+        .roles
+        .iter()
+        .filter(|(_, role)| {
+            role.permissions.contains(&Permission::AddRecord)
+                && role.data.as_ref().is_some_and(|record_tags| record_tags.allows(tag))
+        })
+        .map(|(name, _)| name.clone())
+        .collect::<std::collections::HashSet<_>>();
+
+    let cap = find_owned_capability(client, owner, trail, |cap| {
+        cap.target_key == trail_id && valid_roles.contains(&cap.role)
+    })
+    .await?
+    .ok_or_else(|| {
+        Error::InvalidArgument(format!(
+            "no capability with {:?} permission and record tag '{tag}' found for owner {owner} and trail {trail_id}",
+            Permission::AddRecord
+        ))
+    })?;
+
+    let object_id = *cap.id.object_id();
+    tx::get_object_ref_by_id(client, &object_id).await
+}
+
+/// Returns the current wall-clock time as milliseconds since the Unix epoch.
+///
+/// Uses `std::time::SystemTime` on native targets and `js_sys::Date::now()` on
+/// `wasm32`, where `SystemTime` is not available.
+pub(crate) fn now_ms() -> u64 {
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis() as u64
+    }
+    #[cfg(target_arch = "wasm32")]
+    {
+        js_sys::Date::now() as u64
+    }
 }
 
 #[cfg(test)]
@@ -204,9 +263,9 @@ mod tests {
         let revoked_cap = make_capability(revoked_cap_id, trail_id, "Writer", None, None, None);
         let valid_cap = make_capability(valid_cap_id, trail_id, "Writer", None, None, None);
 
-        assert!(!capability_matches(&revoked_cap, owner, &revoked_ids, &|cap| cap
+        assert!(!capability_matches(&revoked_cap, owner, 0, &revoked_ids, &|cap| cap
             .matches_target_and_role(trail_id, &valid_roles)));
-        assert!(capability_matches(&valid_cap, owner, &revoked_ids, &|cap| cap
+        assert!(capability_matches(&valid_cap, owner, 0, &revoked_ids, &|cap| cap
             .matches_target_and_role(trail_id, &valid_roles)));
     }
 
@@ -218,7 +277,39 @@ mod tests {
         let valid_roles = HashSet::from(["Writer".to_string()]);
         let cap = make_capability(dbg_object_id(5), trail_id, "Writer", Some(other_owner), None, None);
 
-        assert!(!capability_matches(&cap, owner, &HashSet::new(), &|candidate| {
+        assert!(!capability_matches(&cap, owner, 0, &HashSet::new(), &|candidate| {
+            candidate.matches_target_and_role(trail_id, &valid_roles)
+        }));
+    }
+
+    #[test]
+    fn capability_matches_skips_caps_before_valid_from() {
+        let owner = IotaAddress::random_for_testing_only();
+        let trail_id = dbg_object_id(6);
+        let valid_roles = HashSet::from(["Writer".to_string()]);
+        let mut cap = make_capability(dbg_object_id(7), trail_id, "Writer", None);
+        cap.valid_from = Some(2_000);
+
+        assert!(!capability_matches(&cap, owner, 1_999, &HashSet::new(), &|candidate| {
+            candidate.matches_target_and_role(trail_id, &valid_roles)
+        }));
+        assert!(capability_matches(&cap, owner, 2_000, &HashSet::new(), &|candidate| {
+            candidate.matches_target_and_role(trail_id, &valid_roles)
+        }));
+    }
+
+    #[test]
+    fn capability_matches_skips_caps_after_valid_until() {
+        let owner = IotaAddress::random_for_testing_only();
+        let trail_id = dbg_object_id(8);
+        let valid_roles = HashSet::from(["Writer".to_string()]);
+        let mut cap = make_capability(dbg_object_id(9), trail_id, "Writer", None);
+        cap.valid_until = Some(2_000);
+
+        assert!(capability_matches(&cap, owner, 2_000, &HashSet::new(), &|candidate| {
+            candidate.matches_target_and_role(trail_id, &valid_roles)
+        }));
+        assert!(!capability_matches(&cap, owner, 2_001, &HashSet::new(), &|candidate| {
             candidate.matches_target_and_role(trail_id, &valid_roles)
         }));
     }

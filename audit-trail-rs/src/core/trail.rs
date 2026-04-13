@@ -46,11 +46,22 @@ pub trait AuditTrailFull: AuditTrailReadOnly {}
 pub struct AuditTrailHandle<'a, C> {
     pub(crate) client: &'a C,
     pub(crate) trail_id: ObjectID,
+    pub(crate) selected_capability_id: Option<ObjectID>,
 }
 
 impl<'a, C> AuditTrailHandle<'a, C> {
     pub(crate) fn new(client: &'a C, trail_id: ObjectID) -> Self {
-        Self { client, trail_id }
+        Self {
+            client,
+            trail_id,
+            selected_capability_id: None,
+        }
+    }
+
+    /// Uses the provided capability as the auth capability for subsequent write operations.
+    pub fn using_capability(mut self, capability_id: ObjectID) -> Self {
+        self.selected_capability_id = Some(capability_id);
+        self
     }
 
     /// Loads the full on-chain audit trail object.
@@ -72,7 +83,12 @@ impl<'a, C> AuditTrailHandle<'a, C> {
         S: Signer<IotaKeySignature> + OptionalSync,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(UpdateMetadata::new(self.trail_id, owner, metadata))
+        TransactionBuilder::new(UpdateMetadata::new(
+            self.trail_id,
+            owner,
+            metadata,
+            self.selected_capability_id,
+        ))
     }
 
     /// Migrates the trail to the latest package version supported by this crate.
@@ -82,7 +98,7 @@ impl<'a, C> AuditTrailHandle<'a, C> {
         S: Signer<IotaKeySignature> + OptionalSync,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(Migrate::new(self.trail_id, owner))
+        TransactionBuilder::new(Migrate::new(self.trail_id, owner, self.selected_capability_id))
     }
 
     /// Deletes the trail object.
@@ -94,34 +110,34 @@ impl<'a, C> AuditTrailHandle<'a, C> {
         S: Signer<IotaKeySignature> + OptionalSync,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(DeleteAuditTrail::new(self.trail_id, owner))
+        TransactionBuilder::new(DeleteAuditTrail::new(self.trail_id, owner, self.selected_capability_id))
     }
 
     /// Returns the record API scoped to this trail.
     ///
     /// Use this for record reads, appends, and deletions.
     pub fn records(&self) -> TrailRecords<'a, C, Data> {
-        TrailRecords::new(self.client, self.trail_id)
+        TrailRecords::new(self.client, self.trail_id, self.selected_capability_id)
     }
 
     /// Returns the locking API scoped to this trail.
     ///
     /// Use this for inspecting lock state and updating locking rules.
     pub fn locking(&self) -> TrailLocking<'a, C> {
-        TrailLocking::new(self.client, self.trail_id)
+        TrailLocking::new(self.client, self.trail_id, self.selected_capability_id)
     }
 
     /// Returns the access-control API scoped to this trail.
     ///
     /// Use this for roles, capabilities, and access-policy updates.
     pub fn access(&self) -> TrailAccess<'a, C> {
-        TrailAccess::new(self.client, self.trail_id)
+        TrailAccess::new(self.client, self.trail_id, self.selected_capability_id)
     }
 
     /// Returns the tag-registry API scoped to this trail.
     ///
     /// Use this for managing the canonical tag registry that record writes and role tags must reference.
     pub fn tags(&self) -> TrailTags<'a, C> {
-        TrailTags::new(self.client, self.trail_id)
+        TrailTags::new(self.client, self.trail_id, self.selected_capability_id)
     }
 }

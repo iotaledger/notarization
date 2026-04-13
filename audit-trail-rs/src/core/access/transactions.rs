@@ -35,6 +35,7 @@ pub struct CreateRole {
     name: String,
     permissions: PermissionSet,
     role_tags: Option<RoleTags>,
+    selected_capability_id: Option<ObjectID>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
@@ -48,6 +49,7 @@ impl CreateRole {
         name: String,
         permissions: PermissionSet,
         role_tags: Option<RoleTags>,
+        selected_capability_id: Option<ObjectID>,
     ) -> Self {
         Self {
             trail_id,
@@ -55,6 +57,7 @@ impl CreateRole {
             name,
             permissions,
             role_tags,
+            selected_capability_id,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -70,6 +73,7 @@ impl CreateRole {
             self.name.clone(),
             self.permissions.clone(),
             self.role_tags.clone(),
+            self.selected_capability_id,
         )
         .await
     }
@@ -125,6 +129,7 @@ pub struct UpdateRole {
     name: String,
     permissions: PermissionSet,
     role_tags: Option<RoleTags>,
+    selected_capability_id: Option<ObjectID>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
@@ -136,6 +141,7 @@ impl UpdateRole {
         name: String,
         permissions: PermissionSet,
         role_tags: Option<RoleTags>,
+        selected_capability_id: Option<ObjectID>,
     ) -> Self {
         Self {
             trail_id,
@@ -143,6 +149,7 @@ impl UpdateRole {
             name,
             permissions,
             role_tags,
+            selected_capability_id,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -158,6 +165,7 @@ impl UpdateRole {
             self.name.clone(),
             self.permissions.clone(),
             self.role_tags.clone(),
+            self.selected_capability_id,
         )
         .await
     }
@@ -210,16 +218,23 @@ pub struct DeleteRole {
     trail_id: ObjectID,
     owner: IotaAddress,
     name: String,
+    selected_capability_id: Option<ObjectID>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl DeleteRole {
     /// Creates a `DeleteRole` transaction builder payload.
-    pub fn new(trail_id: ObjectID, owner: IotaAddress, name: String) -> Self {
+    pub fn new(
+        trail_id: ObjectID,
+        owner: IotaAddress,
+        name: String,
+        selected_capability_id: Option<ObjectID>,
+    ) -> Self {
         Self {
             trail_id,
             owner,
             name,
+            selected_capability_id,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -228,7 +243,14 @@ impl DeleteRole {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        AccessOps::delete_role(client, self.trail_id, self.owner, self.name.clone()).await
+        AccessOps::delete_role(
+            client,
+            self.trail_id,
+            self.owner,
+            self.name.clone(),
+            self.selected_capability_id,
+        )
+        .await
     }
 }
 
@@ -281,17 +303,25 @@ pub struct IssueCapability {
     owner: IotaAddress,
     role: String,
     options: CapabilityIssueOptions,
+    selected_capability_id: Option<ObjectID>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl IssueCapability {
     /// Creates an `IssueCapability` transaction builder payload.
-    pub fn new(trail_id: ObjectID, owner: IotaAddress, role: String, options: CapabilityIssueOptions) -> Self {
+    pub fn new(
+        trail_id: ObjectID,
+        owner: IotaAddress,
+        role: String,
+        options: CapabilityIssueOptions,
+        selected_capability_id: Option<ObjectID>,
+    ) -> Self {
         Self {
             trail_id,
             owner,
             role,
             options,
+            selected_capability_id,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -306,6 +336,7 @@ impl IssueCapability {
             self.owner,
             self.role.clone(),
             self.options.clone(),
+            self.selected_capability_id,
         )
         .await
     }
@@ -360,6 +391,7 @@ pub struct RevokeCapability {
     owner: IotaAddress,
     capability_id: ObjectID,
     capability_valid_until: Option<u64>,
+    selected_capability_id: Option<ObjectID>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
@@ -370,12 +402,14 @@ impl RevokeCapability {
         owner: IotaAddress,
         capability_id: ObjectID,
         capability_valid_until: Option<u64>,
+        selected_capability_id: Option<ObjectID>,
     ) -> Self {
         Self {
             trail_id,
             owner,
             capability_id,
             capability_valid_until,
+            selected_capability_id,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -390,6 +424,7 @@ impl RevokeCapability {
             self.owner,
             self.capability_id,
             self.capability_valid_until,
+            self.selected_capability_id,
         )
         .await
     }
@@ -443,16 +478,23 @@ pub struct DestroyCapability {
     trail_id: ObjectID,
     owner: IotaAddress,
     capability_id: ObjectID,
+    selected_capability_id: Option<ObjectID>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl DestroyCapability {
     /// Creates a `DestroyCapability` transaction builder payload.
-    pub fn new(trail_id: ObjectID, owner: IotaAddress, capability_id: ObjectID) -> Self {
+    pub fn new(
+        trail_id: ObjectID,
+        owner: IotaAddress,
+        capability_id: ObjectID,
+        selected_capability_id: Option<ObjectID>,
+    ) -> Self {
         Self {
             trail_id,
             owner,
             capability_id,
+            selected_capability_id,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -461,7 +503,14 @@ impl DestroyCapability {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        AccessOps::destroy_capability(client, self.trail_id, self.owner, self.capability_id).await
+        AccessOps::destroy_capability(
+            client,
+            self.trail_id,
+            self.owner,
+            self.capability_id,
+            self.selected_capability_id,
+        )
+        .await
     }
 }
 
@@ -584,6 +633,7 @@ pub struct RevokeInitialAdminCapability {
     owner: IotaAddress,
     capability_id: ObjectID,
     capability_valid_until: Option<u64>,
+    selected_capability_id: Option<ObjectID>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
@@ -594,12 +644,14 @@ impl RevokeInitialAdminCapability {
         owner: IotaAddress,
         capability_id: ObjectID,
         capability_valid_until: Option<u64>,
+        selected_capability_id: Option<ObjectID>,
     ) -> Self {
         Self {
             trail_id,
             owner,
             capability_id,
             capability_valid_until,
+            selected_capability_id,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -614,6 +666,7 @@ impl RevokeInitialAdminCapability {
             self.owner,
             self.capability_id,
             self.capability_valid_until,
+            self.selected_capability_id,
         )
         .await
     }
@@ -666,15 +719,17 @@ impl Transaction for RevokeInitialAdminCapability {
 pub struct CleanupRevokedCapabilities {
     trail_id: ObjectID,
     owner: IotaAddress,
+    selected_capability_id: Option<ObjectID>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl CleanupRevokedCapabilities {
     /// Creates a `CleanupRevokedCapabilities` transaction builder payload.
-    pub fn new(trail_id: ObjectID, owner: IotaAddress) -> Self {
+    pub fn new(trail_id: ObjectID, owner: IotaAddress, selected_capability_id: Option<ObjectID>) -> Self {
         Self {
             trail_id,
             owner,
+            selected_capability_id,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -683,7 +738,7 @@ impl CleanupRevokedCapabilities {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        AccessOps::cleanup_revoked_capabilities(client, self.trail_id, self.owner).await
+        AccessOps::cleanup_revoked_capabilities(client, self.trail_id, self.owner, self.selected_capability_id).await
     }
 }
 

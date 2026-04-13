@@ -23,11 +23,22 @@ pub use transactions::{AddRecordTag, RemoveRecordTag};
 pub struct TrailTags<'a, C> {
     pub(crate) client: &'a C,
     pub(crate) trail_id: ObjectID,
+    pub(crate) selected_capability_id: Option<ObjectID>,
 }
 
 impl<'a, C> TrailTags<'a, C> {
-    pub(crate) fn new(client: &'a C, trail_id: ObjectID) -> Self {
-        Self { client, trail_id }
+    pub(crate) fn new(client: &'a C, trail_id: ObjectID, selected_capability_id: Option<ObjectID>) -> Self {
+        Self {
+            client,
+            trail_id,
+            selected_capability_id,
+        }
+    }
+
+    /// Uses the provided capability as the auth capability for subsequent write operations.
+    pub fn using_capability(mut self, capability_id: ObjectID) -> Self {
+        self.selected_capability_id = Some(capability_id);
+        self
     }
 
     /// Adds a tag to the trail-owned record-tag registry.
@@ -39,7 +50,12 @@ impl<'a, C> TrailTags<'a, C> {
         S: Signer<IotaKeySignature> + OptionalSync,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(AddRecordTag::new(self.trail_id, owner, tag.into()))
+        TransactionBuilder::new(AddRecordTag::new(
+            self.trail_id,
+            owner,
+            tag.into(),
+            self.selected_capability_id,
+        ))
     }
 
     /// Removes a tag from the trail-owned record-tag registry.
@@ -51,6 +67,11 @@ impl<'a, C> TrailTags<'a, C> {
         S: Signer<IotaKeySignature> + OptionalSync,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(RemoveRecordTag::new(self.trail_id, owner, tag.into()))
+        TransactionBuilder::new(RemoveRecordTag::new(
+            self.trail_id,
+            owner,
+            tag.into(),
+            self.selected_capability_id,
+        ))
     }
 }

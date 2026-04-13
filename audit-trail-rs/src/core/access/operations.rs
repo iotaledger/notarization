@@ -35,6 +35,7 @@ impl AccessOps {
         name: String,
         permissions: PermissionSet,
         role_tags: Option<RoleTags>,
+        selected_capability_id: Option<ObjectID>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -46,6 +47,7 @@ impl AccessOps {
             trail_id,
             owner,
             Permission::AddRoles,
+            selected_capability_id,
             "create_role",
             |ptb, _| {
                 let role = tx::ptb_pure(ptb, "role", name)?;
@@ -86,6 +88,7 @@ impl AccessOps {
         name: String,
         permissions: PermissionSet,
         role_tags: Option<RoleTags>,
+        selected_capability_id: Option<ObjectID>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -97,6 +100,7 @@ impl AccessOps {
             trail_id,
             owner,
             Permission::UpdateRoles,
+            selected_capability_id,
             "update_role_permissions",
             |ptb, _| {
                 let role = tx::ptb_pure(ptb, "role", name)?;
@@ -136,6 +140,7 @@ impl AccessOps {
         trail_id: ObjectID,
         owner: IotaAddress,
         name: String,
+        selected_capability_id: Option<ObjectID>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -145,6 +150,7 @@ impl AccessOps {
             trail_id,
             owner,
             Permission::DeleteRoles,
+            selected_capability_id,
             "delete_role",
             |ptb, _| {
                 let role = tx::ptb_pure(ptb, "role", name)?;
@@ -166,6 +172,7 @@ impl AccessOps {
         owner: IotaAddress,
         role_name: String,
         options: CapabilityIssueOptions,
+        selected_capability_id: Option<ObjectID>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -175,6 +182,7 @@ impl AccessOps {
             trail_id,
             owner,
             Permission::AddCapabilities,
+            selected_capability_id,
             "new_capability",
             |ptb, _| {
                 let role = tx::ptb_pure(ptb, "role", role_name)?;
@@ -199,6 +207,7 @@ impl AccessOps {
         owner: IotaAddress,
         capability_id: ObjectID,
         capability_valid_until: Option<u64>,
+        selected_capability_id: Option<ObjectID>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -208,6 +217,7 @@ impl AccessOps {
             trail_id,
             owner,
             Permission::RevokeCapabilities,
+            selected_capability_id,
             "revoke_capability",
             |ptb, _| {
                 let cap = tx::ptb_pure(ptb, "capability_id", capability_id)?;
@@ -229,6 +239,7 @@ impl AccessOps {
         trail_id: ObjectID,
         owner: IotaAddress,
         capability_id: ObjectID,
+        selected_capability_id: Option<ObjectID>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -240,6 +251,7 @@ impl AccessOps {
             trail_id,
             owner,
             Permission::RevokeCapabilities,
+            selected_capability_id,
             "destroy_capability",
             |ptb, _| {
                 let cap_to_destroy = ptb
@@ -286,6 +298,7 @@ impl AccessOps {
         owner: IotaAddress,
         capability_id: ObjectID,
         capability_valid_until: Option<u64>,
+        selected_capability_id: Option<ObjectID>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -295,6 +308,7 @@ impl AccessOps {
             trail_id,
             owner,
             Permission::RevokeCapabilities,
+            selected_capability_id,
             "revoke_initial_admin_capability",
             |ptb, _| {
                 let cap = tx::ptb_pure(ptb, "capability_id", capability_id)?;
@@ -315,6 +329,7 @@ impl AccessOps {
         client: &C,
         trail_id: ObjectID,
         owner: IotaAddress,
+        selected_capability_id: Option<ObjectID>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -324,6 +339,7 @@ impl AccessOps {
             trail_id,
             owner,
             Permission::RevokeCapabilities,
+            selected_capability_id,
             "cleanup_revoked_capabilities",
             |ptb, _| {
                 let clock = tx::get_clock_ref(ptb);

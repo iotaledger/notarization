@@ -104,7 +104,8 @@ use crate::iota_interaction_adapter::IotaClientAdapter;
 #[non_exhaustive]
 pub struct NoSigner;
 
-/// Error returned when constructing an [`AuditTrailClient`] from an IOTA client fails.
+/// The error that results from a failed attempt at creating an [`AuditTrailClient`]
+/// from a given [IotaClient].
 #[derive(Debug, thiserror::Error)]
 #[error("failed to create an 'AuditTrailClient' from the given 'IotaClient'")]
 #[non_exhaustive]

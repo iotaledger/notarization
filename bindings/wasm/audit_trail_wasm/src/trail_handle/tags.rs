@@ -2,20 +2,22 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::anyhow;
-use audit_trail::AuditTrailClient;
+use audit_trail::{AuditTrailClient, AuditTrailClientReadOnly};
 use iota_interaction::types::base_types::ObjectID;
 use iota_interaction_ts::bindings::WasmTransactionSigner;
-use iota_interaction_ts::wasm_error::{wasm_error, Result};
+use iota_interaction_ts::wasm_error::{wasm_error, Result, WasmResult};
 use product_common::bindings::transaction::WasmTransactionBuilder;
 use product_common::bindings::utils::into_transaction_builder;
 use wasm_bindgen::prelude::*;
 
 use crate::trail::{WasmAddRecordTag, WasmRemoveRecordTag};
+use crate::types::WasmRecordTagEntry;
 
 /// Tag-registry API scoped to a specific trail.
 #[derive(Clone)]
 #[wasm_bindgen(js_name = TrailTags, inspectable)]
 pub struct WasmTrailTags {
+    pub(crate) read_only: AuditTrailClientReadOnly,
     pub(crate) full: Option<AuditTrailClient<WasmTransactionSigner>>,
     pub(crate) trail_id: ObjectID,
 }
@@ -33,6 +35,17 @@ impl WasmTrailTags {
 
 #[wasm_bindgen(js_class = TrailTags)]
 impl WasmTrailTags {
+    pub async fn list(&self) -> Result<Vec<WasmRecordTagEntry>> {
+        let trail = self.read_only.trail(self.trail_id).get().await.wasm_result()?;
+        let mut tags: Vec<WasmRecordTagEntry> = trail
+            .tags
+            .iter()
+            .map(|(tag, usage_count)| (tag.clone(), *usage_count).into())
+            .collect();
+        tags.sort_unstable_by(|left, right| left.tag.cmp(&right.tag));
+        Ok(tags)
+    }
+
     /// Builds a transaction that adds a tag to the trail registry.
     #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<AddRecordTag>")]
     pub fn add(&self, tag: String) -> Result<WasmTransactionBuilder> {

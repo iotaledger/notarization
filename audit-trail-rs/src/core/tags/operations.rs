@@ -25,6 +25,7 @@ impl TagsOps {
         trail_id: ObjectID,
         owner: IotaAddress,
         tag: String,
+        selected_capability_id: Option<ObjectID>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -34,6 +35,7 @@ impl TagsOps {
             trail_id,
             owner,
             Permission::AddRecordTags,
+            selected_capability_id,
             "add_record_tag",
             |ptb, _| {
                 let tag_arg = tx::ptb_pure(ptb, "tag", tag)?;
@@ -50,6 +52,7 @@ impl TagsOps {
         trail_id: ObjectID,
         owner: IotaAddress,
         tag: String,
+        selected_capability_id: Option<ObjectID>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -59,6 +62,7 @@ impl TagsOps {
             trail_id,
             owner,
             Permission::DeleteRecordTags,
+            selected_capability_id,
             "remove_record_tag",
             |ptb, _| {
                 let tag_arg = tx::ptb_pure(ptb, "tag", tag)?;
