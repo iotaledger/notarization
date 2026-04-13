@@ -62,8 +62,8 @@ pub async fn get_funded_audit_trail_client() -> Result<AuditTrailClient<InMemSig
     let client = AuditTrailClient::from_iota_client(
         iota_client,
         Some(PackageOverrides {
-            audit_trail_package_id: Some(audit_trail_pkg_id),
-            tf_components_package_id: Some(tf_components_pkg_id),
+            audit_trail: Some(audit_trail_pkg_id),
+            tf_component: Some(tf_components_pkg_id),
         }),
     )
     .await

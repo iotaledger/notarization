@@ -287,8 +287,7 @@ mod tests {
         let owner = IotaAddress::random_for_testing_only();
         let trail_id = dbg_object_id(6);
         let valid_roles = HashSet::from(["Writer".to_string()]);
-        let mut cap = make_capability(dbg_object_id(7), trail_id, "Writer", None);
-        cap.valid_from = Some(2_000);
+        let cap = make_capability(dbg_object_id(7), trail_id, "Writer", None, Some(2_000), None);
 
         assert!(!capability_matches(&cap, owner, 1_999, &HashSet::new(), &|candidate| {
             candidate.matches_target_and_role(trail_id, &valid_roles)
@@ -303,8 +302,7 @@ mod tests {
         let owner = IotaAddress::random_for_testing_only();
         let trail_id = dbg_object_id(8);
         let valid_roles = HashSet::from(["Writer".to_string()]);
-        let mut cap = make_capability(dbg_object_id(9), trail_id, "Writer", None);
-        cap.valid_until = Some(2_000);
+        let cap = make_capability(dbg_object_id(9), trail_id, "Writer", None, None, Some(2_000));
 
         assert!(capability_matches(&cap, owner, 2_000, &HashSet::new(), &|candidate| {
             candidate.matches_target_and_role(trail_id, &valid_roles)
@@ -321,7 +319,7 @@ mod tests {
         let valid_roles = HashSet::from(["Writer".to_string()]);
         let cap = make_capability(dbg_object_id(7), trail_id, "Writer", None, None, None);
 
-        assert!(capability_matches(&cap, owner, &HashSet::new(), &|candidate| {
+        assert!(capability_matches(&cap, owner, 0, &HashSet::new(), &|candidate| {
             candidate.matches_target_and_role(trail_id, &valid_roles)
         }));
     }
@@ -333,13 +331,13 @@ mod tests {
         let valid_roles = HashSet::from(["Writer".to_string()]);
         let cap = make_capability(dbg_object_id(9), trail_id, "Reader", None, None, None);
 
-        assert!(!capability_matches(&cap, owner, &HashSet::new(), &|candidate| {
+        assert!(!capability_matches(&cap, owner, 0, &HashSet::new(), &|candidate| {
             candidate.matches_target_and_role(trail_id, &valid_roles)
         }));
     }
 
     #[test]
-    fn capability_matches_leaves_time_constraints_to_on_chain_validation() {
+    fn capability_matches_honors_time_constraints() {
         let owner = IotaAddress::random_for_testing_only();
         let trail_id = dbg_object_id(10);
         let valid_roles = HashSet::from(["Writer".to_string()]);
@@ -352,9 +350,13 @@ mod tests {
             Some(1_700_000_005_000),
         );
 
-        assert!(capability_matches(&cap, owner, &HashSet::new(), &|candidate| {
-            candidate.matches_target_and_role(trail_id, &valid_roles)
-        }));
+        assert!(capability_matches(
+            &cap,
+            owner,
+            1_700_000_000_000,
+            &HashSet::new(),
+            &|candidate| { candidate.matches_target_and_role(trail_id, &valid_roles) }
+        ));
     }
 
     fn make_capability(

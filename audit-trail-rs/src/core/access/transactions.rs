@@ -224,12 +224,7 @@ pub struct DeleteRole {
 
 impl DeleteRole {
     /// Creates a `DeleteRole` transaction builder payload.
-    pub fn new(
-        trail_id: ObjectID,
-        owner: IotaAddress,
-        name: String,
-        selected_capability_id: Option<ObjectID>,
-    ) -> Self {
+    pub fn new(trail_id: ObjectID, owner: IotaAddress, name: String, selected_capability_id: Option<ObjectID>) -> Self {
         Self {
             trail_id,
             owner,

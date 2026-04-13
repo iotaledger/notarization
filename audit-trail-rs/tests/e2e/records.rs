@@ -289,55 +289,6 @@ async fn revoked_capability_cannot_add_record_without_fallback() -> anyhow::Resu
 }
 
 #[tokio::test]
-    // Tagged record flow.
-    let tagged_trail_id = client
-        .create_test_trail_with_tags(Data::text("records-revoked-tagged"), ["finance"])
-        .await?;
-    let tagged_records = client.trail(tagged_trail_id).records();
-    let tagged_role_name = "TaggedWriter";
-
-    client
-        .create_role(
-            tagged_trail_id,
-            tagged_role_name,
-            [Permission::AddRecord],
-            Some(RoleTags::new(["finance"])),
-        )
-        .await?;
-
-    // Revoked capability.
-    let revoked_tagged_cap = client
-        .issue_cap(tagged_trail_id, tagged_role_name, CapabilityIssueOptions::default())
-        .await?;
-    client
-        .trail(tagged_trail_id)
-        .access()
-        .revoke_capability(revoked_tagged_cap.capability_id, revoked_tagged_cap.valid_until)
-        .build_and_execute(&client)
-        .await?;
-
-    // Valid fallback capability.
-    client
-        .issue_cap(tagged_trail_id, tagged_role_name, CapabilityIssueOptions::default())
-        .await?;
-
-    let tagged_added = tagged_records
-        .add(
-            Data::text("finance entry"),
-            Some("tagged".to_string()),
-            Some("finance".to_string()),
-        )
-        .build_and_execute(&client)
-        .await?
-        .output;
-
-    assert_eq!(tagged_added.sequence_number, 1);
-    assert_eq!(tagged_records.get(1).await?.tag, Some("finance".to_string()));
-
-    Ok(())
-}
-
-#[tokio::test]
 async fn add_tagged_record_skips_revoked_capability_when_valid_one_exists() -> anyhow::Result<()> {
     let client = get_funded_test_client().await?;
     let tagged_trail_id = client
