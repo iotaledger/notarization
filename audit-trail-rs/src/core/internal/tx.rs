@@ -72,6 +72,7 @@ pub(crate) async fn build_trail_transaction<C, F>(
     trail_id: ObjectID,
     owner: IotaAddress,
     permission: Permission,
+    selected_capability_id: Option<ObjectID>,
     method: impl AsRef<str>,
     additional_args: F,
 ) -> Result<ProgrammableTransaction, Error>
@@ -79,8 +80,12 @@ where
     F: FnOnce(&mut ProgrammableTransactionBuilder, &TypeTag) -> Result<Vec<Argument>, Error>,
     C: CoreClientReadOnly + OptionalSync,
 {
-    let trail = trail_reader::get_audit_trail(trail_id, client).await?;
-    let cap_ref = capability::find_capable_cap(client, owner, trail_id, &trail, permission).await?;
+    let cap_ref = if let Some(capability_id) = selected_capability_id {
+        get_object_ref_by_id(client, &capability_id).await?
+    } else {
+        let trail = trail_reader::get_audit_trail(trail_id, client).await?;
+        capability::find_capable_cap(client, owner, trail_id, &trail, permission).await?
+    };
     build_trail_transaction_with_cap_ref(client, trail_id, cap_ref, method, additional_args).await
 }
 

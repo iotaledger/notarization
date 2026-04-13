@@ -23,6 +23,7 @@ pub struct AddRecord {
     pub data: Data,
     pub metadata: Option<String>,
     pub tag: Option<String>,
+    pub selected_capability_id: Option<ObjectID>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
@@ -33,6 +34,7 @@ impl AddRecord {
         data: Data,
         metadata: Option<String>,
         tag: Option<String>,
+        selected_capability_id: Option<ObjectID>,
     ) -> Self {
         Self {
             trail_id,
@@ -40,6 +42,7 @@ impl AddRecord {
             data,
             metadata,
             tag,
+            selected_capability_id,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -55,6 +58,7 @@ impl AddRecord {
             self.data.clone(),
             self.metadata.clone(),
             self.tag.clone(),
+            self.selected_capability_id,
         )
         .await
     }
@@ -106,15 +110,22 @@ pub struct DeleteRecord {
     pub trail_id: ObjectID,
     pub owner: IotaAddress,
     pub sequence_number: u64,
+    pub selected_capability_id: Option<ObjectID>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl DeleteRecord {
-    pub fn new(trail_id: ObjectID, owner: IotaAddress, sequence_number: u64) -> Self {
+    pub fn new(
+        trail_id: ObjectID,
+        owner: IotaAddress,
+        sequence_number: u64,
+        selected_capability_id: Option<ObjectID>,
+    ) -> Self {
         Self {
             trail_id,
             owner,
             sequence_number,
+            selected_capability_id,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -123,7 +134,14 @@ impl DeleteRecord {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        RecordsOps::delete_record(client, self.trail_id, self.owner, self.sequence_number).await
+        RecordsOps::delete_record(
+            client,
+            self.trail_id,
+            self.owner,
+            self.sequence_number,
+            self.selected_capability_id,
+        )
+        .await
     }
 }
 
@@ -173,15 +191,17 @@ pub struct DeleteRecordsBatch {
     pub trail_id: ObjectID,
     pub owner: IotaAddress,
     pub limit: u64,
+    pub selected_capability_id: Option<ObjectID>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl DeleteRecordsBatch {
-    pub fn new(trail_id: ObjectID, owner: IotaAddress, limit: u64) -> Self {
+    pub fn new(trail_id: ObjectID, owner: IotaAddress, limit: u64, selected_capability_id: Option<ObjectID>) -> Self {
         Self {
             trail_id,
             owner,
             limit,
+            selected_capability_id,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -190,7 +210,14 @@ impl DeleteRecordsBatch {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        RecordsOps::delete_records_batch(client, self.trail_id, self.owner, self.limit).await
+        RecordsOps::delete_records_batch(
+            client,
+            self.trail_id,
+            self.owner,
+            self.limit,
+            self.selected_capability_id,
+        )
+        .await
     }
 }
 

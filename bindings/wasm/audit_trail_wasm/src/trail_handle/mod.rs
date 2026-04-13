@@ -116,6 +116,7 @@ impl WasmAuditTrailHandle {
 
     pub fn tags(&self) -> WasmTrailTags {
         WasmTrailTags {
+            read_only: self.read_only.clone(),
             full: self.full.clone(),
             trail_id: self.trail_id,
         }

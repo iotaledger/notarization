@@ -8,6 +8,9 @@ on:
       version:
         description: "Version to publish docs under (e.g. `v1.2.3-dev.1`)"
         required: true
+      ref:
+        description: "Optional git ref to checkout before building docs"
+        required: false
 
 env:
   GH_TOKEN: ${{ github.token }}

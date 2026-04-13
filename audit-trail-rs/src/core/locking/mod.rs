@@ -22,11 +22,22 @@ use self::operations::LockingOps;
 pub struct TrailLocking<'a, C> {
     pub(crate) client: &'a C,
     pub(crate) trail_id: ObjectID,
+    pub(crate) selected_capability_id: Option<ObjectID>,
 }
 
 impl<'a, C> TrailLocking<'a, C> {
-    pub(crate) fn new(client: &'a C, trail_id: ObjectID) -> Self {
-        Self { client, trail_id }
+    pub(crate) fn new(client: &'a C, trail_id: ObjectID, selected_capability_id: Option<ObjectID>) -> Self {
+        Self {
+            client,
+            trail_id,
+            selected_capability_id,
+        }
+    }
+
+    /// Uses the provided capability as the auth capability for subsequent write operations.
+    pub fn using_capability(mut self, capability_id: ObjectID) -> Self {
+        self.selected_capability_id = Some(capability_id);
+        self
     }
 
     pub fn update<S>(&self, config: LockingConfig) -> TransactionBuilder<UpdateLockingConfig>
@@ -35,7 +46,12 @@ impl<'a, C> TrailLocking<'a, C> {
         S: Signer<IotaKeySignature> + OptionalSync,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(UpdateLockingConfig::new(self.trail_id, owner, config))
+        TransactionBuilder::new(UpdateLockingConfig::new(
+            self.trail_id,
+            owner,
+            config,
+            self.selected_capability_id,
+        ))
     }
 
     pub fn update_delete_record_window<S>(&self, window: LockingWindow) -> TransactionBuilder<UpdateDeleteRecordWindow>
@@ -44,7 +60,12 @@ impl<'a, C> TrailLocking<'a, C> {
         S: Signer<IotaKeySignature> + OptionalSync,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(UpdateDeleteRecordWindow::new(self.trail_id, owner, window))
+        TransactionBuilder::new(UpdateDeleteRecordWindow::new(
+            self.trail_id,
+            owner,
+            window,
+            self.selected_capability_id,
+        ))
     }
 
     pub fn update_delete_trail_lock<S>(&self, lock: TimeLock) -> TransactionBuilder<UpdateDeleteTrailLock>
@@ -53,7 +74,12 @@ impl<'a, C> TrailLocking<'a, C> {
         S: Signer<IotaKeySignature> + OptionalSync,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(UpdateDeleteTrailLock::new(self.trail_id, owner, lock))
+        TransactionBuilder::new(UpdateDeleteTrailLock::new(
+            self.trail_id,
+            owner,
+            lock,
+            self.selected_capability_id,
+        ))
     }
 
     pub fn update_write_lock<S>(&self, lock: TimeLock) -> TransactionBuilder<UpdateWriteLock>
@@ -62,7 +88,12 @@ impl<'a, C> TrailLocking<'a, C> {
         S: Signer<IotaKeySignature> + OptionalSync,
     {
         let owner = self.client.sender_address();
-        TransactionBuilder::new(UpdateWriteLock::new(self.trail_id, owner, lock))
+        TransactionBuilder::new(UpdateWriteLock::new(
+            self.trail_id,
+            owner,
+            lock,
+            self.selected_capability_id,
+        ))
     }
 
     pub async fn is_record_locked(&self, sequence_number: u64) -> Result<bool, Error>

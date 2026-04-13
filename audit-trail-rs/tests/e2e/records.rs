@@ -1,6 +1,8 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+use std::time::{SystemTime, UNIX_EPOCH};
+
 use audit_trail::core::types::{
     CapabilityIssueOptions, Data, InitialRecord, LockingConfig, LockingWindow, Permission, RoleTags, TimeLock,
 };
@@ -173,116 +175,304 @@ async fn add_tagged_record_requires_trail_defined_tag() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn add_record_skips_revoked_capability_when_valid_one_exists() -> anyhow::Result<()> {
-    let admin = get_funded_test_client().await?;
-    let writer = get_funded_test_client().await?;
-    let trail_id = admin.create_test_trail(Data::text("records-revoked-selector")).await?;
-    let records = writer.trail(trail_id).records();
+async fn add_record_selector_skips_revoked_capability_when_valid_one_exists() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+
+    // Untagged record flow.
+    let trail_id = client.create_test_trail(Data::text("records-revoked-selector")).await?;
+    let records = client.trail(trail_id).records();
     let role_name = "RecordWriter";
 
-    admin
+    client
         .create_role(trail_id, role_name, [Permission::AddRecord], None)
         .await?;
-    let stale_cap = admin
-        .issue_cap(
-            trail_id,
-            role_name,
-            CapabilityIssueOptions {
-                issued_to: Some(writer.sender_address()),
-                ..CapabilityIssueOptions::default()
-            },
-        )
-        .await?;
 
-    admin
+    // Revoked capability.
+    let revoked_cap = client
+        .issue_cap(trail_id, role_name, CapabilityIssueOptions::default())
+        .await?;
+    client
         .trail(trail_id)
         .access()
-        .revoke_capability(stale_cap.capability_id, stale_cap.valid_until)
-        .build_and_execute(&admin)
+        .revoke_capability(revoked_cap.capability_id, revoked_cap.valid_until)
+        .build_and_execute(&client)
         .await?;
 
-    admin
-        .issue_cap(
-            trail_id,
-            role_name,
-            CapabilityIssueOptions {
-                issued_to: Some(writer.sender_address()),
-                ..CapabilityIssueOptions::default()
-            },
-        )
+    // Valid fallback capability.
+    client
+        .issue_cap(trail_id, role_name, CapabilityIssueOptions::default())
         .await?;
 
     let added = records
         .add(Data::text("writer record"), None, None)
-        .build_and_execute(&writer)
+        .build_and_execute(&client)
         .await?
         .output;
 
     assert_eq!(added.sequence_number, 1);
     assert_text_data(records.get(1).await?.data, "writer record");
 
-    Ok(())
-}
-
-#[tokio::test]
-async fn add_tagged_record_skips_revoked_capability_when_valid_one_exists() -> anyhow::Result<()> {
-    let admin = get_funded_test_client().await?;
-    let writer = get_funded_test_client().await?;
-    let trail_id = admin
+    // Tagged record flow.
+    let tagged_trail_id = client
         .create_test_trail_with_tags(Data::text("records-revoked-tagged"), ["finance"])
         .await?;
-    let records = writer.trail(trail_id).records();
-    let role_name = "TaggedWriter";
-    admin
+    let tagged_records = client.trail(tagged_trail_id).records();
+    let tagged_role_name = "TaggedWriter";
+
+    client
         .create_role(
-            trail_id,
-            role_name,
+            tagged_trail_id,
+            tagged_role_name,
             [Permission::AddRecord],
             Some(RoleTags::new(["finance"])),
         )
         .await?;
 
-    let stale_cap = admin
-        .issue_cap(
-            trail_id,
-            role_name,
-            CapabilityIssueOptions {
-                issued_to: Some(writer.sender_address()),
-                ..CapabilityIssueOptions::default()
-            },
-        )
+    // Revoked capability.
+    let revoked_tagged_cap = client
+        .issue_cap(tagged_trail_id, tagged_role_name, CapabilityIssueOptions::default())
         .await?;
-
-    admin
-        .trail(trail_id)
+    client
+        .trail(tagged_trail_id)
         .access()
-        .revoke_capability(stale_cap.capability_id, stale_cap.valid_until)
-        .build_and_execute(&admin)
+        .revoke_capability(revoked_tagged_cap.capability_id, revoked_tagged_cap.valid_until)
+        .build_and_execute(&client)
         .await?;
 
-    admin
-        .issue_cap(
-            trail_id,
-            role_name,
-            CapabilityIssueOptions {
-                issued_to: Some(writer.sender_address()),
-                ..CapabilityIssueOptions::default()
-            },
-        )
+    // Valid fallback capability.
+    client
+        .issue_cap(tagged_trail_id, tagged_role_name, CapabilityIssueOptions::default())
         .await?;
 
-    let added = records
+    let tagged_added = tagged_records
         .add(
             Data::text("finance entry"),
             Some("tagged".to_string()),
             Some("finance".to_string()),
         )
-        .build_and_execute(&writer)
+        .build_and_execute(&client)
+        .await?
+        .output;
+
+    assert_eq!(tagged_added.sequence_number, 1);
+    assert_eq!(tagged_records.get(1).await?.tag, Some("finance".to_string()));
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn add_record_selector_skips_expired_capability_when_valid_one_exists() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let now_ms = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64;
+
+    // Untagged record flow.
+    let trail_id = client.create_test_trail(Data::text("records-expired-selector")).await?;
+    let records = client.trail(trail_id).records();
+    let role_name = "RecordWriter";
+
+    client
+        .create_role(trail_id, role_name, [Permission::AddRecord], None)
+        .await?;
+
+    // Expired capability.
+    client
+        .issue_cap(
+            trail_id,
+            role_name,
+            CapabilityIssueOptions {
+                valid_until_ms: Some(now_ms.saturating_sub(60_000)),
+                ..CapabilityIssueOptions::default()
+            },
+        )
+        .await?;
+
+    // Valid fallback capability.
+    client
+        .issue_cap(trail_id, role_name, CapabilityIssueOptions::default())
+        .await?;
+
+    let added = records
+        .add(Data::text("writer record"), None, None)
+        .build_and_execute(&client)
         .await?
         .output;
 
     assert_eq!(added.sequence_number, 1);
-    assert_eq!(records.get(1).await?.tag, Some("finance".to_string()));
+    assert_text_data(records.get(1).await?.data, "writer record");
+
+    // Tagged record flow.
+    let tagged_trail_id = client
+        .create_test_trail_with_tags(Data::text("records-expired-tagged"), ["finance"])
+        .await?;
+    let tagged_records = client.trail(tagged_trail_id).records();
+    let tagged_role_name = "TaggedWriter";
+
+    client
+        .create_role(
+            tagged_trail_id,
+            tagged_role_name,
+            [Permission::AddRecord],
+            Some(RoleTags::new(["finance"])),
+        )
+        .await?;
+
+    // Expired capability.
+    client
+        .issue_cap(
+            tagged_trail_id,
+            tagged_role_name,
+            CapabilityIssueOptions {
+                valid_until_ms: Some(now_ms.saturating_sub(60_000)),
+                ..CapabilityIssueOptions::default()
+            },
+        )
+        .await?;
+
+    // Valid fallback capability.
+    client
+        .issue_cap(tagged_trail_id, tagged_role_name, CapabilityIssueOptions::default())
+        .await?;
+
+    let tagged_added = tagged_records
+        .add(
+            Data::text("finance entry"),
+            Some("tagged".to_string()),
+            Some("finance".to_string()),
+        )
+        .build_and_execute(&client)
+        .await?
+        .output;
+
+    assert_eq!(tagged_added.sequence_number, 1);
+    assert_eq!(tagged_records.get(1).await?.tag, Some("finance".to_string()));
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn add_record_using_capability_uses_selected_capability_without_fallback() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let now_ms = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64;
+
+    // Untagged record flow.
+    let trail_id = client
+        .create_test_trail(Data::text("records-explicit-cap-selector"))
+        .await?;
+    let role_name = "RecordWriter";
+
+    client
+        .create_role(trail_id, role_name, [Permission::AddRecord], None)
+        .await?;
+
+    let expired_cap = client
+        .issue_cap(
+            trail_id,
+            role_name,
+            CapabilityIssueOptions {
+                valid_until_ms: Some(now_ms.saturating_sub(60_000)),
+                ..CapabilityIssueOptions::default()
+            },
+        )
+        .await?;
+    let valid_cap = client
+        .issue_cap(trail_id, role_name, CapabilityIssueOptions::default())
+        .await?;
+
+    let denied = client
+        .trail(trail_id)
+        .records()
+        .using_capability(expired_cap.capability_id)
+        .add(Data::text("should fail"), None, None)
+        .build_and_execute(&client)
+        .await;
+
+    assert!(
+        denied.is_err(),
+        "explicit capability selection should not fall back when the chosen capability is expired"
+    );
+
+    let added = client
+        .trail(trail_id)
+        .records()
+        .using_capability(valid_cap.capability_id)
+        .add(Data::text("writer record"), None, None)
+        .build_and_execute(&client)
+        .await?
+        .output;
+
+    assert_eq!(added.sequence_number, 1);
+    assert_text_data(client.trail(trail_id).records().get(1).await?.data, "writer record");
+
+    // Tagged record flow.
+    let tagged_trail_id = client
+        .create_test_trail_with_tags(Data::text("records-explicit-cap-tagged"), ["finance"])
+        .await?;
+    let tagged_role_name = "TaggedWriter";
+
+    client
+        .create_role(
+            tagged_trail_id,
+            tagged_role_name,
+            [Permission::AddRecord],
+            Some(RoleTags::new(["finance"])),
+        )
+        .await?;
+
+    let expired_tagged_cap = client
+        .issue_cap(
+            tagged_trail_id,
+            tagged_role_name,
+            CapabilityIssueOptions {
+                valid_until_ms: Some(now_ms.saturating_sub(60_000)),
+                ..CapabilityIssueOptions::default()
+            },
+        )
+        .await?;
+    let valid_tagged_cap = client
+        .issue_cap(tagged_trail_id, tagged_role_name, CapabilityIssueOptions::default())
+        .await?;
+
+    let tagged_denied = client
+        .trail(tagged_trail_id)
+        .records()
+        .using_capability(expired_tagged_cap.capability_id)
+        .add(
+            Data::text("should fail"),
+            Some("tagged".to_string()),
+            Some("finance".to_string()),
+        )
+        .build_and_execute(&client)
+        .await;
+
+    assert!(
+        tagged_denied.is_err(),
+        "tagged writes should also use the explicitly selected capability without fallback"
+    );
+
+    let tagged_added = client
+        .trail(tagged_trail_id)
+        .records()
+        .using_capability(valid_tagged_cap.capability_id)
+        .add(
+            Data::text("finance entry"),
+            Some("tagged".to_string()),
+            Some("finance".to_string()),
+        )
+        .build_and_execute(&client)
+        .await?
+        .output;
+
+    assert_eq!(tagged_added.sequence_number, 1);
+    assert_eq!(
+        client.trail(tagged_trail_id).records().get(1).await?.tag,
+        Some("finance".to_string())
+    );
 
     Ok(())
 }

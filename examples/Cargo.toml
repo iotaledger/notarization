@@ -10,49 +10,101 @@ path = "utils/utils.rs"
 
 [[example]]
 name = "01_create_locked_notarization"
-path = "01_create_locked_notarization.rs"
+path = "notarization/01_create_locked_notarization.rs"
 
 [[example]]
 name = "02_create_dynamic_notarization"
-path = "02_create_dynamic_notarization.rs"
+path = "notarization/02_create_dynamic_notarization.rs"
 
 [[example]]
 name = "03_update_dynamic_notarization"
-path = "03_update_dynamic_notarization.rs"
+path = "notarization/03_update_dynamic_notarization.rs"
 
 [[example]]
 name = "04_destroy_notarization"
-path = "04_destroy_notarization.rs"
+path = "notarization/04_destroy_notarization.rs"
 
 [[example]]
 name = "05_update_state"
-path = "05_update_state.rs"
+path = "notarization/05_update_state.rs"
 
 [[example]]
 name = "06_update_metadata"
-path = "06_update_metadata.rs"
+path = "notarization/06_update_metadata.rs"
 
 [[example]]
 name = "07_transfer_dynamic_notarization"
-path = "07_transfer_dynamic_notarization.rs"
+path = "notarization/07_transfer_dynamic_notarization.rs"
 
 [[example]]
 name = "08_access_read_only_methods"
-path = "08_access_read_only_methods.rs"
+path = "notarization/08_access_read_only_methods.rs"
 
 [[example]]
 name = "01_iot_weather_station"
-path = "real-world/01_iot_weather_station.rs"
+path = "notarization/real-world/01_iot_weather_station.rs"
 
 [[example]]
 name = "02_legal_contract"
-path = "real-world/02_legal_contract.rs"
+path = "notarization/real-world/02_legal_contract.rs"
+
+[[example]]
+name = "01_create_audit_trail"
+path = "audit-trail/01_create_audit_trail.rs"
+
+[[example]]
+name = "02_add_and_read_records"
+path = "audit-trail/02_add_and_read_records.rs"
+
+[[example]]
+name = "03_update_metadata"
+path = "audit-trail/03_update_metadata.rs"
+
+[[example]]
+name = "04_configure_locking"
+path = "audit-trail/04_configure_locking.rs"
+
+[[example]]
+name = "05_manage_access"
+path = "audit-trail/05_manage_access.rs"
+
+[[example]]
+name = "06_delete_records"
+path = "audit-trail/06_delete_records.rs"
+
+[[example]]
+name = "07_access_read_only_methods"
+path = "audit-trail/07_access_read_only_methods.rs"
+
+[[example]]
+name = "08_delete_audit_trail"
+path = "audit-trail/08_delete_audit_trail.rs"
+
+[[example]]
+name = "09_tagged_records"
+path = "audit-trail/advanced/09_tagged_records.rs"
+
+[[example]]
+name = "10_capability_constraints"
+path = "audit-trail/advanced/10_capability_constraints.rs"
+
+[[example]]
+name = "11_manage_record_tags"
+path = "audit-trail/advanced/11_manage_record_tags.rs"
+
+[[example]]
+name = "01_customs_clearance"
+path = "audit-trail/real-world/01_customs_clearance.rs"
+
+[[example]]
+name = "02_clinical_trial"
+path = "audit-trail/real-world/02_clinical_trial.rs"
 
 [dependencies]
 anyhow.workspace = true
+audit_trail = { path = "../audit-trail-rs" }
 chrono = { workspace = true }
 iota-sdk = { workspace = true }
-iota_interaction = { workspace = true }
 notarization = { path = "../notarization-rs" }
 product_common = { workspace = true, features = ["core-client", "test-utils", "transaction"] }
 serde_json = { workspace = true }

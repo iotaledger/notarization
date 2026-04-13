@@ -18,14 +18,16 @@ use crate::error::Error;
 pub struct Migrate {
     trail_id: ObjectID,
     owner: IotaAddress,
+    selected_capability_id: Option<ObjectID>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl Migrate {
-    pub fn new(trail_id: ObjectID, owner: IotaAddress) -> Self {
+    pub fn new(trail_id: ObjectID, owner: IotaAddress, selected_capability_id: Option<ObjectID>) -> Self {
         Self {
             trail_id,
             owner,
+            selected_capability_id,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -34,7 +36,7 @@ impl Migrate {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        TrailOps::migrate(client, self.trail_id, self.owner).await
+        TrailOps::migrate(client, self.trail_id, self.owner, self.selected_capability_id).await
     }
 }
 
@@ -64,15 +66,22 @@ pub struct UpdateMetadata {
     trail_id: ObjectID,
     owner: IotaAddress,
     metadata: Option<String>,
+    selected_capability_id: Option<ObjectID>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl UpdateMetadata {
-    pub fn new(trail_id: ObjectID, owner: IotaAddress, metadata: Option<String>) -> Self {
+    pub fn new(
+        trail_id: ObjectID,
+        owner: IotaAddress,
+        metadata: Option<String>,
+        selected_capability_id: Option<ObjectID>,
+    ) -> Self {
         Self {
             trail_id,
             owner,
             metadata,
+            selected_capability_id,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -81,7 +90,14 @@ impl UpdateMetadata {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        TrailOps::update_metadata(client, self.trail_id, self.owner, self.metadata.clone()).await
+        TrailOps::update_metadata(
+            client,
+            self.trail_id,
+            self.owner,
+            self.metadata.clone(),
+            self.selected_capability_id,
+        )
+        .await
     }
 }
 
@@ -110,14 +126,16 @@ impl Transaction for UpdateMetadata {
 pub struct DeleteAuditTrail {
     trail_id: ObjectID,
     owner: IotaAddress,
+    selected_capability_id: Option<ObjectID>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl DeleteAuditTrail {
-    pub fn new(trail_id: ObjectID, owner: IotaAddress) -> Self {
+    pub fn new(trail_id: ObjectID, owner: IotaAddress, selected_capability_id: Option<ObjectID>) -> Self {
         Self {
             trail_id,
             owner,
+            selected_capability_id,
             cached_ptb: OnceCell::new(),
         }
     }
@@ -126,7 +144,7 @@ impl DeleteAuditTrail {
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        TrailOps::delete_audit_trail(client, self.trail_id, self.owner).await
+        TrailOps::delete_audit_trail(client, self.trail_id, self.owner, self.selected_capability_id).await
     }
 }
 

@@ -17,14 +17,23 @@ impl TrailOps {
         client: &C,
         trail_id: ObjectID,
         owner: IotaAddress,
+        selected_capability_id: Option<ObjectID>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        tx::build_trail_transaction(client, trail_id, owner, Permission::Migrate, "migrate", |ptb, _| {
-            let clock = tx::get_clock_ref(ptb);
-            Ok(vec![clock])
-        })
+        tx::build_trail_transaction(
+            client,
+            trail_id,
+            owner,
+            Permission::Migrate,
+            selected_capability_id,
+            "migrate",
+            |ptb, _| {
+                let clock = tx::get_clock_ref(ptb);
+                Ok(vec![clock])
+            },
+        )
         .await
     }
 
@@ -33,6 +42,7 @@ impl TrailOps {
         trail_id: ObjectID,
         owner: IotaAddress,
         metadata: Option<String>,
+        selected_capability_id: Option<ObjectID>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -42,6 +52,7 @@ impl TrailOps {
             trail_id,
             owner,
             Permission::UpdateMetadata,
+            selected_capability_id,
             "update_metadata",
             |ptb, _| {
                 let metadata_arg = tx::ptb_pure(ptb, "new_metadata", metadata)?;
@@ -56,6 +67,7 @@ impl TrailOps {
         client: &C,
         trail_id: ObjectID,
         owner: IotaAddress,
+        selected_capability_id: Option<ObjectID>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -65,6 +77,7 @@ impl TrailOps {
             trail_id,
             owner,
             Permission::DeleteAuditTrail,
+            selected_capability_id,
             "delete_audit_trail",
             |ptb, _| {
                 let clock = tx::get_clock_ref(ptb);
