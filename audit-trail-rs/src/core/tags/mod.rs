@@ -1,6 +1,8 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! Record-tag registry APIs for audit trails.
+
 use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::{IotaKeySignature, OptionalSync};
 use product_common::core_client::CoreClient;
@@ -14,6 +16,9 @@ mod transactions;
 
 pub use transactions::{AddRecordTag, RemoveRecordTag};
 
+/// Tag-registry API scoped to a specific trail.
+///
+/// The registry defines the canonical set of tags that records and role-tag restrictions may reference.
 #[derive(Debug, Clone)]
 pub struct TrailTags<'a, C> {
     pub(crate) client: &'a C,
@@ -37,6 +42,8 @@ impl<'a, C> TrailTags<'a, C> {
     }
 
     /// Adds a tag to the trail-owned record-tag registry.
+    ///
+    /// Added tags become available to future tagged record writes and role-tag restrictions.
     pub fn add<S>(&self, tag: impl Into<String>) -> TransactionBuilder<AddRecordTag>
     where
         C: AuditTrailFull + CoreClient<S>,
@@ -52,6 +59,8 @@ impl<'a, C> TrailTags<'a, C> {
     }
 
     /// Removes a tag from the trail-owned record-tag registry.
+    ///
+    /// Removal fails on-chain while the tag is still referenced by existing records or role-tag policies.
     pub fn remove<S>(&self, tag: impl Into<String>) -> TransactionBuilder<RemoveRecordTag>
     where
         C: AuditTrailFull + CoreClient<S>,

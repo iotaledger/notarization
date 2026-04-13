@@ -16,15 +16,23 @@ use crate::core::internal::trail as trail_reader;
 use crate::core::types::{AuditTrailCreated, Event, OnChainAuditTrail};
 use crate::error::Error;
 
-/// Output of a create trail transaction.
+/// Output of a successful trail-creation transaction.
 #[derive(Debug, Clone)]
 pub struct TrailCreated {
+    /// Newly created trail object ID.
     pub trail_id: ObjectID,
+    /// Address that created the trail.
     pub creator: IotaAddress,
+    /// Millisecond timestamp emitted by the creation event.
     pub timestamp: u64,
 }
 
 impl TrailCreated {
+    /// Loads the newly created trail object from the ledger.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the trail cannot be fetched or deserialized.
     pub async fn fetch_audit_trail<C>(&self, client: &C) -> Result<OnChainAuditTrail, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -34,6 +42,9 @@ impl TrailCreated {
 }
 
 /// A transaction that creates a new audit trail.
+///
+/// The builder state is normalized into the exact Move `create` call shape, including tag-registry setup,
+/// optional initial-record creation, and initial-admin capability assignment.
 #[derive(Debug, Clone)]
 pub struct CreateTrail {
     builder: AuditTrailBuilder,

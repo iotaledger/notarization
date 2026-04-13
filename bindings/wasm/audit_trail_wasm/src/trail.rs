@@ -30,6 +30,7 @@ use crate::types::{
     WasmRoleCreated, WasmRoleDeleted, WasmRoleMap, WasmRoleUpdated,
 };
 
+/// Read-only view of an on-chain audit trail for wasm consumers.
 #[wasm_bindgen(js_name = OnChainAuditTrail, inspectable)]
 #[derive(Clone)]
 pub struct WasmOnChainAuditTrail(pub(crate) OnChainAuditTrail);
@@ -40,36 +41,43 @@ impl WasmOnChainAuditTrail {
         Self(trail)
     }
 
+    /// Returns the trail object ID.
     #[wasm_bindgen(getter)]
     pub fn id(&self) -> String {
         self.0.id.id.to_string()
     }
 
+    /// Returns the creator address.
     #[wasm_bindgen(getter)]
     pub fn creator(&self) -> String {
         self.0.creator.to_string()
     }
 
+    /// Returns the creation timestamp in milliseconds.
     #[wasm_bindgen(js_name = createdAt, getter)]
     pub fn created_at(&self) -> u64 {
         self.0.created_at
     }
 
+    /// Returns the current record sequence counter.
     #[wasm_bindgen(js_name = sequenceNumber, getter)]
     pub fn sequence_number(&self) -> u64 {
         self.0.sequence_number
     }
 
+    /// Returns the active locking configuration.
     #[wasm_bindgen(js_name = lockingConfig, getter)]
     pub fn locking_config(&self) -> WasmLockingConfig {
         self.0.locking_config.clone().into()
     }
 
+    /// Returns the record linked-table metadata.
     #[wasm_bindgen(getter)]
     pub fn records(&self) -> WasmLinkedTable {
         self.0.records.clone().into()
     }
 
+    /// Returns the trail-owned record tags together with usage counts.
     #[wasm_bindgen(getter)]
     pub fn tags(&self) -> Vec<WasmRecordTagEntry> {
         let mut tags: Vec<WasmRecordTagEntry> = self
@@ -82,21 +90,25 @@ impl WasmOnChainAuditTrail {
         tags
     }
 
+    /// Returns the trail role map.
     #[wasm_bindgen(getter)]
     pub fn roles(&self) -> WasmRoleMap {
         self.0.roles.clone().into()
     }
 
+    /// Returns immutable metadata when present.
     #[wasm_bindgen(js_name = immutableMetadata, getter)]
     pub fn immutable_metadata(&self) -> Option<WasmImmutableMetadata> {
         self.0.immutable_metadata.clone().map(Into::into)
     }
 
+    /// Returns mutable metadata when present.
     #[wasm_bindgen(js_name = updatableMetadata, getter)]
     pub fn updatable_metadata(&self) -> Option<String> {
         self.0.updatable_metadata.clone()
     }
 
+    /// Returns the on-chain version of the trail object.
     #[wasm_bindgen(getter)]
     pub fn version(&self) -> u64 {
         self.0.version
@@ -121,21 +133,25 @@ async fn apply_trail_created(
     Ok(trail.into())
 }
 
+/// Transaction wrapper for trail creation.
 #[wasm_bindgen(js_name = CreateTrail, inspectable)]
 pub struct WasmCreateTrail(pub(crate) CreateTrail);
 
 #[wasm_bindgen(js_class = CreateTrail)]
 impl WasmCreateTrail {
+    /// Creates a transaction wrapper from an [`AuditTrailBuilder`](crate::builder::WasmAuditTrailBuilder).
     #[wasm_bindgen(constructor)]
     pub fn new(builder: WasmAuditTrailBuilder) -> Self {
         Self(CreateTrail::new(builder.0))
     }
 
+    /// Builds the programmable transaction bytes for submission.
     #[wasm_bindgen(js_name = buildProgrammableTransaction)]
     pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
         build_programmable_transaction(&self.0, client).await
     }
 
+    /// Applies transaction effects and events and then fetches the created trail object.
     #[wasm_bindgen(js_name = applyWithEvents)]
     pub async fn apply_with_events(
         self,
@@ -147,6 +163,7 @@ impl WasmCreateTrail {
     }
 }
 
+/// Transaction wrapper for mutable-metadata updates.
 #[wasm_bindgen(js_name = UpdateMetadata, inspectable)]
 pub struct WasmUpdateMetadata(pub(crate) UpdateMetadata);
 
@@ -168,6 +185,7 @@ impl WasmUpdateMetadata {
     }
 }
 
+/// Transaction wrapper for trail migration.
 #[wasm_bindgen(js_name = Migrate, inspectable)]
 pub struct WasmMigrate(pub(crate) Migrate);
 
@@ -189,6 +207,7 @@ impl WasmMigrate {
     }
 }
 
+/// Transaction wrapper for deleting a trail.
 #[wasm_bindgen(js_name = DeleteAuditTrail, inspectable)]
 pub struct WasmDeleteAuditTrail(pub(crate) DeleteAuditTrail);
 
@@ -211,6 +230,7 @@ impl WasmDeleteAuditTrail {
     }
 }
 
+/// Transaction wrapper for replacing the full locking configuration.
 #[wasm_bindgen(js_name = UpdateLockingConfig, inspectable)]
 pub struct WasmUpdateLockingConfig(pub(crate) UpdateLockingConfig);
 
@@ -232,6 +252,7 @@ impl WasmUpdateLockingConfig {
     }
 }
 
+/// Transaction wrapper for updating the delete-record window.
 #[wasm_bindgen(js_name = UpdateDeleteRecordWindow, inspectable)]
 pub struct WasmUpdateDeleteRecordWindow(pub(crate) UpdateDeleteRecordWindow);
 
@@ -253,6 +274,7 @@ impl WasmUpdateDeleteRecordWindow {
     }
 }
 
+/// Transaction wrapper for updating the delete-trail lock.
 #[wasm_bindgen(js_name = UpdateDeleteTrailLock, inspectable)]
 pub struct WasmUpdateDeleteTrailLock(pub(crate) UpdateDeleteTrailLock);
 
@@ -274,6 +296,7 @@ impl WasmUpdateDeleteTrailLock {
     }
 }
 
+/// Transaction wrapper for updating the write lock.
 #[wasm_bindgen(js_name = UpdateWriteLock, inspectable)]
 pub struct WasmUpdateWriteLock(pub(crate) UpdateWriteLock);
 
@@ -295,6 +318,7 @@ impl WasmUpdateWriteLock {
     }
 }
 
+/// Transaction wrapper for creating a role.
 #[wasm_bindgen(js_name = CreateRole, inspectable)]
 pub struct WasmCreateRole(pub(crate) CreateRole);
 
@@ -317,6 +341,7 @@ impl WasmCreateRole {
     }
 }
 
+/// Transaction wrapper for updating a role.
 #[wasm_bindgen(js_name = UpdateRole, inspectable)]
 pub struct WasmUpdateRole(pub(crate) UpdateRole);
 
@@ -339,6 +364,7 @@ impl WasmUpdateRole {
     }
 }
 
+/// Transaction wrapper for deleting a role.
 #[wasm_bindgen(js_name = DeleteRole, inspectable)]
 pub struct WasmDeleteRole(pub(crate) DeleteRole);
 
@@ -361,6 +387,7 @@ impl WasmDeleteRole {
     }
 }
 
+/// Transaction wrapper for issuing a capability.
 #[wasm_bindgen(js_name = IssueCapability, inspectable)]
 pub struct WasmIssueCapability(pub(crate) IssueCapability);
 
@@ -383,6 +410,7 @@ impl WasmIssueCapability {
     }
 }
 
+/// Transaction wrapper for revoking a capability.
 #[wasm_bindgen(js_name = RevokeCapability, inspectable)]
 pub struct WasmRevokeCapability(pub(crate) RevokeCapability);
 
@@ -405,6 +433,7 @@ impl WasmRevokeCapability {
     }
 }
 
+/// Transaction wrapper for destroying a capability.
 #[wasm_bindgen(js_name = DestroyCapability, inspectable)]
 pub struct WasmDestroyCapability(pub(crate) DestroyCapability);
 
@@ -427,6 +456,7 @@ impl WasmDestroyCapability {
     }
 }
 
+/// Transaction wrapper for destroying an initial-admin capability.
 #[wasm_bindgen(js_name = DestroyInitialAdminCapability, inspectable)]
 pub struct WasmDestroyInitialAdminCapability(pub(crate) DestroyInitialAdminCapability);
 
@@ -449,6 +479,7 @@ impl WasmDestroyInitialAdminCapability {
     }
 }
 
+/// Transaction wrapper for revoking an initial-admin capability.
 #[wasm_bindgen(js_name = RevokeInitialAdminCapability, inspectable)]
 pub struct WasmRevokeInitialAdminCapability(pub(crate) RevokeInitialAdminCapability);
 
@@ -471,6 +502,7 @@ impl WasmRevokeInitialAdminCapability {
     }
 }
 
+/// Transaction wrapper for cleaning up expired revoked-capability entries.
 #[wasm_bindgen(js_name = CleanupRevokedCapabilities, inspectable)]
 pub struct WasmCleanupRevokedCapabilities(pub(crate) CleanupRevokedCapabilities);
 
@@ -492,6 +524,7 @@ impl WasmCleanupRevokedCapabilities {
     }
 }
 
+/// Transaction wrapper for adding a record.
 #[wasm_bindgen(js_name = AddRecord, inspectable)]
 pub struct WasmAddRecord(pub(crate) AddRecord);
 
@@ -514,6 +547,7 @@ impl WasmAddRecord {
     }
 }
 
+/// Transaction wrapper for deleting a single record.
 #[wasm_bindgen(js_name = DeleteRecord, inspectable)]
 pub struct WasmDeleteRecord(pub(crate) DeleteRecord);
 
@@ -536,6 +570,7 @@ impl WasmDeleteRecord {
     }
 }
 
+/// Transaction wrapper for deleting records in batch form.
 #[wasm_bindgen(js_name = DeleteRecordsBatch, inspectable)]
 pub struct WasmDeleteRecordsBatch(pub(crate) DeleteRecordsBatch);
 
@@ -557,6 +592,7 @@ impl WasmDeleteRecordsBatch {
     }
 }
 
+/// Transaction wrapper for adding a record tag to the trail registry.
 #[wasm_bindgen(js_name = AddRecordTag, inspectable)]
 pub struct WasmAddRecordTag(pub(crate) AddRecordTag);
 
@@ -578,6 +614,7 @@ impl WasmAddRecordTag {
     }
 }
 
+/// Transaction wrapper for removing a record tag from the trail registry.
 #[wasm_bindgen(js_name = RemoveRecordTag, inspectable)]
 pub struct WasmRemoveRecordTag(pub(crate) RemoveRecordTag);
 

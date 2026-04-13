@@ -1,6 +1,11 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! Transaction payloads for record writes and deletions.
+//!
+//! These types cache the generated programmable transaction, delegate PTB construction to
+//! [`super::operations::RecordsOps`], and decode record events into typed Rust outputs.
+
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::{IotaTransactionBlockEffects, IotaTransactionBlockEvents};
@@ -16,18 +21,29 @@ use crate::error::Error;
 
 // ===== AddRecord =====
 
+/// Transaction that appends a record to a trail.
+///
+/// Tagged writes require the tag to exist in the trail registry and a capability whose role explicitly allows
+/// that tag in addition to `AddRecord`.
 #[derive(Debug, Clone)]
 pub struct AddRecord {
+    /// Trail object ID that will receive the record.
     pub trail_id: ObjectID,
+    /// Address authorizing the write.
     pub owner: IotaAddress,
+    /// Record payload to append.
     pub data: Data,
+    /// Optional application-defined metadata.
     pub metadata: Option<String>,
+    /// Optional trail-owned tag to attach to the record.
     pub tag: Option<String>,
+    /// Explicit capability to use instead of auto-selecting one from the owner's wallet.
     pub selected_capability_id: Option<ObjectID>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl AddRecord {
+    /// Creates an `AddRecord` transaction builder payload.
     pub fn new(
         trail_id: ObjectID,
         owner: IotaAddress,
@@ -105,16 +121,25 @@ impl Transaction for AddRecord {
 
 // ===== DeleteRecord =====
 
+/// Transaction that deletes a single record.
+///
+/// This uses the single-record delete entry point, which remains subject to record-locking and tag-aware
+/// authorization checks.
 #[derive(Debug, Clone)]
 pub struct DeleteRecord {
+    /// Trail object ID containing the record.
     pub trail_id: ObjectID,
+    /// Address authorizing the deletion.
     pub owner: IotaAddress,
+    /// Sequence number of the record to delete.
     pub sequence_number: u64,
+    /// Explicit capability to use instead of auto-selecting one from the owner's wallet.
     pub selected_capability_id: Option<ObjectID>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl DeleteRecord {
+    /// Creates a `DeleteRecord` transaction builder payload.
     pub fn new(
         trail_id: ObjectID,
         owner: IotaAddress,
@@ -186,16 +211,25 @@ impl Transaction for DeleteRecord {
 
 // ===== DeleteRecordsBatch =====
 
+/// Transaction that deletes multiple records in a batch operation.
+///
+/// The Move entry point deletes records from the front of the trail up to `limit` and reports the number of
+/// deleted records through the emitted `RecordDeleted` events.
 #[derive(Debug, Clone)]
 pub struct DeleteRecordsBatch {
+    /// Trail object ID containing the records.
     pub trail_id: ObjectID,
+    /// Address authorizing the deletion.
     pub owner: IotaAddress,
+    /// Maximum number of records to delete in this batch.
     pub limit: u64,
+    /// Explicit capability to use instead of auto-selecting one from the owner's wallet.
     pub selected_capability_id: Option<ObjectID>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl DeleteRecordsBatch {
+    /// Creates a `DeleteRecordsBatch` transaction builder payload.
     pub fn new(trail_id: ObjectID, owner: IotaAddress, limit: u64, selected_capability_id: Option<ObjectID>) -> Self {
         Self {
             trail_id,

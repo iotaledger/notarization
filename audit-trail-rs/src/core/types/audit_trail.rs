@@ -19,46 +19,36 @@ use crate::core::internal::move_collections::deserialize_vec_map;
 use crate::core::internal::tx;
 use crate::error::Error;
 
-/// Registry of record tags configured for an audit trail.
-///
-/// Each entry maps a tag name to its current usage count across role definitions and records.
-///
-/// `TagRegistry` maintains a combined usage count per tag that is
-/// incremented every time a record or role references the tag. A tag cannot be
-/// removed from the registry while its usage count is greater than zero.
+/// Registry of trail-owned record tags.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TagRegistry {
-    /// Mapping from a human-readable tag name to how many times it is used in role definitions and records.
+    /// Mapping from tag name to usage count.
     #[serde(deserialize_with = "deserialize_vec_map")]
     pub tag_map: HashMap<String, u64>,
 }
 
 impl TagRegistry {
-    /// Returns the number of tags currently registered.
+    /// Returns the number of registered tags.
     pub fn len(&self) -> usize {
         self.tag_map.len()
     }
 
-    /// Returns `true` if the registry contains no tags.
+    /// Returns `true` when no tags are registered.
     pub fn is_empty(&self) -> bool {
         self.tag_map.is_empty()
     }
 
-    /// Returns `true` if a tag with the given name exists in the registry.
-    ///
-    /// - `tag`: The tag name to look up.
+    /// Returns `true` when the registry contains the given tag.
     pub fn contains_key(&self, tag: &str) -> bool {
         self.tag_map.contains_key(tag)
     }
 
-    /// Returns the current usage count associated with a tag name.
-    ///
-    /// - `tag`: The tag name to look up.
+    /// Returns the usage count for a tag.
     pub fn get(&self, tag: &str) -> Option<&u64> {
         self.tag_map.get(tag)
     }
 
-    /// Iterates over all registered tag names and their usage counts.
+    /// Iterates over tag names and usage counts.
     pub fn iter(&self) -> impl Iterator<Item = (&String, &u64)> {
         self.tag_map.iter()
     }
@@ -67,31 +57,27 @@ impl TagRegistry {
 /// An audit trail stored on-chain.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct OnChainAuditTrail {
-    /// Unique object id of the audit trail.
+    /// Unique object ID of the trail.
     pub id: UID,
-    /// Address that originally created the trail.
+    /// Address that created the trail.
     pub creator: IotaAddress,
-    /// Unix timestamp in milliseconds when the trail was created.
+    /// Millisecond timestamp at which the trail was created.
     pub created_at: u64,
-    /// Monotonically increasing number.
-    /// Can be interpreted as total number of created `Record` instances by this audit trai.
-    /// Will be used as identifier for the next record added to the trail, starting at 0 for the first record.
+    /// Current record sequence number cursor.
     pub sequence_number: u64,
-    /// Contains the trail's records keyed by `sequence_number`.
+    /// Linked table containing the trail records.
     pub records: LinkedTable<u64>,
-    /// Registry of tag names tracked with their current usage counts.
-    /// Tag names can be added to records to restrict record-access to users having capabilities
-    /// granting access to this tag. Tag specific access can be defined by adding tags to [`Role`] definitions.
+    /// Registry of allowed record tags.
     pub tags: TagRegistry,
-    /// Active write/delete locking rules for this trail.
+    /// Active locking rules for the trail.
     pub locking_config: LockingConfig,
-    /// [`Role`] definitions and permissions configured for the trail.
+    /// Role and capability configuration for the trail.
     pub roles: RoleMap,
-    /// Immutable metadata set at creation time, if present.
+    /// Metadata fixed at creation time.
     pub immutable_metadata: Option<ImmutableMetadata>,
-    /// Mutable metadata string that can be updated after creation, if present.
+    /// Metadata that can be updated after creation.
     pub updatable_metadata: Option<String>,
-    /// On-chain schema or object version maintained by the Move package.
+    /// On-chain package version of the trail object.
     pub version: u64,
 }
 
@@ -100,22 +86,16 @@ pub struct OnChainAuditTrail {
 pub struct ImmutableMetadata {
     /// Human-readable trail name.
     pub name: String,
-    /// Optional longer description explaining the trail's purpose.
+    /// Optional human-readable description.
     pub description: Option<String>,
 }
 
 impl ImmutableMetadata {
-    /// Creates immutable metadata for a new trail.
-    ///
-    /// - `name`: The human-readable name to store on the trail.
-    /// - `description`: An optional longer description stored alongside the name.
+    /// Creates immutable metadata for a trail.
     pub fn new(name: String, description: Option<String>) -> Self {
         Self { name, description }
     }
 
-    /// Returns the Move type tag for `main::ImmutableMetadata` in the given package.
-    ///
-    /// - `package_id`: The published audit-trail Move package id.
     pub(in crate::core) fn tag(package_id: ObjectID) -> TypeTag {
         TypeTag::from_str(&format!("{package_id}::main::ImmutableMetadata"))
             .expect("invalid TypeTag for ImmutableMetadata")
@@ -124,9 +104,6 @@ impl ImmutableMetadata {
     /// Creates a new `Argument` from the `ImmutableMetadata`.
     ///
     /// To be used when creating a new `ImmutableMetadata` object on the ledger.
-    ///
-    /// - `ptb`: The programmable transaction builder the argument should be added to.
-    /// - `package_id`: The published audit-trail Move package id.
     pub(in crate::core) fn to_ptb(&self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
         let name = tx::ptb_pure(ptb, "name", &self.name)?;
         let description = tx::ptb_pure(ptb, "description", &self.description)?;

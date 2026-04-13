@@ -1,6 +1,11 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! Internal record-operation helpers that build trail-scoped programmable transactions.
+//!
+//! These helpers enforce the Rust-side preflight checks around record tags and then encode the exact Move call
+//! arguments expected by the trail package.
+
 use iota_interaction::OptionalSync;
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::transaction::ProgrammableTransaction;
@@ -11,9 +16,14 @@ use crate::core::internal::{trail as trail_reader, tx};
 use crate::core::types::{Data, Permission};
 use crate::error::Error;
 
+/// Internal namespace for record-related transaction construction.
 pub(super) struct RecordsOps;
 
 impl RecordsOps {
+    /// Builds the `add_record` call.
+    ///
+    /// Tagged writes are prevalidated against the trail tag registry and require a capability whose role allows
+    /// both `AddRecord` and the requested tag.
     pub(super) async fn add_record<C>(
         client: &C,
         trail_id: ObjectID,
@@ -72,6 +82,9 @@ impl RecordsOps {
         }
     }
 
+    /// Builds the `delete_record` call.
+    ///
+    /// Authorization and locking remain enforced by the Move entry point.
     pub(super) async fn delete_record<C>(
         client: &C,
         trail_id: ObjectID,
@@ -98,6 +111,9 @@ impl RecordsOps {
         .await
     }
 
+    /// Builds the `delete_records_batch` call.
+    ///
+    /// Batch deletion requires `DeleteAllRecords` and deletes from the front of the trail.
     pub(super) async fn delete_records_batch<C>(
         client: &C,
         trail_id: ObjectID,
@@ -124,6 +140,7 @@ impl RecordsOps {
         .await
     }
 
+    /// Builds the read-only `get_record` call.
     pub(super) async fn get_record<C>(
         client: &C,
         trail_id: ObjectID,
@@ -139,6 +156,7 @@ impl RecordsOps {
         .await
     }
 
+    /// Builds the read-only `record_count` call.
     pub(super) async fn record_count<C>(client: &C, trail_id: ObjectID) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,

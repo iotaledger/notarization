@@ -16,6 +16,7 @@ use product_common::bindings::WasmIotaAddress;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
+/// Placeholder wrapper used for transaction outputs that carry no value.
 #[wasm_bindgen(js_name = Empty, inspectable)]
 pub struct WasmEmpty;
 
@@ -25,12 +26,14 @@ impl From<()> for WasmEmpty {
     }
 }
 
+/// JS-friendly wrapper for audit-trail record payloads.
 #[wasm_bindgen(js_name = Data, inspectable)]
 #[derive(Clone)]
 pub struct WasmData(pub(crate) Data);
 
 #[wasm_bindgen(js_class = Data)]
 impl WasmData {
+    /// Returns the underlying payload as either a string or `Uint8Array`.
     #[wasm_bindgen(getter)]
     pub fn value(&self) -> JsValue {
         match &self.0 {
@@ -39,6 +42,7 @@ impl WasmData {
         }
     }
 
+    /// Returns the payload converted to a string.
     #[wasm_bindgen(js_name = toString)]
     pub fn to_string(&self) -> String {
         match &self.0 {
@@ -47,6 +51,7 @@ impl WasmData {
         }
     }
 
+    /// Returns the payload converted to raw bytes.
     #[wasm_bindgen(js_name = toBytes)]
     pub fn to_bytes(&self) -> Vec<u8> {
         match &self.0 {
@@ -55,11 +60,13 @@ impl WasmData {
         }
     }
 
+    /// Creates a text payload.
     #[wasm_bindgen(js_name = fromString)]
     pub fn from_string(data: String) -> Self {
         Self(Data::text(data))
     }
 
+    /// Creates a binary payload.
     #[wasm_bindgen(js_name = fromBytes)]
     pub fn from_bytes(data: Uint8Array) -> Self {
         Self(Data::bytes(data.to_vec()))
@@ -137,6 +144,7 @@ fn sorted_role_entries(roles: HashMap<String, Role>) -> Vec<WasmRolePermissionsE
     roles
 }
 
+/// Permission variants exposed to wasm consumers.
 #[wasm_bindgen(js_name = Permission)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum WasmPermission {
@@ -213,49 +221,59 @@ impl From<WasmPermission> for Permission {
     }
 }
 
+/// JS-friendly wrapper for a set of permissions.
 #[wasm_bindgen(js_name = PermissionSet, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmPermissionSet {
+    /// Permissions granted by this set.
     pub permissions: Vec<WasmPermission>,
 }
 
 #[wasm_bindgen(js_class = PermissionSet)]
 impl WasmPermissionSet {
+    /// Creates a permission set from an explicit list of permissions.
     #[wasm_bindgen(constructor)]
     pub fn new(permissions: Vec<WasmPermission>) -> Self {
         Self { permissions }
     }
 
+    /// Returns the recommended role-administration permission set.
     #[wasm_bindgen(js_name = adminPermissions)]
     pub fn admin_permissions() -> Self {
         PermissionSet::admin_permissions().into()
     }
 
+    /// Returns the permissions needed to administer records.
     #[wasm_bindgen(js_name = recordAdminPermissions)]
     pub fn record_admin_permissions() -> Self {
         PermissionSet::record_admin_permissions().into()
     }
 
+    /// Returns the permissions needed to administer locking rules.
     #[wasm_bindgen(js_name = lockingAdminPermissions)]
     pub fn locking_admin_permissions() -> Self {
         PermissionSet::locking_admin_permissions().into()
     }
 
+    /// Returns the permissions needed to administer roles.
     #[wasm_bindgen(js_name = roleAdminPermissions)]
     pub fn role_admin_permissions() -> Self {
         PermissionSet::role_admin_permissions().into()
     }
 
+    /// Returns the permissions needed to issue and revoke capabilities.
     #[wasm_bindgen(js_name = capAdminPermissions)]
     pub fn cap_admin_permissions() -> Self {
         PermissionSet::cap_admin_permissions().into()
     }
 
+    /// Returns the permissions needed to administer mutable metadata.
     #[wasm_bindgen(js_name = metadataAdminPermissions)]
     pub fn metadata_admin_permissions() -> Self {
         PermissionSet::metadata_admin_permissions().into()
     }
 
+    /// Returns the permissions needed to administer record tags.
     #[wasm_bindgen(js_name = tagAdminPermissions)]
     pub fn tag_admin_permissions() -> Self {
         PermissionSet::tag_admin_permissions().into()
@@ -278,12 +296,17 @@ impl From<WasmPermissionSet> for PermissionSet {
     }
 }
 
+/// Linked-table metadata for record storage.
 #[wasm_bindgen(js_name = LinkedTable, getter_with_clone, inspectable)]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WasmLinkedTable {
+    /// Linked-table object ID.
     pub id: String,
+    /// Declared number of entries in the table.
     pub size: u64,
+    /// Sequence number of the first entry, if any.
     pub head: Option<u64>,
+    /// Sequence number of the last entry, if any.
     pub tail: Option<u64>,
 }
 
@@ -298,6 +321,7 @@ impl From<LinkedTable<u64>> for WasmLinkedTable {
     }
 }
 
+/// Permission requirements for role administration.
 #[wasm_bindgen(js_name = RoleAdminPermissions, getter_with_clone, inspectable)]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WasmRoleAdminPermissions {
@@ -316,6 +340,7 @@ impl From<RoleAdminPermissions> for WasmRoleAdminPermissions {
     }
 }
 
+/// Permission requirements for capability administration.
 #[wasm_bindgen(js_name = CapabilityAdminPermissions, getter_with_clone, inspectable)]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WasmCapabilityAdminPermissions {
@@ -332,6 +357,7 @@ impl From<CapabilityAdminPermissions> for WasmCapabilityAdminPermissions {
     }
 }
 
+/// Flattened role entry exposed inside [`WasmRoleMap`].
 #[wasm_bindgen(js_name = RolePermissionsEntry, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmRolePermissionsEntry {
@@ -341,14 +367,17 @@ pub struct WasmRolePermissionsEntry {
     pub role_tags: Option<WasmRoleTags>,
 }
 
+/// Allowlisted record tags stored on a role.
 #[wasm_bindgen(js_name = RoleTags, getter_with_clone, inspectable)]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WasmRoleTags {
+    /// Sorted tag names allowed by the role.
     pub tags: Vec<String>,
 }
 
 #[wasm_bindgen(js_class = RoleTags)]
 impl WasmRoleTags {
+    /// Creates role-tag restrictions from a list of tag names.
     #[wasm_bindgen(constructor)]
     pub fn new(tags: Vec<String>) -> Self {
         let mut tags = tags;
@@ -372,6 +401,7 @@ impl From<WasmRoleTags> for RoleTags {
     }
 }
 
+/// Trail-owned record tag plus its usage count.
 #[wasm_bindgen(js_name = RecordTagEntry, getter_with_clone, inspectable)]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WasmRecordTagEntry {
@@ -386,6 +416,7 @@ impl From<(String, u64)> for WasmRecordTagEntry {
     }
 }
 
+/// JS-friendly view of the trail role map.
 #[wasm_bindgen(js_name = RoleMap, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmRoleMap {
@@ -418,6 +449,7 @@ impl From<RoleMap> for WasmRoleMap {
     }
 }
 
+/// Linked-table metadata keyed by object IDs.
 #[wasm_bindgen(js_name = ObjectIdLinkedTable, getter_with_clone, inspectable)]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WasmObjectIdLinkedTable {
@@ -438,6 +470,7 @@ impl From<LinkedTable<ObjectID>> for WasmObjectIdLinkedTable {
     }
 }
 
+/// Capability issuance options exposed to wasm consumers.
 #[wasm_bindgen(js_name = CapabilityIssueOptions, getter_with_clone, inspectable)]
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct WasmCapabilityIssueOptions {
@@ -451,6 +484,7 @@ pub struct WasmCapabilityIssueOptions {
 
 #[wasm_bindgen(js_class = CapabilityIssueOptions)]
 impl WasmCapabilityIssueOptions {
+    /// Creates capability issuance options.
     #[wasm_bindgen(constructor)]
     pub fn new(issued_to: Option<WasmIotaAddress>, valid_from_ms: Option<u64>, valid_until_ms: Option<u64>) -> Self {
         Self {
@@ -481,6 +515,7 @@ impl From<WasmCapabilityIssueOptions> for CapabilityIssueOptions {
     }
 }
 
+/// Capability data returned to wasm consumers.
 #[wasm_bindgen(js_name = Capability, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmCapability {
@@ -509,6 +544,7 @@ impl From<Capability> for WasmCapability {
     }
 }
 
+/// Event payload emitted when a trail is created.
 #[wasm_bindgen(js_name = AuditTrailCreated, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmAuditTrailCreated {
@@ -528,6 +564,7 @@ impl From<AuditTrailCreated> for WasmAuditTrailCreated {
     }
 }
 
+/// Event payload emitted when a trail is deleted.
 #[wasm_bindgen(js_name = AuditTrailDeleted, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmAuditTrailDeleted {
@@ -545,6 +582,7 @@ impl From<AuditTrailDeleted> for WasmAuditTrailDeleted {
     }
 }
 
+/// Event payload emitted when a record is added.
 #[wasm_bindgen(js_name = RecordAdded, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmRecordAdded {
@@ -568,6 +606,7 @@ impl From<RecordAdded> for WasmRecordAdded {
     }
 }
 
+/// Event payload emitted when a record is deleted.
 #[wasm_bindgen(js_name = RecordDeleted, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmRecordDeleted {
@@ -591,6 +630,7 @@ impl From<RecordDeleted> for WasmRecordDeleted {
     }
 }
 
+/// Event payload emitted when a capability is issued.
 #[wasm_bindgen(js_name = CapabilityIssued, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmCapabilityIssued {
@@ -620,6 +660,7 @@ impl From<CapabilityIssued> for WasmCapabilityIssued {
     }
 }
 
+/// Event payload emitted when a capability is destroyed.
 #[wasm_bindgen(js_name = CapabilityDestroyed, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmCapabilityDestroyed {
@@ -649,6 +690,7 @@ impl From<CapabilityDestroyed> for WasmCapabilityDestroyed {
     }
 }
 
+/// Event payload emitted when a capability is revoked.
 #[wasm_bindgen(js_name = CapabilityRevoked, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmCapabilityRevoked {
@@ -670,6 +712,7 @@ impl From<CapabilityRevoked> for WasmCapabilityRevoked {
     }
 }
 
+/// Event payload emitted when a role is created.
 #[wasm_bindgen(js_name = RoleCreated, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmRoleCreated {
@@ -697,6 +740,7 @@ impl From<RoleCreated> for WasmRoleCreated {
     }
 }
 
+/// Event payload emitted when a role is updated.
 #[wasm_bindgen(js_name = RoleUpdated, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmRoleUpdated {
@@ -724,6 +768,7 @@ impl From<RoleUpdated> for WasmRoleUpdated {
     }
 }
 
+/// Event payload emitted when a role is deleted.
 #[wasm_bindgen(js_name = RoleDeleted, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmRoleDeleted {
@@ -746,6 +791,7 @@ impl From<RoleDeleted> for WasmRoleDeleted {
     }
 }
 
+/// Discriminant for the shape stored inside [`WasmTimeLock`].
 #[wasm_bindgen(js_name = TimeLockType)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum WasmTimeLockType {
@@ -756,37 +802,44 @@ pub enum WasmTimeLockType {
     Infinite,
 }
 
+/// JS-friendly wrapper for time locks.
 #[wasm_bindgen(js_name = TimeLock, inspectable)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WasmTimeLock(pub(crate) TimeLock);
 
 #[wasm_bindgen(js_class = TimeLock)]
 impl WasmTimeLock {
+    /// Creates a lock that unlocks at a Unix timestamp in seconds.
     #[wasm_bindgen(js_name = withUnlockAt)]
     pub fn with_unlock_at(time_sec: u32) -> Self {
         Self(TimeLock::UnlockAt(time_sec))
     }
 
+    /// Creates a lock that unlocks at a Unix timestamp in milliseconds.
     #[wasm_bindgen(js_name = withUnlockAtMs)]
     pub fn with_unlock_at_ms(time_ms: u64) -> Self {
         Self(TimeLock::UnlockAtMs(time_ms))
     }
 
+    /// Creates a lock that stays active until the protected object is destroyed.
     #[wasm_bindgen(js_name = withUntilDestroyed)]
     pub fn with_until_destroyed() -> Self {
         Self(TimeLock::UntilDestroyed)
     }
 
+    /// Creates a lock that never unlocks.
     #[wasm_bindgen(js_name = withInfinite)]
     pub fn with_infinite() -> Self {
         Self(TimeLock::Infinite)
     }
 
+    /// Creates a disabled lock.
     #[wasm_bindgen(js_name = withNone)]
     pub fn with_none() -> Self {
         Self(TimeLock::None)
     }
 
+    /// Returns the lock variant.
     #[wasm_bindgen(js_name = "type", getter)]
     pub fn lock_type(&self) -> WasmTimeLockType {
         match self.0 {
@@ -798,6 +851,7 @@ impl WasmTimeLock {
         }
     }
 
+    /// Returns the lock argument for parameterized variants.
     #[wasm_bindgen(js_name = "args", getter)]
     pub fn args(&self) -> JsValue {
         match self.0 {
@@ -820,6 +874,7 @@ impl From<WasmTimeLock> for TimeLock {
     }
 }
 
+/// Discriminant for the shape stored inside [`WasmLockingWindow`].
 #[wasm_bindgen(js_name = LockingWindowType)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum WasmLockingWindowType {
@@ -828,27 +883,32 @@ pub enum WasmLockingWindowType {
     CountBased,
 }
 
+/// JS-friendly wrapper for delete windows.
 #[wasm_bindgen(js_name = LockingWindow, inspectable)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WasmLockingWindow(pub(crate) LockingWindow);
 
 #[wasm_bindgen(js_class = LockingWindow)]
 impl WasmLockingWindow {
+    /// Creates a disabled delete window.
     #[wasm_bindgen(js_name = withNone)]
     pub fn with_none() -> Self {
         Self(LockingWindow::None)
     }
 
+    /// Creates a time-based delete window.
     #[wasm_bindgen(js_name = withTimeBased)]
     pub fn with_time_based(seconds: u64) -> Self {
         Self(LockingWindow::TimeBased { seconds })
     }
 
+    /// Creates a count-based delete window.
     #[wasm_bindgen(js_name = withCountBased)]
     pub fn with_count_based(count: u64) -> Self {
         Self(LockingWindow::CountBased { count })
     }
 
+    /// Returns the window variant.
     #[wasm_bindgen(js_name = "type", getter)]
     pub fn window_type(&self) -> WasmLockingWindowType {
         match self.0 {
@@ -858,6 +918,7 @@ impl WasmLockingWindow {
         }
     }
 
+    /// Returns the window argument for parameterized variants.
     #[wasm_bindgen(js_name = "args", getter)]
     pub fn args(&self) -> JsValue {
         match self.0 {
@@ -880,6 +941,7 @@ impl From<WasmLockingWindow> for LockingWindow {
     }
 }
 
+/// Full locking configuration exposed to wasm consumers.
 #[wasm_bindgen(js_name = LockingConfig, getter_with_clone, inspectable)]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WasmLockingConfig {
@@ -893,6 +955,7 @@ pub struct WasmLockingConfig {
 
 #[wasm_bindgen(js_class = LockingConfig)]
 impl WasmLockingConfig {
+    /// Creates a locking configuration.
     #[wasm_bindgen(constructor)]
     pub fn new(
         delete_record_window: WasmLockingWindow,
@@ -927,6 +990,7 @@ impl From<WasmLockingConfig> for LockingConfig {
     }
 }
 
+/// Immutable trail metadata exposed to wasm consumers.
 #[wasm_bindgen(js_name = ImmutableMetadata, getter_with_clone, inspectable)]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WasmImmutableMetadata {
@@ -952,6 +1016,7 @@ impl From<WasmImmutableMetadata> for ImmutableMetadata {
     }
 }
 
+/// Correction metadata attached to a record.
 #[wasm_bindgen(js_name = RecordCorrection, getter_with_clone, inspectable)]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WasmRecordCorrection {
@@ -980,6 +1045,7 @@ impl From<WasmRecordCorrection> for RecordCorrection {
     }
 }
 
+/// Single audit-trail record exposed to wasm consumers.
 #[wasm_bindgen(js_name = Record, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmRecord {
@@ -1009,6 +1075,7 @@ impl From<Record<Data>> for WasmRecord {
     }
 }
 
+/// One page of records returned by `TrailRecords.listPage(...)`.
 #[wasm_bindgen(js_name = PaginatedRecord, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmPaginatedRecord {

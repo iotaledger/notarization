@@ -1,6 +1,8 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! Record read and mutation APIs for audit trails.
+
 use std::collections::{BTreeMap, HashMap};
 
 use iota_interaction::move_core_types::annotated_value::MoveValue;
@@ -29,6 +31,9 @@ use self::operations::RecordsOps;
 
 const MAX_LIST_PAGE_LIMIT: usize = 1_000;
 
+/// Record API scoped to a specific trail.
+///
+/// This handle builds record-oriented transactions and loads record data from the trail's linked-table storage.
 #[derive(Debug, Clone)]
 pub struct TrailRecords<'a, C, D = Data> {
     pub(crate) client: &'a C,
@@ -53,6 +58,11 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
         self
     }
 
+    /// Loads a single record by sequence number.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the record cannot be loaded or deserialized.
     pub async fn get(&self, sequence_number: u64) -> Result<Record<D>, Error>
     where
         C: AuditTrailReadOnly,
@@ -62,6 +72,10 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
         self.client.execute_read_only_transaction(tx).await
     }
 
+    /// Builds a transaction that appends a record to the trail.
+    ///
+    /// Tagged writes must reference a tag already defined on the trail. They also require a capability whose
+    /// role allows both `AddRecord` and the requested tag.
     pub fn add<S>(&self, data: D, metadata: Option<String>, tag: Option<String>) -> TransactionBuilder<AddRecord>
     where
         C: AuditTrailFull + CoreClient<S>,
@@ -79,6 +93,9 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
         ))
     }
 
+    /// Builds a transaction that deletes a single record.
+    ///
+    /// Deletion remains subject to record locking rules and tag-based access restrictions enforced on-chain.
     pub fn delete<S>(&self, sequence_number: u64) -> TransactionBuilder<DeleteRecord>
     where
         C: AuditTrailFull + CoreClient<S>,
@@ -93,6 +110,9 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
         ))
     }
 
+    /// Builds a transaction that deletes up to `limit` records in one operation.
+    ///
+    /// Batch deletion removes records from the front of the trail and requires `DeleteAllRecords`.
     pub fn delete_records_batch<S>(&self, limit: u64) -> TransactionBuilder<DeleteRecordsBatch>
     where
         C: AuditTrailFull + CoreClient<S>,
@@ -107,6 +127,11 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
         ))
     }
 
+    /// Placeholder for a future correction helper.
+    ///
+    /// # Errors
+    ///
+    /// Always returns [`Error::NotImplemented`].
     pub async fn correct(&self, _replaces: Vec<u64>, _data: D, _metadata: Option<String>) -> Result<(), Error>
     where
         C: AuditTrailFull,
@@ -114,6 +139,11 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
         Err(Error::NotImplemented("TrailRecords::correct"))
     }
 
+    /// Returns the number of records currently stored in the trail.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the count cannot be computed from the current on-chain state.
     pub async fn record_count(&self) -> Result<u64, Error>
     where
         C: AuditTrailReadOnly,
@@ -122,7 +152,7 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
         self.client.execute_read_only_transaction(tx).await
     }
 
-    /// List all records into a [`HashMap`].
+    /// Lists all records into a [`HashMap`].
     ///
     /// This traverses the full on-chain linked table and can be expensive for large trails.
     /// For paginated access, use [`list_page`](Self::list_page).
@@ -135,7 +165,7 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
         list_linked_table::<_, Record<D>>(self.client, &records_table, None).await
     }
 
-    /// List all records with a hard cap to protect against expensive traversals.
+    /// Lists all records with a hard cap to protect against expensive traversals.
     pub async fn list_with_limit(&self, max_entries: usize) -> Result<HashMap<u64, Record<D>>, Error>
     where
         C: AuditTrailReadOnly,
@@ -145,7 +175,7 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
         list_linked_table::<_, Record<D>>(self.client, &records_table, Some(max_entries)).await
     }
 
-    /// List one page of linked-table records starting from `cursor`.
+    /// Lists one page of linked-table records starting from `cursor`.
     ///
     /// Pass `None` for the first page; use `next_cursor` for subsequent pages.
     pub async fn list_page(&self, cursor: Option<u64>, limit: usize) -> Result<PaginatedRecord<D>, Error>
@@ -190,6 +220,7 @@ where
     C: CoreClientReadOnly + OptionalSync,
     V: DeserializeOwned,
 {
+    // Preserve linked-table order while exposing a page as a stable Rust map keyed by sequence number.
     if limit == 0 {
         return Ok((BTreeMap::new(), start_key.or(table.head)));
     }
@@ -233,6 +264,7 @@ where
     C: CoreClientReadOnly + OptionalSync,
     V: DeserializeOwned,
 {
+    // Full traversal is only allowed when the caller explicitly accepts the current linked-table size.
     let expected = table.size as usize;
     let cap = max_entries.unwrap_or(expected);
 

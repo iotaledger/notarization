@@ -348,6 +348,80 @@ async fn update_metadata_does_not_affect_immutable_metadata() -> anyhow::Result<
 }
 
 #[tokio::test]
+async fn update_metadata_requires_permission() -> anyhow::Result<()> {
+    let admin = get_funded_test_client().await?;
+    let metadata_user = get_funded_test_client().await?;
+    let trail_id = admin.create_test_trail(Data::text("trail-update-meta-denied")).await?;
+
+    admin
+        .create_role(trail_id, "NoMetadataPerm", vec![Permission::AddRecord], None)
+        .await?;
+    admin
+        .issue_cap(
+            trail_id,
+            "NoMetadataPerm",
+            CapabilityIssueOptions {
+                issued_to: Some(metadata_user.sender_address()),
+                ..CapabilityIssueOptions::default()
+            },
+        )
+        .await?;
+
+    let updated = metadata_user
+        .trail(trail_id)
+        .update_metadata(Some("should fail".to_string()))
+        .build_and_execute(&metadata_user)
+        .await;
+
+    assert!(
+        updated.is_err(),
+        "updating metadata without UpdateMetadata permission must fail"
+    );
+    assert_eq!(admin.trail(trail_id).get().await?.updatable_metadata, None);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn revoked_capability_cannot_update_metadata() -> anyhow::Result<()> {
+    let admin = get_funded_test_client().await?;
+    let metadata_user = get_funded_test_client().await?;
+    let trail_id = admin.create_test_trail(Data::text("trail-update-meta-revoked")).await?;
+
+    admin
+        .create_role(trail_id, "MetadataAdmin", vec![Permission::UpdateMetadata], None)
+        .await?;
+    let issued = admin
+        .issue_cap(
+            trail_id,
+            "MetadataAdmin",
+            CapabilityIssueOptions {
+                issued_to: Some(metadata_user.sender_address()),
+                ..CapabilityIssueOptions::default()
+            },
+        )
+        .await?;
+
+    admin
+        .trail(trail_id)
+        .access()
+        .revoke_capability(issued.capability_id, issued.valid_until)
+        .build_and_execute(&admin)
+        .await?;
+
+    let updated = metadata_user
+        .trail(trail_id)
+        .update_metadata(Some("should fail".to_string()))
+        .build_and_execute(&metadata_user)
+        .await;
+
+    assert!(updated.is_err(), "revoked capabilities must not update metadata");
+    assert_eq!(admin.trail(trail_id).get().await?.updatable_metadata, None);
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn delete_audit_trail_fails_when_records_exist() -> anyhow::Result<()> {
     let client = get_funded_test_client().await?;
     let trail_id = client

@@ -1,6 +1,8 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! Locking configuration APIs for audit trails.
+
 use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::{IotaKeySignature, OptionalSync};
 use product_common::core_client::CoreClient;
@@ -18,6 +20,10 @@ pub use transactions::{UpdateDeleteRecordWindow, UpdateDeleteTrailLock, UpdateLo
 
 use self::operations::LockingOps;
 
+/// Locking API scoped to a specific trail.
+///
+/// This handle updates the trail's locking configuration and queries whether an individual record is currently
+/// locked against deletion.
 #[derive(Debug, Clone)]
 pub struct TrailLocking<'a, C> {
     pub(crate) client: &'a C,
@@ -40,6 +46,10 @@ impl<'a, C> TrailLocking<'a, C> {
         self
     }
 
+    /// Replaces the full locking configuration for the trail.
+    ///
+    /// This overwrites all three locking dimensions at once: record delete window, trail delete lock, and
+    /// write lock.
     pub fn update<S>(&self, config: LockingConfig) -> TransactionBuilder<UpdateLockingConfig>
     where
         C: AuditTrailFull + CoreClient<S>,
@@ -54,6 +64,7 @@ impl<'a, C> TrailLocking<'a, C> {
         ))
     }
 
+    /// Updates only the delete-record window.
     pub fn update_delete_record_window<S>(&self, window: LockingWindow) -> TransactionBuilder<UpdateDeleteRecordWindow>
     where
         C: AuditTrailFull + CoreClient<S>,
@@ -68,6 +79,7 @@ impl<'a, C> TrailLocking<'a, C> {
         ))
     }
 
+    /// Updates only the delete-trail time lock.
     pub fn update_delete_trail_lock<S>(&self, lock: TimeLock) -> TransactionBuilder<UpdateDeleteTrailLock>
     where
         C: AuditTrailFull + CoreClient<S>,
@@ -82,6 +94,7 @@ impl<'a, C> TrailLocking<'a, C> {
         ))
     }
 
+    /// Updates only the write lock.
     pub fn update_write_lock<S>(&self, lock: TimeLock) -> TransactionBuilder<UpdateWriteLock>
     where
         C: AuditTrailFull + CoreClient<S>,
@@ -96,6 +109,11 @@ impl<'a, C> TrailLocking<'a, C> {
         ))
     }
 
+    /// Returns `true` when the given record is currently locked against deletion.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the lock state cannot be computed from the current on-chain state.
     pub async fn is_record_locked(&self, sequence_number: u64) -> Result<bool, Error>
     where
         C: AuditTrailReadOnly,

@@ -1,6 +1,7 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! Capability discovery helpers used by internal transaction builders.
 use std::collections::HashSet;
 
 use iota_interaction::move_types::language_storage::StructTag;
@@ -18,14 +19,10 @@ use super::{linked_table, tx};
 use crate::core::types::{Capability, OnChainAuditTrail, Permission};
 use crate::error::Error;
 
-/// Finds an owned capability that grants `permission` on `trail_id`.
+/// Finds an owned capability object that grants `permission` for `trail_id` and returns its object
+/// reference.
 ///
-/// This is the standard lookup path used by most trail operations. It derives
-/// the set of role names that grant the requested permission from the current
-/// on-chain trail state, then delegates the actual owned-object scan to
-/// [`find_owned_capability`]. The selected capability is returned as an
-/// [`ObjectRef`] because transaction construction needs the live object
-/// reference, not just the parsed capability payload.
+/// The lookup is restricted to roles on `trail` that include the requested permission.
 pub(crate) async fn find_capable_cap<C>(
     client: &C,
     owner: IotaAddress,
@@ -59,16 +56,10 @@ where
     tx::get_object_ref_by_id(client, &object_id).await
 }
 
-/// Finds the first owned capability that survives common local filtering.
+/// Searches the owner's capability objects and returns the first one matching `predicate`.
 ///
-/// This helper is the generic capability scanner used by the more specific
-/// permission-based and tag-aware lookup functions below. It handles:
-/// - fetching owned capability objects page by page,
-/// - excluding revoked capability IDs recorded on the trail, and
-/// - enforcing any `issued_to` address restriction locally.
-///
-/// The caller supplies the remaining policy via `predicate`, typically matching
-/// the target trail and one or more allowed role names.
+/// Revoked capabilities are filtered out before the predicate is applied to the remaining
+/// candidates.
 pub(crate) async fn find_owned_capability<C, P>(
     client: &C,
     owner: IotaAddress,
@@ -126,10 +117,10 @@ where
     Ok(None)
 }
 
-/// Loads the current revoked-capability denylist from the trail's linked table.
+/// Traverses the revoked-capabilities linked table and collects every revoked capability ID.
 ///
-/// The resulting set is used during local capability selection so revoked
-/// capabilities are ignored before transaction construction.
+/// The traversal validates that the linked-table shape is acyclic and that the number of visited
+/// entries matches the size recorded on-chain.
 async fn revoked_capability_ids<C>(client: &C, trail: &OnChainAuditTrail) -> Result<HashSet<ObjectID>, Error>
 where
     C: CoreClientReadOnly + OptionalSync,
@@ -169,13 +160,10 @@ where
     Ok(keys)
 }
 
-/// Applies the shared local capability filters.
+/// Returns whether a capability is a usable match for the current owner and predicate.
 ///
-/// A capability is considered usable locally when:
-/// - the caller-specific predicate matches,
-/// - the capability ID is not present in the trail's revoked-capability set, and
-/// - any `issued_to` restriction matches the current owner address, and
-/// - the current local time falls within the capability's validity window.
+/// A capability only matches when it satisfies the caller-provided predicate, has not been
+/// revoked, and is either unbound or explicitly issued to `owner`.
 fn capability_matches<P>(
     cap: &Capability,
     owner: IotaAddress,
@@ -272,8 +260,8 @@ mod tests {
         let valid_roles = HashSet::from(["Writer".to_string()]);
         let revoked_ids = HashSet::from([revoked_cap_id]);
 
-        let revoked_cap = make_capability(revoked_cap_id, trail_id, "Writer", None);
-        let valid_cap = make_capability(valid_cap_id, trail_id, "Writer", None);
+        let revoked_cap = make_capability(revoked_cap_id, trail_id, "Writer", None, None, None);
+        let valid_cap = make_capability(valid_cap_id, trail_id, "Writer", None, None, None);
 
         assert!(!capability_matches(&revoked_cap, owner, 0, &revoked_ids, &|cap| cap
             .matches_target_and_role(trail_id, &valid_roles)));
@@ -287,7 +275,7 @@ mod tests {
         let other_owner = IotaAddress::random_for_testing_only();
         let trail_id = dbg_object_id(4);
         let valid_roles = HashSet::from(["Writer".to_string()]);
-        let cap = make_capability(dbg_object_id(5), trail_id, "Writer", Some(other_owner));
+        let cap = make_capability(dbg_object_id(5), trail_id, "Writer", Some(other_owner), None, None);
 
         assert!(!capability_matches(&cap, owner, 0, &HashSet::new(), &|candidate| {
             candidate.matches_target_and_role(trail_id, &valid_roles)
@@ -299,8 +287,7 @@ mod tests {
         let owner = IotaAddress::random_for_testing_only();
         let trail_id = dbg_object_id(6);
         let valid_roles = HashSet::from(["Writer".to_string()]);
-        let mut cap = make_capability(dbg_object_id(7), trail_id, "Writer", None);
-        cap.valid_from = Some(2_000);
+        let cap = make_capability(dbg_object_id(7), trail_id, "Writer", None, Some(2_000), None);
 
         assert!(!capability_matches(&cap, owner, 1_999, &HashSet::new(), &|candidate| {
             candidate.matches_target_and_role(trail_id, &valid_roles)
@@ -315,8 +302,7 @@ mod tests {
         let owner = IotaAddress::random_for_testing_only();
         let trail_id = dbg_object_id(8);
         let valid_roles = HashSet::from(["Writer".to_string()]);
-        let mut cap = make_capability(dbg_object_id(9), trail_id, "Writer", None);
-        cap.valid_until = Some(2_000);
+        let cap = make_capability(dbg_object_id(9), trail_id, "Writer", None, None, Some(2_000));
 
         assert!(capability_matches(&cap, owner, 2_000, &HashSet::new(), &|candidate| {
             candidate.matches_target_and_role(trail_id, &valid_roles)
@@ -326,14 +312,68 @@ mod tests {
         }));
     }
 
-    fn make_capability(id: ObjectID, trail_id: ObjectID, role: &str, issued_to: Option<IotaAddress>) -> Capability {
+    #[test]
+    fn capability_matches_accepts_unbound_capability_for_matching_role() {
+        let owner = IotaAddress::random_for_testing_only();
+        let trail_id = dbg_object_id(6);
+        let valid_roles = HashSet::from(["Writer".to_string()]);
+        let cap = make_capability(dbg_object_id(7), trail_id, "Writer", None, None, None);
+
+        assert!(capability_matches(&cap, owner, 0, &HashSet::new(), &|candidate| {
+            candidate.matches_target_and_role(trail_id, &valid_roles)
+        }));
+    }
+
+    #[test]
+    fn capability_matches_rejects_non_matching_role() {
+        let owner = IotaAddress::random_for_testing_only();
+        let trail_id = dbg_object_id(8);
+        let valid_roles = HashSet::from(["Writer".to_string()]);
+        let cap = make_capability(dbg_object_id(9), trail_id, "Reader", None, None, None);
+
+        assert!(!capability_matches(&cap, owner, 0, &HashSet::new(), &|candidate| {
+            candidate.matches_target_and_role(trail_id, &valid_roles)
+        }));
+    }
+
+    #[test]
+    fn capability_matches_honors_time_constraints() {
+        let owner = IotaAddress::random_for_testing_only();
+        let trail_id = dbg_object_id(10);
+        let valid_roles = HashSet::from(["Writer".to_string()]);
+        let cap = make_capability(
+            dbg_object_id(11),
+            trail_id,
+            "Writer",
+            Some(owner),
+            Some(1_700_000_000_000),
+            Some(1_700_000_005_000),
+        );
+
+        assert!(capability_matches(
+            &cap,
+            owner,
+            1_700_000_000_000,
+            &HashSet::new(),
+            &|candidate| { candidate.matches_target_and_role(trail_id, &valid_roles) }
+        ));
+    }
+
+    fn make_capability(
+        id: ObjectID,
+        trail_id: ObjectID,
+        role: &str,
+        issued_to: Option<IotaAddress>,
+        valid_from: Option<u64>,
+        valid_until: Option<u64>,
+    ) -> Capability {
         Capability {
             id: UID::new(id),
             target_key: trail_id,
             role: role.to_string(),
             issued_to,
-            valid_from: None,
-            valid_until: None,
+            valid_from,
+            valid_until,
         }
     }
 }

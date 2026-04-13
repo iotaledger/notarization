@@ -1,6 +1,8 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! Internal helpers that turn validated builder state into the trail-creation Move call.
+
 use std::collections::HashSet;
 
 use iota_interaction::ident_str;
@@ -12,20 +14,36 @@ use crate::core::internal::tx;
 use crate::core::types::{Data, ImmutableMetadata, InitialRecord, LockingConfig};
 use crate::error::Error;
 
+/// Internal namespace for trail-creation transaction construction.
 pub(super) struct CreateOps;
 
+/// Normalized inputs required to build the `main::create` programmable transaction.
+///
+/// This keeps the public builder layer separate from the low-level PTB encoding logic.
 pub(super) struct CreateTrailArgs {
+    /// Audit-trail package used for generic type tags and Move calls.
     pub audit_trail_package_id: ObjectID,
+    /// TfComponents package used by locking and capability-related values.
     pub tf_components_package_id: ObjectID,
+    /// Address that should receive the initial admin capability.
     pub admin: IotaAddress,
+    /// Optional first record inserted into the newly created trail.
     pub initial_record: Option<InitialRecord>,
+    /// Initial locking rules for the trail.
     pub locking_config: LockingConfig,
+    /// Immutable metadata stored at trail creation time.
     pub trail_metadata: Option<ImmutableMetadata>,
+    /// Mutable metadata slot initialized together with the trail.
     pub updatable_metadata: Option<String>,
+    /// Canonical set of record tags that may be used on the trail.
     pub record_tags: HashSet<String>,
 }
 
 impl CreateOps {
+    /// Builds the programmable transaction that creates a new audit trail.
+    ///
+    /// Record tags are sorted before serialization so the resulting wire format is stable across
+    /// equivalent `HashSet` inputs.
     pub(super) fn create_trail(args: CreateTrailArgs) -> Result<ProgrammableTransaction, Error> {
         let mut ptb = ProgrammableTransactionBuilder::new();
         let CreateTrailArgs {

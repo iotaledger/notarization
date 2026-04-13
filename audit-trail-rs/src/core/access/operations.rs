@@ -1,6 +1,11 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! Internal access-control helpers that build role and capability transactions.
+//!
+//! These helpers encode Rust-side access inputs into the exact Move call shapes expected by the audit-trail
+//! package and apply the lightweight preflight checks that are cheaper to surface before submission.
+
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::transaction::{ObjectArg, ProgrammableTransaction};
 use iota_interaction::{OptionalSync, ident_str};
@@ -10,9 +15,19 @@ use crate::core::internal::{trail as trail_reader, tx};
 use crate::core::types::{CapabilityIssueOptions, Permission, PermissionSet, RoleTags};
 use crate::error::Error;
 
+/// Internal namespace for role and capability transaction construction.
+///
+/// Each helper selects the required authorization permission, prepares
+/// Move-compatible arguments, and then
+/// delegates to the shared trail transaction builders in [`crate::core::internal::tx`].
 pub(super) struct AccessOps;
 
 impl AccessOps {
+    /// Builds the `create_role` call.
+    ///
+    /// `role_tags`, when present, are validated against the trail tag registry
+    /// before PTB construction so the
+    /// Rust side fails early with `Error::InvalidArgument` instead of relying on a later Move abort.
     pub(super) async fn create_role<C>(
         client: &C,
         trail_id: ObjectID,
@@ -62,6 +77,10 @@ impl AccessOps {
         .await
     }
 
+    /// Builds the `update_role_permissions` call.
+    ///
+    /// The same tag-registry precondition as [`AccessOps::create_role`] applies because role-tag data is stored
+    /// on-chain as part of the role definition.
     pub(super) async fn update_role<C>(
         client: &C,
         trail_id: ObjectID,
@@ -112,6 +131,10 @@ impl AccessOps {
         .await
     }
 
+    /// Builds the `delete_role` call.
+    ///
+    /// The PTB only carries the role name and clock reference. Protection of the initial-admin role remains an
+    /// access-control invariant enforced by the Move package.
     pub(super) async fn delete_role<C>(
         client: &C,
         trail_id: ObjectID,
@@ -139,6 +162,10 @@ impl AccessOps {
         .await
     }
 
+    /// Builds the `new_capability` call for a role.
+    ///
+    /// Optional restrictions are serialized exactly as provided. Validation of `issued_to`, `valid_from`, and
+    /// `valid_until` semantics remains on-chain.
     pub(super) async fn issue_capability<C>(
         client: &C,
         trail_id: ObjectID,
@@ -170,6 +197,10 @@ impl AccessOps {
         .await
     }
 
+    /// Builds the generic `revoke_capability` call.
+    ///
+    /// `capability_valid_until` is forwarded to the Move layer so the denylist can later be cleaned up without
+    /// losing the capability's original expiry boundary.
     pub(super) async fn revoke_capability<C>(
         client: &C,
         trail_id: ObjectID,
@@ -199,6 +230,10 @@ impl AccessOps {
         .await
     }
 
+    /// Builds the generic `destroy_capability` call.
+    ///
+    /// This resolves the capability object reference up front because the Move entry point consumes the owned
+    /// capability object rather than only its ID.
     pub(super) async fn destroy_capability<C>(
         client: &C,
         trail_id: ObjectID,
@@ -230,6 +265,10 @@ impl AccessOps {
         .await
     }
 
+    /// Builds the dedicated `destroy_initial_admin_capability` call.
+    ///
+    /// Initial-admin capability IDs are tracked separately, so they cannot be destroyed through the generic
+    /// capability path.
     pub(super) async fn destroy_initial_admin_capability<C>(
         client: &C,
         trail_id: ObjectID,
@@ -249,6 +288,10 @@ impl AccessOps {
         .await
     }
 
+    /// Builds the dedicated `revoke_initial_admin_capability` call.
+    ///
+    /// This keeps the same denylist-expiry behavior as [`AccessOps::revoke_capability`] while using the
+    /// separate Move entry point reserved for tracked initial-admin IDs.
     pub(super) async fn revoke_initial_admin_capability<C>(
         client: &C,
         trail_id: ObjectID,
@@ -278,6 +321,10 @@ impl AccessOps {
         .await
     }
 
+    /// Builds the `cleanup_revoked_capabilities` call.
+    ///
+    /// Cleanup only prunes denylist entries whose stored expiry has elapsed. It does not change capability
+    /// objects and does not revoke any additional IDs.
     pub(super) async fn cleanup_revoked_capabilities<C>(
         client: &C,
         trail_id: ObjectID,
@@ -303,6 +350,10 @@ impl AccessOps {
     }
 }
 
+/// Verifies that every requested role tag already exists in the trail tag registry.
+///
+/// Roles may only reference tags that are defined on the trail itself so later record-tag checks
+/// stay consistent with the registry stored on-chain.
 async fn assert_role_tags_defined<C>(client: &C, trail_id: ObjectID, role_tags: &Option<RoleTags>) -> Result<(), Error>
 where
     C: CoreClientReadOnly + OptionalSync,

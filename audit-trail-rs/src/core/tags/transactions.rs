@@ -1,6 +1,8 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! Transaction payloads for tag-registry updates.
+
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::IotaTransactionBlockEffects;
@@ -13,6 +15,9 @@ use tokio::sync::OnceCell;
 use super::operations::TagsOps;
 use crate::error::Error;
 
+/// Transaction that adds a record tag to the trail registry.
+///
+/// This extends the canonical tag registry owned by the trail.
 #[derive(Debug, Clone)]
 pub struct AddRecordTag {
     trail_id: ObjectID,
@@ -23,6 +28,7 @@ pub struct AddRecordTag {
 }
 
 impl AddRecordTag {
+    /// Creates an `AddRecordTag` transaction builder payload.
     pub fn new(trail_id: ObjectID, owner: IotaAddress, tag: String, selected_capability_id: Option<ObjectID>) -> Self {
         Self {
             trail_id,
@@ -69,6 +75,9 @@ impl Transaction for AddRecordTag {
     }
 }
 
+/// Transaction that removes a record tag from the trail registry.
+///
+/// Removal only succeeds when the tag is no longer used by records or role-tag restrictions.
 #[derive(Debug, Clone)]
 pub struct RemoveRecordTag {
     trail_id: ObjectID,
@@ -79,6 +88,7 @@ pub struct RemoveRecordTag {
 }
 
 impl RemoveRecordTag {
+    /// Creates a `RemoveRecordTag` transaction builder payload.
     pub fn new(trail_id: ObjectID, owner: IotaAddress, tag: String, selected_capability_id: Option<ObjectID>) -> Self {
         Self {
             trail_id,

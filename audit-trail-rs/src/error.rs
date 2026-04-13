@@ -1,34 +1,36 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! Error types returned by the audit-trail public API.
+
 use crate::iota_interaction_adapter::AdapterError;
 
-/// Errors that can occur when managing Audit Trails
+/// Errors that can occur when reading or mutating audit trails.
 #[derive(Debug, thiserror::Error, strum::IntoStaticStr)]
 #[non_exhaustive]
 pub enum Error {
-    /// Caused by invalid keys.
+    /// Returned when a signer key or public key cannot be derived or validated.
     #[error("invalid key: {0}")]
     InvalidKey(String),
-    /// Config is invalid.
+    /// Returned when client configuration or package-ID configuration is invalid.
     #[error("invalid config: {0}")]
     InvalidConfig(String),
-    /// An error caused by either a connection issue or an invalid RPC call.
+    /// Returned when an RPC request fails.
     #[error("RPC error: {0}")]
     RpcError(String),
-    /// The provided IOTA Client returned an error
+    /// Error returned by the underlying IOTA client adapter.
     #[error("IOTA client error: {0}")]
     IotaClient(#[from] AdapterError),
-    /// Generic error
+    /// Generic catch-all error for crate-specific failures that do not fit a narrower variant.
     #[error("{0}")]
     GenericError(String),
     /// Placeholder for unimplemented API surface.
     #[error("not implemented: {0}")]
     NotImplemented(&'static str),
-    /// Failed to parse tag
+    /// Returned when a Move tag cannot be parsed.
     #[error("Failed to parse tag: {0}")]
     FailedToParseTag(String),
-    /// Invalid argument
+    /// Returned when an argument is semantically invalid.
     #[error("Invalid argument: {0}")]
     InvalidArgument(String),
     /// The response from the IOTA node API was not in the expected format.
@@ -37,7 +39,7 @@ pub enum Error {
     /// Failed to deserialize data using BCS.
     #[error("BCS deserialization error: {0}")]
     DeserializationError(#[from] bcs::Error),
-    /// The response from the IOTA node API was not in the expected format.
+    /// The transaction response from the IOTA node API was not in the expected format.
     #[error("unexpected transaction response: {0}")]
     TransactionUnexpectedResponse(String),
 }

@@ -1,0 +1,3 @@
+[alias]
+docs-notarization = "doc -p notarization"
+docs-audit-trail = "doc -p audit_trail"

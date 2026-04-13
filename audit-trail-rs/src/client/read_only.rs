@@ -1,7 +1,11 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-//! A read-only client for interacting with IOTA Audit Trail module objects.
+//! Read-only client support for audit-trail interactions.
+//!
+//! [`AuditTrailClientReadOnly`] resolves the deployed package IDs for the connected network, exposes
+//! typed trail handles, and provides the internal read-only execution primitive used by the handle
+//! APIs.
 
 use std::ops::Deref;
 
@@ -22,14 +26,25 @@ use crate::error::Error;
 use crate::iota_interaction_adapter::IotaClientAdapter;
 use crate::package;
 
-/// Optional package ID overrides used when constructing an audit trail client.
+/// Explicit package-ID overrides used when constructing an audit-trail client.
+///
+/// Use this when talking to custom deployments, local test networks, or any environment where the
+/// package registry does not yet know the relevant package IDs.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct PackageOverrides {
-    pub audit_trail_package_id: Option<ObjectID>,
-    pub tf_components_package_id: Option<ObjectID>,
+    /// Override for the audit-trail package itself.
+    pub audit_trail: Option<ObjectID>,
+    /// Override for the `tf_components` package used by time locks and capabilities.
+    pub tf_component: Option<ObjectID>,
 }
 
-/// A read-only client for interacting with audit trail module objects on a specific network.
+/// A read-only client for interacting with audit-trail objects on a specific network.
+///
+/// This is the main entry point for applications that only need package resolution and typed read
+/// helpers. Once constructed, use [`Self::trail`] to create lightweight handles scoped to a single
+/// trail object.
+///
+/// For write flows, wrap this client in [`crate::AuditTrailClient`].
 #[derive(Clone)]
 pub struct AuditTrailClientReadOnly {
     /// The underlying IOTA client adapter used for communication.
@@ -63,6 +78,8 @@ impl AuditTrailClientReadOnly {
     }
 
     /// Returns the package ID used by this client.
+    ///
+    /// This is the deployed audit-trail Move package ID, not a trail object ID.
     pub fn package_id(&self) -> ObjectID {
         self.audit_trail_pkg_id
     }
@@ -77,14 +94,24 @@ impl AuditTrailClientReadOnly {
         &self.iota_client
     }
 
-    /// Returns a typed handle bound to a trail id.
+    /// Returns a typed handle bound to a specific trail object ID.
+    ///
+    /// Creating the handle is cheap. Reads only happen when you call methods on the returned
+    /// [`AuditTrailHandle`], such as [`AuditTrailHandle::get`].
     pub fn trail<'a>(&'a self, trail_id: ObjectID) -> AuditTrailHandle<'a, Self> {
         AuditTrailHandle::new(self, trail_id)
     }
 
-    /// Attempts to create a new [`AuditTrailClientReadOnly`] from a given IOTA client.
+    /// Creates a new read-only client from an IOTA client.
     ///
-    /// This resolves the package ID from the internal registry based on the network.
+    /// The package IDs are resolved from the internal registry using the connected network name.
+    /// This is the recommended constructor when connecting to official deployments whose package
+    /// history is already tracked by the crate.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the network cannot be resolved or if the package IDs for that network
+    /// cannot be determined.
     pub async fn new(
         #[cfg(target_arch = "wasm32")] iota_client: WasmIotaClient,
         #[cfg(not(target_arch = "wasm32"))] iota_client: IotaClient,
@@ -111,11 +138,18 @@ impl AuditTrailClientReadOnly {
         })
     }
 
-    /// Creates a new [`AuditTrailClientReadOnly`] with explicit package overrides.
+    /// Creates a new read-only client with explicit package-ID overrides.
     ///
-    /// This function allows overriding the package ID lookup from the registry,
-    /// which is useful for local testing or custom deployments where the package
-    /// IDs are known ahead of time.
+    /// This bypasses the default package-registry lookup for any IDs provided in
+    /// [`PackageOverrides`].
+    ///
+    /// Prefer this constructor when talking to custom deployments, local networks, or preview
+    /// environments whose package IDs are not yet part of the built-in registry.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the network cannot be resolved or if the resulting package-ID
+    /// configuration is invalid.
     pub async fn new_with_package_overrides(
         #[cfg(target_arch = "wasm32")] iota_client: WasmIotaClient,
         #[cfg(not(target_arch = "wasm32"))] iota_client: IotaClient,
@@ -150,6 +184,10 @@ impl CoreClientReadOnly for AuditTrailClientReadOnly {
 #[cfg_attr(not(feature = "send-sync"), async_trait::async_trait(?Send))]
 #[cfg_attr(feature = "send-sync", async_trait::async_trait)]
 impl AuditTrailReadOnly for AuditTrailClientReadOnly {
+    /// Executes a programmable transaction through `dev_inspect` and decodes the first return
+    /// value as `T`.
+    ///
+    /// This is primarily used by the typed read-only handle APIs.
     async fn execute_read_only_transaction<T: DeserializeOwned>(
         &self,
         tx: ProgrammableTransaction,

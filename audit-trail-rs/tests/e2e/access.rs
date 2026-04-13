@@ -74,6 +74,89 @@ async fn update_role_permissions_then_issue_capability() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+async fn delegated_role_and_capability_admins_can_enable_record_writes() -> anyhow::Result<()> {
+    let admin = get_funded_test_client().await?;
+    let role_admin = get_funded_test_client().await?;
+    let cap_admin = get_funded_test_client().await?;
+    let record_admin = get_funded_test_client().await?;
+    let trail_id = admin.create_test_trail(Data::text("delegated-access-flow")).await?;
+
+    admin
+        .create_role(
+            trail_id,
+            "RoleAdmin",
+            PermissionSet::role_admin_permissions().permissions,
+            None,
+        )
+        .await?;
+    admin
+        .create_role(
+            trail_id,
+            "CapAdmin",
+            PermissionSet::cap_admin_permissions().permissions,
+            None,
+        )
+        .await?;
+    admin
+        .issue_cap(
+            trail_id,
+            "RoleAdmin",
+            CapabilityIssueOptions {
+                issued_to: Some(role_admin.sender_address()),
+                ..CapabilityIssueOptions::default()
+            },
+        )
+        .await?;
+    admin
+        .issue_cap(
+            trail_id,
+            "CapAdmin",
+            CapabilityIssueOptions {
+                issued_to: Some(cap_admin.sender_address()),
+                ..CapabilityIssueOptions::default()
+            },
+        )
+        .await?;
+
+    role_admin
+        .create_role(
+            trail_id,
+            "RecordAdmin",
+            PermissionSet::record_admin_permissions().permissions,
+            None,
+        )
+        .await?;
+    cap_admin
+        .issue_cap(
+            trail_id,
+            "RecordAdmin",
+            CapabilityIssueOptions {
+                issued_to: Some(record_admin.sender_address()),
+                ..CapabilityIssueOptions::default()
+            },
+        )
+        .await?;
+
+    let added = record_admin
+        .trail(trail_id)
+        .records()
+        .add(Data::text("delegated write"), None, None)
+        .build_and_execute(&record_admin)
+        .await?
+        .output;
+
+    assert_eq!(added.trail_id, trail_id);
+    assert_eq!(added.sequence_number, 1);
+
+    let record = admin.trail(trail_id).records().get(1).await?;
+    assert_eq!(record.sequence_number, 1);
+    assert_eq!(record.added_by, record_admin.sender_address());
+    assert_eq!(record.data, Data::text("delegated write"));
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn create_role_rejects_undefined_role_tags() -> anyhow::Result<()> {
     let client = get_funded_test_client().await?;
     let trail_id = client
@@ -124,6 +207,122 @@ async fn update_role_permissions_rejects_undefined_role_tags() -> anyhow::Result
     assert!(
         updated.is_err(),
         "updating a role with tags outside the trail registry must fail"
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn issue_capability_for_nonexistent_role_fails() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let trail_id = client.create_test_trail(Data::text("missing-role-cap")).await?;
+
+    let issued = client
+        .trail(trail_id)
+        .access()
+        .for_role("NonExistentRole")
+        .issue_capability(CapabilityIssueOptions::default())
+        .build_and_execute(&client)
+        .await;
+
+    assert!(issued.is_err(), "issuing a capability for a missing role must fail");
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn issue_capability_requires_add_capabilities_permission() -> anyhow::Result<()> {
+    let admin = get_funded_test_client().await?;
+    let operator = get_funded_test_client().await?;
+    let trail_id = admin.create_test_trail(Data::text("missing-cap-permission")).await?;
+
+    admin
+        .create_role(trail_id, "NoCapPerm", vec![Permission::AddRecord], None)
+        .await?;
+    admin
+        .create_role(
+            trail_id,
+            "RecordAdmin",
+            PermissionSet::record_admin_permissions().permissions,
+            None,
+        )
+        .await?;
+    admin
+        .issue_cap(
+            trail_id,
+            "NoCapPerm",
+            CapabilityIssueOptions {
+                issued_to: Some(operator.sender_address()),
+                ..CapabilityIssueOptions::default()
+            },
+        )
+        .await?;
+
+    let issued = operator
+        .trail(trail_id)
+        .access()
+        .for_role("RecordAdmin")
+        .issue_capability(CapabilityIssueOptions::default())
+        .build_and_execute(&operator)
+        .await;
+
+    assert!(
+        issued.is_err(),
+        "issuing a capability without AddCapabilities permission must fail"
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn revoke_capability_requires_revoke_capabilities_permission() -> anyhow::Result<()> {
+    let admin = get_funded_test_client().await?;
+    let no_revoke = get_funded_test_client().await?;
+    let target = get_funded_test_client().await?;
+    let trail_id = admin.create_test_trail(Data::text("missing-revoke-permission")).await?;
+
+    admin
+        .create_role(trail_id, "NoRevokePerm", vec![Permission::AddRecord], None)
+        .await?;
+    admin
+        .create_role(
+            trail_id,
+            "RecordAdmin",
+            PermissionSet::record_admin_permissions().permissions,
+            None,
+        )
+        .await?;
+    admin
+        .issue_cap(
+            trail_id,
+            "NoRevokePerm",
+            CapabilityIssueOptions {
+                issued_to: Some(no_revoke.sender_address()),
+                ..CapabilityIssueOptions::default()
+            },
+        )
+        .await?;
+    let target_cap = admin
+        .issue_cap(
+            trail_id,
+            "RecordAdmin",
+            CapabilityIssueOptions {
+                issued_to: Some(target.sender_address()),
+                ..CapabilityIssueOptions::default()
+            },
+        )
+        .await?;
+
+    let revoked = no_revoke
+        .trail(trail_id)
+        .access()
+        .revoke_capability(target_cap.capability_id, target_cap.valid_until)
+        .build_and_execute(&no_revoke)
+        .await;
+
+    assert!(
+        revoked.is_err(),
+        "revoking a capability without RevokeCapabilities permission must fail"
     );
 
     Ok(())

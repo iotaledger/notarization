@@ -1,6 +1,8 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+//! Transaction payloads for locking updates.
+
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::IotaTransactionBlockEffects;
@@ -14,6 +16,9 @@ use super::operations::LockingOps;
 use crate::core::types::{LockingConfig, LockingWindow, TimeLock};
 use crate::error::Error;
 
+/// Transaction that replaces the full locking configuration.
+///
+/// This writes the full `LockingConfig` object and therefore updates all locking dimensions in one call.
 #[derive(Debug, Clone)]
 pub struct UpdateLockingConfig {
     trail_id: ObjectID,
@@ -24,6 +29,7 @@ pub struct UpdateLockingConfig {
 }
 
 impl UpdateLockingConfig {
+    /// Creates an `UpdateLockingConfig` transaction builder payload.
     pub fn new(
         trail_id: ObjectID,
         owner: IotaAddress,
@@ -75,6 +81,9 @@ impl Transaction for UpdateLockingConfig {
     }
 }
 
+/// Transaction that updates the delete-record window.
+///
+/// This updates only the rule that governs when individual records may be deleted.
 #[derive(Debug, Clone)]
 pub struct UpdateDeleteRecordWindow {
     trail_id: ObjectID,
@@ -85,6 +94,7 @@ pub struct UpdateDeleteRecordWindow {
 }
 
 impl UpdateDeleteRecordWindow {
+    /// Creates an `UpdateDeleteRecordWindow` transaction builder payload.
     pub fn new(
         trail_id: ObjectID,
         owner: IotaAddress,
@@ -136,6 +146,9 @@ impl Transaction for UpdateDeleteRecordWindow {
     }
 }
 
+/// Transaction that updates the delete-trail lock.
+///
+/// This updates only the time lock guarding deletion of the entire trail object.
 #[derive(Debug, Clone)]
 pub struct UpdateDeleteTrailLock {
     trail_id: ObjectID,
@@ -146,6 +159,7 @@ pub struct UpdateDeleteTrailLock {
 }
 
 impl UpdateDeleteTrailLock {
+    /// Creates an `UpdateDeleteTrailLock` transaction builder payload.
     pub fn new(
         trail_id: ObjectID,
         owner: IotaAddress,
@@ -197,6 +211,9 @@ impl Transaction for UpdateDeleteTrailLock {
     }
 }
 
+/// Transaction that updates the write lock.
+///
+/// This updates only the time lock guarding future record writes.
 #[derive(Debug, Clone)]
 pub struct UpdateWriteLock {
     trail_id: ObjectID,
@@ -207,6 +224,7 @@ pub struct UpdateWriteLock {
 }
 
 impl UpdateWriteLock {
+    /// Creates an `UpdateWriteLock` transaction builder payload.
     pub fn new(
         trail_id: ObjectID,
         owner: IotaAddress,
