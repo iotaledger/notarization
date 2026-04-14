@@ -70,7 +70,7 @@ public struct ImmutableMetadata has copy, drop, store {
 /// It maintains an ordered sequence of records, each assigned a unique
 /// auto-incrementing sequence number.
 /// Uses capability-based RBAC to manage access to the trail and its records.
-public struct AuditTrail<D: store + copy> has key, store {
+public struct AuditTrail<D: store + copy> has key {
     id: UID,
     /// Address that created this trail
     creator: address,
