@@ -14,6 +14,7 @@ import { capabilityConstraints } from "./advanced/10_capability_constraints";
 import { manageRecordTags } from "./advanced/11_manage_record_tags";
 import { customsClearance } from "./real-world/01_customs_clearance";
 import { clinicalTrial } from "./real-world/02_clinical_trial";
+import { digitalProductPassport } from "./real-world/03_digital_product_passport";
 
 export async function main(example?: string) {
     const argument = example ?? new URLSearchParams(window.location.search).get("example")?.toLowerCase();
@@ -48,6 +49,8 @@ export async function main(example?: string) {
             return customsClearance();
         case "02_clinical_trial":
             return clinicalTrial();
+        case "03_digital_product_passport":
+            return digitalProductPassport();
         default:
             throw new Error(`Unknown example name: '${argument}'`);
     }

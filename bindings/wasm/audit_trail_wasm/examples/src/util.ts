@@ -10,6 +10,7 @@ import {
     PackageOverrides,
     Permission,
     PermissionSet,
+    RoleTags,
     TimeLock,
 } from "@iota/audit-trail/node";
 import { Ed25519KeypairSigner } from "@iota/iota-interaction-ts/node/test_utils";
@@ -95,4 +96,27 @@ export async function grantSelfRecordPermissions(client: AuditTrailClient, trail
         .issueCapability(new CapabilityIssueOptions(client.senderAddress()))
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(client);
+}
+
+export async function issueTaggedRecordRole(
+    admin: AuditTrailClient,
+    trailId: string,
+    roleName: string,
+    tag: string,
+    issuedTo: string,
+): Promise<void> {
+    await admin
+        .trail(trailId)
+        .access()
+        .forRole(roleName)
+        .create(PermissionSet.recordAdminPermissions(), new RoleTags([tag]))
+        .withGasBudget(TEST_GAS_BUDGET)
+        .buildAndExecute(admin);
+    await admin
+        .trail(trailId)
+        .access()
+        .forRole(roleName)
+        .issueCapability(new CapabilityIssueOptions(issuedTo))
+        .withGasBudget(TEST_GAS_BUDGET)
+        .buildAndExecute(admin);
 }

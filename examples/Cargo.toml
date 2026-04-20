@@ -100,6 +100,10 @@ path = "audit-trail/real-world/01_customs_clearance.rs"
 name = "02_clinical_trial"
 path = "audit-trail/real-world/02_clinical_trial.rs"
 
+[[example]]
+name = "03_digital_product_passport"
+path = "audit-trail/real-world/03_digital_product_passport.rs"
+
 [dependencies]
 anyhow.workspace = true
 audit_trail = { path = "../audit-trail-rs" }

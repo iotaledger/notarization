@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Context;
+use audit_trail::core::types::{CapabilityIssueOptions, PermissionSet, RoleTags};
 use audit_trail::{AuditTrailClient, PackageOverrides};
-use iota_sdk::types::base_types::ObjectID;
+use iota_sdk::types::base_types::{IotaAddress, ObjectID};
 use iota_sdk::{IOTA_LOCAL_NETWORK_URL, IotaClientBuilder};
 use notarization::client::{NotarizationClient, NotarizationClientReadOnly};
 use product_common::test_utils::{InMemSigner, request_funds};
@@ -73,4 +74,36 @@ pub async fn get_funded_audit_trail_client() -> Result<AuditTrailClient<InMemSig
         .with_signer(signer)
         .await
         .map_err(|e| anyhow::anyhow!("failed to attach signer to AuditTrailClient: {e}"))
+}
+
+pub async fn issue_tagged_record_role(
+    client: &AuditTrailClient<InMemSigner>,
+    trail_id: ObjectID,
+    role_name: &str,
+    tag: &str,
+    issued_to: IotaAddress,
+) -> Result<(), anyhow::Error> {
+    client
+        .trail(trail_id)
+        .access()
+        .for_role(role_name)
+        .create(PermissionSet::record_admin_permissions(), Some(RoleTags::new([tag])))
+        .build_and_execute(client)
+        .await
+        .map_err(|e| anyhow::anyhow!("failed to create role '{role_name}': {e}"))?;
+
+    client
+        .trail(trail_id)
+        .access()
+        .for_role(role_name)
+        .issue_capability(CapabilityIssueOptions {
+            issued_to: Some(issued_to),
+            valid_from_ms: None,
+            valid_until_ms: None,
+        })
+        .build_and_execute(client)
+        .await
+        .map_err(|e| anyhow::anyhow!("failed to issue capability for role '{role_name}': {e}"))?;
+
+    Ok(())
 }

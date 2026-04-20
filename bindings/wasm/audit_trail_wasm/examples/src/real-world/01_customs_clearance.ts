@@ -31,17 +31,15 @@
  */
 
 import {
-    AuditTrailClient,
     CapabilityIssueOptions,
     Data,
     LockingConfig,
     LockingWindow,
     PermissionSet,
-    RoleTags,
     TimeLock,
 } from "@iota/audit-trail/node";
 import { strict as assert } from "assert";
-import { getFundedClient, TEST_GAS_BUDGET } from "../util";
+import { getFundedClient, issueTaggedRecordRole, TEST_GAS_BUDGET } from "../util";
 
 export async function customsClearance(): Promise<void> {
     console.log("=== Customs Clearance ===\n");
@@ -276,27 +274,4 @@ export async function customsClearance(): Promise<void> {
     assert.equal(trailState.updatableMetadata, "Status: Cleared", "customs case should finish in cleared state");
 
     console.log("\nCustoms clearance completed successfully.");
-}
-
-async function issueTaggedRecordRole(
-    admin: AuditTrailClient,
-    trailId: string,
-    roleName: string,
-    tag: string,
-    issuedTo: string,
-): Promise<void> {
-    await admin
-        .trail(trailId)
-        .access()
-        .forRole(roleName)
-        .create(PermissionSet.recordAdminPermissions(), new RoleTags([tag]))
-        .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
-    await admin
-        .trail(trailId)
-        .access()
-        .forRole(roleName)
-        .issueCapability(new CapabilityIssueOptions(issuedTo))
-        .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
 }

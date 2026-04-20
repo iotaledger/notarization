@@ -81,6 +81,7 @@ IOTA_AUDIT_TRAIL_PKG_ID=0x... IOTA_TF_COMPONENTS_PKG_ID=0x... cargo run --releas
 | :----------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [01_customs_clearance](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/real-world/01_customs_clearance.rs) | Models customs clearance with role-tag restrictions, delegated capabilities, denied inspection writes, and a final write lock.                                                          |
 | [02_clinical_trial](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/real-world/02_clinical_trial.rs)       | Models a Phase III clinical trial with time-constrained capabilities, mid-study tag additions, deletion-window enforcement, time-locked datasets, and read-only regulator verification. |
+| [03_digital_product_passport](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/real-world/03_digital_product_passport.rs) | Models a Digital Product Passport for an e-bike battery with lifecycle-scoped actors, technician access approval, an annual maintenance event, and documented Lifecycle Credit reward evidence. |
 
 ## Key Concepts
 

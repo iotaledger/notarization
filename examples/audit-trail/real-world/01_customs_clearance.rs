@@ -27,15 +27,12 @@
 //! - locking: writes are frozen once the shipment is fully cleared
 
 use anyhow::{Result, ensure};
-use audit_trail::AuditTrailClient;
 use audit_trail::core::types::{
     CapabilityIssueOptions, Data, ImmutableMetadata, InitialRecord, LockingConfig, LockingWindow, PermissionSet,
-    RoleTags, TimeLock,
+    TimeLock,
 };
-use examples::get_funded_audit_trail_client;
-use iota_sdk::types::base_types::{IotaAddress, ObjectID};
+use examples::{get_funded_audit_trail_client, issue_tagged_record_role};
 use product_common::core_client::CoreClient;
-use product_common::test_utils::InMemSigner;
 use sha2::{Digest, Sha256};
 
 #[tokio::main]
@@ -333,36 +330,6 @@ async fn main() -> Result<()> {
     );
 
     println!("\nCustoms clearance completed successfully.");
-
-    Ok(())
-}
-
-async fn issue_tagged_record_role(
-    client: &AuditTrailClient<InMemSigner>,
-    trail_id: ObjectID,
-    role_name: &str,
-    tag: &str,
-    issued_to: IotaAddress,
-) -> Result<()> {
-    client
-        .trail(trail_id)
-        .access()
-        .for_role(role_name)
-        .create(PermissionSet::record_admin_permissions(), Some(RoleTags::new([tag])))
-        .build_and_execute(client)
-        .await?;
-
-    client
-        .trail(trail_id)
-        .access()
-        .for_role(role_name)
-        .issue_capability(CapabilityIssueOptions {
-            issued_to: Some(issued_to),
-            valid_from_ms: None,
-            valid_until_ms: None,
-        })
-        .build_and_execute(client)
-        .await?;
 
     Ok(())
 }
