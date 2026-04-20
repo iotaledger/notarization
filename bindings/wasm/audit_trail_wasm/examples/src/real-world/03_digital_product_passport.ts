@@ -264,7 +264,10 @@ export async function digitalProductPassport(): Promise<void> {
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(epro);
 
-    console.log("EPRO added reward record", rewardEvent.output.sequenceNumber + " for the verified maintenance event.\n");
+    console.log(
+        "EPRO added reward record",
+        rewardEvent.output.sequenceNumber + " for the verified maintenance event.\n",
+    );
 
     await lifecycleManager
         .trail(trailId)
@@ -315,7 +318,6 @@ export async function digitalProductPassport(): Promise<void> {
 
     console.log("\nDigital Product Passport scenario completed successfully.");
 }
-
 
 async function issueMetadataRole(
     admin: AuditTrailClient,

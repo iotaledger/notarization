@@ -10,40 +10,31 @@
 //! IOTA stack (Identity, Hierarchies, Tokenization, and Gas Station) is mapped
 //! here onto audit-trail-native concepts:
 //!
-//! - product identity, bill of materials, reward policy, and service history are
-//!   captured as immutable audit records
-//! - service-network authorization is represented through role-scoped
-//!   capabilities
-//! - Lifecycle Credit (LCC) payouts are documented as reward records rather than
-//!   executed as token transfers
+//! - product identity, bill of materials, reward policy, and service history are captured as immutable audit records
+//! - service-network authorization is represented through role-scoped capabilities
+//! - Lifecycle Credit (LCC) payouts are documented as reward records rather than executed as token transfers
 //!
 //! ## Actors
 //!
-//! - **Manufacturer**: Creates the DPP, publishes manufacturing data, and
-//!   administers roles and capabilities.
+//! - **Manufacturer**: Creates the DPP, publishes manufacturing data, and administers roles and capabilities.
 //! - **LifecycleManager**: Updates the mutable lifecycle-stage metadata.
 //! - **Distributor**: Writes logistics and handover records.
 //! - **Consumer**: Writes the commissioning / in-use activation record.
-//! - **ServiceTechnician**: Reviews the passport, requests write access, and
-//!   records the maintenance event once authorized.
-//! - **Recycler**: Prepared for future end-of-life events through a
-//!   recycling-scoped capability.
-//! - **EPRO**: Records reward policy and the reward-payout evidence for
-//!   verified maintenance.
+//! - **ServiceTechnician**: Reviews the passport, requests write access, and records the maintenance event once
+//!   authorized.
+//! - **Recycler**: Prepared for future end-of-life events through a recycling-scoped capability.
+//! - **EPRO**: Records reward policy and the reward-payout evidence for verified maintenance.
 //!
 //! ## How the trail is used as a DPP
 //!
 //! - `immutable_metadata`: product identity for the battery passport
 //! - `updatable_metadata`: current lifecycle stage
-//! - record tags: `manufacturing`, `logistics`, `ownership`, `maintenance`,
-//!   `recycling`, `rewards`
-//! - roles and capabilities: each actor can write only its assigned slice of the
-//!   lifecycle
-//! - access-request flow: the technician is denied maintenance writes until the
-//!   manufacturer issues the scoped capability
-//! - service evidence: the maintenance event mirrors the demo's "Annual
-//!   Maintenance" / "Health Snapshot" pattern with a 76% health score and a
-//!   1-LCC reward record
+//! - record tags: `manufacturing`, `logistics`, `ownership`, `maintenance`, `recycling`, `rewards`
+//! - roles and capabilities: each actor can write only its assigned slice of the lifecycle
+//! - access-request flow: the technician is denied maintenance writes until the manufacturer issues the scoped
+//!   capability
+//! - service evidence: the maintenance event mirrors the demo's "Annual Maintenance" / "Health Snapshot" pattern with a
+//!   76% health score and a 1-LCC reward record
 
 use anyhow::{Result, ensure};
 use audit_trail::AuditTrailClient;

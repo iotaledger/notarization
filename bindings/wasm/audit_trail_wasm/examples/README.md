@@ -65,8 +65,8 @@ Available examples:
 
 ### Real-World
 
-| Name                   | Description                                                                                                                                  |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `01_customs_clearance` | Models customs clearance with role-tag restrictions, delegated capabilities, denied inspection writes, and a final write lock                |
-| `02_clinical_trial`    | Models a clinical trial with time-constrained capabilities, mid-study tag addition, deletion windows, time-locks, and regulator verification |
+| Name                          | Description                                                                                                                                                                                    |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `01_customs_clearance`        | Models customs clearance with role-tag restrictions, delegated capabilities, denied inspection writes, and a final write lock                                                                  |
+| `02_clinical_trial`           | Models a clinical trial with time-constrained capabilities, mid-study tag addition, deletion windows, time-locks, and regulator verification                                                   |
 | `03_digital_product_passport` | Models a Digital Product Passport for an e-bike battery with lifecycle-scoped actors, technician access approval, an annual maintenance event, and documented Lifecycle Credit reward evidence |
