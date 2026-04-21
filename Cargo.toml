@@ -16,7 +16,7 @@ anyhow = "1.0"
 async-trait = "0.1"
 bcs = "0.1"
 hyper = "1"
-iota-sdk = { git = "https://github.com/iotaledger/iota.git", package = "iota-sdk", tag = "v1.20.1" }
+iota-sdk = { git = "https://github.com/iotaledger/iota.git", package = "iota-sdk", tag = "v1.21.1-rc" }
 iota_interaction = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.15", default-features = false, package = "iota_interaction" }
 iota_interaction_rust = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.15", default-features = false, package = "iota_interaction_rust" }
 iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.15", default-features = false, package = "iota_interaction_ts" }
