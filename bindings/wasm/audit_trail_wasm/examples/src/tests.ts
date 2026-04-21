@@ -16,6 +16,7 @@ import { capabilityConstraints } from "./advanced/10_capability_constraints";
 import { manageRecordTags } from "./advanced/11_manage_record_tags";
 import { customsClearance } from "./real-world/01_customs_clearance";
 import { clinicalTrial } from "./real-world/02_clinical_trial";
+import { digitalProductPassport } from "./real-world/03_digital_product_passport";
 
 describe("Audit trail wasm node examples", function() {
     afterEach(() => {
@@ -60,5 +61,8 @@ describe("Audit trail wasm node examples", function() {
     });
     it("runs clinical trial example", async () => {
         await clinicalTrial();
+    });
+    it("runs digital product passport example", async () => {
+        await digitalProductPassport();
     });
 });

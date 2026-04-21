@@ -34,17 +34,15 @@
  */
 
 import {
-    AuditTrailClient,
     CapabilityIssueOptions,
     Data,
     LockingConfig,
     LockingWindow,
     PermissionSet,
-    RoleTags,
     TimeLock,
 } from "@iota/audit-trail/node";
 import { strict as assert } from "assert";
-import { getFundedClient, TEST_GAS_BUDGET } from "../util";
+import { getFundedClient, issueTaggedRecordRole, TEST_GAS_BUDGET } from "../util";
 
 export async function clinicalTrial(): Promise<void> {
     console.log("=== Clinical Trial Data Integrity ===\n");
@@ -289,27 +287,4 @@ export async function clinicalTrial(): Promise<void> {
     assert.equal(onChain.updatableMetadata, "Phase: Data Review");
 
     console.log("\nClinical trial data-integrity verification completed successfully.");
-}
-
-async function issueTaggedRecordRole(
-    admin: AuditTrailClient,
-    trailId: string,
-    roleName: string,
-    tag: string,
-    issuedTo: string,
-): Promise<void> {
-    await admin
-        .trail(trailId)
-        .access()
-        .forRole(roleName)
-        .create(PermissionSet.recordAdminPermissions(), new RoleTags([tag]))
-        .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
-    await admin
-        .trail(trailId)
-        .access()
-        .forRole(roleName)
-        .issueCapability(new CapabilityIssueOptions(issuedTo))
-        .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
 }

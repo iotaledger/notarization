@@ -32,6 +32,7 @@ examples=(
     "11_manage_record_tags"
     "01_customs_clearance"
     "02_clinical_trial"
+    "03_digital_product_passport"
 )
 
 for example in "${examples[@]}"; do
