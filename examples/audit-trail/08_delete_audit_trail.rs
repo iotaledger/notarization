@@ -78,7 +78,7 @@ async fn main() -> Result<()> {
         .build_and_execute(&maintenance_admin)
         .await?
         .output;
-    println!("Deleted {deleted_records} record(s) before trail removal.\n");
+    println!("Deleted record sequence numbers {deleted_records:?} before trail removal.\n");
 
     ensure!(maintenance_trail.records().record_count().await? == 0);
 

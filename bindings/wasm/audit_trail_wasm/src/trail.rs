@@ -14,7 +14,7 @@ use audit_trail::core::tags::{AddRecordTag, RemoveRecordTag};
 use audit_trail::core::trail::{DeleteAuditTrail, Migrate, UpdateMetadata};
 use audit_trail::core::types::{
     AuditTrailDeleted, CapabilityDestroyed, CapabilityIssued, CapabilityRevoked, OnChainAuditTrail, RecordAdded,
-    RecordDeleted, RoleCreated, RoleDeleted, RoleUpdated,
+    RecordDeleted, RevokedCapabilitiesCleanedUp, RoleCreated, RoleDeleted, RoleUpdated,
 };
 use iota_interaction_ts::bindings::{WasmIotaTransactionBlockEffects, WasmIotaTransactionBlockEvents};
 use iota_interaction_ts::core_client::WasmCoreClientReadOnly;
@@ -26,8 +26,9 @@ use wasm_bindgen::prelude::*;
 use crate::builder::WasmAuditTrailBuilder;
 use crate::types::{
     WasmAuditTrailDeleted, WasmCapabilityDestroyed, WasmCapabilityIssued, WasmCapabilityRevoked, WasmEmpty,
-    WasmImmutableMetadata, WasmLinkedTable, WasmLockingConfig, WasmRecordAdded, WasmRecordDeleted, WasmRecordTagEntry,
-    WasmRoleCreated, WasmRoleDeleted, WasmRoleMap, WasmRoleUpdated,
+    WasmImmutableMetadata, WasmLinkedTable, WasmLockingConfig, WasmRecordAdded, WasmRecordDeleted,
+    WasmRecordTagEntry, WasmRevokedCapabilitiesCleanedUp, WasmRoleCreated, WasmRoleDeleted, WasmRoleMap,
+    WasmRoleUpdated,
 };
 
 /// Read-only view of an on-chain audit trail for wasm consumers.
@@ -519,8 +520,10 @@ impl WasmCleanupRevokedCapabilities {
         wasm_effects: &WasmIotaTransactionBlockEffects,
         wasm_events: &WasmIotaTransactionBlockEvents,
         client: &WasmCoreClientReadOnly,
-    ) -> Result<WasmEmpty> {
-        apply_with_events(self.0, wasm_effects, wasm_events, client).await
+    ) -> Result<WasmRevokedCapabilitiesCleanedUp> {
+        let cleaned: RevokedCapabilitiesCleanedUp =
+            apply_with_events(self.0, wasm_effects, wasm_events, client).await?;
+        Ok(cleaned.into())
     }
 }
 
@@ -587,7 +590,7 @@ impl WasmDeleteRecordsBatch {
         wasm_effects: &WasmIotaTransactionBlockEffects,
         wasm_events: &WasmIotaTransactionBlockEvents,
         client: &WasmCoreClientReadOnly,
-    ) -> Result<u64> {
+    ) -> Result<Vec<u64>> {
         apply_with_events(self.0, wasm_effects, wasm_events, client).await
     }
 }

@@ -106,8 +106,8 @@ async fn main() -> Result<()> {
         .await?
         .output;
 
-    println!("Batch deleted the remaining {deleted_remaining} records.");
-    ensure!(deleted_remaining == 2);
+    println!("Batch deleted the remaining sequence numbers: {deleted_remaining:?}");
+    ensure!(deleted_remaining == vec![1, 2]);
     ensure!(records.record_count().await? == 0);
 
     Ok(())

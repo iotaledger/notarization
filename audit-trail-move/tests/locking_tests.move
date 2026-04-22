@@ -998,8 +998,9 @@ fun test_delete_records_batch_bypasses_record_lock() {
             &clock,
             ts::ctx(&mut scenario),
         );
-        assert!(deleted == 1, 0);
-        assert!(trail.record_count() == 0, 1);
+        assert!(vector::length(&deleted) == 1, 0);
+        assert!(*vector::borrow(&deleted, 0) == 0, 1);
+        assert!(trail.record_count() == 0, 2);
 
         delete_all_cap.destroy_for_testing();
         cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
@@ -1121,8 +1122,9 @@ fun test_delete_audit_trail_after_batch_cleanup() {
             &clock,
             ts::ctx(&mut scenario),
         );
-        assert!(deleted == 1, 0);
-        assert!(trail.record_count() == 0, 1);
+        assert!(vector::length(&deleted) == 1, 0);
+        assert!(*vector::borrow(&deleted, 0) == 0, 1);
+        assert!(trail.record_count() == 0, 2);
 
         main::delete_audit_trail(trail, &delete_maintenance_cap, &clock, ts::ctx(&mut scenario));
 

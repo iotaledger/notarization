@@ -993,7 +993,11 @@ async fn delete_records_batch_respects_limit_and_deletes_oldest_first() -> anyho
     assert_eq!(records.record_count().await?, 3);
 
     let deleted_two = records.delete_records_batch(2).build_and_execute(&client).await?.output;
-    assert_eq!(deleted_two, 2, "batch delete should stop at the provided limit");
+    assert_eq!(
+        deleted_two,
+        vec![0, 1],
+        "batch delete should return the deleted sequence numbers"
+    );
     assert_eq!(records.record_count().await?, 1);
     assert!(records.get(0).await.is_err(), "oldest record should be removed first");
     assert!(
@@ -1007,7 +1011,7 @@ async fn delete_records_batch_respects_limit_and_deletes_oldest_first() -> anyho
         .build_and_execute(&client)
         .await?
         .output;
-    assert_eq!(deleted_last, 1, "remaining record should be deleted");
+    assert_eq!(deleted_last, vec![2], "remaining record should be deleted");
     assert_eq!(records.record_count().await?, 0);
 
     let deleted_empty = records
@@ -1015,7 +1019,10 @@ async fn delete_records_batch_respects_limit_and_deletes_oldest_first() -> anyho
         .build_and_execute(&client)
         .await?
         .output;
-    assert_eq!(deleted_empty, 0, "deleting from an empty trail should return zero");
+    assert!(
+        deleted_empty.is_empty(),
+        "deleting from an empty trail should return no sequence numbers"
+    );
 
     Ok(())
 }
@@ -1133,7 +1140,7 @@ async fn delete_records_batch_with_matching_role_tag_access_succeeds() -> anyhow
         .build_and_execute(&client)
         .await?
         .output;
-    assert_eq!(deleted, 2);
+    assert_eq!(deleted, vec![0, 1]);
     assert_eq!(records.record_count().await?, 0);
     assert!(records.get(1).await.is_err());
 
