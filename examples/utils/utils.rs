@@ -56,10 +56,6 @@ pub async fn get_funded_audit_trail_client() -> Result<AuditTrailClient<InMemSig
 
     let tf_components_pkg_id = get_package_id_from_env("IOTA_TF_COMPONENTS_PKG_ID")?;
 
-    let signer = InMemSigner::new();
-    let sender_address = signer.get_address().await?;
-    request_funds(&sender_address).await?;
-
     let client = AuditTrailClient::from_iota_client(
         iota_client,
         Some(PackageOverrides {
@@ -67,8 +63,12 @@ pub async fn get_funded_audit_trail_client() -> Result<AuditTrailClient<InMemSig
             tf_component: Some(tf_components_pkg_id),
         }),
     )
-    .await
-    .map_err(|e| anyhow::anyhow!("failed to create AuditTrailClient: {e}"))?;
+      .await
+      .map_err(|e| anyhow::anyhow!("failed to create AuditTrailClient: {e}"))?;
+
+    let signer = InMemSigner::new();
+    let sender_address = signer.get_address().await?;
+    request_funds(&sender_address).await?;
 
     client
         .with_signer(signer)
