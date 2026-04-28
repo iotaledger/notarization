@@ -4,8 +4,8 @@
 /**
  * ## Actors
  *
- * - **Admin**: Creates the trail and sets up the RecordAdmin role.
- * - **RecordAdmin**: Adds one follow-up record. All subsequent operations are read-only
+ * - **Admin client**: Creates the trail and sets up the RecordAdmin role.
+ * - **Record admin client**: Adds one follow-up record. All subsequent operations are read-only
  *   and can be performed by any address — no capability required.
  *
  * Demonstrates how to:
@@ -29,12 +29,12 @@ import { getFundedClient, TEST_GAS_BUDGET } from "./util";
 export async function accessReadOnlyMethods(): Promise<void> {
     console.log("=== Audit Trail: Read-Only Inspection ===\n");
 
-    // `admin` creates the trail and sets up the role.
-    // `recordAdmin` adds the follow-up record.
-    const admin = await getFundedClient();
-    const recordAdmin = await getFundedClient();
+    // `adminClient` creates the trail and delegates one record write.
+    // `recordAdminClient` adds the follow-up record.
+    const adminClient = await getFundedClient();
+    const recordAdminClient = await getFundedClient();
 
-    const { output: created } = await admin
+    const { output: createdTrail } = await adminClient
         .createTrail()
         .withTrailMetadata("Operations Trail", "Used to inspect read-only accessors")
         .withUpdatableMetadata("Status: Active")
@@ -44,43 +44,42 @@ export async function accessReadOnlyMethods(): Promise<void> {
         .withInitialRecordString("Initial record", "event:created")
         .finish()
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
+        .buildAndExecute(adminClient);
 
-    const trailId = created.id;
+    const trailId = createdTrail.id;
 
-    // Create RecordAdmin role and issue to recordAdmin.
-    const role = admin.trail(trailId).access().forRole("RecordAdmin");
-    await role
+    const recordAdminRole = adminClient.trail(trailId).access().forRole("RecordAdmin");
+    await recordAdminRole
         .create(PermissionSet.recordAdminPermissions())
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
-    await role
-        .issueCapability(new CapabilityIssueOptions(recordAdmin.senderAddress()))
+        .buildAndExecute(adminClient);
+    await recordAdminRole
+        .issueCapability(new CapabilityIssueOptions(recordAdminClient.senderAddress()))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
+        .buildAndExecute(adminClient);
 
     // RecordAdmin adds a follow-up record.
-    await recordAdmin
+    await recordAdminClient
         .trail(trailId)
         .records()
         .add(Data.fromString("Follow-up record"), "event:updated")
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(recordAdmin);
+        .buildAndExecute(recordAdminClient);
 
     // All reads below require no capability — any address can inspect the trail.
-    const onChain = await admin.trail(trailId).get();
+    const onChainTrail = await adminClient.trail(trailId).get();
     console.log("Trail summary:");
-    console.log("  id =", onChain.id);
-    console.log("  creator =", onChain.creator);
-    console.log("  created_at =", onChain.createdAt);
-    console.log("  sequence_number =", onChain.sequenceNumber);
-    console.log("  immutable_metadata =", onChain.immutableMetadata);
-    console.log("  updatable_metadata =", onChain.updatableMetadata, "\n");
+    console.log("  id =", onChainTrail.id);
+    console.log("  creator =", onChainTrail.creator);
+    console.log("  created_at =", onChainTrail.createdAt);
+    console.log("  sequence_number =", onChainTrail.sequenceNumber);
+    console.log("  immutable_metadata =", onChainTrail.immutableMetadata);
+    console.log("  updatable_metadata =", onChainTrail.updatableMetadata, "\n");
 
-    console.log("Roles:", onChain.roles.roles.map((r) => r.name));
-    console.log("Locking config:", onChain.lockingConfig, "\n");
+    console.log("Roles:", onChainTrail.roles.roles.map((r) => r.name));
+    console.log("Locking config:", onChainTrail.lockingConfig, "\n");
 
-    const trailHandle = admin.trail(trailId);
+    const trailHandle = adminClient.trail(trailId);
     const count = await trailHandle.records().recordCount();
     const initialRecord = await trailHandle.records().get(0n);
     const firstPage = await trailHandle.records().listPage(undefined, 10);

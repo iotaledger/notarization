@@ -3,12 +3,12 @@
 
 //! ## Actors
 //!
-//! - **Admin**: Creates the trail, defines the RecordAdmin role, and issues a capability bound specifically to
-//!   `intended_writer`'s address. Also performs revocation.
-//! - **IntendedWriter**: The authorised holder. Writes a record successfully before revocation, then is blocked after
-//!   the capability is revoked.
-//! - **WrongWriter**: An unauthorised actor who attempts to use the address-bound capability. All write attempts are
-//!   rejected by the Move contract.
+//! - **Admin client**: Creates the trail, defines the RecordAdmin role, and issues a capability bound specifically to
+//!   `intended_writer_client`'s address. Also performs revocation.
+//! - **Intended writer client**: The authorised holder. Writes a record successfully before revocation, then is blocked
+//!   after the capability is revoked.
+//! - **Wrong writer client**: An unauthorised actor who attempts to use the address-bound capability. All write
+//!   attempts are rejected by the Move contract.
 
 use anyhow::{Result, ensure};
 use audit_trail::core::types::{CapabilityIssueOptions, Data, InitialRecord, PermissionSet};
@@ -23,91 +23,99 @@ use product_common::core_client::CoreClient;
 async fn main() -> Result<()> {
     println!("=== Audit Trail Advanced: Capability Constraints ===\n");
 
-    let admin = get_funded_audit_trail_client().await?;
-    let intended_writer = get_funded_audit_trail_client().await?;
-    let wrong_writer = get_funded_audit_trail_client().await?;
+    let admin_client = get_funded_audit_trail_client().await?;
+    let intended_writer_client = get_funded_audit_trail_client().await?;
+    let wrong_writer_client = get_funded_audit_trail_client().await?;
 
-    let created = admin
+    let created_trail = admin_client
         .create_trail()
         .with_initial_record(InitialRecord::new(Data::text("Trail created"), None, None))
         .finish()
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?
         .output;
 
-    let trail_id = created.trail_id;
+    let trail_id = created_trail.trail_id;
+    let record_admin_role = "RecordAdmin";
 
-    admin
+    admin_client
         .trail(trail_id)
         .access()
-        .for_role("RecordAdmin")
+        .for_role(record_admin_role)
         .create(PermissionSet::record_admin_permissions(), None)
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?;
 
-    let issued = admin
+    // Address binding means only `intended_writer_client` may use the capability object.
+    let intended_writer_capability = admin_client
         .trail(trail_id)
         .access()
-        .for_role("RecordAdmin")
+        .for_role(record_admin_role)
         .issue_capability(CapabilityIssueOptions {
-            issued_to: Some(intended_writer.sender_address()),
+            issued_to: Some(intended_writer_client.sender_address()),
             valid_from_ms: None,
             valid_until_ms: None,
         })
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?
         .output;
 
     println!(
         "Issued capability {} to {}\n",
-        issued.capability_id,
-        intended_writer.sender_address()
+        intended_writer_capability.capability_id,
+        intended_writer_client.sender_address()
     );
 
-    let denied = wrong_writer
+    let wrong_writer_attempt = wrong_writer_client
         .trail(trail_id)
         .records()
         .add(Data::text("Wrong writer"), None, None)
-        .build_and_execute(&wrong_writer)
+        .build_and_execute(&wrong_writer_client)
         .await;
 
     ensure!(
-        denied.is_err(),
+        wrong_writer_attempt.is_err(),
         "a capability bound to another address must not be usable"
     );
 
-    let added = intended_writer
+    let authorized_record = intended_writer_client
         .trail(trail_id)
         .records()
         .add(Data::text("Authorized writer"), None, None)
-        .build_and_execute(&intended_writer)
+        .build_and_execute(&intended_writer_client)
         .await?
         .output;
 
-    println!("Bound holder added record {} successfully.\n", added.sequence_number);
+    println!(
+        "Bound holder added record {} successfully.\n",
+        authorized_record.sequence_number
+    );
 
-    admin
+    admin_client
         .trail(trail_id)
         .access()
-        .revoke_capability(issued.capability_id, issued.valid_until)
-        .build_and_execute(&admin)
+        .revoke_capability(
+            intended_writer_capability.capability_id,
+            intended_writer_capability.valid_until,
+        )
+        .build_and_execute(&admin_client)
         .await?;
 
-    let revoked_attempt = intended_writer
+    let revoked_capability_attempt = intended_writer_client
         .trail(trail_id)
         .records()
         .add(Data::text("Should fail after revoke"), None, None)
-        .build_and_execute(&intended_writer)
+        .build_and_execute(&intended_writer_client)
         .await;
 
     ensure!(
-        revoked_attempt.is_err(),
+        revoked_capability_attempt.is_err(),
         "revoked capabilities must no longer authorize record writes"
     );
 
     println!(
         "Revoked capability {} and verified it can no longer be used.",
-        issued.capability_id
+        intended_writer_capability.capability_id
     );
 
     Ok(())

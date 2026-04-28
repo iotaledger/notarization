@@ -3,10 +3,10 @@
 
 //! ## Actors
 //!
-//! - **Admin**: Creates and updates roles, issues capabilities, revokes and destroys them, and finally deletes the role
-//!   once it is no longer needed.
-//! - **OperationsUser**: The subject of all capability issuance. Capabilities are bound to this address to demonstrate
-//!   that revocation immediately blocks their access.
+//! - **Admin client**: Creates and updates roles, issues capabilities, revokes and destroys them, and finally deletes
+//!   the role once it is no longer needed.
+//! - **Operations user client**: The subject of all capability issuance. Capabilities are bound to this address to
+//!   demonstrate that revocation immediately blocks their access.
 
 use std::collections::HashSet;
 
@@ -24,12 +24,11 @@ use product_common::core_client::CoreClient;
 async fn main() -> Result<()> {
     println!("=== Audit Trail: Manage Access ===\n");
 
-    // `admin` manages roles and capability lifecycle.
-    // `operations_user` represents the actor who receives (and later loses) access.
-    let admin = get_funded_audit_trail_client().await?;
-    let operations_user = get_funded_audit_trail_client().await?;
+    // Use a separate operations client so capability ownership and revocation are visible.
+    let admin_client = get_funded_audit_trail_client().await?;
+    let operations_user_client = get_funded_audit_trail_client().await?;
 
-    let created = admin
+    let created_trail = admin_client
         .create_trail()
         .with_initial_record(audit_trail::core::types::InitialRecord::new(
             Data::text("Trail created"),
@@ -37,21 +36,23 @@ async fn main() -> Result<()> {
             None,
         ))
         .finish()
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?
         .output;
 
-    let trail_id = created.trail_id;
+    let trail_id = created_trail.trail_id;
+    let operations_role = "Operations";
 
-    let created_role = admin
+    // The Admin capability authorizes the custom role definition.
+    let created_operations_role = admin_client
         .trail(trail_id)
         .access()
-        .for_role("Operations")
+        .for_role(operations_role)
         .create(PermissionSet::record_admin_permissions(), None)
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?
         .output;
-    println!("Created role: {}\n", created_role.role);
+    println!("Created role: {}\n", created_operations_role.role);
 
     let updated_permissions = PermissionSet {
         permissions: HashSet::from([
@@ -61,88 +62,98 @@ async fn main() -> Result<()> {
         ]),
     };
 
-    let updated_role = admin
+    let updated_operations_role = admin_client
         .trail(trail_id)
         .access()
-        .for_role("Operations")
+        .for_role(operations_role)
         .update_permissions(updated_permissions.clone(), None)
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?
         .output;
-    println!("Updated role permissions: {:?}\n", updated_role.permissions.permissions);
+    println!(
+        "Updated role permissions: {:?}\n",
+        updated_operations_role.permissions.permissions
+    );
 
-    let constrained_capability = admin
+    let operations_capability = admin_client
         .trail(trail_id)
         .access()
-        .for_role("Operations")
+        .for_role(operations_role)
         .issue_capability(CapabilityIssueOptions {
-            issued_to: Some(operations_user.sender_address()),
+            issued_to: Some(operations_user_client.sender_address()),
             valid_from_ms: None,
             valid_until_ms: Some(4_102_444_800_000),
         })
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?
         .output;
 
     println!(
         "Issued constrained capability:\n  id = {}\n  issued_to = {:?}\n  valid_until = {:?}\n",
-        constrained_capability.capability_id, constrained_capability.issued_to, constrained_capability.valid_until
+        operations_capability.capability_id, operations_capability.issued_to, operations_capability.valid_until
     );
 
-    let on_chain = admin.trail(trail_id).get().await?;
-    let role_definition = on_chain.roles.roles.get("Operations").expect("role must exist");
-    ensure!(role_definition.permissions == updated_permissions.permissions);
+    let on_chain_trail = admin_client.trail(trail_id).get().await?;
+    let operations_role_definition = on_chain_trail
+        .roles
+        .roles
+        .get(operations_role)
+        .expect("role must exist");
+    ensure!(operations_role_definition.permissions == updated_permissions.permissions);
 
-    admin
+    admin_client
         .trail(trail_id)
         .access()
-        .revoke_capability(constrained_capability.capability_id, constrained_capability.valid_until)
-        .build_and_execute(&admin)
+        .revoke_capability(operations_capability.capability_id, operations_capability.valid_until)
+        .build_and_execute(&admin_client)
         .await?;
-    println!("Revoked capability {}\n", constrained_capability.capability_id);
+    println!("Revoked capability {}\n", operations_capability.capability_id);
 
     // destroy_capability consumes the capability object, so the signer must own it.
-    // The capability is issued to admin so admin can destroy it directly.
-    let disposable_capability = admin
+    // This disposable capability is issued back to `admin_client` so it can be destroyed directly.
+    let disposable_operations_capability = admin_client
         .trail(trail_id)
         .access()
-        .for_role("Operations")
+        .for_role(operations_role)
         .issue_capability(CapabilityIssueOptions {
-            issued_to: Some(admin.sender_address()),
+            issued_to: Some(admin_client.sender_address()),
             valid_from_ms: None,
             valid_until_ms: None,
         })
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?
         .output;
 
-    admin
+    admin_client
         .trail(trail_id)
         .access()
-        .destroy_capability(disposable_capability.capability_id)
-        .build_and_execute(&admin)
+        .destroy_capability(disposable_operations_capability.capability_id)
+        .build_and_execute(&admin_client)
         .await?;
-    println!("Destroyed capability {}\n", disposable_capability.capability_id);
+    println!(
+        "Destroyed capability {}\n",
+        disposable_operations_capability.capability_id
+    );
 
-    admin
+    admin_client
         .trail(trail_id)
         .access()
         .cleanup_revoked_capabilities()
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?;
     println!("Cleaned up revoked capability registry entries.\n");
 
-    admin
+    admin_client
         .trail(trail_id)
         .access()
-        .for_role("Operations")
+        .for_role(operations_role)
         .delete()
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?;
 
-    let after_delete = admin.trail(trail_id).get().await?;
+    let trail_after_role_delete = admin_client.trail(trail_id).get().await?;
     ensure!(
-        !after_delete.roles.roles.contains_key("Operations"),
+        !trail_after_role_delete.roles.roles.contains_key(operations_role),
         "role should be removed from the trail"
     );
 

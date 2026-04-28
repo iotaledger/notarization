@@ -3,9 +3,9 @@
 
 //! ## Actors
 //!
-//! - **Admin**: Creates the trail and sets up the RecordMaintenance role.
-//! - **RecordMaintainer**: Holds the RecordMaintenance capability. Adds records and then deletes them individually and
-//!   in batch.
+//! - **Admin client**: Creates the trail and sets up the RecordMaintenance role.
+//! - **Maintenance admin client**: Holds the RecordMaintenance capability. Adds records and then deletes them
+//!   individually and in batch.
 
 use std::collections::HashSet;
 
@@ -22,12 +22,11 @@ use product_common::core_client::CoreClient;
 async fn main() -> Result<()> {
     println!("=== Audit Trail: Delete Records ===\n");
 
-    // `admin` creates the trail and manages roles.
-    // `record_maintainer` adds and deletes records.
-    let admin = get_funded_audit_trail_client().await?;
-    let record_maintainer = get_funded_audit_trail_client().await?;
+    // Use a maintenance client to show deletes happening through a delegated capability.
+    let admin_client = get_funded_audit_trail_client().await?;
+    let maintenance_admin_client = get_funded_audit_trail_client().await?;
 
-    let created = admin
+    let created_trail = admin_client
         .create_trail()
         .with_initial_record(InitialRecord::new(
             Data::text("Initial record"),
@@ -35,15 +34,18 @@ async fn main() -> Result<()> {
             None,
         ))
         .finish()
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?
         .output;
 
-    let trail = admin.trail(created.trail_id);
+    let trail_id = created_trail.trail_id;
+    let maintenance_admin_role = "RecordMaintenance";
+    let admin_trail = admin_client.trail(trail_id);
 
-    trail
+    // This role grants both single-record and batch-delete permissions.
+    admin_trail
         .access()
-        .for_role("RecordMaintenance")
+        .for_role(maintenance_admin_role)
         .create(
             PermissionSet {
                 permissions: HashSet::from([
@@ -54,61 +56,65 @@ async fn main() -> Result<()> {
             },
             None,
         )
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?;
 
-    trail
+    admin_trail
         .access()
-        .for_role("RecordMaintenance")
+        .for_role(maintenance_admin_role)
         .issue_capability(CapabilityIssueOptions {
-            issued_to: Some(record_maintainer.sender_address()),
+            issued_to: Some(maintenance_admin_client.sender_address()),
             valid_from_ms: None,
             valid_until_ms: None,
         })
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?;
 
-    let records = record_maintainer.trail(created.trail_id).records();
+    let maintenance_records = maintenance_admin_client.trail(trail_id).records();
 
-    let added_one = records
+    let first_added_record = maintenance_records
         .add(Data::text("Second record"), Some("event:received".to_string()), None)
-        .build_and_execute(&record_maintainer)
+        .build_and_execute(&maintenance_admin_client)
         .await?
         .output;
-    let added_two = records
+    let second_added_record = maintenance_records
         .add(Data::text("Third record"), Some("event:dispatched".to_string()), None)
-        .build_and_execute(&record_maintainer)
+        .build_and_execute(&maintenance_admin_client)
         .await?
         .output;
 
     println!(
         "Trail has records at sequence numbers 0, {}, {}\n",
-        added_one.sequence_number, added_two.sequence_number
+        first_added_record.sequence_number, second_added_record.sequence_number
     );
-    ensure!(records.record_count().await? == 3);
+    ensure!(maintenance_records.record_count().await? == 3);
 
-    let deleted_one = records
-        .delete(added_one.sequence_number)
-        .build_and_execute(&record_maintainer)
+    let deleted_record = maintenance_records
+        .delete(first_added_record.sequence_number)
+        .build_and_execute(&maintenance_admin_client)
         .await?
         .output;
-    println!("Deleted record {}\n", deleted_one.sequence_number);
+    println!("Deleted record {}\n", deleted_record.sequence_number);
 
-    ensure!(records.record_count().await? == 2);
+    ensure!(maintenance_records.record_count().await? == 2);
     ensure!(
-        records.get(added_one.sequence_number).await.is_err(),
+        maintenance_records
+            .get(first_added_record.sequence_number)
+            .await
+            .is_err(),
         "deleted record should no longer be readable"
     );
 
-    let deleted_remaining = records
+    // Batch delete returns the exact sequence numbers that were removed.
+    let deleted_sequence_numbers = maintenance_records
         .delete_records_batch(10)
-        .build_and_execute(&record_maintainer)
+        .build_and_execute(&maintenance_admin_client)
         .await?
         .output;
 
-    println!("Batch deleted the remaining {deleted_remaining} records.");
-    ensure!(deleted_remaining == 2);
-    ensure!(records.record_count().await? == 0);
+    println!("Batch deleted the remaining records: {deleted_sequence_numbers:?}.");
+    ensure!(deleted_sequence_numbers == vec![0, second_added_record.sequence_number]);
+    ensure!(maintenance_records.record_count().await? == 0);
 
     Ok(())
 }

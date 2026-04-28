@@ -4,9 +4,9 @@
 /**
  * ## Actors
  *
- * - **Admin**: Creates the trail and holds the built-in Admin capability that is
+ * - **Admin client**: Creates the trail and holds the built-in Admin capability that is
  *   automatically minted on creation.
- * - **RecordAdmin**: Receives a RecordAdmin capability bound to their address. Writes
+ * - **Record admin client**: Receives a RecordAdmin capability bound to their address. Writes
  *   records in subsequent examples.
  *
  * Demonstrates how to:
@@ -22,38 +22,38 @@ import { createTrailWithSeedRecord, getFundedClient, TEST_GAS_BUDGET } from "./u
 export async function createAuditTrail(): Promise<void> {
     console.log("Creating an audit trail");
 
-    // `admin` creates the trail and holds the Admin capability.
-    // `recordAdmin` receives the RecordAdmin capability.
-    const admin = await getFundedClient();
-    const recordAdmin = await getFundedClient();
+    // `adminClient` creates the trail and holds the Admin capability.
+    // `recordAdminClient` receives the delegated RecordAdmin capability.
+    const adminClient = await getFundedClient();
+    const recordAdminClient = await getFundedClient();
 
-    console.log("Admin address:       ", admin.senderAddress());
-    console.log("RecordAdmin address: ", recordAdmin.senderAddress());
+    console.log("Admin client address:        ", adminClient.senderAddress());
+    console.log("Record admin client address: ", recordAdminClient.senderAddress());
 
-    const { output: trail, response } = await createTrailWithSeedRecord(admin);
+    const { output: createdTrail, response } = await createTrailWithSeedRecord(adminClient);
 
-    console.log(`Created trail ${trail.id} with transaction ${response.digest}`);
-    console.log("Immutable metadata:", trail.immutableMetadata);
-    console.log("Updatable metadata:", trail.updatableMetadata);
-    console.log("Locking config:", trail.lockingConfig);
+    console.log(`Created trail ${createdTrail.id} with transaction ${response.digest}`);
+    console.log("Immutable metadata:", createdTrail.immutableMetadata);
+    console.log("Updatable metadata:", createdTrail.updatableMetadata);
+    console.log("Locking config:", createdTrail.lockingConfig);
 
-    assert.equal(trail.sequenceNumber, 1n);
-    assert.ok(trail.immutableMetadata);
-    assert.equal(trail.immutableMetadata?.name, "Example Audit Trail");
+    assert.equal(createdTrail.sequenceNumber, 1n);
+    assert.ok(createdTrail.immutableMetadata);
+    assert.equal(createdTrail.immutableMetadata?.name, "Example Audit Trail");
 
-    // Define a RecordAdmin role and issue the capability to recordAdmin's address.
-    const role = admin.trail(trail.id).access().forRole("RecordAdmin");
-    await role
+    // Admin capability authorization is implicit: adminClient owns the built-in Admin capability.
+    const recordAdminRole = adminClient.trail(createdTrail.id).access().forRole("RecordAdmin");
+    await recordAdminRole
         .create(PermissionSet.recordAdminPermissions())
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
-    await role
-        .issueCapability(new CapabilityIssueOptions(recordAdmin.senderAddress()))
+        .buildAndExecute(adminClient);
+    await recordAdminRole
+        .issueCapability(new CapabilityIssueOptions(recordAdminClient.senderAddress()))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
+        .buildAndExecute(adminClient);
 
-    const onChain = await admin.trail(trail.id).get();
-    const roleNames = onChain.roles.roles.map((r) => r.name);
+    const onChainTrail = await adminClient.trail(createdTrail.id).get();
+    const roleNames = onChainTrail.roles.roles.map((r) => r.name);
     console.log("Roles:", roleNames);
     assert.ok(roleNames.includes("RecordAdmin"));
 }

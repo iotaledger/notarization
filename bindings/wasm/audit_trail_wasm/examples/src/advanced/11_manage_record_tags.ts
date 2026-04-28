@@ -4,10 +4,10 @@
 /**
  * ## Actors
  *
- * - **Admin**: Creates the trail and manages roles.
- * - **TagAdmin**: Holds the TagAdmin capability. Adds and removes entries from the trail's
+ * - **Admin client**: Creates the trail and manages roles.
+ * - **Tag admin client**: Holds the TagAdmin capability. Adds and removes entries from the trail's
  *   tag registry.
- * - **FinanceWriter**: Holds a `finance`-scoped RecordAdmin capability. Writes a
+ * - **Finance writer client**: Holds a `finance`-scoped RecordAdmin capability. Writes a
  *   `finance`-tagged record that keeps the `finance` tag in use and therefore unremovable.
  *
  * Demonstrates how to:
@@ -23,69 +23,73 @@ import { getFundedClient, TEST_GAS_BUDGET } from "../util";
 export async function manageRecordTags(): Promise<void> {
     console.log("=== Audit Trail Advanced: Manage Record Tags ===\n");
 
-    // `admin` creates the trail and manages roles.
-    // `tagAdmin` adds/removes tags; `financeWriter` writes tagged records.
-    const admin = await getFundedClient();
-    const tagAdmin = await getFundedClient();
-    const financeWriter = await getFundedClient();
+    // `adminClient` creates the trail and manages roles.
+    // `tagAdminClient` manages tags; `financeWriterClient` writes tagged records.
+    const adminClient = await getFundedClient();
+    const tagAdminClient = await getFundedClient();
+    const financeWriterClient = await getFundedClient();
 
-    const { output: created } = await admin
+    const { output: createdTrail } = await adminClient
         .createTrail()
         .withRecordTags(["finance"])
         .withInitialRecordString("Trail created")
         .finish()
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
+        .buildAndExecute(adminClient);
 
-    const trailId = created.id;
+    const trailId = createdTrail.id;
 
     // Delegate tag management to a TagAdmin role.
-    const tagAdminRole = admin.trail(trailId).access().forRole("TagAdmin");
+    const tagAdminRole = adminClient.trail(trailId).access().forRole("TagAdmin");
     await tagAdminRole
         .create(PermissionSet.tagAdminPermissions())
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
+        .buildAndExecute(adminClient);
     await tagAdminRole
-        .issueCapability(new CapabilityIssueOptions(tagAdmin.senderAddress()))
+        .issueCapability(new CapabilityIssueOptions(tagAdminClient.senderAddress()))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
+        .buildAndExecute(adminClient);
 
-    // TagAdmin adds a new tag.
-    await tagAdmin.trail(trailId).tags().add("legal").withGasBudget(TEST_GAS_BUDGET).buildAndExecute(tagAdmin);
+    // TagAdmin adds a new tag to the registry before any role or record uses it.
+    await tagAdminClient.trail(trailId).tags().add("legal").withGasBudget(TEST_GAS_BUDGET).buildAndExecute(
+        tagAdminClient,
+    );
 
-    let onChain = await admin.trail(trailId).get();
-    console.log("Registry after adding \"legal\":", onChain.tags.map((t) => t.tag), "\n");
-    assert.ok(onChain.tags.some((t) => t.tag === "finance"));
-    assert.ok(onChain.tags.some((t) => t.tag === "legal"));
+    let onChainTrail = await adminClient.trail(trailId).get();
+    console.log("Registry after adding \"legal\":", onChainTrail.tags.map((t) => t.tag), "\n");
+    assert.ok(onChainTrail.tags.some((t) => t.tag === "finance"));
+    assert.ok(onChainTrail.tags.some((t) => t.tag === "legal"));
 
-    // Create a role scoped to "finance" tag and issue to financeWriter.
-    await admin
+    // Create a role scoped to the "finance" tag and issue to financeWriterClient.
+    await adminClient
         .trail(trailId)
         .access()
         .forRole("FinanceWriter")
         .create(PermissionSet.recordAdminPermissions(), new RoleTags(["finance"]))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
-    await admin
+        .buildAndExecute(adminClient);
+    await adminClient
         .trail(trailId)
         .access()
         .forRole("FinanceWriter")
-        .issueCapability(new CapabilityIssueOptions(financeWriter.senderAddress()))
+        .issueCapability(new CapabilityIssueOptions(financeWriterClient.senderAddress()))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
+        .buildAndExecute(adminClient);
 
     // FinanceWriter adds a record using the "finance" tag.
-    await financeWriter
+    await financeWriterClient
         .trail(trailId)
         .records()
         .add(Data.fromString("Tagged finance entry"), undefined, "finance")
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(financeWriter);
+        .buildAndExecute(financeWriterClient);
 
     // TagAdmin attempts to remove "finance" tag — should fail because it's in use.
     let removeFinanceSucceeded = false;
     try {
-        await tagAdmin.trail(trailId).tags().remove("finance").withGasBudget(TEST_GAS_BUDGET).buildAndExecute(tagAdmin);
+        await tagAdminClient.trail(trailId).tags().remove("finance").withGasBudget(TEST_GAS_BUDGET).buildAndExecute(
+            tagAdminClient,
+        );
         removeFinanceSucceeded = true;
     } catch {
         // Expected
@@ -93,12 +97,14 @@ export async function manageRecordTags(): Promise<void> {
     assert.equal(removeFinanceSucceeded, false, "a tag referenced by a role or record must not be removable");
 
     // TagAdmin removes "legal" tag — should succeed because nothing uses it.
-    await tagAdmin.trail(trailId).tags().remove("legal").withGasBudget(TEST_GAS_BUDGET).buildAndExecute(tagAdmin);
+    await tagAdminClient.trail(trailId).tags().remove("legal").withGasBudget(TEST_GAS_BUDGET).buildAndExecute(
+        tagAdminClient,
+    );
 
-    onChain = await admin.trail(trailId).get();
-    console.log("Registry after removing \"legal\":", onChain.tags.map((t) => t.tag), "\n");
-    assert.ok(onChain.tags.some((t) => t.tag === "finance"), "finance tag should still exist");
-    assert.ok(!onChain.tags.some((t) => t.tag === "legal"), "legal tag should be removed");
+    onChainTrail = await adminClient.trail(trailId).get();
+    console.log("Registry after removing \"legal\":", onChainTrail.tags.map((t) => t.tag), "\n");
+    assert.ok(onChainTrail.tags.some((t) => t.tag === "finance"), "finance tag should still exist");
+    assert.ok(!onChainTrail.tags.some((t) => t.tag === "legal"), "legal tag should be removed");
 
     console.log("Tag management completed successfully.");
 }

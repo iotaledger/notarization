@@ -4,8 +4,8 @@
 /**
  * ## Actors
  *
- * - **Admin**: Creates the trail and sets up the MetadataAdmin role.
- * - **MetadataAdmin**: Holds the MetadataAdmin capability and updates the trail's mutable
+ * - **Admin client**: Creates the trail and sets up the MetadataAdmin role.
+ * - **Metadata admin client**: Holds the MetadataAdmin capability and updates the trail's mutable
  *   status field. Has no record-write permissions.
  *
  * Demonstrates how to:
@@ -22,65 +22,65 @@ import { getFundedClient, TEST_GAS_BUDGET } from "./util";
 export async function updateMetadata(): Promise<void> {
     console.log("=== Audit Trail: Update Metadata ===\n");
 
-    // `admin` creates the trail and sets up the role.
-    // `metadataAdmin` holds the MetadataAdmin capability and updates the status.
-    const admin = await getFundedClient();
-    const metadataAdmin = await getFundedClient();
+    // `adminClient` creates the trail and delegates metadata updates.
+    // `metadataAdminClient` holds the MetadataAdmin capability and updates the status.
+    const adminClient = await getFundedClient();
+    const metadataAdminClient = await getFundedClient();
 
-    const { output: trail } = await admin
+    const { output: createdTrail } = await adminClient
         .createTrail()
         .withTrailMetadata("Shipment Processing", "Tracks the lifecycle of a warehouse shipment")
         .withUpdatableMetadata("Status: Draft")
         .withInitialRecordString("Shipment created", "event:created")
         .finish()
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
+        .buildAndExecute(adminClient);
 
-    const trailId = trail.id;
+    const trailId = createdTrail.id;
 
     // Delegate metadata updates to a MetadataAdmin role.
-    const role = admin.trail(trailId).access().forRole("MetadataAdmin");
-    await role
+    const metadataAdminRole = adminClient.trail(trailId).access().forRole("MetadataAdmin");
+    await metadataAdminRole
         .create(PermissionSet.metadataAdminPermissions())
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
-    await role
-        .issueCapability(new CapabilityIssueOptions(metadataAdmin.senderAddress()))
+        .buildAndExecute(adminClient);
+    await metadataAdminRole
+        .issueCapability(new CapabilityIssueOptions(metadataAdminClient.senderAddress()))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
+        .buildAndExecute(adminClient);
 
-    const before = await admin.trail(trailId).get();
+    const trailBeforeUpdate = await adminClient.trail(trailId).get();
     console.log("Before update:");
-    console.log("  immutable =", before.immutableMetadata);
-    console.log("  updatable =", before.updatableMetadata, "\n");
+    console.log("  immutable =", trailBeforeUpdate.immutableMetadata);
+    console.log("  updatable =", trailBeforeUpdate.updatableMetadata, "\n");
 
     // MetadataAdmin updates the mutable metadata.
-    await metadataAdmin
+    await metadataAdminClient
         .trail(trailId)
         .updateMetadata("Status: In Review")
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(metadataAdmin);
+        .buildAndExecute(metadataAdminClient);
 
-    const afterUpdate = await admin.trail(trailId).get();
+    const trailAfterUpdate = await adminClient.trail(trailId).get();
     console.log("After update:");
-    console.log("  immutable =", afterUpdate.immutableMetadata);
-    console.log("  updatable =", afterUpdate.updatableMetadata, "\n");
+    console.log("  immutable =", trailAfterUpdate.immutableMetadata);
+    console.log("  updatable =", trailAfterUpdate.updatableMetadata, "\n");
 
-    assert.equal(afterUpdate.immutableMetadata?.name, "Shipment Processing");
-    assert.equal(afterUpdate.updatableMetadata, "Status: In Review");
+    assert.equal(trailAfterUpdate.immutableMetadata?.name, "Shipment Processing");
+    assert.equal(trailAfterUpdate.updatableMetadata, "Status: In Review");
 
     // MetadataAdmin clears the mutable metadata.
-    await metadataAdmin
+    await metadataAdminClient
         .trail(trailId)
         .updateMetadata(undefined)
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(metadataAdmin);
+        .buildAndExecute(metadataAdminClient);
 
-    const afterClear = await admin.trail(trailId).get();
+    const trailAfterClear = await adminClient.trail(trailId).get();
     console.log("After clear:");
-    console.log("  immutable =", afterClear.immutableMetadata);
-    console.log("  updatable =", afterClear.updatableMetadata);
+    console.log("  immutable =", trailAfterClear.immutableMetadata);
+    console.log("  updatable =", trailAfterClear.updatableMetadata);
 
-    assert.equal(afterClear.immutableMetadata?.name, "Shipment Processing");
-    assert.equal(afterClear.updatableMetadata, undefined);
+    assert.equal(trailAfterClear.immutableMetadata?.name, "Shipment Processing");
+    assert.equal(trailAfterClear.updatableMetadata, undefined);
 }

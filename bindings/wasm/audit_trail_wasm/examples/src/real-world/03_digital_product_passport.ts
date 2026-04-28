@@ -71,7 +71,7 @@ export async function digitalProductPassport(): Promise<void> {
 
     console.log("Creating the DPP trail for EcoBike's battery...");
 
-    const { output: created } = await manufacturer
+    const { output: createdTrail } = await manufacturer
         .createTrail()
         .withRecordTags(["manufacturing", "logistics", "ownership", "maintenance", "recycling", "rewards"])
         .withTrailMetadata("DPP: Pro 48V Battery", "Manufacturer: EcoBike | Serial: EB-48V-2024-001337")
@@ -85,7 +85,7 @@ export async function digitalProductPassport(): Promise<void> {
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(manufacturer);
 
-    const trailId = created.id;
+    const trailId = createdTrail.id;
     console.log("Trail created with ID", trailId, "\n");
 
     // === Define DPP roles and issue capabilities ===
@@ -209,7 +209,7 @@ export async function digitalProductPassport(): Promise<void> {
     const nowMs = BigInt(Date.now());
     const technicianValidUntilMs = nowMs + BigInt(30 * 24 * 60 * 60 * 1000);
 
-    const issuedTechnicianCap = await manufacturer
+    const serviceTechnicianCapability = await manufacturer
         .trail(trailId)
         .access()
         .forRole("ServiceTechnician")
@@ -221,7 +221,7 @@ export async function digitalProductPassport(): Promise<void> {
 
     console.log(
         "Issued ServiceTechnician capability",
-        issuedTechnicianCap.output.capabilityId,
+        serviceTechnicianCapability.output.capabilityId,
         "(valid until",
         technicianValidUntilMs + ").\n",
     );
@@ -279,64 +279,64 @@ export async function digitalProductPassport(): Promise<void> {
 
     console.log("Verifying the resulting DPP...");
 
-    const onChain = await manufacturer.trail(trailId).get();
-    const firstPage = await manufacturer.trail(trailId).records().listPage(undefined, 20);
+    const onChainTrail = await manufacturer.trail(trailId).get();
+    const firstRecordsPage = await manufacturer.trail(trailId).records().listPage(undefined, 20);
 
     console.log("Recorded DPP events:");
-    for (const record of firstPage.records) {
+    for (const record of firstRecordsPage.records) {
         console.log(`  #${record.sequenceNumber} | tag=${record.tag} | metadata=${record.metadata}`);
     }
 
     assert.equal(
-        firstPage.records.length,
+        firstRecordsPage.records.length,
         7,
         "expected 7 DPP records (initial + product details + reward policy + distribution + commissioning + maintenance + reward payout)",
     );
     assert.ok(
-        onChain.tags.some((t) => t.tag === "maintenance")
-            && onChain.tags.some((t) => t.tag === "recycling")
-            && onChain.tags.some((t) => t.tag === "rewards"),
+        onChainTrail.tags.some((t) => t.tag === "maintenance")
+            && onChainTrail.tags.some((t) => t.tag === "recycling")
+            && onChainTrail.tags.some((t) => t.tag === "rewards"),
         "expected the DPP tag registry to contain maintenance, recycling, and rewards",
     );
     assert.ok(
-        onChain.roles.roles.some((r) => r.name === "Manufacturer")
-            && onChain.roles.roles.some((r) => r.name === "Distributor")
-            && onChain.roles.roles.some((r) => r.name === "Consumer")
-            && onChain.roles.roles.some((r) => r.name === "ServiceTechnician")
-            && onChain.roles.roles.some((r) => r.name === "Recycler")
-            && onChain.roles.roles.some((r) => r.name === "EPRO")
-            && onChain.roles.roles.some((r) => r.name === "LifecycleManager"),
+        onChainTrail.roles.roles.some((r) => r.name === "Manufacturer")
+            && onChainTrail.roles.roles.some((r) => r.name === "Distributor")
+            && onChainTrail.roles.roles.some((r) => r.name === "Consumer")
+            && onChainTrail.roles.roles.some((r) => r.name === "ServiceTechnician")
+            && onChainTrail.roles.roles.some((r) => r.name === "Recycler")
+            && onChainTrail.roles.roles.some((r) => r.name === "EPRO")
+            && onChainTrail.roles.roles.some((r) => r.name === "LifecycleManager"),
         "expected all DPP roles to be registered",
     );
-    assert.equal(onChain.updatableMetadata, "Lifecycle Stage: Maintained and Ready for Continued Use");
+    assert.equal(onChainTrail.updatableMetadata, "Lifecycle Stage: Maintained and Ready for Continued Use");
 
-    const maintenanceRecord = firstPage.records.find((record) => record.metadata === "event:annual_maintenance");
+    const maintenanceRecord = firstRecordsPage.records.find((record) => record.metadata === "event:annual_maintenance");
     assert.ok(maintenanceRecord, "expected the maintenance record to be present in the DPP history");
 
-    const rewardRecord = firstPage.records.find((record) => record.metadata === "event:lcc_reward_distributed");
+    const rewardRecord = firstRecordsPage.records.find((record) => record.metadata === "event:lcc_reward_distributed");
     assert.ok(rewardRecord, "expected the reward payout record to be present in the DPP history");
 
     console.log("\nDigital Product Passport scenario completed successfully.");
 }
 
 async function issueMetadataRole(
-    admin: AuditTrailClient,
+    adminClient: AuditTrailClient,
     trailId: string,
     roleName: string,
     issuedTo: string,
 ): Promise<void> {
-    await admin
+    await adminClient
         .trail(trailId)
         .access()
         .forRole(roleName)
         .create(PermissionSet.metadataAdminPermissions())
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
-    await admin
+        .buildAndExecute(adminClient);
+    await adminClient
         .trail(trailId)
         .access()
         .forRole(roleName)
         .issueCapability(new CapabilityIssueOptions(issuedTo))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
+        .buildAndExecute(adminClient);
 }

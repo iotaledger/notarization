@@ -4,10 +4,10 @@
 /**
  * ## Actors
  *
- * - **Admin**: Creates the trail and sets up the LockingAdmin and RecordAdmin roles.
- * - **LockingAdmin**: Controls write and delete locks. Holds the LockingAdmin capability.
- * - **RecordAdmin**: Writes records. Used to demonstrate that the write lock is enforced
- *   per-sender, not just checked by the admin.
+ * - **Admin client**: Creates the trail and sets up the LockingAdmin and RecordAdmin roles.
+ * - **Locking admin client**: Controls write and delete locks. Holds the LockingAdmin capability.
+ * - **Record admin client**: Writes records. Used to demonstrate that the write lock is enforced
+ *   per-sender, not just checked by the admin client.
  *
  * Demonstrates how to:
  * 1. Delegate locking updates through a LockingAdmin role.
@@ -30,95 +30,94 @@ import { createTrailWithSeedRecord, getFundedClient, TEST_GAS_BUDGET } from "./u
 export async function configureLocking(): Promise<void> {
     console.log("=== Audit Trail: Configure Locking ===\n");
 
-    // `admin` creates the trail and sets up roles.
-    // `lockingAdmin` controls locks; `recordAdmin` writes records.
-    const admin = await getFundedClient();
-    const lockingAdmin = await getFundedClient();
-    const recordAdmin = await getFundedClient();
+    // `adminClient` creates the trail and delegates separate lock/write authority.
+    // `lockingAdminClient` controls locks; `recordAdminClient` writes records.
+    const adminClient = await getFundedClient();
+    const lockingAdminClient = await getFundedClient();
+    const recordAdminClient = await getFundedClient();
 
-    const { output: trail } = await createTrailWithSeedRecord(admin);
-    const trailId = trail.id;
+    const { output: createdTrail } = await createTrailWithSeedRecord(adminClient);
+    const trailId = createdTrail.id;
 
-    // Create LockingAdmin and RecordAdmin roles.
-    const lockingRole = admin.trail(trailId).access().forRole("LockingAdmin");
-    await lockingRole
+    const lockingAdminRole = adminClient.trail(trailId).access().forRole("LockingAdmin");
+    await lockingAdminRole
         .create(PermissionSet.lockingAdminPermissions())
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
-    await lockingRole
-        .issueCapability(new CapabilityIssueOptions(lockingAdmin.senderAddress()))
+        .buildAndExecute(adminClient);
+    await lockingAdminRole
+        .issueCapability(new CapabilityIssueOptions(lockingAdminClient.senderAddress()))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
+        .buildAndExecute(adminClient);
 
-    const recordRole = admin.trail(trailId).access().forRole("RecordAdmin");
-    await recordRole
+    const recordAdminRole = adminClient.trail(trailId).access().forRole("RecordAdmin");
+    await recordAdminRole
         .create(PermissionSet.recordAdminPermissions())
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
-    await recordRole
-        .issueCapability(new CapabilityIssueOptions(recordAdmin.senderAddress()))
+        .buildAndExecute(adminClient);
+    await recordAdminRole
+        .issueCapability(new CapabilityIssueOptions(recordAdminClient.senderAddress()))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
+        .buildAndExecute(adminClient);
 
     // LockingAdmin freezes writes.
-    await lockingAdmin
+    await lockingAdminClient
         .trail(trailId)
         .locking()
         .updateWriteLock(TimeLock.withInfinite())
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(lockingAdmin);
+        .buildAndExecute(lockingAdminClient);
 
-    const locked = await admin.trail(trailId).get();
-    console.log("Write lock after update:", locked.lockingConfig.writeLock, "\n");
-    assert.equal(locked.lockingConfig.writeLock.type, TimeLock.withInfinite().type);
+    const lockedTrail = await adminClient.trail(trailId).get();
+    console.log("Write lock after update:", lockedTrail.lockingConfig.writeLock, "\n");
+    assert.equal(lockedTrail.lockingConfig.writeLock.type, TimeLock.withInfinite().type);
 
     // RecordAdmin attempts to add a record while locked — should fail.
-    const blockedAdd = await recordAdmin
+    const blockedAdd = await recordAdminClient
         .trail(trailId)
         .records()
         .add(Data.fromString("This write should fail"), "blocked")
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(recordAdmin)
+        .buildAndExecute(recordAdminClient)
         .catch(() => null);
     assert.equal(blockedAdd, null, "write lock should block adding records");
 
     // LockingAdmin lifts the write lock.
-    await lockingAdmin
+    await lockingAdminClient
         .trail(trailId)
         .locking()
         .updateWriteLock(TimeLock.withNone())
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(lockingAdmin);
+        .buildAndExecute(lockingAdminClient);
 
-    const added = await recordAdmin
+    const recordAddedAfterUnlock = await recordAdminClient
         .trail(trailId)
         .records()
         .add(Data.fromString("Write lock lifted"), "event:resumed")
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(recordAdmin);
-    console.log("Added record", added.output.sequenceNumber, "after clearing the write lock.\n");
+        .buildAndExecute(recordAdminClient);
+    console.log("Added record", recordAddedAfterUnlock.output.sequenceNumber, "after clearing the write lock.\n");
 
     // LockingAdmin configures deletion window and trail lock.
-    await lockingAdmin
+    await lockingAdminClient
         .trail(trailId)
         .locking()
         .updateDeleteRecordWindow(LockingWindow.withCountBased(BigInt(2)))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(lockingAdmin);
-    await lockingAdmin
+        .buildAndExecute(lockingAdminClient);
+    await lockingAdminClient
         .trail(trailId)
         .locking()
         .updateDeleteTrailLock(TimeLock.withInfinite())
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(lockingAdmin);
+        .buildAndExecute(lockingAdminClient);
 
-    const finalState = await admin.trail(trailId).get();
+    const finalTrail = await adminClient.trail(trailId).get();
     console.log("Final locking config:");
-    console.log("  delete_record_window =", finalState.lockingConfig.deleteRecordWindow);
-    console.log("  delete_trail_lock =", finalState.lockingConfig.deleteTrailLock);
-    console.log("  write_lock =", finalState.lockingConfig.writeLock);
+    console.log("  delete_record_window =", finalTrail.lockingConfig.deleteRecordWindow);
+    console.log("  delete_trail_lock =", finalTrail.lockingConfig.deleteTrailLock);
+    console.log("  write_lock =", finalTrail.lockingConfig.writeLock);
 
-    assert.equal(finalState.lockingConfig.deleteRecordWindow.type, LockingWindow.withCountBased(BigInt(2)).type);
-    assert.equal(finalState.lockingConfig.deleteTrailLock.type, TimeLock.withInfinite().type);
-    assert.equal(finalState.lockingConfig.writeLock.type, TimeLock.withNone().type);
+    assert.equal(finalTrail.lockingConfig.deleteRecordWindow.type, LockingWindow.withCountBased(BigInt(2)).type);
+    assert.equal(finalTrail.lockingConfig.deleteTrailLock.type, TimeLock.withInfinite().type);
+    assert.equal(finalTrail.lockingConfig.writeLock.type, TimeLock.withNone().type);
 }

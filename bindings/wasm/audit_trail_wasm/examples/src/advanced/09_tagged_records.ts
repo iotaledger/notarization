@@ -4,9 +4,9 @@
 /**
  * ## Actors
  *
- * - **Admin**: Creates the trail, defines the FinanceWriter role restricted to the
- *   `finance` tag, and issues a capability bound to `financeWriter`'s address.
- * - **FinanceWriter**: Holds the address-bound capability. Can add `finance`-tagged
+ * - **Admin client**: Creates the trail, defines the FinanceWriter role restricted to the
+ *   `finance` tag, and issues a capability bound to `financeWriterClient`'s address.
+ * - **Finance writer client**: Holds the address-bound capability. Can add `finance`-tagged
  *   records but is blocked from writing `legal`-tagged records.
  *
  * Demonstrates how to:
@@ -23,49 +23,53 @@ import { getFundedClient, TEST_GAS_BUDGET } from "../util";
 export async function taggedRecords(): Promise<void> {
     console.log("=== Audit Trail Advanced: Tagged Records ===\n");
 
-    const admin = await getFundedClient();
-    const financeWriter = await getFundedClient();
+    const adminClient = await getFundedClient();
+    const financeWriterClient = await getFundedClient();
 
-    const { output: created } = await admin
+    const { output: createdTrail } = await adminClient
         .createTrail()
         .withRecordTags(["finance", "legal"])
         .withInitialRecordString("Trail created", "event:created")
         .finish()
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
+        .buildAndExecute(adminClient);
 
-    const trailId = created.id;
+    const trailId = createdTrail.id;
 
-    // Create a role restricted to the "finance" tag.
-    const role = admin.trail(trailId).access().forRole("FinanceWriter");
-    await role
+    // The role is scoped to the "finance" tag before the capability is issued.
+    const financeWriterRole = adminClient.trail(trailId).access().forRole("FinanceWriter");
+    await financeWriterRole
         .create(new PermissionSet([Permission.AddRecord]), new RoleTags(["finance"]))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
+        .buildAndExecute(adminClient);
 
-    const issued = await role
-        .issueCapability(new CapabilityIssueOptions(financeWriter.senderAddress()))
+    const financeWriterCapability = await financeWriterRole
+        .issueCapability(new CapabilityIssueOptions(financeWriterClient.senderAddress()))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
+        .buildAndExecute(adminClient);
 
     console.log(
         "Issued FinanceWriter capability",
-        issued.output.capabilityId,
+        financeWriterCapability.output.capabilityId,
         "to",
-        financeWriter.senderAddress(),
+        financeWriterClient.senderAddress(),
         "\n",
     );
 
-    // The client automatically finds the capability in financeWriter's wallet.
-    const financeRecords = financeWriter.trail(trailId).records();
+    // Capability selection is automatic from financeWriterClient's wallet.
+    const financeRecords = financeWriterClient.trail(trailId).records();
 
     // Add a record with the allowed tag.
-    const added = await financeRecords
+    const addedFinanceRecord = await financeRecords
         .add(Data.fromString("Invoice approved"), "department:finance", "finance")
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(financeWriter);
+        .buildAndExecute(financeWriterClient);
 
-    console.log("Added tagged record at sequence number", added.output.sequenceNumber, "with tag \"finance\".\n");
+    console.log(
+        "Added tagged record at sequence number",
+        addedFinanceRecord.output.sequenceNumber,
+        "with tag \"finance\".\n",
+    );
 
     // Attempt to add a record with a different tag — should fail.
     let wrongTagSucceeded = false;
@@ -73,14 +77,14 @@ export async function taggedRecords(): Promise<void> {
         await financeRecords
             .add(Data.fromString("Legal review completed"), "department:legal", "legal")
             .withGasBudget(TEST_GAS_BUDGET)
-            .buildAndExecute(financeWriter);
+            .buildAndExecute(financeWriterClient);
         wrongTagSucceeded = true;
     } catch {
         // Expected
     }
     assert.equal(wrongTagSucceeded, false, "a finance-scoped role must not add a legal-tagged record");
 
-    const financeRecord = await financeRecords.get(added.output.sequenceNumber);
+    const financeRecord = await financeRecords.get(addedFinanceRecord.output.sequenceNumber);
     console.log("Stored tagged record:", financeRecord);
     assert.equal(financeRecord.tag, "finance");
 }
