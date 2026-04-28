@@ -9,7 +9,7 @@
  *
  * ## Actors
  *
- * - **Admin**: Creates the trail and sets up all roles and capabilities.
+ * - **Admin client**: Creates the trail and sets up all roles and capabilities.
  * - **Enroller**: Writes enrollment events. Restricted to the `enrollment` tag.
  * - **SafetyOfficer**: Records adverse events and safety observations. Restricted to `safety`.
  * - **EfficacyReviewer**: Records treatment outcomes. Restricted to `efficacy`.
@@ -47,7 +47,7 @@ import { getFundedClient, issueTaggedRecordRole, TEST_GAS_BUDGET } from "../util
 export async function clinicalTrial(): Promise<void> {
     console.log("=== Clinical Trial Data Integrity ===\n");
 
-    const admin = await getFundedClient();
+    const adminClient = await getFundedClient();
     const enroller = await getFundedClient();
     const safetyOfficer = await getFundedClient();
     const efficacyReviewer = await getFundedClient();
@@ -60,7 +60,7 @@ export async function clinicalTrial(): Promise<void> {
 
     console.log("Creating the clinical-trial audit trail...");
 
-    const { output: created } = await admin
+    const { output: createdTrail } = await adminClient
         .createTrail()
         .withRecordTags(["enrollment", "safety", "efficacy"])
         .withTrailMetadata(
@@ -78,56 +78,56 @@ export async function clinicalTrial(): Promise<void> {
         )
         .finish()
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
+        .buildAndExecute(adminClient);
 
-    const trailId = created.id;
+    const trailId = createdTrail.id;
     console.log("Trail created with ID", trailId, "\n");
 
     // === Define roles with tag-scoped permissions ===
 
     console.log("Defining study roles...");
 
-    await issueTaggedRecordRole(admin, trailId, "Enroller", "enrollment", enroller.senderAddress());
-    await issueTaggedRecordRole(admin, trailId, "SafetyOfficer", "safety", safetyOfficer.senderAddress());
-    await issueTaggedRecordRole(admin, trailId, "EfficacyReviewer", "efficacy", efficacyReviewer.senderAddress());
+    await issueTaggedRecordRole(adminClient, trailId, "Enroller", "enrollment", enroller.senderAddress());
+    await issueTaggedRecordRole(adminClient, trailId, "SafetyOfficer", "safety", safetyOfficer.senderAddress());
+    await issueTaggedRecordRole(adminClient, trailId, "EfficacyReviewer", "efficacy", efficacyReviewer.senderAddress());
 
     // Monitor can update metadata (study phase) — valid for 90 days.
-    await admin
+    await adminClient
         .trail(trailId)
         .access()
         .forRole("Monitor")
         .create(PermissionSet.metadataAdminPermissions())
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
+        .buildAndExecute(adminClient);
 
     const nowMs = BigInt(Date.now());
     const studyEndMs = nowMs + BigInt(90 * 24 * 60 * 60 * 1000);
 
-    await admin
+    await adminClient
         .trail(trailId)
         .access()
         .forRole("Monitor")
         .issueCapability(new CapabilityIssueOptions(monitor.senderAddress(), nowMs, studyEndMs))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
+        .buildAndExecute(adminClient);
 
     console.log("Monitor capability issued (expires at timestamp", studyEndMs + ")\n");
 
     // Data Safety Board can manage locking.
-    await admin
+    await adminClient
         .trail(trailId)
         .access()
         .forRole("DataSafetyBoard")
         .create(PermissionSet.lockingAdminPermissions())
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
-    await admin
+        .buildAndExecute(adminClient);
+    await adminClient
         .trail(trailId)
         .access()
         .forRole("DataSafetyBoard")
         .issueCapability(new CapabilityIssueOptions(dataSafetyBoard.senderAddress()))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
+        .buildAndExecute(adminClient);
 
     // === Enrollment phase ===
 
@@ -178,10 +178,10 @@ export async function clinicalTrial(): Promise<void> {
 
     console.log("--- Mid-Study Amendment ---");
 
-    await admin.trail(trailId).tags().add("pk").withGasBudget(TEST_GAS_BUDGET).buildAndExecute(admin);
+    await adminClient.trail(trailId).tags().add("pk").withGasBudget(TEST_GAS_BUDGET).buildAndExecute(adminClient);
     console.log("Added tag \"pk\" (pharmacokinetics) to the trail.");
 
-    await issueTaggedRecordRole(admin, trailId, "PkAnalyst", "pk", pkAnalyst.senderAddress());
+    await issueTaggedRecordRole(adminClient, trailId, "PkAnalyst", "pk", pkAnalyst.senderAddress());
 
     const pkRecord = await pkAnalyst
         .trail(trailId)
@@ -226,8 +226,8 @@ export async function clinicalTrial(): Promise<void> {
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(monitor);
 
-    const trail = await admin.trail(trailId).get();
-    console.log("Study phase updated to:", trail.updatableMetadata, "\n");
+    const trailAfterMetadataUpdate = await adminClient.trail(trailId).get();
+    console.log("Study phase updated to:", trailAfterMetadataUpdate.updatableMetadata, "\n");
 
     // === Data Safety Board locks the study dataset ===
 
@@ -252,10 +252,10 @@ export async function clinicalTrial(): Promise<void> {
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(dataSafetyBoard);
 
-    const finalLocking = await admin.trail(trailId).get();
+    const finalLockedTrail = await adminClient.trail(trailId).get();
     console.log(
         "Delete-trail lock set to",
-        finalLocking.lockingConfig.deleteTrailLock.type,
+        finalLockedTrail.lockingConfig.deleteTrailLock.type,
         "— trail cannot be deleted.\n",
     );
 
@@ -266,25 +266,32 @@ export async function clinicalTrial(): Promise<void> {
     // In production the regulator would use AuditTrailClientReadOnly (no signing key).
     // Here a funded client is used to keep the example self-contained.
     const regulatorHandle = regulator.trail(trailId);
-    const onChain = await regulatorHandle.get();
+    const regulatorTrailView = await regulatorHandle.get();
 
-    console.log("Protocol:", onChain.immutableMetadata);
-    console.log("Phase:  ", onChain.updatableMetadata);
-    console.log("Roles:  ", onChain.roles.roles.map((r) => r.name));
-    console.log("Tags:   ", onChain.tags.map((t) => t.tag));
+    console.log("Protocol:", regulatorTrailView.immutableMetadata);
+    console.log("Phase:  ", regulatorTrailView.updatableMetadata);
+    console.log("Roles:  ", regulatorTrailView.roles.roles.map((r) => r.name));
+    console.log("Tags:   ", regulatorTrailView.tags.map((t) => t.tag));
 
-    const firstPage = await regulatorHandle.records().listPage(undefined, 20);
-    console.log("\nVerified records (" + firstPage.records.length + " total):");
-    for (const record of firstPage.records) {
+    const firstRecordsPage = await regulatorHandle.records().listPage(undefined, 20);
+    console.log("\nVerified records (" + firstRecordsPage.records.length + " total):");
+    for (const record of firstRecordsPage.records) {
         console.log(`  #${record.sequenceNumber} | tag=${record.tag} | ${record.metadata}`);
     }
 
-    assert.equal(firstPage.records.length, 5, "expected 5 records (initial + enrolled + safety + efficacy + pk)");
-    assert.ok(onChain.tags.some((t) => t.tag === "pk"), "the 'pk' tag must exist after mid-study amendment");
-    assert.equal(onChain.lockingConfig.deleteRecordWindow.type, LockingWindow.withCountBased(BigInt(3)).type);
-    assert.equal(onChain.lockingConfig.deleteTrailLock.type, TimeLock.withInfinite().type);
-    assert.equal(onChain.lockingConfig.writeLock.type, TimeLock.withUnlockAtMs(lockUntilMs).type);
-    assert.equal(onChain.updatableMetadata, "Phase: Data Review");
+    assert.equal(
+        firstRecordsPage.records.length,
+        5,
+        "expected 5 records (initial + enrolled + safety + efficacy + pk)",
+    );
+    assert.ok(regulatorTrailView.tags.some((t) => t.tag === "pk"), "the 'pk' tag must exist after mid-study amendment");
+    assert.equal(
+        regulatorTrailView.lockingConfig.deleteRecordWindow.type,
+        LockingWindow.withCountBased(BigInt(3)).type,
+    );
+    assert.equal(regulatorTrailView.lockingConfig.deleteTrailLock.type, TimeLock.withInfinite().type);
+    assert.equal(regulatorTrailView.lockingConfig.writeLock.type, TimeLock.withUnlockAtMs(lockUntilMs).type);
+    assert.equal(regulatorTrailView.updatableMetadata, "Phase: Data Review");
 
     console.log("\nClinical trial data-integrity verification completed successfully.");
 }

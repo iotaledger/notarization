@@ -3,10 +3,10 @@
 
 //! ## Actors
 //!
-//! - **Admin**: Creates the trail and sets up the LockingAdmin and RecordAdmin roles.
-//! - **LockingAdmin**: Controls write and delete locks. Holds the LockingAdmin capability.
-//! - **RecordAdmin**: Writes records. Used to demonstrate that the write lock is enforced per-sender, not just checked
-//!   by the admin.
+//! - **Admin client**: Creates the trail and sets up the LockingAdmin and RecordAdmin roles.
+//! - **Locking admin client**: Controls write and delete locks. Holds the LockingAdmin capability.
+//! - **Record admin client**: Writes records. Used to demonstrate that the write lock is enforced per-sender, not just
+//!   checked by the admin.
 
 use anyhow::{Result, ensure};
 use audit_trail::core::types::{CapabilityIssueOptions, Data, InitialRecord, LockingWindow, PermissionSet, TimeLock};
@@ -22,14 +22,12 @@ use product_common::core_client::CoreClient;
 async fn main() -> Result<()> {
     println!("=== Audit Trail: Configure Locking ===\n");
 
-    // `admin` creates the trail and manages roles.
-    // `locking_admin` controls write and delete locks.
-    // `record_admin` writes records.
-    let admin = get_funded_audit_trail_client().await?;
-    let locking_admin = get_funded_audit_trail_client().await?;
-    let record_admin = get_funded_audit_trail_client().await?;
+    // Use separate clients to show that locking and record-writing permissions can be delegated independently.
+    let admin_client = get_funded_audit_trail_client().await?;
+    let locking_admin_client = get_funded_audit_trail_client().await?;
+    let record_admin_client = get_funded_audit_trail_client().await?;
 
-    let created = admin
+    let created_trail = admin_client
         .create_trail()
         .with_initial_record(InitialRecord::new(
             Data::text("Trail opened"),
@@ -37,113 +35,119 @@ async fn main() -> Result<()> {
             None,
         ))
         .finish()
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?
         .output;
 
-    let trail_id = created.trail_id;
+    let trail_id = created_trail.trail_id;
+    let locking_admin_role = "LockingAdmin";
+    let record_admin_role = "RecordAdmin";
 
-    admin
+    // The Admin capability authorizes defining roles and issuing the delegated capabilities.
+    admin_client
         .trail(trail_id)
         .access()
-        .for_role("LockingAdmin")
+        .for_role(locking_admin_role)
         .create(PermissionSet::locking_admin_permissions(), None)
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?;
-    admin
+    admin_client
         .trail(trail_id)
         .access()
-        .for_role("LockingAdmin")
+        .for_role(locking_admin_role)
         .issue_capability(CapabilityIssueOptions {
-            issued_to: Some(locking_admin.sender_address()),
+            issued_to: Some(locking_admin_client.sender_address()),
             valid_from_ms: None,
             valid_until_ms: None,
         })
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?;
 
-    admin
+    admin_client
         .trail(trail_id)
         .access()
-        .for_role("RecordAdmin")
+        .for_role(record_admin_role)
         .create(PermissionSet::record_admin_permissions(), None)
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?;
-    admin
+    admin_client
         .trail(trail_id)
         .access()
-        .for_role("RecordAdmin")
+        .for_role(record_admin_role)
         .issue_capability(CapabilityIssueOptions {
-            issued_to: Some(record_admin.sender_address()),
+            issued_to: Some(record_admin_client.sender_address()),
             valid_from_ms: None,
             valid_until_ms: None,
         })
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?;
 
-    locking_admin
+    locking_admin_client
         .trail(trail_id)
         .locking()
         .update_write_lock(TimeLock::Infinite)
-        .build_and_execute(&locking_admin)
+        .build_and_execute(&locking_admin_client)
         .await?;
 
-    let locked = admin.trail(trail_id).get().await?;
-    println!("Write lock after update: {:?}\n", locked.locking_config.write_lock);
-    ensure!(locked.locking_config.write_lock == TimeLock::Infinite);
+    let locked_trail = admin_client.trail(trail_id).get().await?;
+    println!(
+        "Write lock after update: {:?}\n",
+        locked_trail.locking_config.write_lock
+    );
+    ensure!(locked_trail.locking_config.write_lock == TimeLock::Infinite);
 
-    let blocked_add = record_admin
+    let blocked_add = record_admin_client
         .trail(trail_id)
         .records()
         .add(Data::text("This write should fail"), None, None)
-        .build_and_execute(&record_admin)
+        .build_and_execute(&record_admin_client)
         .await;
     ensure!(blocked_add.is_err(), "write lock should block adding records");
 
-    locking_admin
+    locking_admin_client
         .trail(trail_id)
         .locking()
         .update_write_lock(TimeLock::None)
-        .build_and_execute(&locking_admin)
+        .build_and_execute(&locking_admin_client)
         .await?;
 
-    let added = record_admin
+    let added_record = record_admin_client
         .trail(trail_id)
         .records()
         .add(Data::text("Write lock lifted"), Some("event:resumed".to_string()), None)
-        .build_and_execute(&record_admin)
+        .build_and_execute(&record_admin_client)
         .await?
         .output;
 
     println!(
         "Added record {} after clearing the write lock.\n",
-        added.sequence_number
+        added_record.sequence_number
     );
 
-    locking_admin
+    locking_admin_client
         .trail(trail_id)
         .locking()
         .update_delete_record_window(LockingWindow::CountBased { count: 2 })
-        .build_and_execute(&locking_admin)
+        .build_and_execute(&locking_admin_client)
         .await?;
-    locking_admin
+    locking_admin_client
         .trail(trail_id)
         .locking()
         .update_delete_trail_lock(TimeLock::Infinite)
-        .build_and_execute(&locking_admin)
+        .build_and_execute(&locking_admin_client)
         .await?;
 
-    let final_state = admin.trail(trail_id).get().await?;
+    let final_trail = admin_client.trail(trail_id).get().await?;
     println!(
         "Final locking config:\n  delete_record_window = {:?}\n  delete_trail_lock = {:?}\n  write_lock = {:?}",
-        final_state.locking_config.delete_record_window,
-        final_state.locking_config.delete_trail_lock,
-        final_state.locking_config.write_lock
+        final_trail.locking_config.delete_record_window,
+        final_trail.locking_config.delete_trail_lock,
+        final_trail.locking_config.write_lock
     );
 
-    ensure!(final_state.locking_config.delete_record_window == LockingWindow::CountBased { count: 2 });
-    ensure!(final_state.locking_config.delete_trail_lock == TimeLock::Infinite);
-    ensure!(final_state.locking_config.write_lock == TimeLock::None);
+    ensure!(final_trail.locking_config.delete_record_window == LockingWindow::CountBased { count: 2 });
+    ensure!(final_trail.locking_config.delete_trail_lock == TimeLock::Infinite);
+    ensure!(final_trail.locking_config.write_lock == TimeLock::None);
 
     Ok(())
 }

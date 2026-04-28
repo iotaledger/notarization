@@ -4,8 +4,8 @@
 /**
  * ## Actors
  *
- * - **Admin**: Creates the trail and sets up the MaintenanceAdmin role.
- * - **MaintenanceAdmin**: Holds delete permissions. Attempts (and fails) to delete the
+ * - **Admin client**: Creates the trail and sets up the MaintenanceAdmin role.
+ * - **Maintenance admin client**: Holds delete permissions. Attempts (and fails) to delete the
  *   non-empty trail, then batch-deletes all records before removing the trail itself.
  *
  * Demonstrates how to:
@@ -21,32 +21,31 @@ import { getFundedClient, TEST_GAS_BUDGET } from "./util";
 export async function deleteAuditTrail(): Promise<void> {
     console.log("=== Audit Trail: Delete Trail ===\n");
 
-    // `admin` creates the trail and sets up the role.
-    // `maintenanceAdmin` empties and deletes the trail.
-    const admin = await getFundedClient();
-    const maintenanceAdmin = await getFundedClient();
+    // `adminClient` creates the trail and delegates trail maintenance.
+    // `maintenanceAdminClient` empties and deletes the trail.
+    const adminClient = await getFundedClient();
+    const maintenanceAdminClient = await getFundedClient();
 
-    const { output: created } = await admin
+    const { output: createdTrail } = await adminClient
         .createTrail()
         .withInitialRecordString("Initial record", "event:created")
         .finish()
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
+        .buildAndExecute(adminClient);
 
-    const trailId = created.id;
+    const trailId = createdTrail.id;
 
-    // Create a role with delete permissions and issue to maintenanceAdmin.
-    const role = admin.trail(trailId).access().forRole("MaintenanceAdmin");
-    await role
+    const maintenanceAdminRole = adminClient.trail(trailId).access().forRole("MaintenanceAdmin");
+    await maintenanceAdminRole
         .create(new PermissionSet([Permission.DeleteAllRecords, Permission.DeleteAuditTrail]))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
-    await role
-        .issueCapability(new CapabilityIssueOptions(maintenanceAdmin.senderAddress()))
+        .buildAndExecute(adminClient);
+    await maintenanceAdminRole
+        .issueCapability(new CapabilityIssueOptions(maintenanceAdminClient.senderAddress()))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
+        .buildAndExecute(adminClient);
 
-    const maintenanceTrail = maintenanceAdmin.trail(trailId);
+    const maintenanceTrail = maintenanceAdminClient.trail(trailId);
 
     // 1. Attempting to delete a non-empty trail should fail.
     let deleteWhileNonEmptySucceeded = false;
@@ -54,7 +53,7 @@ export async function deleteAuditTrail(): Promise<void> {
         await maintenanceTrail
             .deleteAuditTrail()
             .withGasBudget(TEST_GAS_BUDGET)
-            .buildAndExecute(maintenanceAdmin);
+            .buildAndExecute(maintenanceAdminClient);
         deleteWhileNonEmptySucceeded = true;
     } catch {
         // Expected
@@ -67,7 +66,7 @@ export async function deleteAuditTrail(): Promise<void> {
         .records()
         .deleteBatch(BigInt(10))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(maintenanceAdmin);
+        .buildAndExecute(maintenanceAdminClient);
     console.log("Deleted", deletedRecords.output, "record(s) before trail removal.\n");
 
     const count = await maintenanceTrail.records().recordCount();
@@ -77,7 +76,7 @@ export async function deleteAuditTrail(): Promise<void> {
     const deletedTrail = await maintenanceTrail
         .deleteAuditTrail()
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(maintenanceAdmin);
+        .buildAndExecute(maintenanceAdminClient);
     console.log("Trail deleted:");
     console.log("  trail_id =", deletedTrail.output.trailId);
     console.log("  timestamp =", deletedTrail.output.timestamp);

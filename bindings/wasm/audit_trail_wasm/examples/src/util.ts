@@ -83,7 +83,7 @@ export async function createTrailWithSeedRecord(client: AuditTrailClient) {
 }
 
 export async function grantSelfRecordPermissions(client: AuditTrailClient, trailId: string): Promise<void> {
-    const role = client.trail(trailId).access().forRole("example-record-writer");
+    const selfRecordWriterRole = client.trail(trailId).access().forRole("example-record-writer");
     const permissions = new PermissionSet([
         Permission.AddRecord,
         Permission.DeleteRecord,
@@ -91,32 +91,32 @@ export async function grantSelfRecordPermissions(client: AuditTrailClient, trail
         Permission.CorrectRecord,
     ]);
 
-    await role.create(permissions).withGasBudget(TEST_GAS_BUDGET).buildAndExecute(client);
-    await role
+    await selfRecordWriterRole.create(permissions).withGasBudget(TEST_GAS_BUDGET).buildAndExecute(client);
+    await selfRecordWriterRole
         .issueCapability(new CapabilityIssueOptions(client.senderAddress()))
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(client);
 }
 
 export async function issueTaggedRecordRole(
-    admin: AuditTrailClient,
+    adminClient: AuditTrailClient,
     trailId: string,
     roleName: string,
     tag: string,
-    issuedTo: string,
+    issuedToAddress: string,
 ): Promise<void> {
-    await admin
+    await adminClient
         .trail(trailId)
         .access()
         .forRole(roleName)
         .create(PermissionSet.recordAdminPermissions(), new RoleTags([tag]))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
-    await admin
+        .buildAndExecute(adminClient);
+    await adminClient
         .trail(trailId)
         .access()
         .forRole(roleName)
-        .issueCapability(new CapabilityIssueOptions(issuedTo))
+        .issueCapability(new CapabilityIssueOptions(issuedToAddress))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
+        .buildAndExecute(adminClient);
 }

@@ -3,9 +3,9 @@
 
 //! ## Actors
 //!
-//! - **Admin**: Creates the trail, defines the RecordAdmin role, and issues a capability.
-//! - **RecordAdmin**: Holds the capability and writes records. Reads are also done through this client to demonstrate
-//!   that any address can read, but only the cap holder can write.
+//! - **Admin client**: Creates the trail, defines the RecordAdmin role, and issues a capability.
+//! - **Record admin client**: Holds the capability and writes records. Reads are also done through this client to keep
+//!   the example focused on one trail handle after delegation.
 
 use anyhow::{Result, ensure};
 use audit_trail::core::types::{CapabilityIssueOptions, Data, InitialRecord, PermissionSet};
@@ -21,18 +21,21 @@ use product_common::core_client::CoreClient;
 async fn main() -> Result<()> {
     println!("=== Audit Trail: Add & Read Records ===\n");
 
-    // `admin` creates the trail and manages roles.
-    // `record_admin` holds the RecordAdmin capability and writes records.
-    let admin = get_funded_audit_trail_client().await?;
-    let record_admin = get_funded_audit_trail_client().await?;
+    // Use separate clients to make the permission handoff explicit.
+    let admin_client = get_funded_audit_trail_client().await?;
+    let record_admin_client = get_funded_audit_trail_client().await?;
 
-    println!("Admin address:        {}", admin.sender_address());
-    println!("RecordAdmin address:  {}\n", record_admin.sender_address());
+    println!("Admin client address:        {}", admin_client.sender_address());
+    println!(
+        "Record admin client address: {}\n",
+        record_admin_client.sender_address()
+    );
 
     // -------------------------------------------------------------------------
     // Step 1: Create a trail with one initial record
     // -------------------------------------------------------------------------
-    let created = admin
+    // Creating the trail automatically gives `admin_client` the built-in Admin capability.
+    let created_trail = admin_client
         .create_trail()
         .with_initial_record(InitialRecord::new(
             Data::text("Trail opened"),
@@ -40,47 +43,49 @@ async fn main() -> Result<()> {
             None,
         ))
         .finish()
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?
         .output;
 
-    let trail_id = created.trail_id;
+    let trail_id = created_trail.trail_id;
     println!("Trail created: {trail_id}\n");
 
     // -------------------------------------------------------------------------
-    // Step 2: Create a record-admin role and issue a capability for it
+    // Step 2: Create a RecordAdmin role and issue a capability for it
     // -------------------------------------------------------------------------
-    admin
+    // The role defines what record operations are allowed.
+    admin_client
         .trail(trail_id)
         .access()
         .for_role("RecordAdmin")
         .create(PermissionSet::record_admin_permissions(), None)
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?;
 
-    let capability = admin
+    // The capability grants that role to `record_admin_client`'s address.
+    let record_admin_capability = admin_client
         .trail(trail_id)
         .access()
         .for_role("RecordAdmin")
         .issue_capability(CapabilityIssueOptions {
-            issued_to: Some(record_admin.sender_address()),
+            issued_to: Some(record_admin_client.sender_address()),
             valid_from_ms: None,
             valid_until_ms: None,
         })
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?
         .output;
 
     println!(
         "Issued capability {} for role {}\n",
-        capability.capability_id, capability.role
+        record_admin_capability.capability_id, record_admin_capability.role
     );
 
     // -------------------------------------------------------------------------
     // Step 3: Append follow-up records
     // -------------------------------------------------------------------------
-    // The client automatically finds the capability in `record_admin`'s wallet.
-    let records = record_admin.trail(trail_id).records();
+    // The record API automatically selects the matching capability from `record_admin_client`'s wallet.
+    let records = record_admin_client.trail(trail_id).records();
 
     let first_added = records
         .add(
@@ -88,7 +93,7 @@ async fn main() -> Result<()> {
             Some("event:received".to_string()),
             None,
         )
-        .build_and_execute(&record_admin)
+        .build_and_execute(&record_admin_client)
         .await?
         .output;
 
@@ -98,7 +103,7 @@ async fn main() -> Result<()> {
             Some("event:dispatched".to_string()),
             None,
         )
-        .build_and_execute(&record_admin)
+        .build_and_execute(&record_admin_client)
         .await?
         .output;
 
@@ -110,6 +115,7 @@ async fn main() -> Result<()> {
     // -------------------------------------------------------------------------
     // Step 4: Read records back by sequence number
     // -------------------------------------------------------------------------
+    // Sequence numbers start at 0, so the initial record is still addressable after appending more records.
     let initial = records.get(0).await?;
     let first = records.get(first_added.sequence_number).await?;
     let second = records.get(second_added.sequence_number).await?;
@@ -131,6 +137,7 @@ async fn main() -> Result<()> {
     // -------------------------------------------------------------------------
     // Step 5: Inspect record count and page through the linked table
     // -------------------------------------------------------------------------
+    // Pagination keeps reads bounded for trails that grow over time.
     let count = records.record_count().await?;
     println!("Current record count: {count}");
     ensure!(count == 3, "expected 3 records, got {count}");
