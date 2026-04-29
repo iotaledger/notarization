@@ -8,7 +8,7 @@
  *
  * ## Actors
  *
- * - **Admin**: Creates the trail and sets up all roles and capabilities.
+ * - **Admin client**: Creates the trail and sets up all roles and capabilities.
  * - **DocsOperator**: Handles document submission (invoices, packing lists). Writes only
  *   `documents`-tagged records.
  * - **ExportBroker**: Files export declarations and records clearance decisions at the origin.
@@ -19,7 +19,7 @@
  *   `inspection`-tagged records; the role is created mid-process when an inspection is triggered.
  * - **Supervisor**: Updates the mutable trail metadata (processing status). No record-write
  *   permissions.
- * - **LockingAdmin**: Freezes the trail once the shipment is fully cleared.
+ * - **Locking admin client**: Freezes the trail once the shipment is fully cleared.
  *
  * ## How the trail is used
  *
@@ -44,19 +44,19 @@ import { getFundedClient, issueTaggedRecordRole, TEST_GAS_BUDGET } from "../util
 export async function customsClearance(): Promise<void> {
     console.log("=== Customs Clearance ===\n");
 
-    const admin = await getFundedClient();
+    const adminClient = await getFundedClient();
     const docsOperator = await getFundedClient();
     const exportBroker = await getFundedClient();
     const importBroker = await getFundedClient();
     const supervisor = await getFundedClient();
-    const lockingAdmin = await getFundedClient();
+    const lockingAdminClient = await getFundedClient();
     const inspector = await getFundedClient();
 
     // === Create the customs-clearance trail ===
 
     console.log("Creating a customs-clearance trail...");
 
-    const { output: created } = await admin
+    const { output: createdTrail } = await adminClient
         .createTrail()
         .withRecordTags(["documents", "export", "import", "inspection"])
         .withTrailMetadata(
@@ -70,47 +70,47 @@ export async function customsClearance(): Promise<void> {
         .withInitialRecordString("Customs clearance case opened for inbound shipment", "event:case_opened", "documents")
         .finish()
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
+        .buildAndExecute(adminClient);
 
-    const trailId = created.id;
+    const trailId = createdTrail.id;
 
     // === Set up roles and capabilities for each actor ===
 
-    await issueTaggedRecordRole(admin, trailId, "DocsOperator", "documents", docsOperator.senderAddress());
-    await issueTaggedRecordRole(admin, trailId, "ExportBroker", "export", exportBroker.senderAddress());
-    await issueTaggedRecordRole(admin, trailId, "ImportBroker", "import", importBroker.senderAddress());
+    await issueTaggedRecordRole(adminClient, trailId, "DocsOperator", "documents", docsOperator.senderAddress());
+    await issueTaggedRecordRole(adminClient, trailId, "ExportBroker", "export", exportBroker.senderAddress());
+    await issueTaggedRecordRole(adminClient, trailId, "ImportBroker", "import", importBroker.senderAddress());
 
     // Supervisor can update metadata.
-    await admin
+    await adminClient
         .trail(trailId)
         .access()
         .forRole("Supervisor")
         .create(PermissionSet.metadataAdminPermissions())
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
-    await admin
+        .buildAndExecute(adminClient);
+    await adminClient
         .trail(trailId)
         .access()
         .forRole("Supervisor")
         .issueCapability(new CapabilityIssueOptions(supervisor.senderAddress()))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
+        .buildAndExecute(adminClient);
 
     // LockingAdmin can manage locking.
-    await admin
+    await adminClient
         .trail(trailId)
         .access()
         .forRole("LockingAdmin")
         .create(PermissionSet.lockingAdminPermissions())
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
-    await admin
+        .buildAndExecute(adminClient);
+    await adminClient
         .trail(trailId)
         .access()
         .forRole("LockingAdmin")
-        .issueCapability(new CapabilityIssueOptions(lockingAdmin.senderAddress()))
+        .issueCapability(new CapabilityIssueOptions(lockingAdminClient.senderAddress()))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(admin);
+        .buildAndExecute(adminClient);
 
     // === Document submission ===
 
@@ -193,7 +193,7 @@ export async function customsClearance(): Promise<void> {
     console.log("Inspection write was correctly denied before the inspector role existed.\n");
 
     // A customs inspection is triggered; the inspector role is created and issued mid-process.
-    await issueTaggedRecordRole(admin, trailId, "Inspector", "inspection", inspector.senderAddress());
+    await issueTaggedRecordRole(adminClient, trailId, "Inspector", "inspection", inspector.senderAddress());
 
     const inspectionDone = await inspector
         .trail(trailId)
@@ -238,15 +238,15 @@ export async function customsClearance(): Promise<void> {
 
     // === Final lock and verification ===
 
-    await lockingAdmin
+    await lockingAdminClient
         .trail(trailId)
         .locking()
         .updateWriteLock(TimeLock.withInfinite())
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(lockingAdmin);
+        .buildAndExecute(lockingAdminClient);
 
-    const afterLock = await admin.trail(trailId).get();
-    console.log("Write lock after clearance:", afterLock.lockingConfig.writeLock, "\n");
+    const trailAfterLock = await adminClient.trail(trailId).get();
+    console.log("Write lock after clearance:", trailAfterLock.lockingConfig.writeLock, "\n");
 
     let lateWriteSucceeded = false;
     try {
@@ -262,16 +262,20 @@ export async function customsClearance(): Promise<void> {
     }
     assert.equal(lateWriteSucceeded, false, "cleared customs trail should reject late writes after the final lock");
 
-    const firstPage = await admin.trail(trailId).records().listPage(undefined, 20);
+    const firstRecordsPage = await adminClient.trail(trailId).records().listPage(undefined, 20);
     console.log("Recorded customs events:");
-    for (const record of firstPage.records) {
+    for (const record of firstRecordsPage.records) {
         console.log(`  #${record.sequenceNumber} | ${record.data} | tag=${record.tag} | ${record.metadata}`);
     }
 
-    assert.equal(firstPage.records.length, 7, "expected 7 customs records including the initial case-opened record");
+    assert.equal(
+        firstRecordsPage.records.length,
+        7,
+        "expected 7 customs records including the initial case-opened record",
+    );
 
-    const trailState = await admin.trail(trailId).get();
-    assert.equal(trailState.updatableMetadata, "Status: Cleared", "customs case should finish in cleared state");
+    const finalTrail = await adminClient.trail(trailId).get();
+    assert.equal(finalTrail.updatableMetadata, "Status: Cleared", "customs case should finish in cleared state");
 
     console.log("\nCustoms clearance completed successfully.");
 }

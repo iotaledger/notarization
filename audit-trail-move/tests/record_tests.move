@@ -250,7 +250,7 @@ fun test_delete_records_batch_with_matching_role_tags() {
 
     {
         let locking_config = locking::new(
-            locking::window_time_based(3600),
+            locking::window_none(),
             timelock::none(),
             timelock::none(),
         );
@@ -499,7 +499,7 @@ fun test_delete_records_batch_requires_matching_role_tags() {
 
     {
         let locking_config = locking::new(
-            locking::window_time_based(3600),
+            locking::window_none(),
             timelock::none(),
             timelock::none(),
         );

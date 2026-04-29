@@ -213,8 +213,8 @@ impl Transaction for DeleteRecord {
 
 /// Transaction that deletes multiple records in a batch operation.
 ///
-/// The Move entry point deletes records from the front of the trail up to `limit` and returns the deleted
-/// sequence numbers. The current Rust implementation mirrors that output by collecting the matching
+/// The Move entry point skips locked records, deletes up to `limit` unlocked records in trail order, and returns
+/// the deleted sequence numbers. The Rust implementation mirrors that output by collecting the matching
 /// `RecordDeleted` events in order.
 #[derive(Debug, Clone)]
 pub struct DeleteRecordsBatch {

@@ -3,8 +3,8 @@
 
 //! ## Actors
 //!
-//! - **Admin**: Creates the trail and holds the built-in Admin capability that is automatically minted on creation.
-//! - **RecordAdmin**: Receives a RecordAdmin capability bound to their address. Writes records in subsequent examples.
+//! - **Admin client**: Creates the trail and holds the built-in Admin capability minted on creation.
+//! - **Record admin client**: Receives a RecordAdmin capability bound to their address so it can write records.
 
 use anyhow::Result;
 use audit_trail::core::types::{CapabilityIssueOptions, Data, ImmutableMetadata, InitialRecord, PermissionSet};
@@ -20,13 +20,15 @@ use product_common::core_client::CoreClient;
 async fn main() -> Result<()> {
     println!("=== Audit Trail: Create Trail & Define Roles ===\n");
 
-    // `admin` creates the trail and holds the Admin capability that is automatically
-    // minted on creation. `record_admin` represents the actor who will later write records.
-    let admin = get_funded_audit_trail_client().await?;
-    let record_admin = get_funded_audit_trail_client().await?;
+    // Use separate clients to show that admin rights and record-writing rights can belong to different addresses.
+    let admin_client = get_funded_audit_trail_client().await?;
+    let record_admin_client = get_funded_audit_trail_client().await?;
 
-    println!("Admin address:        {}", admin.sender_address());
-    println!("RecordAdmin address:  {}\n", record_admin.sender_address());
+    println!("Admin client address:        {}", admin_client.sender_address());
+    println!(
+        "Record admin client address: {}\n",
+        record_admin_client.sender_address()
+    );
 
     // -------------------------------------------------------------------------
     // Step 1: Create an audit trail
@@ -39,7 +41,7 @@ async fn main() -> Result<()> {
     // object and transfers it to the sender's address. This capability grants
     // full administrative control over the trail (role management, capability
     // issuance, tag management, etc.).
-    let created = admin
+    let created_trail = admin_client
         .create_trail()
         .with_trail_metadata(ImmutableMetadata::new(
             "Product Shipment Audit Trail".to_string(),
@@ -52,19 +54,19 @@ async fn main() -> Result<()> {
             None,
         ))
         .finish()
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?
         .output;
 
     println!(
         "Trail created!\n  Trail ID:   {}\n  Creator:    {}\n  Timestamp:  {} ms\n",
-        created.trail_id, created.creator, created.timestamp
+        created_trail.trail_id, created_trail.creator, created_trail.timestamp
     );
 
-    // Fetch the on-chain trail object to inspect the automatically created Admin role.
-    let trail = admin.trail(created.trail_id).get().await?;
-    let admin_role_name = &trail.roles.initial_admin_role_name;
-    let admin_permissions = &trail.roles.roles[admin_role_name].permissions;
+    // Fetch the trail to inspect the role map that was initialized during creation.
+    let on_chain_trail = admin_client.trail(created_trail.trail_id).get().await?;
+    let admin_role_name = &on_chain_trail.roles.initial_admin_role_name;
+    let admin_permissions = &on_chain_trail.roles.roles[admin_role_name].permissions;
     println!(
         "Built-in admin role: \"{admin_role_name}\" ({} permissions)\n",
         admin_permissions.len()
@@ -73,48 +75,47 @@ async fn main() -> Result<()> {
     // -------------------------------------------------------------------------
     // Step 2: Define a RecordAdmin role
     // -------------------------------------------------------------------------
-    // The Admin capability (held by the sender) allows creating new roles.
-    // PermissionSet::record_admin_permissions() grants AddRecord, DeleteRecord,
-    // and CorrectRecord permissions.
+    // The Admin capability in `admin_client`'s wallet authorizes this role-management transaction.
+    // This permission set is the standard bundle for adding, deleting, and correcting records.
     let record_admin_role = "RecordAdmin";
-    let role_created = admin
-        .trail(created.trail_id)
+    let created_role = admin_client
+        .trail(created_trail.trail_id)
         .access()
         .for_role(record_admin_role)
         .create(PermissionSet::record_admin_permissions(), None)
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?
         .output;
 
     println!(
         "Role \"{}\" defined with permissions:\n  {:?}\n",
-        role_created.role, role_created.permissions.permissions
+        created_role.role, created_role.permissions.permissions
     );
 
     // -------------------------------------------------------------------------
     // Step 3: Issue a capability for the RecordAdmin role
     // -------------------------------------------------------------------------
-    // A Capability object is minted on-chain and transferred to `record_admin`'s
-    // address. Only the holder of that address can use it to write records.
-    let capability = admin
-        .trail(created.trail_id)
+    // Issuing the capability delegates this role to `record_admin_client`; the Admin capability stays with
+    // `admin_client`.
+    let record_admin_capability = admin_client
+        .trail(created_trail.trail_id)
         .access()
         .for_role(record_admin_role)
         .issue_capability(CapabilityIssueOptions {
-            issued_to: Some(record_admin.sender_address()),
+            issued_to: Some(record_admin_client.sender_address()),
             valid_from_ms: None,
             valid_until_ms: None,
         })
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?
         .output;
 
     println!(
         "Capability issued!\n  Capability ID: {}\n  Trail ID:      {}\n  Role:          {}\n  Issued to:     {}",
-        capability.capability_id,
-        capability.target_key,
-        capability.role,
-        capability
+        record_admin_capability.capability_id,
+        record_admin_capability.target_key,
+        record_admin_capability.role,
+        record_admin_capability
             .issued_to
             .map_or_else(|| "any holder (no address restriction)".to_string(), |a| a.to_string())
     );

@@ -3,8 +3,8 @@
 
 //! ## Actors
 //!
-//! - **Admin**: Creates the trail and sets up the MaintenanceAdmin role.
-//! - **MaintenanceAdmin**: Holds delete permissions. Attempts (and fails) to delete the non-empty trail, then
+//! - **Admin client**: Creates the trail and sets up the MaintenanceAdmin role.
+//! - **Maintenance admin client**: Holds delete permissions. Attempts (and fails) to delete the non-empty trail, then
 //!   batch-deletes all records before removing the trail itself.
 
 use std::collections::HashSet;
@@ -22,12 +22,11 @@ use product_common::core_client::CoreClient;
 async fn main() -> Result<()> {
     println!("=== Audit Trail: Delete Trail ===\n");
 
-    // `admin` creates the trail and manages roles.
-    // `maintenance_admin` empties and deletes the trail.
-    let admin = get_funded_audit_trail_client().await?;
-    let maintenance_admin = get_funded_audit_trail_client().await?;
+    // Use a maintenance client to keep deletion permissions separate from trail creation.
+    let admin_client = get_funded_audit_trail_client().await?;
+    let maintenance_admin_client = get_funded_audit_trail_client().await?;
 
-    let created = admin
+    let created_trail = admin_client
         .create_trail()
         .with_initial_record(InitialRecord::new(
             Data::text("Initial record"),
@@ -35,47 +34,51 @@ async fn main() -> Result<()> {
             None,
         ))
         .finish()
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?
         .output;
 
-    let trail = admin.trail(created.trail_id);
+    let trail_id = created_trail.trail_id;
+    let maintenance_admin_role = "MaintenanceAdmin";
+    let admin_trail = admin_client.trail(trail_id);
 
-    trail
+    // The Admin capability authorizes the maintenance role and capability delegation.
+    admin_trail
         .access()
-        .for_role("MaintenanceAdmin")
+        .for_role(maintenance_admin_role)
         .create(
             PermissionSet {
                 permissions: HashSet::from([Permission::DeleteAllRecords, Permission::DeleteAuditTrail]),
             },
             None,
         )
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?;
-    trail
+    admin_trail
         .access()
-        .for_role("MaintenanceAdmin")
+        .for_role(maintenance_admin_role)
         .issue_capability(CapabilityIssueOptions {
-            issued_to: Some(maintenance_admin.sender_address()),
+            issued_to: Some(maintenance_admin_client.sender_address()),
             valid_from_ms: None,
             valid_until_ms: None,
         })
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?;
 
-    let maintenance_trail = maintenance_admin.trail(created.trail_id);
+    let maintenance_trail = maintenance_admin_client.trail(trail_id);
 
     let delete_while_non_empty = maintenance_trail
         .delete_audit_trail()
-        .build_and_execute(&maintenance_admin)
+        .build_and_execute(&maintenance_admin_client)
         .await;
     ensure!(delete_while_non_empty.is_err(), "a trail must be empty before deletion");
     println!("Deleting the non-empty trail failed as expected.\n");
 
+    // Batch delete skips locked records and returns the deleted sequence numbers before trail deletion.
     let deleted_records = maintenance_trail
         .records()
         .delete_records_batch(10)
-        .build_and_execute(&maintenance_admin)
+        .build_and_execute(&maintenance_admin_client)
         .await?
         .output;
     println!("Deleted record sequence numbers {deleted_records:?} before trail removal.\n");
@@ -84,7 +87,7 @@ async fn main() -> Result<()> {
 
     let deleted_trail = maintenance_trail
         .delete_audit_trail()
-        .build_and_execute(&maintenance_admin)
+        .build_and_execute(&maintenance_admin_client)
         .await?
         .output;
     println!(

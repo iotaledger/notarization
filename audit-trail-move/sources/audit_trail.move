@@ -402,7 +402,7 @@ public fun delete_record<D: store + copy + drop>(
 
 /// Delete up to `limit` records from the front of the trail.
 ///
-/// Requires `DeleteAllRecords` permission. This operation bypasses record locks.
+/// Requires `DeleteAllRecords` permission. Locked records are skipped.
 /// Returns the sequence numbers deleted in this batch, in deletion order.
 public fun delete_records_batch<D: store + copy + drop>(
     self: &mut AuditTrail<D>,
@@ -426,15 +426,22 @@ public fun delete_records_batch<D: store + copy + drop>(
     let caller = ctx.sender();
     let timestamp = clock.timestamp_ms();
     let trail_id = self.id();
+    let mut current = *linked_table::front(&self.records);
 
-    while (deleted < limit && !self.records.is_empty()) {
-        let next_sequence_number = option::destroy_some(*linked_table::front(&self.records));
+    while (deleted < limit && current.is_some()) {
+        let sequence_number = current.destroy_some();
+        current = *linked_table::next(&self.records, sequence_number);
+
+        if (self.is_record_locked(sequence_number, clock)) {
+            continue
+        };
+
         assert_record_tag_allowed(
             self,
             cap,
-            record::tag(linked_table::borrow(&self.records, next_sequence_number)),
+            record::tag(linked_table::borrow(&self.records, sequence_number)),
         );
-        let (sequence_number, record) = self.records.pop_front();
+        let record = linked_table::remove(&mut self.records, sequence_number);
 
         if (record::tag(&record).is_some()) {
             record_tags::decrement_usage_count(

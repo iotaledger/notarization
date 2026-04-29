@@ -16,14 +16,14 @@
 //!
 //! ## Actors
 //!
-//! - **Manufacturer**: Creates the DPP, publishes manufacturing data, and administers roles and capabilities.
-//! - **LifecycleManager**: Updates the mutable lifecycle-stage metadata.
-//! - **Distributor**: Writes logistics and handover records.
-//! - **Consumer**: Writes the commissioning / in-use activation record.
-//! - **ServiceTechnician**: Reviews the passport, requests write access, and records the maintenance event once
+//! - **Manufacturer client**: Creates the DPP, publishes manufacturing data, and administers roles and capabilities.
+//! - **Lifecycle manager client**: Updates the mutable lifecycle-stage metadata.
+//! - **Distributor client**: Writes logistics and handover records.
+//! - **Consumer client**: Writes the commissioning / in-use activation record.
+//! - **Service technician client**: Reviews the passport, requests write access, and records the maintenance event once
 //!   authorized.
-//! - **Recycler**: Prepared for future end-of-life events through a recycling-scoped capability.
-//! - **EPRO**: Records reward policy and the reward-payout evidence for verified maintenance.
+//! - **Recycler client**: Prepared for future end-of-life events through a recycling-scoped capability.
+//! - **EPRO client**: Records reward policy and the reward-payout evidence for verified maintenance.
 //!
 //! ## How the trail is used as a DPP
 //!
@@ -50,28 +50,34 @@ use product_common::test_utils::InMemSigner;
 async fn main() -> Result<()> {
     println!("=== Digital Product Passport ===\n");
 
-    let manufacturer = get_funded_audit_trail_client().await?;
-    let lifecycle_manager = get_funded_audit_trail_client().await?;
-    let distributor = get_funded_audit_trail_client().await?;
-    let consumer = get_funded_audit_trail_client().await?;
-    let service_technician = get_funded_audit_trail_client().await?;
-    let recycler = get_funded_audit_trail_client().await?;
-    let epro = get_funded_audit_trail_client().await?;
+    let manufacturer_client = get_funded_audit_trail_client().await?;
+    let lifecycle_manager_client = get_funded_audit_trail_client().await?;
+    let distributor_client = get_funded_audit_trail_client().await?;
+    let consumer_client = get_funded_audit_trail_client().await?;
+    let service_technician_client = get_funded_audit_trail_client().await?;
+    let recycler_client = get_funded_audit_trail_client().await?;
+    let epro_client = get_funded_audit_trail_client().await?;
 
-    println!("Manufacturer wallet:       {}", manufacturer.sender_address());
-    println!("Lifecycle manager wallet:  {}", lifecycle_manager.sender_address());
-    println!("Distributor wallet:        {}", distributor.sender_address());
-    println!("Consumer wallet:           {}", consumer.sender_address());
-    println!("Service technician wallet: {}", service_technician.sender_address());
-    println!("Recycler wallet:           {}", recycler.sender_address());
-    println!("EPRO wallet:               {}\n", epro.sender_address());
+    println!("Manufacturer wallet:       {}", manufacturer_client.sender_address());
+    println!(
+        "Lifecycle manager wallet:  {}",
+        lifecycle_manager_client.sender_address()
+    );
+    println!("Distributor wallet:        {}", distributor_client.sender_address());
+    println!("Consumer wallet:           {}", consumer_client.sender_address());
+    println!(
+        "Service technician wallet: {}",
+        service_technician_client.sender_address()
+    );
+    println!("Recycler wallet:           {}", recycler_client.sender_address());
+    println!("EPRO wallet:               {}\n", epro_client.sender_address());
 
     // ---------------------------------------------------------------------
     // 1. Create the DPP audit trail
     // ---------------------------------------------------------------------
     println!("Creating the DPP trail for EcoBike's battery...");
 
-    let created = manufacturer
+    let created_trail = manufacturer_client
         .create_trail()
         .with_record_tags([
             "manufacturing",
@@ -94,11 +100,11 @@ async fn main() -> Result<()> {
             Some("manufacturing".to_string()),
         ))
         .finish()
-        .build_and_execute(&manufacturer)
+        .build_and_execute(&manufacturer_client)
         .await?
         .output;
 
-    let trail_id = created.trail_id;
+    let trail_id = created_trail.trail_id;
     println!("Trail created with ID {trail_id}\n");
 
     // ---------------------------------------------------------------------
@@ -106,56 +112,65 @@ async fn main() -> Result<()> {
     // ---------------------------------------------------------------------
     println!("Configuring DPP actor roles...");
 
+    // The manufacturer keeps the built-in Admin capability and delegates scoped lifecycle roles.
     issue_tagged_record_role(
-        &manufacturer,
+        &manufacturer_client,
         trail_id,
         "Manufacturer",
         "manufacturing",
-        manufacturer.sender_address(),
+        manufacturer_client.sender_address(),
     )
     .await?;
     issue_tagged_record_role(
-        &manufacturer,
+        &manufacturer_client,
         trail_id,
         "Distributor",
         "logistics",
-        distributor.sender_address(),
+        distributor_client.sender_address(),
     )
     .await?;
     issue_tagged_record_role(
-        &manufacturer,
+        &manufacturer_client,
         trail_id,
         "Consumer",
         "ownership",
-        consumer.sender_address(),
+        consumer_client.sender_address(),
     )
     .await?;
     issue_tagged_record_role(
-        &manufacturer,
+        &manufacturer_client,
         trail_id,
         "Recycler",
         "recycling",
-        recycler.sender_address(),
+        recycler_client.sender_address(),
     )
     .await?;
-    issue_tagged_record_role(&manufacturer, trail_id, "EPRO", "rewards", epro.sender_address()).await?;
+    issue_tagged_record_role(
+        &manufacturer_client,
+        trail_id,
+        "EPRO",
+        "rewards",
+        epro_client.sender_address(),
+    )
+    .await?;
 
-    manufacturer
+    let service_technician_role = "ServiceTechnician";
+    manufacturer_client
         .trail(trail_id)
         .access()
-        .for_role("ServiceTechnician")
+        .for_role(service_technician_role)
         .create(
             PermissionSet::record_admin_permissions(),
             Some(RoleTags::new(["maintenance"])),
         )
-        .build_and_execute(&manufacturer)
+        .build_and_execute(&manufacturer_client)
         .await?;
 
     issue_metadata_role(
-        &manufacturer,
+        &manufacturer_client,
         trail_id,
         "LifecycleManager",
-        lifecycle_manager.sender_address(),
+        lifecycle_manager_client.sender_address(),
     )
     .await?;
 
@@ -164,7 +179,7 @@ async fn main() -> Result<()> {
     // ---------------------------------------------------------------------
     println!("Publishing product details, service-network context, and reward policy...");
 
-    manufacturer
+    manufacturer_client
         .trail(trail_id)
         .records()
         .add(
@@ -174,10 +189,11 @@ async fn main() -> Result<()> {
             Some("event:product_details_published".to_string()),
             Some("manufacturing".to_string()),
         )
-        .build_and_execute(&manufacturer)
+        .build_and_execute(&manufacturer_client)
         .await?;
 
-    epro.trail(trail_id)
+    epro_client
+        .trail(trail_id)
         .records()
         .add(
             Data::text(
@@ -186,16 +202,16 @@ async fn main() -> Result<()> {
             Some("event:reward_policy_published".to_string()),
             Some("rewards".to_string()),
         )
-        .build_and_execute(&epro)
+        .build_and_execute(&epro_client)
         .await?;
 
-    lifecycle_manager
+    lifecycle_manager_client
         .trail(trail_id)
         .update_metadata(Some("Lifecycle Stage: In Distribution".to_string()))
-        .build_and_execute(&lifecycle_manager)
+        .build_and_execute(&lifecycle_manager_client)
         .await?;
 
-    distributor
+    distributor_client
         .trail(trail_id)
         .records()
         .add(
@@ -205,16 +221,16 @@ async fn main() -> Result<()> {
             Some("event:distributed".to_string()),
             Some("logistics".to_string()),
         )
-        .build_and_execute(&distributor)
+        .build_and_execute(&distributor_client)
         .await?;
 
-    lifecycle_manager
+    lifecycle_manager_client
         .trail(trail_id)
         .update_metadata(Some("Lifecycle Stage: In Use".to_string()))
-        .build_and_execute(&lifecycle_manager)
+        .build_and_execute(&lifecycle_manager_client)
         .await?;
 
-    consumer
+    consumer_client
         .trail(trail_id)
         .records()
         .add(
@@ -224,7 +240,7 @@ async fn main() -> Result<()> {
             Some("event:commissioned".to_string()),
             Some("ownership".to_string()),
         )
-        .build_and_execute(&consumer)
+        .build_and_execute(&consumer_client)
         .await?;
 
     // ---------------------------------------------------------------------
@@ -232,13 +248,17 @@ async fn main() -> Result<()> {
     // ---------------------------------------------------------------------
     println!("Technician reviews the current DPP history...");
 
-    let history_before_service = service_technician.trail(trail_id).records().list_page(None, 20).await?;
+    let history_before_service = service_technician_client
+        .trail(trail_id)
+        .records()
+        .list_page(None, 20)
+        .await?;
     println!(
         "Technician can already read {} public DPP records.\n",
         history_before_service.records.len()
     );
 
-    let denied_before_grant = service_technician
+    let denied_before_grant = service_technician_client
         .trail(trail_id)
         .records()
         .add(
@@ -246,7 +266,7 @@ async fn main() -> Result<()> {
             Some("event:unauthorized_maintenance_attempt".to_string()),
             Some("maintenance".to_string()),
         )
-        .build_and_execute(&service_technician)
+        .build_and_execute(&service_technician_client)
         .await;
 
     ensure!(
@@ -260,28 +280,29 @@ async fn main() -> Result<()> {
         .as_millis() as u64;
     let technician_valid_until_ms = now_ms + 30 * 24 * 60 * 60 * 1000;
 
-    let issued_technician_cap = manufacturer
+    // The technician can read the passport before authorization, but needs a maintenance capability to write.
+    let service_technician_capability = manufacturer_client
         .trail(trail_id)
         .access()
-        .for_role("ServiceTechnician")
+        .for_role(service_technician_role)
         .issue_capability(CapabilityIssueOptions {
-            issued_to: Some(service_technician.sender_address()),
+            issued_to: Some(service_technician_client.sender_address()),
             valid_from_ms: Some(now_ms),
             valid_until_ms: Some(technician_valid_until_ms),
         })
-        .build_and_execute(&manufacturer)
+        .build_and_execute(&manufacturer_client)
         .await?
         .output;
 
     println!(
         "Issued ServiceTechnician capability {} (valid until {}).\n",
-        issued_technician_cap.capability_id, technician_valid_until_ms
+        service_technician_capability.capability_id, technician_valid_until_ms
     );
 
-    lifecycle_manager
+    lifecycle_manager_client
         .trail(trail_id)
         .update_metadata(Some("Lifecycle Stage: Maintenance In Progress".to_string()))
-        .build_and_execute(&lifecycle_manager)
+        .build_and_execute(&lifecycle_manager_client)
         .await?;
 
     // ---------------------------------------------------------------------
@@ -289,7 +310,7 @@ async fn main() -> Result<()> {
     // ---------------------------------------------------------------------
     println!("Recording the annual maintenance event...");
 
-    let maintenance_event = service_technician
+    let maintenance_event_record = service_technician_client
         .trail(trail_id)
         .records()
         .add(
@@ -299,42 +320,42 @@ async fn main() -> Result<()> {
             Some("event:annual_maintenance".to_string()),
             Some("maintenance".to_string()),
         )
-        .build_and_execute(&service_technician)
+        .build_and_execute(&service_technician_client)
         .await?
         .output;
 
     println!(
         "Service technician added maintenance record #{}.\n",
-        maintenance_event.sequence_number
+        maintenance_event_record.sequence_number
     );
 
-    let reward_event = epro
+    let reward_event_record = epro_client
         .trail(trail_id)
         .records()
         .add(
             Data::text(format!(
                 "event=lcc_reward_distributed\ntrigger_record={}\nreward_type=LCC\namount=1\nreason=Annual maintenance completed\nbeneficiary={}",
-                maintenance_event.sequence_number,
-                service_technician.sender_address()
+                maintenance_event_record.sequence_number,
+                service_technician_client.sender_address()
             )),
             Some("event:lcc_reward_distributed".to_string()),
             Some("rewards".to_string()),
         )
-        .build_and_execute(&epro)
+        .build_and_execute(&epro_client)
         .await?
         .output;
 
     println!(
         "EPRO added reward record #{} for the verified maintenance event.\n",
-        reward_event.sequence_number
+        reward_event_record.sequence_number
     );
 
-    lifecycle_manager
+    lifecycle_manager_client
         .trail(trail_id)
         .update_metadata(Some(
             "Lifecycle Stage: Maintained and Ready for Continued Use".to_string(),
         ))
-        .build_and_execute(&lifecycle_manager)
+        .build_and_execute(&lifecycle_manager_client)
         .await?;
 
     // ---------------------------------------------------------------------
@@ -342,11 +363,15 @@ async fn main() -> Result<()> {
     // ---------------------------------------------------------------------
     println!("Verifying the resulting DPP...");
 
-    let on_chain = manufacturer.trail(trail_id).get().await?;
-    let first_page = manufacturer.trail(trail_id).records().list_page(None, 20).await?;
+    let on_chain_passport = manufacturer_client.trail(trail_id).get().await?;
+    let passport_records_page = manufacturer_client
+        .trail(trail_id)
+        .records()
+        .list_page(None, 20)
+        .await?;
 
     println!("Recorded DPP events:");
-    for (sequence_number, record) in &first_page.records {
+    for (sequence_number, record) in &passport_records_page.records {
         println!(
             "  #{} | tag={:?} | metadata={:?}",
             sequence_number, record.tag, record.metadata
@@ -354,31 +379,32 @@ async fn main() -> Result<()> {
     }
 
     ensure!(
-        first_page.records.len() == 7,
+        passport_records_page.records.len() == 7,
         "expected 7 DPP records (initial + product details + reward policy + distribution + commissioning + maintenance + reward payout)"
     );
     ensure!(
-        on_chain.tags.tag_map.contains_key("maintenance")
-            && on_chain.tags.tag_map.contains_key("recycling")
-            && on_chain.tags.tag_map.contains_key("rewards"),
+        on_chain_passport.tags.tag_map.contains_key("maintenance")
+            && on_chain_passport.tags.tag_map.contains_key("recycling")
+            && on_chain_passport.tags.tag_map.contains_key("rewards"),
         "expected the DPP tag registry to contain maintenance, recycling, and rewards"
     );
     ensure!(
-        on_chain.roles.roles.contains_key("Manufacturer")
-            && on_chain.roles.roles.contains_key("Distributor")
-            && on_chain.roles.roles.contains_key("Consumer")
-            && on_chain.roles.roles.contains_key("ServiceTechnician")
-            && on_chain.roles.roles.contains_key("Recycler")
-            && on_chain.roles.roles.contains_key("EPRO")
-            && on_chain.roles.roles.contains_key("LifecycleManager"),
+        on_chain_passport.roles.roles.contains_key("Manufacturer")
+            && on_chain_passport.roles.roles.contains_key("Distributor")
+            && on_chain_passport.roles.roles.contains_key("Consumer")
+            && on_chain_passport.roles.roles.contains_key("ServiceTechnician")
+            && on_chain_passport.roles.roles.contains_key("Recycler")
+            && on_chain_passport.roles.roles.contains_key("EPRO")
+            && on_chain_passport.roles.roles.contains_key("LifecycleManager"),
         "expected all DPP roles to be registered"
     );
     ensure!(
-        on_chain.updatable_metadata.as_deref() == Some("Lifecycle Stage: Maintained and Ready for Continued Use"),
+        on_chain_passport.updatable_metadata.as_deref()
+            == Some("Lifecycle Stage: Maintained and Ready for Continued Use"),
         "expected the DPP lifecycle stage to reflect the completed maintenance event"
     );
 
-    let maintenance_record = first_page
+    let maintenance_record = passport_records_page
         .records
         .iter()
         .find(|(_, record)| record.metadata.as_deref() == Some("event:annual_maintenance"));
@@ -387,7 +413,7 @@ async fn main() -> Result<()> {
         "expected the maintenance record to be present in the DPP history"
     );
 
-    let reward_record = first_page
+    let reward_record = passport_records_page
         .records
         .iter()
         .find(|(_, record)| record.metadata.as_deref() == Some("event:lcc_reward_distributed"));
@@ -402,20 +428,20 @@ async fn main() -> Result<()> {
 }
 
 async fn issue_metadata_role(
-    client: &AuditTrailClient<InMemSigner>,
+    admin_client: &AuditTrailClient<InMemSigner>,
     trail_id: ObjectID,
     role_name: &str,
     issued_to: IotaAddress,
 ) -> Result<()> {
-    client
+    admin_client
         .trail(trail_id)
         .access()
         .for_role(role_name)
         .create(PermissionSet::metadata_admin_permissions(), None)
-        .build_and_execute(client)
+        .build_and_execute(admin_client)
         .await?;
 
-    client
+    admin_client
         .trail(trail_id)
         .access()
         .for_role(role_name)
@@ -424,7 +450,7 @@ async fn issue_metadata_role(
             valid_from_ms: None,
             valid_until_ms: None,
         })
-        .build_and_execute(client)
+        .build_and_execute(admin_client)
         .await?;
 
     Ok(())

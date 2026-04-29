@@ -63,8 +63,8 @@ pub async fn get_funded_audit_trail_client() -> Result<AuditTrailClient<InMemSig
             tf_component: Some(tf_components_pkg_id),
         }),
     )
-      .await
-      .map_err(|e| anyhow::anyhow!("failed to create AuditTrailClient: {e}"))?;
+    .await
+    .map_err(|e| anyhow::anyhow!("failed to create AuditTrailClient: {e}"))?;
 
     let signer = InMemSigner::new();
     let sender_address = signer.get_address().await?;

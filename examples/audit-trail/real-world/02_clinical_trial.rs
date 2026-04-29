@@ -8,17 +8,17 @@
 //!
 //! ## Actors
 //!
-//! - **Admin**: Creates the trail and sets up all roles and capabilities.
-//! - **Enroller**: Writes enrollment events. Restricted to the `enrollment` tag.
-//! - **SafetyOfficer**: Records adverse events and safety observations. Restricted to `safety`.
-//! - **EfficacyReviewer**: Records treatment outcomes. Restricted to `efficacy`.
-//! - **PkAnalyst**: Records pharmacokinetic results. Restricted to the `pk` tag that is added mid-study when a PK
-//!   sub-study is initiated.
-//! - **Monitor**: Updates the mutable study-phase metadata. Access is time-windowed to the active study period (90 days
-//!   from now).
-//! - **DataSafetyBoard**: Controls write and delete locks. Freezes the dataset after review.
-//! - **Regulator**: Read-only verifier. In production this would use `AuditTrailClientReadOnly` (no signing key); here
-//!   a funded client is used to keep the example self-contained.
+//! - **Admin client**: Creates the trail and sets up all roles and capabilities.
+//! - **Enroller client**: Writes enrollment events. Restricted to the `enrollment` tag.
+//! - **Safety officer client**: Records adverse events and safety observations. Restricted to `safety`.
+//! - **Efficacy reviewer client**: Records treatment outcomes. Restricted to `efficacy`.
+//! - **PK analyst client**: Records pharmacokinetic results. Restricted to the `pk` tag that is added mid-study when a
+//!   PK sub-study is initiated.
+//! - **Monitor client**: Updates the mutable study-phase metadata. Access is time-windowed to the active study period
+//!   (90 days from now).
+//! - **Data safety board client**: Controls write and delete locks. Freezes the dataset after review.
+//! - **Regulator client**: Read-only verifier. In production this would use `AuditTrailClientReadOnly` (no signing
+//!   key); here a funded client is used to keep the example self-contained.
 //!
 //! ## How the trail is used
 //!
@@ -43,21 +43,21 @@ use product_common::core_client::CoreClient;
 async fn main() -> Result<()> {
     println!("=== Clinical Trial Data Integrity ===\n");
 
-    let admin = get_funded_audit_trail_client().await?;
-    let enroller = get_funded_audit_trail_client().await?;
-    let safety_officer = get_funded_audit_trail_client().await?;
-    let efficacy_reviewer = get_funded_audit_trail_client().await?;
-    let pk_analyst = get_funded_audit_trail_client().await?;
-    let monitor = get_funded_audit_trail_client().await?;
-    let data_safety_board = get_funded_audit_trail_client().await?;
-    let regulator = get_funded_audit_trail_client().await?;
+    let admin_client = get_funded_audit_trail_client().await?;
+    let enroller_client = get_funded_audit_trail_client().await?;
+    let safety_officer_client = get_funded_audit_trail_client().await?;
+    let efficacy_reviewer_client = get_funded_audit_trail_client().await?;
+    let pk_analyst_client = get_funded_audit_trail_client().await?;
+    let monitor_client = get_funded_audit_trail_client().await?;
+    let data_safety_board_client = get_funded_audit_trail_client().await?;
+    let regulator_client = get_funded_audit_trail_client().await?;
 
     // -----------------------------------------------------------------------
     // 1. Create the trial trail
     // -----------------------------------------------------------------------
     println!("Creating the clinical-trial audit trail...");
 
-    let created = admin
+    let created_trail = admin_client
         .create_trail()
         .with_record_tags(["enrollment", "safety", "efficacy"])
         .with_trail_metadata(ImmutableMetadata::new(
@@ -76,11 +76,11 @@ async fn main() -> Result<()> {
             Some("enrollment".to_string()),
         ))
         .finish()
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?
         .output;
 
-    let trail_id = created.trail_id;
+    let trail_id = created_trail.trail_id;
     println!("Trail created with ID {trail_id}\n");
 
     // -----------------------------------------------------------------------
@@ -88,31 +88,40 @@ async fn main() -> Result<()> {
     // -----------------------------------------------------------------------
     println!("Defining study roles...");
 
-    issue_tagged_record_role(&admin, trail_id, "Enroller", "enrollment", enroller.sender_address()).await?;
+    // The Admin capability delegates one tag-scoped writer role per study function.
     issue_tagged_record_role(
-        &admin,
+        &admin_client,
         trail_id,
-        "SafetyOfficer",
-        "safety",
-        safety_officer.sender_address(),
+        "Enroller",
+        "enrollment",
+        enroller_client.sender_address(),
     )
     .await?;
     issue_tagged_record_role(
-        &admin,
+        &admin_client,
+        trail_id,
+        "SafetyOfficer",
+        "safety",
+        safety_officer_client.sender_address(),
+    )
+    .await?;
+    issue_tagged_record_role(
+        &admin_client,
         trail_id,
         "EfficacyReviewer",
         "efficacy",
-        efficacy_reviewer.sender_address(),
+        efficacy_reviewer_client.sender_address(),
     )
     .await?;
 
     // Monitor can update metadata (study phase) but only during the study window.
-    admin
+    let monitor_role = "Monitor";
+    admin_client
         .trail(trail_id)
         .access()
-        .for_role("Monitor")
+        .for_role(monitor_role)
         .create(PermissionSet::metadata_admin_permissions(), None)
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?;
 
     let now_ms = std::time::SystemTime::now()
@@ -121,38 +130,39 @@ async fn main() -> Result<()> {
     // Monitor access is valid for 90 days from now.
     let study_end_ms = now_ms + 90 * 24 * 60 * 60 * 1000;
 
-    admin
+    admin_client
         .trail(trail_id)
         .access()
-        .for_role("Monitor")
+        .for_role(monitor_role)
         .issue_capability(CapabilityIssueOptions {
-            issued_to: Some(monitor.sender_address()),
+            issued_to: Some(monitor_client.sender_address()),
             valid_from_ms: Some(now_ms),
             valid_until_ms: Some(study_end_ms),
         })
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?;
 
     println!("Monitor capability issued (valid for 90 days from now, ends at timestamp {study_end_ms})\n");
 
     // Data Safety Board can manage locking.
-    admin
+    let data_safety_board_role = "DataSafetyBoard";
+    admin_client
         .trail(trail_id)
         .access()
-        .for_role("DataSafetyBoard")
+        .for_role(data_safety_board_role)
         .create(PermissionSet::locking_admin_permissions(), None)
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?;
-    admin
+    admin_client
         .trail(trail_id)
         .access()
-        .for_role("DataSafetyBoard")
+        .for_role(data_safety_board_role)
         .issue_capability(CapabilityIssueOptions {
-            issued_to: Some(data_safety_board.sender_address()),
+            issued_to: Some(data_safety_board_client.sender_address()),
             valid_from_ms: None,
             valid_until_ms: None,
         })
-        .build_and_execute(&admin)
+        .build_and_execute(&admin_client)
         .await?;
 
     // -----------------------------------------------------------------------
@@ -160,7 +170,7 @@ async fn main() -> Result<()> {
     // -----------------------------------------------------------------------
     println!("--- Enrollment Phase ---");
 
-    let enrolled = enroller
+    let enrolled_record = enroller_client
         .trail(trail_id)
         .records()
         .add(
@@ -168,17 +178,17 @@ async fn main() -> Result<()> {
             Some("event:patient_enrolled".to_string()),
             Some("enrollment".to_string()),
         )
-        .build_and_execute(&enroller)
+        .build_and_execute(&enroller_client)
         .await?
         .output;
-    println!("Enroller added record #{}.\n", enrolled.sequence_number);
+    println!("Enroller added record #{}.\n", enrolled_record.sequence_number);
 
     // -----------------------------------------------------------------------
     // 4. Add safety and efficacy records
     // -----------------------------------------------------------------------
     println!("--- Study Data Collection ---");
 
-    let safety_event = safety_officer
+    let safety_event_record = safety_officer_client
         .trail(trail_id)
         .records()
         .add(
@@ -186,11 +196,11 @@ async fn main() -> Result<()> {
             Some("event:adverse_event".to_string()),
             Some("safety".to_string()),
         )
-        .build_and_execute(&safety_officer)
+        .build_and_execute(&safety_officer_client)
         .await?
         .output;
 
-    let efficacy_record = efficacy_reviewer
+    let efficacy_outcome_record = efficacy_reviewer_client
         .trail(trail_id)
         .records()
         .add(
@@ -198,13 +208,13 @@ async fn main() -> Result<()> {
             Some("event:efficacy_observed".to_string()),
             Some("efficacy".to_string()),
         )
-        .build_and_execute(&efficacy_reviewer)
+        .build_and_execute(&efficacy_reviewer_client)
         .await?
         .output;
 
     println!(
         "SafetyOfficer added record #{}, EfficacyReviewer added record #{}.\n",
-        safety_event.sequence_number, efficacy_record.sequence_number
+        safety_event_record.sequence_number, efficacy_outcome_record.sequence_number
     );
 
     // -----------------------------------------------------------------------
@@ -213,12 +223,24 @@ async fn main() -> Result<()> {
     println!("--- Mid-Study Amendment ---");
 
     // Admin adds the new tag and creates a role for the PK analyst.
-    admin.trail(trail_id).tags().add("pk").build_and_execute(&admin).await?;
+    admin_client
+        .trail(trail_id)
+        .tags()
+        .add("pk")
+        .build_and_execute(&admin_client)
+        .await?;
     println!("Added tag 'pk' (pharmacokinetics) to the trail.");
 
-    issue_tagged_record_role(&admin, trail_id, "PkAnalyst", "pk", pk_analyst.sender_address()).await?;
+    issue_tagged_record_role(
+        &admin_client,
+        trail_id,
+        "PkAnalyst",
+        "pk",
+        pk_analyst_client.sender_address(),
+    )
+    .await?;
 
-    let pk_record = pk_analyst
+    let pk_result_record = pk_analyst_client
         .trail(trail_id)
         .records()
         .add(
@@ -226,30 +248,30 @@ async fn main() -> Result<()> {
             Some("event:pk_result".to_string()),
             Some("pk".to_string()),
         )
-        .build_and_execute(&pk_analyst)
+        .build_and_execute(&pk_analyst_client)
         .await?
         .output;
-    println!("PkAnalyst added record #{}.\n", pk_record.sequence_number);
+    println!("PkAnalyst added record #{}.\n", pk_result_record.sequence_number);
 
     // -----------------------------------------------------------------------
     // 6. Deletion window protects recent records
     // -----------------------------------------------------------------------
     println!("--- Deletion Window Enforcement ---");
 
-    let delete_attempt = pk_analyst
+    let protected_delete_attempt = pk_analyst_client
         .trail(trail_id)
         .records()
-        .delete(pk_record.sequence_number)
-        .build_and_execute(&pk_analyst)
+        .delete(pk_result_record.sequence_number)
+        .build_and_execute(&pk_analyst_client)
         .await;
 
     ensure!(
-        delete_attempt.is_err(),
+        protected_delete_attempt.is_err(),
         "recent records must be protected by the count-based deletion window"
     );
     println!(
         "Record #{} is within the deletion window (newest 3) and cannot be deleted.\n",
-        pk_record.sequence_number
+        pk_result_record.sequence_number
     );
 
     // -----------------------------------------------------------------------
@@ -257,14 +279,17 @@ async fn main() -> Result<()> {
     // -----------------------------------------------------------------------
     println!("--- Metadata Update ---");
 
-    monitor
+    monitor_client
         .trail(trail_id)
         .update_metadata(Some("Phase: Data Review".to_string()))
-        .build_and_execute(&monitor)
+        .build_and_execute(&monitor_client)
         .await?;
 
-    let current_state = admin.trail(trail_id).get().await?;
-    println!("Study phase updated to: {:?}\n", current_state.updatable_metadata);
+    let trail_after_phase_update = admin_client.trail(trail_id).get().await?;
+    println!(
+        "Study phase updated to: {:?}\n",
+        trail_after_phase_update.updatable_metadata
+    );
 
     // -----------------------------------------------------------------------
     // 8. Data Safety Board locks the study dataset
@@ -275,14 +300,14 @@ async fn main() -> Result<()> {
     // after which the dataset becomes permanently locked.
     let lock_until_ms = now_ms + 365 * 24 * 60 * 60 * 1000; // 1 year from now
 
-    data_safety_board
+    data_safety_board_client
         .trail(trail_id)
         .locking()
         .update_write_lock(TimeLock::UnlockAtMs(lock_until_ms))
-        .build_and_execute(&data_safety_board)
+        .build_and_execute(&data_safety_board_client)
         .await?;
 
-    let locked_trail = admin.trail(trail_id).get().await?;
+    let locked_trail = admin_client.trail(trail_id).get().await?;
     println!(
         "Write lock set to UnlockAtMs({}) — writes blocked until that timestamp.\n",
         lock_until_ms
@@ -290,17 +315,17 @@ async fn main() -> Result<()> {
     println!("Current locking config: {:?}\n", locked_trail.locking_config);
 
     // Also lock the trail from deletion permanently.
-    data_safety_board
+    data_safety_board_client
         .trail(trail_id)
         .locking()
         .update_delete_trail_lock(TimeLock::Infinite)
-        .build_and_execute(&data_safety_board)
+        .build_and_execute(&data_safety_board_client)
         .await?;
 
-    let final_locking = admin.trail(trail_id).get().await?;
+    let final_locking_trail = admin_client.trail(trail_id).get().await?;
     println!(
         "Delete-trail lock set to {:?} — trail cannot be deleted.\n",
-        final_locking.locking_config.delete_trail_lock
+        final_locking_trail.locking_config.delete_trail_lock
     );
 
     // -----------------------------------------------------------------------
@@ -309,17 +334,20 @@ async fn main() -> Result<()> {
     println!("--- Regulator Verification ---");
 
     // In production the regulator would use AuditTrailClientReadOnly (no signer).
-    let regulator_handle = regulator.trail(trail_id);
+    let regulator_trail = regulator_client.trail(trail_id);
 
-    let on_chain = regulator_handle.get().await?;
-    println!("Protocol: {:?}", on_chain.immutable_metadata);
-    println!("Phase:     {:?}", on_chain.updatable_metadata);
-    println!("Roles:     {:?}", on_chain.roles.roles.keys().collect::<Vec<_>>());
-    println!("Tags:      {:?}", on_chain.tags.tag_map.keys().collect::<Vec<_>>());
+    let on_chain_trail = regulator_trail.get().await?;
+    println!("Protocol: {:?}", on_chain_trail.immutable_metadata);
+    println!("Phase:     {:?}", on_chain_trail.updatable_metadata);
+    println!("Roles:     {:?}", on_chain_trail.roles.roles.keys().collect::<Vec<_>>());
+    println!(
+        "Tags:      {:?}",
+        on_chain_trail.tags.tag_map.keys().collect::<Vec<_>>()
+    );
 
-    let first_page = regulator_handle.records().list_page(None, 20).await?;
-    println!("\nVerified records ({} total):", first_page.records.len());
-    for (seq, record) in &first_page.records {
+    let verified_records_page = regulator_trail.records().list_page(None, 20).await?;
+    println!("\nVerified records ({} total):", verified_records_page.records.len());
+    for (seq, record) in &verified_records_page.records {
         println!("  #{} | tag={:?} | {:?}", seq, record.tag, record.metadata);
     }
 
@@ -327,27 +355,27 @@ async fn main() -> Result<()> {
     // 10. Assertions
     // -----------------------------------------------------------------------
     ensure!(
-        first_page.records.len() == 5,
+        verified_records_page.records.len() == 5,
         "expected 5 records (initial + enrolled + safety + efficacy + pk)"
     );
     ensure!(
-        on_chain.tags.tag_map.contains_key("pk"),
+        on_chain_trail.tags.tag_map.contains_key("pk"),
         "the 'pk' tag must exist after mid-study amendment"
     );
     ensure!(
-        on_chain.locking_config.delete_record_window == LockingWindow::CountBased { count: 3 },
+        on_chain_trail.locking_config.delete_record_window == LockingWindow::CountBased { count: 3 },
         "deletion window must remain count-based with count 3"
     );
     ensure!(
-        on_chain.locking_config.delete_trail_lock == TimeLock::Infinite,
+        on_chain_trail.locking_config.delete_trail_lock == TimeLock::Infinite,
         "delete-trail lock must be Infinite"
     );
     ensure!(
-        matches!(on_chain.locking_config.write_lock, TimeLock::UnlockAtMs(_)),
+        matches!(on_chain_trail.locking_config.write_lock, TimeLock::UnlockAtMs(_)),
         "write lock must be UnlockAtMs"
     );
     ensure!(
-        on_chain.updatable_metadata.as_deref() == Some("Phase: Data Review"),
+        on_chain_trail.updatable_metadata.as_deref() == Some("Phase: Data Review"),
         "study phase must be 'Data Review'"
     );
 

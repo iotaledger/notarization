@@ -450,7 +450,7 @@ async fn delete_records_batch_then_delete_audit_trail_roundtrip() -> anyhow::Res
     let created = client
         .create_trail()
         .with_initial_record(InitialRecord::new(Data::text("trail-batch-delete-e2e"), None, None))
-        .with_locking_config(config_with_window(LockingWindow::TimeBased { seconds: 3600 }))
+        .with_locking_config(config_with_window(LockingWindow::None))
         .finish()
         .build_and_execute(&client)
         .await?
