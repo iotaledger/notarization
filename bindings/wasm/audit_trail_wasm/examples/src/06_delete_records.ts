@@ -5,43 +5,29 @@
  * ## Actors
  *
  * - **Admin client**: Creates the trail and sets up the RecordMaintenance role.
- * - **Record maintainer client**: Holds the RecordMaintenance capability. Adds records and then
+ * - **Maintenance admin client**: Holds the RecordMaintenance capability. Adds records and then
  *   deletes them individually and in batch.
  *
  * Demonstrates how to:
- * 1. Create records via a delegated RecordMaintenance role.
+ * 1. Create records using a delegated record-maintenance role.
  * 2. Delete a single record by sequence number.
- * 3. Batch-delete remaining records.
+ * 3. Delete the remaining records in one batch.
  */
 
-import {
-    CapabilityIssueOptions,
-    Data,
-    LockingConfig,
-    LockingWindow,
-    Permission,
-    PermissionSet,
-    TimeLock,
-} from "@iota/audit-trail/node";
+import { CapabilityIssueOptions, Data, Permission, PermissionSet } from "@iota/audit-trail/node";
 import { strict as assert } from "assert";
 import { getFundedClient, TEST_GAS_BUDGET } from "./util";
 
 export async function deleteRecords(): Promise<void> {
     console.log("=== Audit Trail: Delete Records ===\n");
 
-    // `adminClient` creates the trail and delegates record maintenance.
-    // `recordMaintainerClient` adds and deletes records.
+    // Use a maintenance client to show deletes happening through a delegated capability.
     const adminClient = await getFundedClient();
-    const recordMaintainerClient = await getFundedClient();
+    const maintenanceAdminClient = await getFundedClient();
 
     const { output: createdTrail } = await adminClient
         .createTrail()
-        .withTrailMetadata("Delete Records Example", "Trail configured to demonstrate record deletions")
-        .withUpdatableMetadata("Status: Active")
-        .withLockingConfig(
-            new LockingConfig(LockingWindow.withNone(), TimeLock.withNone(), TimeLock.withNone()),
-        )
-        .withInitialRecordString("Seed record", "v0")
+        .withInitialRecordString("Initial record", "event:created")
         .finish()
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(adminClient);
@@ -54,48 +40,51 @@ export async function deleteRecords(): Promise<void> {
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(adminClient);
     await recordMaintenanceRole
-        .issueCapability(new CapabilityIssueOptions(recordMaintainerClient.senderAddress()))
+        .issueCapability(new CapabilityIssueOptions(maintenanceAdminClient.senderAddress()))
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(adminClient);
 
-    const maintenanceRecords = recordMaintainerClient.trail(trailId).records();
+    const maintenanceRecords = maintenanceAdminClient.trail(trailId).records();
 
-    // RecordMaintainer adds records.
-    const firstMaintainedRecord = await maintenanceRecords
-        .add(Data.fromString("First record"), "v1")
+    const firstAddedRecord = await maintenanceRecords
+        .add(Data.fromString("Second record"), "event:received")
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(recordMaintainerClient);
-    const secondMaintainedRecord = await maintenanceRecords
-        .add(Data.fromString("Second record"), "v2")
+        .buildAndExecute(maintenanceAdminClient);
+    const secondAddedRecord = await maintenanceRecords
+        .add(Data.fromString("Third record"), "event:dispatched")
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(recordMaintainerClient);
+        .buildAndExecute(maintenanceAdminClient);
 
     console.log(
-        "Added records",
-        firstMaintainedRecord.output.sequenceNumber,
-        "and",
-        secondMaintainedRecord.output.sequenceNumber,
+        "Trail has records at sequence numbers 0,",
+        firstAddedRecord.output.sequenceNumber,
+        ",",
+        secondAddedRecord.output.sequenceNumber,
     );
+    assert.equal(await maintenanceRecords.recordCount(), 3n);
 
-    // Delete a single record.
     const deletedRecord = await maintenanceRecords
-        .delete(firstMaintainedRecord.output.sequenceNumber)
+        .delete(firstAddedRecord.output.sequenceNumber)
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(recordMaintainerClient);
+        .buildAndExecute(maintenanceAdminClient);
     console.log("Deleted record", deletedRecord.output.sequenceNumber);
 
     let recordCount = await maintenanceRecords.recordCount();
     console.log("Record count after single delete:", recordCount);
-    assert.equal(recordCount, 2n); // seed + secondMaintainedRecord
+    assert.equal(recordCount, 2n);
+    await assert.rejects(
+        () => maintenanceRecords.get(firstAddedRecord.output.sequenceNumber),
+        "deleted record should no longer be readable",
+    );
 
-    // Batch-delete remaining records.
-    const batchDeletedRecords = await maintenanceRecords
+    // Batch delete skips locked records and returns how many records were removed.
+    const deletedCount = await maintenanceRecords
         .deleteBatch(BigInt(10))
         .withGasBudget(TEST_GAS_BUDGET)
-        .buildAndExecute(recordMaintainerClient);
-    console.log("Batch deleted", batchDeletedRecords.output, "records");
+        .buildAndExecute(maintenanceAdminClient);
 
+    console.log("Batch deleted", deletedCount.output, "remaining records.");
+    assert.equal(deletedCount.output, 2n);
     recordCount = await maintenanceRecords.recordCount();
-    assert.equal(recordCount, 0n, "all records should be deleted after batch");
-    console.log("Record count after batch delete:", recordCount);
+    assert.equal(recordCount, 0n);
 }

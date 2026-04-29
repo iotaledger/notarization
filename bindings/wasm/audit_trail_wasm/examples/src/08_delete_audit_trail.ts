@@ -5,8 +5,8 @@
  * ## Actors
  *
  * - **Admin client**: Creates the trail and sets up the MaintenanceAdmin role.
- * - **Maintenance admin client**: Holds delete permissions. Attempts (and fails) to delete the
- *   non-empty trail, then batch-deletes all records before removing the trail itself.
+ * - **Maintenance admin client**: Holds delete permissions. Attempts (and fails) to delete the non-empty trail, then
+ *   batch-deletes all records before removing the trail itself.
  *
  * Demonstrates how to:
  * 1. Show that a non-empty trail cannot be deleted.
@@ -21,8 +21,7 @@ import { getFundedClient, TEST_GAS_BUDGET } from "./util";
 export async function deleteAuditTrail(): Promise<void> {
     console.log("=== Audit Trail: Delete Trail ===\n");
 
-    // `adminClient` creates the trail and delegates trail maintenance.
-    // `maintenanceAdminClient` empties and deletes the trail.
+    // Use a maintenance client to keep deletion permissions separate from trail creation.
     const adminClient = await getFundedClient();
     const maintenanceAdminClient = await getFundedClient();
 
@@ -47,7 +46,6 @@ export async function deleteAuditTrail(): Promise<void> {
 
     const maintenanceTrail = maintenanceAdminClient.trail(trailId);
 
-    // 1. Attempting to delete a non-empty trail should fail.
     let deleteWhileNonEmptySucceeded = false;
     try {
         await maintenanceTrail
@@ -61,18 +59,17 @@ export async function deleteAuditTrail(): Promise<void> {
     assert.equal(deleteWhileNonEmptySucceeded, false, "a trail must be empty before deletion");
     console.log("Deleting the non-empty trail failed as expected.\n");
 
-    // 2. Batch-delete all records.
-    const deletedRecords = await maintenanceTrail
+    // Batch delete skips locked records and returns how many records were removed before trail deletion.
+    const deletedCount = await maintenanceTrail
         .records()
         .deleteBatch(BigInt(10))
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(maintenanceAdminClient);
-    console.log("Deleted", deletedRecords.output, "record(s) before trail removal.\n");
+    console.log("Deleted", deletedCount.output, "record before trail removal.\n");
 
     const count = await maintenanceTrail.records().recordCount();
-    assert.equal(count, 0n, "trail should have no records after batch delete");
+    assert.equal(count, 0n);
 
-    // 3. Delete the now-empty trail.
     const deletedTrail = await maintenanceTrail
         .deleteAuditTrail()
         .withGasBudget(TEST_GAS_BUDGET)
