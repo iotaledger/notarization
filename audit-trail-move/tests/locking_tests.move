@@ -948,20 +948,20 @@ fun test_time_based_locking_still_locked_before_expiry() {
 }
 
 #[test]
-fun test_delete_records_batch_bypasses_record_lock() {
+fun test_delete_records_batch_skips_locked_records() {
     let admin = @0xAD;
     let mut scenario = ts::begin(admin);
 
     {
         let locking_config = locking::new(
-            locking::window_time_based(3600),
+            locking::window_count_based(1),
             timelock::none(),
             timelock::none(),
         );
         let (admin_cap, _) = setup_test_audit_trail(
             &mut scenario,
             locking_config,
-            std::option::some(record::new_text(string::utf8(b"Locked"))),
+            std::option::some(record::new_text(string::utf8(b"Record 0"))),
         );
         transfer::public_transfer(admin_cap, admin);
     };
@@ -969,39 +969,62 @@ fun test_delete_records_batch_bypasses_record_lock() {
     ts::next_tx(&mut scenario, admin);
     {
         let (admin_cap, mut trail, mut clock) = fetch_capability_trail_and_clock(&mut scenario);
-        let delete_all_role = string::utf8(b"DeleteAllRecordsAdmin");
-        let delete_all_perms = permission::from_vec(vector[permission::delete_all_records()]);
+        let record_maintenance_role = string::utf8(b"RecordMaintenanceAdmin");
+        let record_maintenance_perms = permission::from_vec(vector[
+            permission::add_record(),
+            permission::delete_all_records(),
+        ]);
 
         trail
             .access_mut()
             .create_role(
                 &admin_cap,
-                delete_all_role,
-                delete_all_perms,
+                record_maintenance_role,
+                record_maintenance_perms,
                 std::option::none(),
                 &clock,
                 ts::ctx(&mut scenario),
             );
 
-        let delete_all_cap = test_utils::new_capability_without_restrictions(
+        let record_maintenance_cap = test_utils::new_capability_without_restrictions(
             trail.access_mut(),
             &admin_cap,
-            &string::utf8(b"DeleteAllRecordsAdmin"),
+            &string::utf8(b"RecordMaintenanceAdmin"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        trail.add_record(
+            &record_maintenance_cap,
+            record::new_text(string::utf8(b"Record 1")),
+            std::option::none(),
+            std::option::none(),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+        trail.add_record(
+            &record_maintenance_cap,
+            record::new_text(string::utf8(b"Record 2")),
+            std::option::none(),
+            std::option::none(),
             &clock,
             ts::ctx(&mut scenario),
         );
 
         clock.set_for_testing(initial_time_for_testing() + 1000);
         let deleted = trail.delete_records_batch(
-            &delete_all_cap,
+            &record_maintenance_cap,
             10,
             &clock,
             ts::ctx(&mut scenario),
         );
-        assert!(deleted == 1, 0);
-        assert!(trail.record_count() == 0, 1);
+        assert!(deleted == 2, 0);
+        assert!(trail.record_count() == 1, 1);
+        assert!(!trail.has_record(0), 2);
+        assert!(!trail.has_record(1), 3);
+        assert!(trail.has_record(2), 4);
 
-        delete_all_cap.destroy_for_testing();
+        record_maintenance_cap.destroy_for_testing();
         cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
     };
 

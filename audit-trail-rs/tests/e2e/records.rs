@@ -964,7 +964,7 @@ async fn delete_records_batch_respects_limit_and_deletes_oldest_first() -> anyho
     let created = client
         .create_trail()
         .with_initial_record(InitialRecord::new(Data::text("batch-initial"), None, None))
-        .with_locking_config(config_with_window(LockingWindow::TimeBased { seconds: 3600 }))
+        .with_locking_config(config_with_window(LockingWindow::None))
         .finish()
         .build_and_execute(&client)
         .await?
@@ -1016,6 +1016,58 @@ async fn delete_records_batch_respects_limit_and_deletes_oldest_first() -> anyho
         .await?
         .output;
     assert_eq!(deleted_empty, 0, "deleting from an empty trail should return zero");
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn delete_records_batch_skips_locked_records() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let created = client
+        .create_trail()
+        .with_initial_record(InitialRecord::new(Data::text("batch-skip-locked-initial"), None, None))
+        .with_locking_config(config_with_window(LockingWindow::CountBased { count: 1 }))
+        .finish()
+        .build_and_execute(&client)
+        .await?
+        .output;
+
+    let trail_id = created.trail_id;
+    let records = client.trail(trail_id).records();
+
+    grant_role_capability(
+        &client,
+        trail_id,
+        "BatchRecordMaintenance",
+        [Permission::AddRecord, Permission::DeleteAllRecords],
+    )
+    .await?;
+
+    records
+        .add(Data::text("batch-skip-locked-second"), None, None)
+        .build_and_execute(&client)
+        .await?;
+    records
+        .add(Data::text("batch-skip-locked-third"), None, None)
+        .build_and_execute(&client)
+        .await?;
+
+    let deleted = records
+        .delete_records_batch(10)
+        .build_and_execute(&client)
+        .await?
+        .output;
+    assert_eq!(deleted, 2, "batch delete should skip the count-locked tail record");
+    assert_eq!(records.record_count().await?, 1);
+    assert!(
+        records.get(0).await.is_err(),
+        "oldest unlocked record should be deleted"
+    );
+    assert!(
+        records.get(1).await.is_err(),
+        "second unlocked record should be deleted"
+    );
+    assert_text_data(records.get(2).await?.data, "batch-skip-locked-third");
 
     Ok(())
 }
