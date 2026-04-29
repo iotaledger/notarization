@@ -17,7 +17,7 @@ async-trait = "0.1"
 bcs = "0.1"
 chrono = { version = "0.4", default-features = false }
 hyper = "1"
-iota-sdk = { git = "https://github.com/iotaledger/iota.git", package = "iota-sdk", tag = "v1.19.1" }
+iota-sdk = { git = "https://github.com/iotaledger/iota.git", package = "iota-sdk", rev = "96196f0da231883ec69cda04892c600ef6afa982" }
 iota_interaction = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/tf-compoenents-dev", default-features = false, package = "iota_interaction" }
 iota_interaction_rust = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/tf-compoenents-dev", default-features = false, package = "iota_interaction_rust" }
 iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/tf-compoenents-dev", default-features = false, package = "iota_interaction_ts" }
