@@ -27,6 +27,13 @@ on:
       retag-tag:
         description: "RETAG - Tag to set"
         required: false
+      package:
+        description: "Which package to publish/retag"
+        required: true
+        type: choice
+        options:
+          - notarization
+          - audit-trail
 
 permissions:
   id-token: write # Required for OIDC
@@ -63,8 +70,8 @@ jobs:
             check_vars retag_version retag_tag
           fi
 
-  build-wasm:
-    if: ${{ github.event.inputs.operation == 'publish' }}
+  build-wasm-notarization:
+    if: ${{ github.event.inputs.operation == 'publish' && github.event.inputs.package == 'notarization' }}
     needs: [check-inputs]
     uses: "./.github/workflows/shared-build-wasm.yml"
     with:
@@ -72,10 +79,21 @@ jobs:
       ref: ${{ github.event.inputs.publish-branch }}
       output-artifact-name: notarization-wasm-bindings-build
 
-  release-wasm:
-    if: ${{ github.event.inputs.operation == 'publish' }}
+  build-wasm-audit-trail:
+    if: ${{ github.event.inputs.operation == 'publish' && github.event.inputs.package == 'audit-trail' }}
+    needs: [check-inputs]
+    uses: "./.github/workflows/shared-build-wasm.yml"
+    with:
+      run-unit-tests: false
+      ref: ${{ github.event.inputs.publish-branch }}
+      output-artifact-name: audit-trail-wasm-bindings-build
+      wasm-package-dir: bindings/wasm/audit_trail_wasm
+      wasm-crate-name: audit_trail_wasm
+
+  release-wasm-notarization:
+    if: ${{ github.event.inputs.operation == 'publish' && github.event.inputs.package == 'notarization' }}
     runs-on: ubuntu-latest
-    needs: [build-wasm]
+    needs: [build-wasm-notarization]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -89,6 +107,23 @@ jobs:
           working-directory: ./bindings/wasm/notarization_wasm
           tag: ${{ github.event.inputs.publish-tag }}
 
+  release-wasm-audit-trail:
+    if: ${{ github.event.inputs.operation == 'publish' && github.event.inputs.package == 'audit-trail' }}
+    runs-on: ubuntu-latest
+    needs: [build-wasm-audit-trail]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.publish-branch }}
+      - name: Release to npm
+        uses: "./.github/actions/publish/wasm"
+        with:
+          dry-run: ${{ github.event.inputs.publish-dry-run }}
+          input-artifact-name: audit-trail-wasm-bindings-build
+          working-directory: ./bindings/wasm/audit_trail_wasm
+          tag: ${{ github.event.inputs.publish-tag }}
+
   retag-wasm:
     if: ${{ github.event.inputs.operation == 'retag' }}
     needs: [check-inputs]
@@ -100,7 +135,14 @@ jobs:
           node-version: "lts/*"
           registry-url: "https://registry.npmjs.org"
 
-      - name: Run dist-tag
+      - name: Run dist-tag notarization
+        if: ${{ github.event.inputs.package == 'notarization' }}
         shell: bash
         run: |
           npm dist-tag add @iota/notarization@${{ github.event.inputs.retag-version }} ${{ github.event.inputs.retag-tag }}
+
+      - name: Run dist-tag audit-trail
+        if: ${{ github.event.inputs.package == 'audit-trail' }}
+        shell: bash
+        run: |
+          npm dist-tag add @iota/audit-trail@${{ github.event.inputs.retag-version }} ${{ github.event.inputs.retag-tag }}

@@ -19,6 +19,16 @@ on:
         description: "Name used for the output build artifact"
         required: true
         type: string
+      wasm-package-dir:
+        description: "Relative path to the wasm package directory (e.g. bindings/wasm/notarization_wasm)"
+        required: false
+        type: string
+        default: "bindings/wasm/notarization_wasm"
+      wasm-crate-name:
+        description: "Name of the wasm crate (e.g. notarization_wasm)"
+        required: false
+        type: string
+        default: "notarization_wasm"
 jobs:
   build-wasm:
     defaults:
@@ -52,6 +62,7 @@ jobs:
           sccache-enabled: true
           sccache-path: ${{ matrix.sccache-path }}
           target-cache-path: bindings/wasm/target
+          target-cache-key-suffix: ${{ inputs.wasm-crate-name }}
 
       # Download a pre-compiled wasm-bindgen binary.
       - name: Install wasm-bindgen-cli
@@ -71,16 +82,16 @@ jobs:
 
       - name: Install JS dependencies
         run: npm ci
-        working-directory: bindings/wasm/notarization_wasm
+        working-directory: ${{ inputs.wasm-package-dir }}
 
       - name: Build WASM bindings
         run: npm run build
-        working-directory: bindings/wasm/notarization_wasm
+        working-directory: ${{ inputs.wasm-package-dir }}
 
       - name: Run Node unit tests
         if: ${{ inputs.run-unit-tests }}
         run: npm run test:unit:node
-        working-directory: bindings/wasm/notarization_wasm
+        working-directory: ${{ inputs.wasm-package-dir }}
 
       - name: Stop sccache
         uses: "./.github/actions/rust/sccache/stop"
@@ -92,9 +103,9 @@ jobs:
         with:
           name: ${{ inputs.output-artifact-name }}
           path: |
-            bindings/wasm/notarization_wasm/node
-            bindings/wasm/notarization_wasm/web
-            bindings/wasm/notarization_wasm/examples/dist
-            bindings/wasm/notarization_wasm/docs
+            ${{ inputs.wasm-package-dir }}/node
+            ${{ inputs.wasm-package-dir }}/web
+            ${{ inputs.wasm-package-dir }}/examples/dist
+            ${{ inputs.wasm-package-dir }}/docs
           if-no-files-found: error
           retention-days: 1
