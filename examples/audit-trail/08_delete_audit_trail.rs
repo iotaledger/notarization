@@ -74,14 +74,14 @@ async fn main() -> Result<()> {
     ensure!(delete_while_non_empty.is_err(), "a trail must be empty before deletion");
     println!("Deleting the non-empty trail failed as expected.\n");
 
-    // Batch delete returns the exact sequence numbers removed before trail deletion.
-    let deleted_sequence_numbers = maintenance_trail
+    // Batch delete skips locked records and returns how many records were removed before trail deletion.
+    let deleted_count = maintenance_trail
         .records()
         .delete_records_batch(10)
         .build_and_execute(&maintenance_admin_client)
         .await?
         .output;
-    println!("Deleted records {deleted_sequence_numbers:?} before trail removal.\n");
+    println!("Deleted {deleted_count} record before trail removal.\n");
 
     ensure!(maintenance_trail.records().record_count().await? == 0);
 

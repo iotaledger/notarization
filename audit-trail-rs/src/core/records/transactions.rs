@@ -213,8 +213,8 @@ impl Transaction for DeleteRecord {
 
 /// Transaction that deletes multiple records in a batch operation.
 ///
-/// The Move entry point deletes records from the front of the trail up to `limit` and reports the number of
-/// deleted records through the emitted `RecordDeleted` events.
+/// The Move entry point skips locked records, deletes up to `limit` unlocked records in trail order, and reports
+/// the number of deleted records through the emitted `RecordDeleted` events.
 #[derive(Debug, Clone)]
 pub struct DeleteRecordsBatch {
     /// Trail object ID containing the records.
