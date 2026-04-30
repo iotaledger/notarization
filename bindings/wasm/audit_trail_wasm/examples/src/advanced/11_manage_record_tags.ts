@@ -96,10 +96,13 @@ export async function manageRecordTags(): Promise<void> {
     }
     assert.equal(removeFinanceSucceeded, false, "a tag referenced by a role or record must not be removable");
 
-    // TagAdmin removes "legal" tag — should succeed because nothing uses it.
-    await tagAdminClient.trail(trailId).tags().remove("legal").withGasBudget(TEST_GAS_BUDGET).buildAndExecute(
-        tagAdminClient,
-    );
+    // TagAdmin removes "legal" tag because nothing uses it.
+    await tagAdminClient
+        .trail(trailId)
+        .tags()
+        .remove("legal")
+        .withGasBudget(TEST_GAS_BUDGET)
+        .buildAndExecute(tagAdminClient);
 
     onChainTrail = await adminClient.trail(trailId).get();
     console.log("Registry after removing \"legal\":", onChainTrail.tags.map((t) => t.tag), "\n");
