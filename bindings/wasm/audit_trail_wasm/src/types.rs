@@ -6,8 +6,9 @@ use std::collections::{HashMap, HashSet};
 use audit_trail::core::types::{
     AuditTrailCreated, AuditTrailDeleted, Capability, CapabilityAdminPermissions, CapabilityDestroyed,
     CapabilityIssueOptions, CapabilityIssued, CapabilityRevoked, Data, ImmutableMetadata, LockingConfig, LockingWindow,
-    PaginatedRecord, Permission, PermissionSet, Record, RecordAdded, RecordCorrection, RecordDeleted, Role,
-    RoleAdminPermissions, RoleCreated, RoleDeleted, RoleMap, RoleTags, RoleUpdated, TimeLock,
+    PaginatedRecord, Permission, PermissionSet, Record, RecordAdded, RecordCorrection, RecordDeleted,
+    RevokedCapabilitiesCleanedUp, Role, RoleAdminPermissions, RoleCreated, RoleDeleted, RoleMap, RoleTags, RoleUpdated,
+    TimeLock,
 };
 use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::types::collection_types::LinkedTable;
@@ -708,6 +709,30 @@ impl From<CapabilityRevoked> for WasmCapabilityRevoked {
             target_key: value.target_key.to_string(),
             capability_id: value.capability_id.to_string(),
             valid_until: value.valid_until,
+        }
+    }
+}
+
+/// Event payload emitted when expired revoked-capability entries are cleaned up.
+#[wasm_bindgen(js_name = RevokedCapabilitiesCleanedUp, getter_with_clone, inspectable)]
+#[derive(Clone)]
+pub struct WasmRevokedCapabilitiesCleanedUp {
+    #[wasm_bindgen(js_name = trailId)]
+    pub trail_id: String,
+    #[wasm_bindgen(js_name = cleanedCount)]
+    pub cleaned_count: u64,
+    #[wasm_bindgen(js_name = cleanedBy)]
+    pub cleaned_by: WasmIotaAddress,
+    pub timestamp: u64,
+}
+
+impl From<RevokedCapabilitiesCleanedUp> for WasmRevokedCapabilitiesCleanedUp {
+    fn from(value: RevokedCapabilitiesCleanedUp) -> Self {
+        Self {
+            trail_id: value.trail_id.to_string(),
+            cleaned_count: value.cleaned_count,
+            cleaned_by: value.cleaned_by.to_string(),
+            timestamp: value.timestamp,
         }
     }
 }
