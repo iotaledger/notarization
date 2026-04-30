@@ -26,9 +26,8 @@ use wasm_bindgen::prelude::*;
 use crate::builder::WasmAuditTrailBuilder;
 use crate::types::{
     WasmAuditTrailDeleted, WasmCapabilityDestroyed, WasmCapabilityIssued, WasmCapabilityRevoked, WasmEmpty,
-    WasmImmutableMetadata, WasmLinkedTable, WasmLockingConfig, WasmRecordAdded, WasmRecordDeleted,
-    WasmRecordTagEntry, WasmRevokedCapabilitiesCleanedUp, WasmRoleCreated, WasmRoleDeleted, WasmRoleMap,
-    WasmRoleUpdated,
+    WasmImmutableMetadata, WasmLinkedTable, WasmLockingConfig, WasmRecordAdded, WasmRecordDeleted, WasmRecordTagEntry,
+    WasmRevokedCapabilitiesCleanedUp, WasmRoleCreated, WasmRoleDeleted, WasmRoleMap, WasmRoleUpdated,
 };
 
 /// Read-only view of an on-chain audit trail for wasm consumers.

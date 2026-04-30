@@ -7,8 +7,8 @@ use audit_trail::core::types::{
     AuditTrailCreated, AuditTrailDeleted, Capability, CapabilityAdminPermissions, CapabilityDestroyed,
     CapabilityIssueOptions, CapabilityIssued, CapabilityRevoked, Data, ImmutableMetadata, LockingConfig, LockingWindow,
     PaginatedRecord, Permission, PermissionSet, Record, RecordAdded, RecordCorrection, RecordDeleted,
-    RevokedCapabilitiesCleanedUp, Role,
-    RoleAdminPermissions, RoleCreated, RoleDeleted, RoleMap, RoleTags, RoleUpdated, TimeLock,
+    RevokedCapabilitiesCleanedUp, Role, RoleAdminPermissions, RoleCreated, RoleDeleted, RoleMap, RoleTags, RoleUpdated,
+    TimeLock,
 };
 use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::types::collection_types::LinkedTable;
