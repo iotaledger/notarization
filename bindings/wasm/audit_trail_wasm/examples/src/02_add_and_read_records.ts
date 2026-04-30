@@ -58,6 +58,10 @@ export async function addAndReadRecords(): Promise<void> {
     assert.equal(seedRecord.data.toString(), "seed record");
     assert.equal(secondRecord.data.toString(), "record 2");
 
+    const count = await recordAdminRecords.recordCount();
+    console.log(`Current record count: ${count}`);
+    assert.equal(count, 3n, `expected 3 records, got ${count}`);
+
     // Pagination uses the previous page cursor to continue from the next record.
     const firstPage = await recordAdminRecords.listPage(undefined, 2);
     const secondPage = await recordAdminRecords.listPage(firstPage.nextCursor, 2);
