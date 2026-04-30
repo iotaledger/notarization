@@ -23,11 +23,7 @@ use audit_trail::{
 };
 use iota::{clock::{Self, Clock}, event, linked_table::{Self, LinkedTable}, vec_set::VecSet};
 use std::string::String;
-use tf_components::{
-    capability::Capability,
-    role_map::{Self, RoleMap},
-    timelock::TimeLock
-};
+use tf_components::{capability::Capability, role_map::{Self, RoleMap}, timelock::TimeLock};
 
 // ===== Errors =====
 #[error]
