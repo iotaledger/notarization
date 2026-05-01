@@ -1,4 +1,4 @@
-# IOTA Single Notarization Rust SDK
+# IOTA Single Notarization
 
 The Single Notarization Rust SDK is the Rust client for individual locked and dynamic notarizations in the IOTA
 Notarization Suite.
