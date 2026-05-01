@@ -105,15 +105,15 @@ async fn main() -> Result<()> {
         "deleted record should no longer be readable"
     );
 
-    // Batch delete skips locked records and returns how many records were removed.
-    let deleted_count = maintenance_records
+    // Batch delete skips locked records and returns the deleted sequence numbers.
+    let deleted_remaining = maintenance_records
         .delete_records_batch(10)
         .build_and_execute(&maintenance_admin_client)
         .await?
         .output;
 
-    println!("Batch deleted {deleted_count} remaining records.");
-    ensure!(deleted_count == 2);
+    println!("Batch deleted the remaining sequence numbers: {deleted_remaining:?}");
+    ensure!(deleted_remaining == vec![0, second_added_record.sequence_number]);
     ensure!(maintenance_records.record_count().await? == 0);
 
     Ok(())

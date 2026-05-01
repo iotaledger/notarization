@@ -59,13 +59,13 @@ export async function deleteAuditTrail(): Promise<void> {
     assert.equal(deleteWhileNonEmptySucceeded, false, "a trail must be empty before deletion");
     console.log("Deleting the non-empty trail failed as expected.\n");
 
-    // Batch delete skips locked records and returns how many records were removed before trail deletion.
-    const deletedCount = await maintenanceTrail
+    // Batch delete skips locked records and returns the deleted sequence numbers before trail deletion.
+    const deletedRecords = await maintenanceTrail
         .records()
         .deleteBatch(BigInt(10))
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(maintenanceAdminClient);
-    console.log("Deleted", deletedCount.output, "record before trail removal.\n");
+    console.log("Deleted record sequence numbers", deletedRecords.output, "before trail removal.\n");
 
     const count = await maintenanceTrail.records().recordCount();
     assert.equal(count, 0n);

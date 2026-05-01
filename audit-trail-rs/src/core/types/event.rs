@@ -120,6 +120,21 @@ pub struct CapabilityRevoked {
     pub valid_until: u64,
 }
 
+/// Event emitted when expired revoked-capability denylist entries are removed.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RevokedCapabilitiesCleanedUp {
+    /// Trail object ID whose denylist was pruned.
+    pub trail_id: ObjectID,
+    /// Number of expired entries removed by this cleanup call.
+    #[serde(deserialize_with = "deserialize_number_from_string")]
+    pub cleaned_count: u64,
+    /// Address that triggered the cleanup.
+    pub cleaned_by: IotaAddress,
+    /// Millisecond event timestamp.
+    #[serde(deserialize_with = "deserialize_number_from_string")]
+    pub timestamp: u64,
+}
+
 /// Event emitted when a role is created.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct RoleCreated {

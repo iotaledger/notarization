@@ -479,7 +479,7 @@ async fn delete_records_batch_then_delete_audit_trail_roundtrip() -> anyhow::Res
         .build_and_execute(&client)
         .await?
         .output;
-    assert_eq!(deleted, 1, "initial record should be deleted in batch");
+    assert_eq!(deleted, vec![0], "initial record should be deleted in batch");
     assert_eq!(trail.records().record_count().await?, 0);
 
     let deleted_trail = trail.delete_audit_trail().build_and_execute(&client).await?.output;
