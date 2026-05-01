@@ -1,0 +1,44 @@
+[package]
+name = "audit_trail_wasm"
+version = "0.1.0-alpha"
+authors = ["IOTA Stiftung"]
+edition = "2021"
+homepage = "https://www.iota.org"
+keywords = ["iota", "tangle", "audit-trail", "wasm"]
+license = "Apache-2.0"
+publish = false
+readme = "README.md"
+repository = "https://github.com/iotaledger/notarization.git"
+resolver = "2"
+description = "Web Assembly bindings for the audit_trail crate."
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+anyhow = "1.0.95"
+audit_trail = { path = "../../../audit-trail-rs", default-features = false, features = ["gas-station", "default-http-client"] }
+bcs = "0.1.6"
+console_error_panic_hook = { version = "0.1" }
+iota_interaction = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/tf-compoenents-dev", package = "iota_interaction", default-features = false }
+iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/tf-compoenents-dev", package = "iota_interaction_ts" }
+js-sys = { version = "0.3.61" }
+product_common = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/tf-compoenents-dev", package = "product_common", features = ["core-client", "transaction", "bindings", "binding-utils", "gas-station", "default-http-client"] }
+serde = { version = "1.0", features = ["derive"] }
+serde-wasm-bindgen = "0.6.5"
+tokio = { version = "1.49.0", default-features = false, features = ["sync"] }
+wasm-bindgen = { version = "0.2.100", features = ["serde-serialize"] }
+wasm-bindgen-futures = { version = "0.4", default-features = false }
+
+[target.'cfg(all(target_arch = "wasm32", not(target_os = "wasi")))'.dependencies]
+getrandom = { version = "0.3", default-features = false, features = ["wasm_js"] }
+
+[profile.release]
+opt-level = 's'
+lto = true
+
+[lints.clippy]
+empty_docs = "allow"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(wasm_bindgen_unstable_test_coverage)'] }

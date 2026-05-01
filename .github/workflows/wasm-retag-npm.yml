@@ -9,6 +9,13 @@ on:
       version:
         description: "version to set"
         required: true
+      package:
+        description: "Which package to retag"
+        required: true
+        type: choice
+        options:
+          - notarization
+          - audit-trail
 
 jobs:
   release-wasm:
@@ -21,9 +28,18 @@ jobs:
           node-version: "20.x"
           registry-url: "https://registry.npmjs.org"
 
-      - name: Run dist-tag
+      - name: Run dist-tag notarization
+        if: ${{ github.event.inputs.package == 'notarization' }}
         shell: sh
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_NOTARIZATION_TOKEN }}
         run: |
           npm dist-tag add @iota/notarization@${{ github.event.inputs.version }} ${{ github.event.inputs.tag }}
+
+      - name: Run dist-tag audit-trail
+        if: ${{ github.event.inputs.package == 'audit-trail' }}
+        shell: sh
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_NOTARIZATION_TOKEN }}
+        run: |
+          npm dist-tag add @iota/audit-trail@${{ github.event.inputs.version }} ${{ github.event.inputs.tag }}

@@ -8,6 +8,9 @@ on:
       version:
         description: "Version to publish docs under (e.g. `v1.2.3-dev.1`)"
         required: true
+      ref:
+        description: "Optional git ref to checkout before building docs"
+        required: false
 
 env:
   GH_TOKEN: ${{ github.token }}
@@ -16,20 +19,34 @@ permissions:
   actions: "write"
 
 jobs:
-  build-wasm:
+  build-wasm-notarization:
     uses: "./.github/workflows/shared-build-wasm.yml"
     with:
       run-unit-tests: false
       ref: ${{ inputs.ref }}
       output-artifact-name: notarization-docs
 
+  build-wasm-audit-trail:
+    uses: "./.github/workflows/shared-build-wasm.yml"
+    with:
+      run-unit-tests: false
+      ref: ${{ inputs.ref }}
+      output-artifact-name: audit-trail-docs
+      wasm-package-dir: bindings/wasm/audit_trail_wasm
+      wasm-crate-name: audit_trail_wasm
+
   upload-docs:
     runs-on: ubuntu-latest
-    needs: build-wasm
+    needs: [build-wasm-notarization, build-wasm-audit-trail]
     steps:
       - uses: actions/download-artifact@v4
         with:
           name: notarization-docs
+          path: notarization-docs
+      - uses: actions/download-artifact@v4
+        with:
+          name: audit-trail-docs
+          path: audit-trail-docs
       - name: Get release version
         id: get_release_version
         run: |
@@ -42,12 +59,21 @@ jobs:
           echo VERSION=$VERSION >> $GITHUB_OUTPUT
       - name: Compress generated docs
         run: |
-          tar czvf wasm.tar.gz notarization/docs/*
+          tar czvf wasm.tar.gz notarization-docs/docs/*
+          tar czvf audit-trail-wasm.tar.gz audit-trail-docs/docs/*
 
-      - name: Upload docs to AWS S3
+      - name: Upload notarization docs to AWS S3
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_IOTA_WIKI }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_IOTA_WIKI }}
           AWS_DEFAULT_REGION: "eu-central-1"
         run: |
           aws s3 cp wasm.tar.gz s3://files.iota.org/iota-wiki/iota-notarization/${{ steps.get_release_version.outputs.VERSION }}/ --acl public-read
+
+      - name: Upload audit trail docs to AWS S3
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_IOTA_WIKI }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_IOTA_WIKI }}
+          AWS_DEFAULT_REGION: "eu-central-1"
+        run: |
+          aws s3 cp audit-trail-wasm.tar.gz s3://files.iota.org/iota-wiki/iota-audit-trail/${{ steps.get_release_version.outputs.VERSION }}/ --acl public-read
