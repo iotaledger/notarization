@@ -568,7 +568,16 @@ async fn cleanup_revoked_capabilities_removes_expired_entries() -> anyhow::Resul
     let before_cleanup = trail.get().await?;
     assert_eq!(before_cleanup.roles.revoked_capabilities.size, 1);
 
-    access.cleanup_revoked_capabilities().build_and_execute(&client).await?;
+    let cleaned = access
+        .cleanup_revoked_capabilities()
+        .build_and_execute(&client)
+        .await?
+        .output;
+
+    assert_eq!(cleaned.trail_id, trail_id);
+    assert_eq!(cleaned.cleaned_count, 1);
+    assert_eq!(cleaned.cleaned_by, client.sender_address());
+    assert!(cleaned.timestamp > 0);
 
     let after_cleanup = trail.get().await?;
     assert_eq!(after_cleanup.roles.revoked_capabilities.size, 0);
