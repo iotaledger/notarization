@@ -71,19 +71,19 @@ Use **Audit Trails** when you need a structured record history with permissions,
 
 ## Suite Components
 
-| Component            | Best for                                                                 | Move Package                               | Rust SDK                               | Wasm SDK                                                 |
-| -------------------- | ------------------------------------------------------------------------ | ------------------------------------------ | -------------------------------------- | -------------------------------------------------------- |
-| Single Notarization  | Individual locked or dynamic notarizations for documents, hashes, and state | [`notarization-move`](./notarization-move) | [`notarization-rs`](./notarization-rs) | [`notarization_wasm`](./bindings/wasm/notarization_wasm) |
-| Audit Trails         | Shared sequential records with roles, capabilities, tagging, and locking | [`audit-trail-move`](./audit-trail-move)   | [`audit-trail-rs`](./audit-trail-rs)   | [`audit_trail_wasm`](./bindings/wasm/audit_trail_wasm)   |
+| Component           | Best for                                                                    | Move Package                               | Rust SDK                               | Wasm SDK                                                 |
+| ------------------- | --------------------------------------------------------------------------- | ------------------------------------------ | -------------------------------------- | -------------------------------------------------------- |
+| Single Notarization | Individual locked or dynamic notarizations for documents, hashes, and state | [`notarization-move`](./notarization-move) | [`notarization-rs`](./notarization-rs) | [`notarization_wasm`](./bindings/wasm/notarization_wasm) |
+| Audit Trails        | Shared sequential records with roles, capabilities, tagging, and locking    | [`audit-trail-move`](./audit-trail-move)   | [`audit-trail-rs`](./audit-trail-rs)   | [`audit_trail_wasm`](./bindings/wasm/audit_trail_wasm)   |
 
 ### Which one should I use?
 
-| Need                                                                      | Best fit             |
-| ------------------------------------------------------------------------- | -------------------- |
-| Locked proof object for arbitrary data                                    | Single Notarization  |
-| Dynamic latest-state notarization flow                                    | Single Notarization  |
-| Shared sequential records with roles, capabilities, and record tag policy | Audit Trails         |
-| Team or system audit log with governance and operational controls         | Audit Trails         |
+| Need                                                                      | Best fit            |
+| ------------------------------------------------------------------------- | ------------------- |
+| Locked proof object for arbitrary data                                    | Single Notarization |
+| Dynamic latest-state notarization flow                                    | Single Notarization |
+| Shared sequential records with roles, capabilities, and record tag policy | Audit Trails        |
+| Team or system audit log with governance and operational controls         | Audit Trails        |
 
 ## Documentation And Resources
 
