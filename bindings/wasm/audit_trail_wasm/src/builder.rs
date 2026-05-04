@@ -12,6 +12,13 @@ use crate::trail::WasmCreateTrail;
 use crate::types::WasmLockingConfig;
 
 /// Trail-creation builder exposed to wasm consumers.
+///
+/// The resulting create transaction publishes the trail as a *shared* object, seeds a reserved
+/// `Admin` role with the recommended admin permissions, and transfers a freshly minted initial-admin
+/// capability to the configured admin address. The admin address must be set (either via
+/// `withAdmin` or by constructing the builder from `AuditTrailClient.createTrail()` which seeds it
+/// from the signer); otherwise `finish()` produces a transaction that fails to build. When an
+/// initial record is set, its tag (if any) must already be in the configured record-tag list.
 #[wasm_bindgen(js_name = AuditTrailBuilder, inspectable)]
 pub struct WasmAuditTrailBuilder(pub(crate) AuditTrailBuilder);
 

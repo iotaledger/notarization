@@ -55,6 +55,13 @@ impl TagRegistry {
 }
 
 /// An audit trail stored on-chain.
+///
+/// The trail is a *shared*, tamper-evident object that maintains an ordered
+/// sequence of records. Each record is assigned a unique, auto-incrementing
+/// sequence number that is never reused (the counter does not decrement on
+/// deletion). Access is governed by capability-based RBAC: every mutating
+/// call must present a [`Capability`](super::role_map::Capability) bound to a
+/// role whose permissions cover the operation.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct OnChainAuditTrail {
     /// Unique object ID of the trail.
@@ -82,6 +89,9 @@ pub struct OnChainAuditTrail {
 }
 
 /// Metadata set at trail creation and never updated.
+///
+/// Stored once on the trail object and exposed read-only thereafter. Use
+/// [`OnChainAuditTrail::updatable_metadata`] for the mutable counterpart.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ImmutableMetadata {
     /// Human-readable trail name.

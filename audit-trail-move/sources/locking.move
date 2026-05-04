@@ -12,7 +12,11 @@ use tf_components::timelock::{Self, TimeLock};
 /// UntilDestroyed cannot be used for trail deletion protection.
 const EUntilDestroyedNotSupportedForDeleteTrail: u64 = 0;
 
-/// Defines a locking window (time XOR count based, or none)
+/// Defines a locking window (time XOR count based, or none).
+///
+/// A window describes the period during which a record stays locked against
+/// deletion. Records outside the window may be deleted (subject to remaining
+/// permission and tag checks).
 public enum LockingWindow has copy, drop, store {
     None,
     TimeBased { seconds: u64 },
@@ -48,7 +52,10 @@ public fun window_count_based(count: u64): LockingWindow {
 
 // ===== LockingConfig Constructors =====
 
-/// Create a new locking configuration
+/// Create a new locking configuration.
+///
+/// Aborts with `EUntilDestroyedNotSupportedForDeleteTrail` when `delete_trail_lock` is
+/// `TimeLock::UntilDestroyed`; that variant is reserved for the write lock.
 public fun new(
     delete_record_window: LockingWindow,
     delete_trail_lock: TimeLock,
@@ -109,6 +116,9 @@ public(package) fun set_delete_record_window(config: &mut LockingConfig, window:
 }
 
 /// Set the trail deletion timelock.
+///
+/// Aborts with `EUntilDestroyedNotSupportedForDeleteTrail` when `lock` is
+/// `TimeLock::UntilDestroyed`.
 public(package) fun set_delete_trail_lock(config: &mut LockingConfig, lock: TimeLock) {
     assert!(!timelock::is_until_destroyed(&lock), EUntilDestroyedNotSupportedForDeleteTrail);
 

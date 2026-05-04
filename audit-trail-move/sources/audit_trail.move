@@ -277,6 +277,13 @@ fun assert_record_tag_allowed<D: store + copy>(
 /// Add a record to the trail
 ///
 /// Records are added sequentially with auto-assigned sequence numbers.
+///
+/// Requires the `AddRecord` permission on `cap`. Aborts with:
+/// - `ETrailWriteLocked` while the configured `write_lock` is active.
+/// - `ERecordTagNotDefined` when `record_tag` is not in the trail's tag registry.
+/// - `ERecordTagNotAllowed` when `cap`'s role does not allow `record_tag`.
+///
+/// Emits `RecordAdded` on success and increments the tag's usage count when the record is tagged.
 public fun add_record<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -332,6 +339,13 @@ public fun add_record<D: store + copy>(
 ///
 /// The record must not be locked (based on the trail's locking configuration).
 /// Requires the DeleteRecord permission.
+///
+/// Aborts with:
+/// - `ERecordNotFound` if no record exists at `sequence_number`.
+/// - `ERecordLocked` while the delete-record window still protects the record.
+/// - `ERecordTagNotAllowed` when the record carries a tag that `cap`'s role does not allow.
+///
+/// Emits `RecordDeleted` and decrements the tag's usage count when the deleted record was tagged.
 public fun delete_record<D: store + copy + drop>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -376,7 +390,11 @@ public fun delete_record<D: store + copy + drop>(
 
 /// Delete up to `limit` records from the front of the trail.
 ///
-/// Requires `DeleteAllRecords` permission. Locked records are skipped.
+/// Requires `DeleteAllRecords` permission. Walks the trail from the front and silently skips
+/// records still inside the delete-record window. The returned count is therefore an upper
+/// bound only and may be less than `limit`. Tag-aware authorization (`ERecordTagNotAllowed`)
+/// applies to every record actually deleted; emits one `RecordDeleted` event per deletion.
+///
 /// Returns the number of records deleted in this batch.
 public fun delete_records_batch<D: store + copy + drop>(
     self: &mut AuditTrail<D>,
@@ -440,7 +458,9 @@ public fun delete_records_batch<D: store + copy + drop>(
 
 /// Delete an empty audit trail.
 ///
-/// Requires `DeleteAuditTrail` permission and aborts if records still exist.
+/// Requires `DeleteAuditTrail` permission. Aborts with `ETrailNotEmpty` if records still
+/// exist and with `ETrailDeleteLocked` while the configured `delete_trail_lock` is active.
+/// Emits `AuditTrailDeleted` on success.
 public fun delete_audit_trail<D: store + copy>(
     self: AuditTrail<D>,
     cap: &Capability,
@@ -509,6 +529,9 @@ public fun is_record_locked<D: store + copy>(
 }
 
 /// Update the locking configuration. Requires `UpdateLockingConfig` permission.
+///
+/// Aborts with `EUntilDestroyedNotSupportedForDeleteTrail` when `new_config.delete_trail_lock`
+/// is `TimeLock::UntilDestroyed`.
 public fun update_locking_config<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -528,7 +551,9 @@ public fun update_locking_config<D: store + copy>(
     set_config(&mut self.locking_config, new_config);
 }
 
-/// Update the `delete_record_lock` locking configuration
+/// Update the `delete_record_lock` locking configuration.
+///
+/// Requires the `UpdateLockingConfigForDeleteRecord` permission.
 public fun update_delete_record_window<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -549,6 +574,10 @@ public fun update_delete_record_window<D: store + copy>(
 }
 
 /// Update the `delete_trail_lock` locking configuration.
+///
+/// Requires the `UpdateLockingConfigForDeleteTrail` permission. Aborts with
+/// `EUntilDestroyedNotSupportedForDeleteTrail` when `new_delete_trail_lock` is
+/// `TimeLock::UntilDestroyed`.
 public fun update_delete_trail_lock<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -569,6 +598,9 @@ public fun update_delete_trail_lock<D: store + copy>(
 }
 
 /// Update the `write_lock` locking configuration.
+///
+/// Requires the `UpdateLockingConfigForWrite` permission. While the new lock is active
+/// `add_record` aborts with `ETrailWriteLocked`.
 public fun update_write_lock<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -588,7 +620,9 @@ public fun update_write_lock<D: store + copy>(
     set_write_lock(&mut self.locking_config, new_write_lock);
 }
 
-/// Update the trail's mutable metadata
+/// Update the trail's mutable metadata.
+///
+/// Requires the `UpdateMetadata` permission. Passing `option::none()` clears the field.
 public fun update_metadata<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -609,6 +643,9 @@ public fun update_metadata<D: store + copy>(
 }
 
 /// Adds a new record tag to the trail registry.
+///
+/// Requires the `AddRecordTags` permission. Aborts with `ERecordTagAlreadyDefined` if `tag`
+/// is already in the registry. Inserts the tag with a usage count of zero.
 public fun add_record_tag<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -624,7 +661,11 @@ public fun add_record_tag<D: store + copy>(
     self.tags.insert_tag(tag, 0);
 }
 
-/// Removes a record tag from the trail registry if it is not used by any record.
+/// Removes a record tag from the trail registry if it is not used by any record or role.
+///
+/// Requires the `DeleteRecordTags` permission. Aborts with `ERecordTagNotDefined` if the tag
+/// is not in the registry and with `ERecordTagInUse` while it is still referenced by an
+/// existing record or role-tag restriction.
 public fun remove_record_tag<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -645,6 +686,10 @@ public fun remove_record_tag<D: store + copy>(
 // ===== Role and Capability Administration =====
 
 /// Creates a new role with the provided permissions.
+///
+/// Requires the `AddRoles` permission. Aborts with `ERecordTagNotDefined` when any tag
+/// listed in `role_tags` is not in the trail's tag registry. Each tag referenced by the new
+/// role bumps that tag's usage counter.
 public fun create_role<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -681,6 +726,10 @@ public fun create_role<D: store + copy>(
 }
 
 /// Updates permissions for an existing role.
+///
+/// Requires the `UpdateRoles` permission. Aborts with `ERecordTagNotDefined` when any tag
+/// in the new `role_tags` is not in the trail's tag registry. Tag usage counters are
+/// adjusted to reflect the difference between the old and new role-tag sets.
 public fun update_role_permissions<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -728,6 +777,10 @@ public fun update_role_permissions<D: store + copy>(
 }
 
 /// Deletes an existing role.
+///
+/// Requires the `DeleteRoles` permission. The reserved initial-admin role
+/// (`INITIAL_ADMIN_ROLE_NAME`) cannot be deleted. Decrements the usage count of every tag
+/// that was referenced by the role's `RoleTags`.
 public fun delete_role<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -753,7 +806,10 @@ public fun delete_role<D: store + copy>(
 
 /// Issues a new capability for an existing role.
 ///
-/// The capability object is transferred to `issued_to` if provided, otherwise to the caller.
+/// Requires the `AddCapabilities` permission. The capability object is transferred to
+/// `issued_to` if provided, otherwise to the caller. `valid_from` and `valid_until` configure
+/// usage restrictions on the issued capability that are enforced on-chain whenever the
+/// capability is later presented for authorization. Emits `CapabilityIssued` on success.
 public fun new_capability<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -787,6 +843,12 @@ public fun new_capability<D: store + copy>(
 }
 
 /// Revokes an issued capability by ID.
+///
+/// Requires the `RevokeCapabilities` permission. Writes `cap_to_revoke` into the trail's
+/// revoked-capability denylist. `cap_to_revoke_valid_until` should be the capability's
+/// original expiry so `cleanup_revoked_capabilities` can later prune the entry once that
+/// timestamp has elapsed; pass `option::none()` (encoded as `0`) to keep the entry
+/// permanently. Emits `CapabilityRevoked`.
 public fun revoke_capability<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,

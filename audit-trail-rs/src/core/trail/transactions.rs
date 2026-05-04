@@ -18,8 +18,9 @@ use crate::error::Error;
 
 /// Transaction that migrates a trail to the latest package version supported by this crate.
 ///
-/// This requires `Migrate` on the trail and succeeds only when the on-chain package version is older than the
-/// current supported version.
+/// This requires the `Migrate` permission on the supplied capability and succeeds only when the on-chain
+/// package version is *strictly less* than the current supported version. Otherwise the Move package aborts
+/// with `EPackageVersionMismatch`.
 #[derive(Debug, Clone)]
 pub struct Migrate {
     trail_id: ObjectID,
@@ -70,7 +71,8 @@ impl Transaction for Migrate {
 
 /// Transaction that updates mutable trail metadata.
 ///
-/// Passing `None` clears the mutable metadata field.
+/// Requires the `UpdateMetadata` permission on the supplied capability. Passing `None` clears the mutable
+/// metadata field on-chain.
 #[derive(Debug, Clone)]
 pub struct UpdateMetadata {
     trail_id: ObjectID,
@@ -135,8 +137,9 @@ impl Transaction for UpdateMetadata {
 
 /// Transaction that deletes an empty trail.
 ///
-/// Deletion still depends on the trail-delete permission, an empty record set, and the configured trail-delete
-/// lock.
+/// Requires the `DeleteAuditTrail` permission. The Move package additionally aborts with
+/// `ETrailNotEmpty` while any records remain in the trail and with `ETrailDeleteLocked` while the
+/// configured `delete_trail_lock` is still active. On success an `AuditTrailDeleted` event is emitted.
 #[derive(Debug, Clone)]
 pub struct DeleteAuditTrail {
     trail_id: ObjectID,

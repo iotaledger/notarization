@@ -30,7 +30,8 @@ pub struct RoleMap {
     /// Role definitions keyed by role name.
     #[serde(deserialize_with = "deserialize_vec_map")]
     pub roles: HashMap<String, Role>,
-    /// Reserved role name used for initial-admin capabilities.
+    /// Reserved role name used for initial-admin capabilities. Always equals `"Admin"` (matching the
+    /// Move `INITIAL_ADMIN_ROLE_NAME` constant). The role bearing this name cannot be deleted.
     pub initial_admin_role_name: String,
     /// Denylist of revoked capability IDs.
     pub revoked_capabilities: LinkedTable<ObjectID>,
@@ -101,6 +102,9 @@ impl RoleTags {
     /// Creates role-tag restrictions from an iterator of tag names.
     ///
     /// The set is deduplicated, and PTB encoding later sorts the tags for deterministic serialization.
+    /// Every tag listed here must already exist in the trail's [`TagRegistry`](super::audit_trail::TagRegistry)
+    /// before the role is created or updated; otherwise the on-chain call aborts with
+    /// `ERecordTagNotDefined`.
     pub fn new<I, S>(tags: I) -> Self
     where
         I: IntoIterator<Item = S>,

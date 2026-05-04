@@ -145,6 +145,10 @@ fn sorted_role_entries(roles: HashMap<String, Role>) -> Vec<WasmRolePermissionsE
 }
 
 /// Permission variants exposed to wasm consumers.
+///
+/// Each variant authorizes one operation on a trail. Variants are grouped by the proposed role that
+/// typically owns them (`Admin`, `RecordAdmin`, `LockingAdmin`, `RoleAdmin`, `CapAdmin`,
+/// `MetadataAdmin`, `TagAdmin`); see [`WasmPermissionSet`] for the recommended sets.
 #[wasm_bindgen(js_name = Permission)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum WasmPermission {
@@ -368,6 +372,9 @@ pub struct WasmRolePermissionsEntry {
 }
 
 /// Allowlisted record tags stored on a role.
+///
+/// Every tag listed here must already exist in the trail's record-tag registry before the role is
+/// created or updated; otherwise the on-chain call aborts.
 #[wasm_bindgen(js_name = RoleTags, getter_with_clone, inspectable)]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WasmRoleTags {
@@ -471,6 +478,10 @@ impl From<LinkedTable<ObjectID>> for WasmObjectIdLinkedTable {
 }
 
 /// Capability issuance options exposed to wasm consumers.
+///
+/// These fields configure restrictions on the issued capability object. Matching against the current
+/// caller and the on-chain timestamp happens whenever the capability is later presented for
+/// authorization, not at issue time.
 #[wasm_bindgen(js_name = CapabilityIssueOptions, getter_with_clone, inspectable)]
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct WasmCapabilityIssueOptions {
@@ -803,6 +814,9 @@ pub enum WasmTimeLockType {
 }
 
 /// JS-friendly wrapper for time locks.
+///
+/// `withUntilDestroyed` is rejected by the audit-trail package when used as the trail-delete lock; pass
+/// it only for the write lock.
 #[wasm_bindgen(js_name = TimeLock, inspectable)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WasmTimeLock(pub(crate) TimeLock);
@@ -884,6 +898,11 @@ pub enum WasmLockingWindowType {
 }
 
 /// JS-friendly wrapper for delete windows.
+///
+/// A window describes the period during which a record stays *locked against deletion*: time-based
+/// windows lock a record while its age is below the configured number of seconds; count-based
+/// windows lock a record while it is among the most recent N records. Records outside the window may
+/// be deleted, subject to remaining permission and tag checks.
 #[wasm_bindgen(js_name = LockingWindow, inspectable)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WasmLockingWindow(pub(crate) LockingWindow);
@@ -942,6 +961,10 @@ impl From<WasmLockingWindow> for LockingWindow {
 }
 
 /// Full locking configuration exposed to wasm consumers.
+///
+/// Combines three independent rules: a per-record delete window, a trail-delete time lock, and a
+/// write-time lock. The trail-delete lock must not be `TimeLock.withUntilDestroyed()`; trail creation
+/// and locking updates that violate this invariant abort on-chain.
 #[wasm_bindgen(js_name = LockingConfig, getter_with_clone, inspectable)]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WasmLockingConfig {
@@ -1046,6 +1069,9 @@ impl From<WasmRecordCorrection> for RecordCorrection {
 }
 
 /// Single audit-trail record exposed to wasm consumers.
+///
+/// Records form a tamper-evident, sequential chain: each record has a monotonically increasing
+/// sequence number that is never reused, even after the record is deleted.
 #[wasm_bindgen(js_name = Record, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmRecord {
