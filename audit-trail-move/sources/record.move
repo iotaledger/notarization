@@ -16,17 +16,24 @@ public enum Data has copy, drop, store {
     Text(String),
 }
 
-/// Creates a bytes payload.
+/// Creates a `Data` value carrying the given byte payload.
+///
+/// Returns the `Data::Bytes` variant.
 public fun new_bytes(bytes: vector<u8>): Data {
     Data::Bytes(bytes)
 }
 
-/// Creates a text payload.
+/// Creates a `Data` value carrying the given text payload.
+///
+/// Returns the `Data::Text` variant.
 public fun new_text(text: String): Data {
     Data::Text(text)
 }
 
-/// Returns the bytes payload when present.
+/// Extracts the byte payload from a `Data` value when present.
+///
+/// Returns `option::some(bytes)` when `data` is `Data::Bytes`, otherwise
+/// `option::none()`.
 public fun bytes(data: &Data): Option<vector<u8>> {
     match (data) {
         Data::Bytes(bytes) => option::some(*bytes),
@@ -34,7 +41,10 @@ public fun bytes(data: &Data): Option<vector<u8>> {
     }
 }
 
-/// Returns the text payload when present.
+/// Extracts the text payload from a `Data` value when present.
+///
+/// Returns `option::some(text)` when `data` is `Data::Text`, otherwise
+/// `option::none()`.
 public fun text(data: &Data): Option<String> {
     match (data) {
         Data::Bytes(_) => option::none(),
@@ -69,7 +79,9 @@ public struct InitialRecord<D: store + copy> has copy, drop, store {
 
 // ===== Constructors =====
 
-/// Create a new initial-record input.
+/// Creates an `InitialRecord` to be passed to `audit_trail::create`.
+///
+/// Returns the constructed `InitialRecord`.
 public fun new_initial_record<D: store + copy>(
     data: D,
     metadata: Option<String>,
@@ -78,7 +90,9 @@ public fun new_initial_record<D: store + copy>(
     InitialRecord { data, metadata, tag }
 }
 
-/// Create a new record
+/// Creates a new `Record` from its constituent fields.
+///
+/// Returns the constructed `Record`.
 public(package) fun new<D: store + copy>(
     data: D,
     metadata: Option<String>,
@@ -99,7 +113,9 @@ public(package) fun new<D: store + copy>(
     }
 }
 
-/// Convert an initial-record input into a stored record.
+/// Converts an `InitialRecord` into a stored `Record` with an empty correction tracker.
+///
+/// Returns the resulting `Record` ready to be inserted into the trail's record table.
 public(package) fun into_record<D: store + copy>(
     initial_record: InitialRecord<D>,
     sequence_number: u64,
@@ -120,42 +136,42 @@ public(package) fun into_record<D: store + copy>(
 
 // ===== Getters =====
 
-/// Get the stored data from a record
+/// Returns a reference to the data payload stored in the record.
 public fun data<D: store + copy>(self: &Record<D>): &D {
     &self.data
 }
 
-/// Get the record metadata
+/// Returns a reference to the record's optional metadata field.
 public fun metadata<D: store + copy>(self: &Record<D>): &Option<String> {
     &self.metadata
 }
 
-/// Get the optional record tag
+/// Returns a reference to the record's optional tag field.
 public fun tag<D: store + copy>(record: &Record<D>): &Option<String> {
     &record.tag
 }
 
-/// Get the record sequence number
+/// Returns the record's position in the trail (zero-indexed sequence number).
 public fun sequence_number<D: store + copy>(self: &Record<D>): u64 {
     self.sequence_number
 }
 
-/// Get who added the record
+/// Returns the address that added the record to the trail.
 public fun added_by<D: store + copy>(self: &Record<D>): address {
     self.added_by
 }
 
-/// Get when the record was added (milliseconds)
+/// Returns the record's creation timestamp in milliseconds since the Unix epoch.
 public fun added_at<D: store + copy>(self: &Record<D>): u64 {
     self.added_at
 }
 
-/// Get the correction tracker for this record
+/// Returns a reference to the record's bidirectional correction tracker.
 public fun correction<D: store + copy>(self: &Record<D>): &RecordCorrection {
     &self.correction
 }
 
-/// Destroy a record
+/// Destroys a `Record` by destructuring it.
 public(package) fun destroy<D: store + copy + drop>(self: Record<D>) {
     let Record {
         data: _,
@@ -174,7 +190,10 @@ public struct RecordCorrection has copy, drop, store {
     is_replaced_by: Option<u64>,
 }
 
-/// Create a new correction tracker for a normal (non-correcting) record
+/// Creates an empty correction tracker for a record that does not correct any other.
+///
+/// Returns a `RecordCorrection` with an empty `replaces` set and no
+/// `is_replaced_by` reference.
 public fun empty(): RecordCorrection {
     RecordCorrection {
         replaces: vec_set::empty(),
@@ -182,7 +201,10 @@ public fun empty(): RecordCorrection {
     }
 }
 
-/// Create a correction tracker for a correcting record
+/// Creates a correction tracker for a record that replaces other records.
+///
+/// Returns a `RecordCorrection` whose `replaces` set is `replaced_seq_nums` and
+/// whose `is_replaced_by` is unset.
 public fun with_replaces(replaced_seq_nums: VecSet<u64>): RecordCorrection {
     RecordCorrection {
         replaces: replaced_seq_nums,
@@ -190,37 +212,41 @@ public fun with_replaces(replaced_seq_nums: VecSet<u64>): RecordCorrection {
     }
 }
 
-/// Get the set of sequence numbers this record replaces
+/// Returns a reference to the set of sequence numbers this record replaces.
 public fun replaces(correction: &RecordCorrection): &VecSet<u64> {
     &correction.replaces
 }
 
-/// Get the sequence number of the record that replaced this one
+/// Returns the sequence number of the record that replaced this one, when any.
 public fun is_replaced_by(correction: &RecordCorrection): Option<u64> {
     correction.is_replaced_by
 }
 
-/// Check if this record is a correction (replaces other records)
+/// Checks whether this record corrects (replaces) at least one other record.
+///
+/// Returns `true` when `replaces` is non-empty.
 public fun is_correction(correction: &RecordCorrection): bool {
     !vec_set::is_empty(&correction.replaces)
 }
 
-/// Check if this record has been replaced by another record
+/// Checks whether this record has been replaced by another record.
+///
+/// Returns `true` when `is_replaced_by` is set.
 public fun is_replaced(correction: &RecordCorrection): bool {
     correction.is_replaced_by.is_some()
 }
 
-/// Set the sequence number of the record that replaced this one
+/// Records that this record has been replaced by `replacement_seq`.
 public(package) fun set_replaced_by(correction: &mut RecordCorrection, replacement_seq: u64) {
     correction.is_replaced_by = option::some(replacement_seq);
 }
 
-/// Add a sequence number to the set of records this record replaces
+/// Adds `seq_num` to the set of records this record replaces.
 public(package) fun add_replaces(correction: &mut RecordCorrection, seq_num: u64) {
     correction.replaces.insert(seq_num);
 }
 
-/// Destroy a RecordCorrection
+/// Destroys a `RecordCorrection` by destructuring it.
 public(package) fun destroy_record_correction(correction: RecordCorrection) {
     let RecordCorrection { replaces: _, is_replaced_by: _ } = correction;
 }

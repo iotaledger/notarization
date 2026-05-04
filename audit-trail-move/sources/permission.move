@@ -55,17 +55,27 @@ public enum Permission has copy, drop, store {
     DeleteRecordTags,
 }
 
-/// Create an empty permission set
+/// Creates an empty permission set.
+///
+/// Returns an empty `VecSet<Permission>`.
 public fun empty(): VecSet<Permission> {
     vec_set::empty()
 }
 
-/// Add a permission to a set
+/// Inserts `perm` into the permission set.
+///
+/// Aborts with:
+/// * an internal `iota::vec_set` error when `perm` is already present in `set`.
 public fun add(set: &mut VecSet<Permission>, perm: Permission) {
     vec_set::insert(set, perm);
 }
 
-/// Create a permission set from a vector
+/// Builds a permission set from a vector of permissions.
+///
+/// Aborts with:
+/// * an internal `iota::vec_set` error when `perms` contains duplicates.
+///
+/// Returns a `VecSet<Permission>` containing every entry of `perms`.
 public fun from_vec(perms: vector<Permission>): VecSet<Permission> {
     let mut set = vec_set::empty();
     let mut i = 0;
@@ -77,7 +87,9 @@ public fun from_vec(perms: vector<Permission>): VecSet<Permission> {
     set
 }
 
-/// Check if a set contains a specific permission
+/// Checks whether the permission set contains the given permission.
+///
+/// Returns `true` when `perm` is in `set`.
 public fun has_permission(set: &VecSet<Permission>, perm: &Permission): bool {
     vec_set::contains(set, perm)
 }
