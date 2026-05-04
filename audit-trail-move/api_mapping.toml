@@ -1,0 +1,1211 @@
+# Audit Trail API Mapping
+#
+# Maps each public Move function or struct in the `audit-trail-move/sources/` modules
+# to the related Rust entities in `audit-trail-rs/src/` and WASM/TS entities in
+# `bindings/wasm/audit_trail_wasm/src/`.
+#
+# TOML keys are formed as `<move_module>.<move_function_or_struct>`.
+#
+# `rust` and `wasm` arrays list the Rust- resp. WASM-level functions, methods, and
+# types that wrap, build, or otherwise correspond to the Move entity. Entries use
+# `Type::method` for inherent methods, `Type` for plain types/structs/enums, and
+# `module::function` for free functions.
+#
+# This mapping is intended for automatic comparison of function and struct
+# documentation across the three implementation layers.
+
+# =============================================================================
+# Module: audit_trail::main (audit-trail-move/sources/audit_trail.move)
+# =============================================================================
+
+[audit_trail.main.ImmutableMetadata]
+rust = [
+    "ImmutableMetadata",
+    "ImmutableMetadata::new",
+    "ImmutableMetadata::tag",
+    "ImmutableMetadata::to_ptb",
+]
+wasm = [
+    "WasmImmutableMetadata",
+]
+
+[audit_trail.main.AuditTrail]
+rust = [
+    "OnChainAuditTrail",
+    "AuditTrailHandle",
+    "AuditTrailHandle::new",
+    "AuditTrailHandle::using_capability",
+    "AuditTrailHandle::get",
+    "AuditTrailHandle::records",
+    "AuditTrailHandle::locking",
+    "AuditTrailHandle::access",
+    "AuditTrailHandle::tags",
+]
+wasm = [
+    "WasmOnChainAuditTrail",
+    "WasmOnChainAuditTrail::id",
+    "WasmOnChainAuditTrail::creator",
+    "WasmOnChainAuditTrail::created_at",
+    "WasmOnChainAuditTrail::sequence_number",
+    "WasmOnChainAuditTrail::locking_config",
+    "WasmOnChainAuditTrail::records",
+    "WasmOnChainAuditTrail::tags",
+    "WasmOnChainAuditTrail::roles",
+    "WasmOnChainAuditTrail::immutable_metadata",
+    "WasmOnChainAuditTrail::updatable_metadata",
+    "WasmOnChainAuditTrail::version",
+    "WasmAuditTrailHandle",
+    "WasmAuditTrailHandle::get",
+    "WasmAuditTrailHandle::records",
+    "WasmAuditTrailHandle::access",
+    "WasmAuditTrailHandle::locking",
+    "WasmAuditTrailHandle::tags",
+]
+
+[audit_trail.main.AuditTrailCreated]
+rust = [
+    "AuditTrailCreated",
+    "TrailCreated",
+    "TrailCreated::fetch_audit_trail",
+]
+wasm = [
+    "WasmAuditTrailCreated",
+]
+
+[audit_trail.main.AuditTrailDeleted]
+rust = [
+    "AuditTrailDeleted",
+]
+wasm = [
+    "WasmAuditTrailDeleted",
+]
+
+[audit_trail.main.RecordAdded]
+rust = [
+    "RecordAdded",
+]
+wasm = [
+    "WasmRecordAdded",
+]
+
+[audit_trail.main.RecordDeleted]
+rust = [
+    "RecordDeleted",
+]
+wasm = [
+    "WasmRecordDeleted",
+]
+
+[audit_trail.main.new_trail_metadata]
+rust = [
+    "ImmutableMetadata::new",
+    "ImmutableMetadata::to_ptb",
+    "AuditTrailBuilder::with_trail_metadata",
+    "AuditTrailBuilder::with_trail_metadata_parts",
+]
+wasm = [
+    "WasmImmutableMetadata",
+    "WasmAuditTrailBuilder::with_trail_metadata",
+]
+
+[audit_trail.main.create]
+rust = [
+    "AuditTrailBuilder",
+    "AuditTrailBuilder::with_initial_record",
+    "AuditTrailBuilder::with_initial_record_parts",
+    "AuditTrailBuilder::with_locking_config",
+    "AuditTrailBuilder::with_trail_metadata",
+    "AuditTrailBuilder::with_trail_metadata_parts",
+    "AuditTrailBuilder::with_updatable_metadata",
+    "AuditTrailBuilder::with_record_tags",
+    "AuditTrailBuilder::with_admin",
+    "AuditTrailBuilder::finish",
+    "CreateTrail",
+    "CreateTrail::new",
+    "TrailCreated",
+    "AuditTrailClient::create_trail",
+    "AuditTrailClientReadOnly::trail",
+    "AuditTrailClient::trail",
+]
+wasm = [
+    "WasmAuditTrailBuilder",
+    "WasmAuditTrailBuilder::with_initial_record_string",
+    "WasmAuditTrailBuilder::with_initial_record_bytes",
+    "WasmAuditTrailBuilder::with_trail_metadata",
+    "WasmAuditTrailBuilder::with_updatable_metadata",
+    "WasmAuditTrailBuilder::with_locking_config",
+    "WasmAuditTrailBuilder::with_record_tags",
+    "WasmAuditTrailBuilder::with_admin",
+    "WasmAuditTrailBuilder::finish",
+    "WasmCreateTrail",
+    "WasmCreateTrail::new",
+    "WasmCreateTrail::build_programmable_transaction",
+    "WasmCreateTrail::apply_with_events",
+    "WasmAuditTrailClient::create_trail",
+    "WasmAuditTrailClient::trail",
+]
+
+[audit_trail.main.initial_admin_role_name]
+rust = [
+    "RoleMap.initial_admin_role_name",
+]
+wasm = [
+    "WasmRoleMap.initial_admin_role_name",
+]
+
+[audit_trail.main.migrate]
+rust = [
+    "Migrate",
+    "Migrate::new",
+    "AuditTrailHandle::migrate",
+]
+wasm = [
+    "WasmMigrate",
+    "WasmMigrate::build_programmable_transaction",
+    "WasmMigrate::apply_with_events",
+    "WasmAuditTrailHandle::migrate",
+]
+
+[audit_trail.main.add_record]
+rust = [
+    "AddRecord",
+    "AddRecord::new",
+    "TrailRecords::add",
+]
+wasm = [
+    "WasmAddRecord",
+    "WasmAddRecord::build_programmable_transaction",
+    "WasmAddRecord::apply_with_events",
+    "WasmTrailRecords::add",
+]
+
+[audit_trail.main.delete_record]
+rust = [
+    "DeleteRecord",
+    "DeleteRecord::new",
+    "TrailRecords::delete",
+]
+wasm = [
+    "WasmDeleteRecord",
+    "WasmDeleteRecord::build_programmable_transaction",
+    "WasmDeleteRecord::apply_with_events",
+    "WasmTrailRecords::delete",
+]
+
+[audit_trail.main.delete_records_batch]
+rust = [
+    "DeleteRecordsBatch",
+    "DeleteRecordsBatch::new",
+    "TrailRecords::delete_records_batch",
+]
+wasm = [
+    "WasmDeleteRecordsBatch",
+    "WasmDeleteRecordsBatch::build_programmable_transaction",
+    "WasmDeleteRecordsBatch::apply_with_events",
+    "WasmTrailRecords::delete_batch",
+]
+
+[audit_trail.main.delete_audit_trail]
+rust = [
+    "DeleteAuditTrail",
+    "DeleteAuditTrail::new",
+    "AuditTrailHandle::delete_audit_trail",
+]
+wasm = [
+    "WasmDeleteAuditTrail",
+    "WasmDeleteAuditTrail::build_programmable_transaction",
+    "WasmDeleteAuditTrail::apply_with_events",
+    "WasmAuditTrailHandle::delete_audit_trail",
+]
+
+[audit_trail.main.is_record_locked]
+rust = [
+    "TrailLocking::is_record_locked",
+]
+wasm = [
+    "WasmTrailLocking::is_record_locked",
+]
+
+[audit_trail.main.update_locking_config]
+rust = [
+    "UpdateLockingConfig",
+    "UpdateLockingConfig::new",
+    "TrailLocking::update",
+]
+wasm = [
+    "WasmUpdateLockingConfig",
+    "WasmUpdateLockingConfig::build_programmable_transaction",
+    "WasmUpdateLockingConfig::apply_with_events",
+    "WasmTrailLocking::update",
+]
+
+[audit_trail.main.update_delete_record_window]
+rust = [
+    "UpdateDeleteRecordWindow",
+    "UpdateDeleteRecordWindow::new",
+    "TrailLocking::update_delete_record_window",
+]
+wasm = [
+    "WasmUpdateDeleteRecordWindow",
+    "WasmUpdateDeleteRecordWindow::build_programmable_transaction",
+    "WasmUpdateDeleteRecordWindow::apply_with_events",
+    "WasmTrailLocking::update_delete_record_window",
+]
+
+[audit_trail.main.update_delete_trail_lock]
+rust = [
+    "UpdateDeleteTrailLock",
+    "UpdateDeleteTrailLock::new",
+    "TrailLocking::update_delete_trail_lock",
+]
+wasm = [
+    "WasmUpdateDeleteTrailLock",
+    "WasmUpdateDeleteTrailLock::build_programmable_transaction",
+    "WasmUpdateDeleteTrailLock::apply_with_events",
+    "WasmTrailLocking::update_delete_trail_lock",
+]
+
+[audit_trail.main.update_write_lock]
+rust = [
+    "UpdateWriteLock",
+    "UpdateWriteLock::new",
+    "TrailLocking::update_write_lock",
+]
+wasm = [
+    "WasmUpdateWriteLock",
+    "WasmUpdateWriteLock::build_programmable_transaction",
+    "WasmUpdateWriteLock::apply_with_events",
+    "WasmTrailLocking::update_write_lock",
+]
+
+[audit_trail.main.update_metadata]
+rust = [
+    "UpdateMetadata",
+    "UpdateMetadata::new",
+    "AuditTrailHandle::update_metadata",
+]
+wasm = [
+    "WasmUpdateMetadata",
+    "WasmUpdateMetadata::build_programmable_transaction",
+    "WasmUpdateMetadata::apply_with_events",
+    "WasmAuditTrailHandle::update_metadata",
+]
+
+[audit_trail.main.add_record_tag]
+rust = [
+    "AddRecordTag",
+    "AddRecordTag::new",
+    "TrailTags::add",
+]
+wasm = [
+    "WasmAddRecordTag",
+    "WasmAddRecordTag::build_programmable_transaction",
+    "WasmAddRecordTag::apply_with_events",
+    "WasmTrailTags::add",
+]
+
+[audit_trail.main.remove_record_tag]
+rust = [
+    "RemoveRecordTag",
+    "RemoveRecordTag::new",
+    "TrailTags::remove",
+]
+wasm = [
+    "WasmRemoveRecordTag",
+    "WasmRemoveRecordTag::build_programmable_transaction",
+    "WasmRemoveRecordTag::apply_with_events",
+    "WasmTrailTags::remove",
+]
+
+[audit_trail.main.create_role]
+rust = [
+    "CreateRole",
+    "CreateRole::new",
+    "RoleHandle::create",
+    "TrailAccess::for_role",
+]
+wasm = [
+    "WasmCreateRole",
+    "WasmCreateRole::build_programmable_transaction",
+    "WasmCreateRole::apply_with_events",
+    "WasmRoleHandle::create",
+    "WasmTrailAccess::for_role",
+]
+
+[audit_trail.main.update_role_permissions]
+rust = [
+    "UpdateRole",
+    "UpdateRole::new",
+    "RoleHandle::update_permissions",
+]
+wasm = [
+    "WasmUpdateRole",
+    "WasmUpdateRole::build_programmable_transaction",
+    "WasmUpdateRole::apply_with_events",
+    "WasmRoleHandle::update_permissions",
+]
+
+[audit_trail.main.delete_role]
+rust = [
+    "DeleteRole",
+    "DeleteRole::new",
+    "RoleHandle::delete",
+]
+wasm = [
+    "WasmDeleteRole",
+    "WasmDeleteRole::build_programmable_transaction",
+    "WasmDeleteRole::apply_with_events",
+    "WasmRoleHandle::delete",
+]
+
+[audit_trail.main.new_capability]
+rust = [
+    "IssueCapability",
+    "IssueCapability::new",
+    "RoleHandle::issue_capability",
+    "CapabilityIssueOptions",
+    "CapabilityIssued",
+]
+wasm = [
+    "WasmIssueCapability",
+    "WasmIssueCapability::build_programmable_transaction",
+    "WasmIssueCapability::apply_with_events",
+    "WasmRoleHandle::issue_capability",
+    "WasmCapabilityIssueOptions",
+    "WasmCapabilityIssued",
+]
+
+[audit_trail.main.revoke_capability]
+rust = [
+    "RevokeCapability",
+    "RevokeCapability::new",
+    "TrailAccess::revoke_capability",
+    "CapabilityRevoked",
+]
+wasm = [
+    "WasmRevokeCapability",
+    "WasmRevokeCapability::build_programmable_transaction",
+    "WasmRevokeCapability::apply_with_events",
+    "WasmTrailAccess::revoke_capability",
+    "WasmCapabilityRevoked",
+]
+
+[audit_trail.main.destroy_capability]
+rust = [
+    "DestroyCapability",
+    "DestroyCapability::new",
+    "TrailAccess::destroy_capability",
+    "CapabilityDestroyed",
+]
+wasm = [
+    "WasmDestroyCapability",
+    "WasmDestroyCapability::build_programmable_transaction",
+    "WasmDestroyCapability::apply_with_events",
+    "WasmTrailAccess::destroy_capability",
+    "WasmCapabilityDestroyed",
+]
+
+[audit_trail.main.destroy_initial_admin_capability]
+rust = [
+    "DestroyInitialAdminCapability",
+    "DestroyInitialAdminCapability::new",
+    "TrailAccess::destroy_initial_admin_capability",
+]
+wasm = [
+    "WasmDestroyInitialAdminCapability",
+    "WasmDestroyInitialAdminCapability::build_programmable_transaction",
+    "WasmDestroyInitialAdminCapability::apply_with_events",
+    "WasmTrailAccess::destroy_initial_admin_capability",
+]
+
+[audit_trail.main.revoke_initial_admin_capability]
+rust = [
+    "RevokeInitialAdminCapability",
+    "RevokeInitialAdminCapability::new",
+    "TrailAccess::revoke_initial_admin_capability",
+]
+wasm = [
+    "WasmRevokeInitialAdminCapability",
+    "WasmRevokeInitialAdminCapability::build_programmable_transaction",
+    "WasmRevokeInitialAdminCapability::apply_with_events",
+    "WasmTrailAccess::revoke_initial_admin_capability",
+]
+
+[audit_trail.main.cleanup_revoked_capabilities]
+rust = [
+    "CleanupRevokedCapabilities",
+    "CleanupRevokedCapabilities::new",
+    "TrailAccess::cleanup_revoked_capabilities",
+]
+wasm = [
+    "WasmCleanupRevokedCapabilities",
+    "WasmCleanupRevokedCapabilities::build_programmable_transaction",
+    "WasmCleanupRevokedCapabilities::apply_with_events",
+    "WasmTrailAccess::cleanup_revoked_capabilities",
+]
+
+[audit_trail.main.record_count]
+rust = [
+    "TrailRecords::record_count",
+]
+wasm = [
+    "WasmTrailRecords::record_count",
+]
+
+[audit_trail.main.sequence_number]
+rust = [
+    "OnChainAuditTrail.sequence_number",
+]
+wasm = [
+    "WasmOnChainAuditTrail::sequence_number",
+]
+
+[audit_trail.main.creator]
+rust = [
+    "OnChainAuditTrail.creator",
+]
+wasm = [
+    "WasmOnChainAuditTrail::creator",
+]
+
+[audit_trail.main.created_at]
+rust = [
+    "OnChainAuditTrail.created_at",
+]
+wasm = [
+    "WasmOnChainAuditTrail::created_at",
+]
+
+[audit_trail.main.id]
+rust = [
+    "OnChainAuditTrail.id",
+]
+wasm = [
+    "WasmOnChainAuditTrail::id",
+]
+
+[audit_trail.main.name]
+rust = [
+    "OnChainAuditTrail.immutable_metadata",
+    "ImmutableMetadata.name",
+]
+wasm = [
+    "WasmOnChainAuditTrail::immutable_metadata",
+    "WasmImmutableMetadata.name",
+]
+
+[audit_trail.main.description]
+rust = [
+    "OnChainAuditTrail.immutable_metadata",
+    "ImmutableMetadata.description",
+]
+wasm = [
+    "WasmOnChainAuditTrail::immutable_metadata",
+    "WasmImmutableMetadata.description",
+]
+
+[audit_trail.main.metadata]
+rust = [
+    "OnChainAuditTrail.updatable_metadata",
+]
+wasm = [
+    "WasmOnChainAuditTrail::updatable_metadata",
+]
+
+[audit_trail.main.locking_config]
+rust = [
+    "OnChainAuditTrail.locking_config",
+    "TrailLocking",
+]
+wasm = [
+    "WasmOnChainAuditTrail::locking_config",
+    "WasmTrailLocking",
+]
+
+[audit_trail.main.tags]
+rust = [
+    "OnChainAuditTrail.tags",
+    "TagRegistry",
+]
+wasm = [
+    "WasmOnChainAuditTrail::tags",
+    "WasmTrailTags::list",
+    "WasmRecordTagEntry",
+]
+
+[audit_trail.main.is_empty]
+rust = [
+    "OnChainAuditTrail.records",
+    "TrailRecords::record_count",
+]
+wasm = [
+    "WasmTrailRecords::record_count",
+]
+
+[audit_trail.main.first_sequence]
+rust = [
+    "OnChainAuditTrail.records",
+]
+wasm = [
+    "WasmLinkedTable.head",
+]
+
+[audit_trail.main.last_sequence]
+rust = [
+    "OnChainAuditTrail.records",
+]
+wasm = [
+    "WasmLinkedTable.tail",
+]
+
+[audit_trail.main.get_record]
+rust = [
+    "TrailRecords::get",
+]
+wasm = [
+    "WasmTrailRecords::get",
+]
+
+[audit_trail.main.has_record]
+rust = [
+    "TrailRecords::get",
+]
+wasm = [
+    "WasmTrailRecords::get",
+]
+
+[audit_trail.main.records]
+rust = [
+    "OnChainAuditTrail.records",
+    "TrailRecords",
+    "TrailRecords::list",
+    "TrailRecords::list_with_limit",
+    "TrailRecords::list_page",
+    "PaginatedRecord",
+]
+wasm = [
+    "WasmOnChainAuditTrail::records",
+    "WasmTrailRecords",
+    "WasmTrailRecords::list",
+    "WasmTrailRecords::list_with_limit",
+    "WasmTrailRecords::list_page",
+    "WasmLinkedTable",
+    "WasmPaginatedRecord",
+]
+
+[audit_trail.main.access]
+rust = [
+    "OnChainAuditTrail.roles",
+    "RoleMap",
+    "TrailAccess",
+    "AuditTrailHandle::access",
+]
+wasm = [
+    "WasmOnChainAuditTrail::roles",
+    "WasmRoleMap",
+    "WasmTrailAccess",
+    "WasmAuditTrailHandle::access",
+]
+
+[audit_trail.main.access_mut]
+rust = [
+    "TrailAccess",
+]
+wasm = [
+    "WasmTrailAccess",
+]
+
+# =============================================================================
+# Module: audit_trail::locking (audit-trail-move/sources/locking.move)
+# =============================================================================
+
+[audit_trail.locking.LockingWindow]
+rust = [
+    "LockingWindow",
+    "LockingWindow::to_ptb",
+]
+wasm = [
+    "WasmLockingWindow",
+    "WasmLockingWindowType",
+]
+
+[audit_trail.locking.LockingConfig]
+rust = [
+    "LockingConfig",
+    "LockingConfig::to_ptb",
+]
+wasm = [
+    "WasmLockingConfig",
+    "WasmLockingConfig::new",
+]
+
+[audit_trail.locking.window_none]
+rust = [
+    "LockingWindow::None",
+]
+wasm = [
+    "WasmLockingWindow::with_none",
+]
+
+[audit_trail.locking.window_time_based]
+rust = [
+    "LockingWindow::TimeBased",
+]
+wasm = [
+    "WasmLockingWindow::with_time_based",
+]
+
+[audit_trail.locking.window_count_based]
+rust = [
+    "LockingWindow::CountBased",
+]
+wasm = [
+    "WasmLockingWindow::with_count_based",
+]
+
+[audit_trail.locking.new]
+rust = [
+    "LockingConfig",
+    "LockingConfig::to_ptb",
+]
+wasm = [
+    "WasmLockingConfig::new",
+]
+
+[audit_trail.locking.is_delete_record_locked]
+rust = [
+    "TrailLocking::is_record_locked",
+]
+wasm = [
+    "WasmTrailLocking::is_record_locked",
+]
+
+[audit_trail.locking.is_delete_trail_locked]
+rust = []
+wasm = []
+
+[audit_trail.locking.is_write_locked]
+rust = []
+wasm = []
+
+# =============================================================================
+# Module: audit_trail::permission (audit-trail-move/sources/permission.move)
+# =============================================================================
+
+[audit_trail.permission.Permission]
+rust = [
+    "Permission",
+    "Permission::function_name",
+    "Permission::tag",
+    "Permission::to_ptb",
+]
+wasm = [
+    "WasmPermission",
+]
+
+[audit_trail.permission.empty]
+rust = [
+    "PermissionSet",
+    "PermissionSet::default",
+]
+wasm = [
+    "WasmPermissionSet::new",
+]
+
+[audit_trail.permission.add]
+rust = [
+    "PermissionSet.permissions",
+]
+wasm = [
+    "WasmPermissionSet.permissions",
+]
+
+[audit_trail.permission.from_vec]
+rust = [
+    "PermissionSet",
+    "PermissionSet::to_move_vec",
+]
+wasm = [
+    "WasmPermissionSet",
+    "WasmPermissionSet::new",
+]
+
+[audit_trail.permission.has_permission]
+rust = [
+    "PermissionSet.permissions",
+]
+wasm = [
+    "WasmPermissionSet.permissions",
+]
+
+[audit_trail.permission.admin_permissions]
+rust = [
+    "PermissionSet::admin_permissions",
+]
+wasm = [
+    "WasmPermissionSet::admin_permissions",
+]
+
+[audit_trail.permission.record_admin_permissions]
+rust = [
+    "PermissionSet::record_admin_permissions",
+]
+wasm = [
+    "WasmPermissionSet::record_admin_permissions",
+]
+
+[audit_trail.permission.locking_admin_permissions]
+rust = [
+    "PermissionSet::locking_admin_permissions",
+]
+wasm = [
+    "WasmPermissionSet::locking_admin_permissions",
+]
+
+[audit_trail.permission.role_admin_permissions]
+rust = [
+    "PermissionSet::role_admin_permissions",
+    "RoleAdminPermissions",
+]
+wasm = [
+    "WasmPermissionSet::role_admin_permissions",
+    "WasmRoleAdminPermissions",
+]
+
+[audit_trail.permission.tag_admin_permissions]
+rust = [
+    "PermissionSet::tag_admin_permissions",
+]
+wasm = [
+    "WasmPermissionSet::tag_admin_permissions",
+]
+
+[audit_trail.permission.cap_admin_permissions]
+rust = [
+    "PermissionSet::cap_admin_permissions",
+    "CapabilityAdminPermissions",
+]
+wasm = [
+    "WasmPermissionSet::cap_admin_permissions",
+    "WasmCapabilityAdminPermissions",
+]
+
+[audit_trail.permission.metadata_admin_permissions]
+rust = [
+    "PermissionSet::metadata_admin_permissions",
+]
+wasm = [
+    "WasmPermissionSet::metadata_admin_permissions",
+]
+
+[audit_trail.permission.delete_audit_trail]
+rust = [
+    "Permission::DeleteAuditTrail",
+]
+wasm = [
+    "WasmPermission::DeleteAuditTrail",
+]
+
+[audit_trail.permission.delete_all_records]
+rust = [
+    "Permission::DeleteAllRecords",
+]
+wasm = [
+    "WasmPermission::DeleteAllRecords",
+]
+
+[audit_trail.permission.add_record]
+rust = [
+    "Permission::AddRecord",
+]
+wasm = [
+    "WasmPermission::AddRecord",
+]
+
+[audit_trail.permission.delete_record]
+rust = [
+    "Permission::DeleteRecord",
+]
+wasm = [
+    "WasmPermission::DeleteRecord",
+]
+
+[audit_trail.permission.correct_record]
+rust = [
+    "Permission::CorrectRecord",
+]
+wasm = [
+    "WasmPermission::CorrectRecord",
+]
+
+[audit_trail.permission.update_locking_config]
+rust = [
+    "Permission::UpdateLockingConfig",
+]
+wasm = [
+    "WasmPermission::UpdateLockingConfig",
+]
+
+[audit_trail.permission.update_locking_config_for_delete_record]
+rust = [
+    "Permission::UpdateLockingConfigForDeleteRecord",
+]
+wasm = [
+    "WasmPermission::UpdateLockingConfigForDeleteRecord",
+]
+
+[audit_trail.permission.update_locking_config_for_delete_trail]
+rust = [
+    "Permission::UpdateLockingConfigForDeleteTrail",
+]
+wasm = [
+    "WasmPermission::UpdateLockingConfigForDeleteTrail",
+]
+
+[audit_trail.permission.update_locking_config_for_write]
+rust = [
+    "Permission::UpdateLockingConfigForWrite",
+]
+wasm = [
+    "WasmPermission::UpdateLockingConfigForWrite",
+]
+
+[audit_trail.permission.add_record_tags]
+rust = [
+    "Permission::AddRecordTags",
+]
+wasm = [
+    "WasmPermission::AddRecordTags",
+]
+
+[audit_trail.permission.delete_record_tags]
+rust = [
+    "Permission::DeleteRecordTags",
+]
+wasm = [
+    "WasmPermission::DeleteRecordTags",
+]
+
+[audit_trail.permission.add_roles]
+rust = [
+    "Permission::AddRoles",
+]
+wasm = [
+    "WasmPermission::AddRoles",
+]
+
+[audit_trail.permission.update_roles]
+rust = [
+    "Permission::UpdateRoles",
+]
+wasm = [
+    "WasmPermission::UpdateRoles",
+]
+
+[audit_trail.permission.delete_roles]
+rust = [
+    "Permission::DeleteRoles",
+]
+wasm = [
+    "WasmPermission::DeleteRoles",
+]
+
+[audit_trail.permission.add_capabilities]
+rust = [
+    "Permission::AddCapabilities",
+]
+wasm = [
+    "WasmPermission::AddCapabilities",
+]
+
+[audit_trail.permission.revoke_capabilities]
+rust = [
+    "Permission::RevokeCapabilities",
+]
+wasm = [
+    "WasmPermission::RevokeCapabilities",
+]
+
+[audit_trail.permission.update_metadata]
+rust = [
+    "Permission::UpdateMetadata",
+]
+wasm = [
+    "WasmPermission::UpdateMetadata",
+]
+
+[audit_trail.permission.delete_metadata]
+rust = [
+    "Permission::DeleteMetadata",
+]
+wasm = [
+    "WasmPermission::DeleteMetadata",
+]
+
+[audit_trail.permission.migrate_audit_trail]
+rust = [
+    "Permission::Migrate",
+]
+wasm = [
+    "WasmPermission::Migrate",
+]
+
+# =============================================================================
+# Module: audit_trail::record (audit-trail-move/sources/record.move)
+# =============================================================================
+
+[audit_trail.record.Data]
+rust = [
+    "Data",
+    "Data::tag",
+    "Data::into_ptb",
+    "Data::ensure_matches_tag",
+    "Data::as_bytes",
+    "Data::as_text",
+]
+wasm = [
+    "WasmData",
+    "WasmData::value",
+    "WasmData::to_string",
+    "WasmData::to_bytes",
+]
+
+[audit_trail.record.new_bytes]
+rust = [
+    "Data::bytes",
+    "Data::Bytes",
+]
+wasm = [
+    "WasmData::from_bytes",
+]
+
+[audit_trail.record.new_text]
+rust = [
+    "Data::text",
+    "Data::Text",
+]
+wasm = [
+    "WasmData::from_string",
+]
+
+[audit_trail.record.bytes]
+rust = [
+    "Data::as_bytes",
+    "Data::Bytes",
+]
+wasm = [
+    "WasmData::to_bytes",
+]
+
+[audit_trail.record.text]
+rust = [
+    "Data::as_text",
+    "Data::Text",
+]
+wasm = [
+    "WasmData::to_string",
+]
+
+[audit_trail.record.Record]
+rust = [
+    "Record",
+]
+wasm = [
+    "WasmRecord",
+]
+
+[audit_trail.record.InitialRecord]
+rust = [
+    "InitialRecord",
+    "InitialRecord::new",
+    "InitialRecord::tag",
+    "InitialRecord::into_ptb",
+    "AuditTrailBuilder::with_initial_record",
+    "AuditTrailBuilder::with_initial_record_parts",
+]
+wasm = [
+    "WasmAuditTrailBuilder::with_initial_record_string",
+    "WasmAuditTrailBuilder::with_initial_record_bytes",
+]
+
+[audit_trail.record.new_initial_record]
+rust = [
+    "InitialRecord::new",
+    "InitialRecord::into_ptb",
+    "AuditTrailBuilder::with_initial_record",
+    "AuditTrailBuilder::with_initial_record_parts",
+]
+wasm = [
+    "WasmAuditTrailBuilder::with_initial_record_string",
+    "WasmAuditTrailBuilder::with_initial_record_bytes",
+]
+
+[audit_trail.record.data]
+rust = [
+    "Record.data",
+]
+wasm = [
+    "WasmRecord.data",
+]
+
+[audit_trail.record.metadata]
+rust = [
+    "Record.metadata",
+]
+wasm = [
+    "WasmRecord.metadata",
+]
+
+[audit_trail.record.tag]
+rust = [
+    "Record.tag",
+]
+wasm = [
+    "WasmRecord.tag",
+]
+
+[audit_trail.record.sequence_number]
+rust = [
+    "Record.sequence_number",
+]
+wasm = [
+    "WasmRecord.sequence_number",
+]
+
+[audit_trail.record.added_by]
+rust = [
+    "Record.added_by",
+]
+wasm = [
+    "WasmRecord.added_by",
+]
+
+[audit_trail.record.added_at]
+rust = [
+    "Record.added_at",
+]
+wasm = [
+    "WasmRecord.added_at",
+]
+
+[audit_trail.record.correction]
+rust = [
+    "Record.correction",
+]
+wasm = [
+    "WasmRecord.correction",
+]
+
+[audit_trail.record.RecordCorrection]
+rust = [
+    "RecordCorrection",
+    "RecordCorrection::with_replaces",
+    "RecordCorrection::is_correction",
+    "RecordCorrection::is_replaced",
+]
+wasm = [
+    "WasmRecordCorrection",
+]
+
+[audit_trail.record.empty]
+rust = [
+    "RecordCorrection::default",
+]
+wasm = [
+    "WasmRecordCorrection",
+]
+
+[audit_trail.record.with_replaces]
+rust = [
+    "RecordCorrection::with_replaces",
+]
+wasm = [
+    "WasmRecordCorrection.replaces",
+]
+
+[audit_trail.record.replaces]
+rust = [
+    "RecordCorrection.replaces",
+]
+wasm = [
+    "WasmRecordCorrection.replaces",
+]
+
+[audit_trail.record.is_replaced_by]
+rust = [
+    "RecordCorrection.is_replaced_by",
+]
+wasm = [
+    "WasmRecordCorrection.is_replaced_by",
+]
+
+[audit_trail.record.is_correction]
+rust = [
+    "RecordCorrection::is_correction",
+]
+wasm = []
+
+[audit_trail.record.is_replaced]
+rust = [
+    "RecordCorrection::is_replaced",
+]
+wasm = []
+
+# =============================================================================
+# Module: audit_trail::record_tags (audit-trail-move/sources/record_tags.move)
+# =============================================================================
+
+[audit_trail.record_tags.RoleTags]
+rust = [
+    "RoleTags",
+    "RoleTags::new",
+    "RoleTags::allows",
+    "RoleTags::tag",
+    "RoleTags::to_ptb",
+]
+wasm = [
+    "WasmRoleTags",
+    "WasmRoleTags::new",
+]
+
+[audit_trail.record_tags.new_role_tags]
+rust = [
+    "RoleTags::new",
+    "RoleTags::to_ptb",
+]
+wasm = [
+    "WasmRoleTags::new",
+]
+
+[audit_trail.record_tags.tags]
+rust = [
+    "RoleTags.tags",
+]
+wasm = [
+    "WasmRoleTags.tags",
+]
+
+[audit_trail.record_tags.TagRegistry]
+rust = [
+    "TagRegistry",
+    "TagRegistry::len",
+    "TagRegistry::is_empty",
+    "TagRegistry::contains_key",
+    "TagRegistry::get",
+    "TagRegistry::iter",
+    "TrailTags",
+]
+wasm = [
+    "WasmRecordTagEntry",
+    "WasmTrailTags",
+    "WasmTrailTags::list",
+    "WasmOnChainAuditTrail::tags",
+]
+
+[audit_trail.record_tags.tag_map]
+rust = [
+    "TagRegistry.tag_map",
+]
+wasm = [
+    "WasmTrailTags::list",
+]
