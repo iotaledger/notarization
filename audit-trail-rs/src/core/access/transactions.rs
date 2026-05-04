@@ -739,7 +739,10 @@ impl Transaction for RevokeInitialAdminCapability {
 /// `valid_until == 0` (capabilities revoked without a known expiry) remain on the denylist
 /// indefinitely. This does not revoke additional capabilities and does not destroy any objects.
 ///
-///  Returns the typed cleanup receipt emitted by the Move package.
+/// On success a `RevokedCapabilitiesCleanedUp` event is emitted.
+///
+/// Returns the typed cleanup receipt with the trail ID, the number of entries removed, the address that
+/// triggered the cleanup, and the millisecond timestamp.
 #[derive(Debug, Clone)]
 pub struct CleanupRevokedCapabilities {
     trail_id: ObjectID,

@@ -561,7 +561,8 @@ impl WasmRevokeInitialAdminCapability {
 ///
 /// Requires the `RevokeCapabilities` permission. Only prunes denylist entries whose stored
 /// `validUntil` is non-zero and strictly less than the current clock time. Entries with
-/// `validUntil == 0` are kept indefinitely. Does not revoke additional capabilities.
+/// `validUntil == 0` are kept indefinitely. Does not revoke additional capabilities. Resolves to a
+/// `RevokedCapabilitiesCleanedUp` receipt with `trailId`, `cleanedCount`, `cleanedBy`, and `timestamp`.
 #[wasm_bindgen(js_name = CleanupRevokedCapabilities, inspectable)]
 pub struct WasmCleanupRevokedCapabilities(pub(crate) CleanupRevokedCapabilities);
 
@@ -643,9 +644,9 @@ impl WasmDeleteRecord {
 /// Transaction wrapper for deleting records in batch form.
 ///
 /// Requires the `DeleteAllRecords` permission. Walks the trail from the front and silently skips
-/// records still inside the delete-record window. Resolves to the actual number of records deleted
-/// in this batch, which is at most `limit` and may be smaller. Tag-aware authorization applies to
-/// every record actually deleted.
+/// records still inside the delete-record window. Tag-aware authorization applies to every record
+/// actually deleted. Resolves to the sequence numbers of the records deleted in this batch, in
+/// deletion order — at most `limit` entries, possibly fewer.
 #[wasm_bindgen(js_name = DeleteRecordsBatch, inspectable)]
 pub struct WasmDeleteRecordsBatch(pub(crate) DeleteRecordsBatch);
 

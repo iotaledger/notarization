@@ -156,6 +156,9 @@ Follow these steps:
   `audit-trail-rs` uses full sentences with backticked identifiers; the WASM
   crate often uses shorter TS-friendly summaries. Don't homogenize the style
   — only align the meaning.
+- **List Move Events.** If Move events are documented with the related Move
+  function, also list these events at the back of Rust and TS function
+  documentation. 
 - **Don't touch generated artifacts.** Files under
   `bindings/wasm/audit_trail_wasm/docs/wasm/` are generated; fix the source
   Rust attributes instead.

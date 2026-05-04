@@ -96,6 +96,22 @@ wasm = [
     "WasmRecordDeleted",
 ]
 
+[audit_trail.main.RevokedCapabilitiesCleanedUp]
+rust = [
+    "RevokedCapabilitiesCleanedUp",
+]
+wasm = [
+    "WasmRevokedCapabilitiesCleanedUp",
+]
+
+[audit_trail.main.CapabilityIssuedReceipt]
+rust = [
+    "CapabilityIssued",
+]
+wasm = [
+    "WasmCapabilityIssued",
+]
+
 [audit_trail.main.new_trail_metadata]
 rust = [
     "ImmutableMetadata::new",
