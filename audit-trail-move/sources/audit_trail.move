@@ -1197,6 +1197,8 @@ public fun revoke_initial_admin_capability<D: store + copy>(
 /// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
 ///   authorization checks.
 ///
+/// Emits a RevokedCapabilitiesCleanedUp event on success.
+///
 /// Returns the same receipt that is emitted as the `RevokedCapabilitiesCleanedUp` event.
 public fun cleanup_revoked_capabilities<D: store + copy>(
     self: &mut AuditTrail<D>,

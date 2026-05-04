@@ -30,7 +30,8 @@ use crate::error::Error;
 /// Requires an authorization capability with `AddRoles`. Any [`RoleTags`] supplied as role data must
 /// already be present in the trail's tag registry; otherwise the Move package aborts with
 /// `ERecordTagNotDefined`. Each tag referenced by the new role bumps that tag's usage counter, which
-/// then prevents the tag from being removed from the registry.
+/// then prevents the tag from being removed from the registry. On success a `RoleCreated` event is
+/// emitted.
 #[derive(Debug, Clone)]
 pub struct CreateRole {
     trail_id: ObjectID,
@@ -126,7 +127,8 @@ impl Transaction for CreateRole {
 /// Requires the `UpdateRoles` permission. Updates both the permission set and the optional role-tag
 /// data stored for the role. Any newly supplied [`RoleTags`] must already be in the trail's tag
 /// registry, otherwise the Move package aborts with `ERecordTagNotDefined`. Tag usage counters are
-/// adjusted to reflect the difference between the old and new role-tag sets.
+/// adjusted to reflect the difference between the old and new role-tag sets. On success a
+/// `RoleUpdated` event is emitted.
 #[derive(Debug, Clone)]
 pub struct UpdateRole {
     trail_id: ObjectID,
@@ -219,7 +221,7 @@ impl Transaction for UpdateRole {
 ///
 /// Requires the `DeleteRoles` permission. The reserved initial-admin role (`"Admin"`) cannot be
 /// deleted, even by a holder of `DeleteRoles`. Removing a role decrements the usage counters of all
-/// tags it referenced through its [`RoleTags`].
+/// tags it referenced through its [`RoleTags`]. On success a `RoleDeleted` event is emitted.
 #[derive(Debug, Clone)]
 pub struct DeleteRole {
     trail_id: ObjectID,
@@ -573,6 +575,8 @@ impl Transaction for DestroyCapability {
 ///
 /// **Warning:** if every initial-admin capability is destroyed (and none was issued separately), the
 /// trail is permanently sealed with no admin access possible.
+///
+/// On success a `CapabilityDestroyed` event is emitted.
 #[derive(Debug, Clone)]
 pub struct DestroyInitialAdminCapability {
     trail_id: ObjectID,
@@ -648,6 +652,8 @@ impl Transaction for DestroyInitialAdminCapability {
 ///
 /// **Warning:** revoking every initial-admin capability permanently seals the trail with no admin
 /// access possible.
+///
+/// On success a `CapabilityRevoked` event is emitted.
 #[derive(Debug, Clone)]
 pub struct RevokeInitialAdminCapability {
     trail_id: ObjectID,

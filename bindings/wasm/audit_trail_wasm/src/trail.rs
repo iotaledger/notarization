@@ -347,7 +347,7 @@ impl WasmUpdateWriteLock {
 /// Transaction wrapper for creating a role.
 ///
 /// Requires the `AddRoles` permission. Any `roleTags` supplied must already exist in the trail's
-/// record-tag registry; the on-chain call aborts otherwise.
+/// record-tag registry; the on-chain call aborts otherwise. Emits a `RoleCreated` event on success.
 #[wasm_bindgen(js_name = CreateRole, inspectable)]
 pub struct WasmCreateRole(pub(crate) CreateRole);
 
@@ -373,7 +373,8 @@ impl WasmCreateRole {
 /// Transaction wrapper for updating a role.
 ///
 /// Requires the `UpdateRoles` permission. Replaces both the role's permissions and its `roleTags`;
-/// any newly supplied tag must already be in the trail's record-tag registry.
+/// any newly supplied tag must already be in the trail's record-tag registry. Emits a `RoleUpdated`
+/// event on success.
 #[wasm_bindgen(js_name = UpdateRole, inspectable)]
 pub struct WasmUpdateRole(pub(crate) UpdateRole);
 
@@ -399,7 +400,7 @@ impl WasmUpdateRole {
 /// Transaction wrapper for deleting a role.
 ///
 /// Requires the `DeleteRoles` permission. The reserved initial-admin role (`"Admin"`) cannot be
-/// deleted.
+/// deleted. Emits a `RoleDeleted` event on success.
 #[wasm_bindgen(js_name = DeleteRole, inspectable)]
 pub struct WasmDeleteRole(pub(crate) DeleteRole);
 
@@ -426,7 +427,8 @@ impl WasmDeleteRole {
 ///
 /// Requires the `AddCapabilities` permission. Mints a new capability for the role and transfers it
 /// to `issuedTo` (or the caller when absent). `validFromMs` and `validUntilMs` configure usage
-/// restrictions enforced when the capability is later presented for authorization.
+/// restrictions enforced when the capability is later presented for authorization. Emits a
+/// `CapabilityIssued` event on success.
 #[wasm_bindgen(js_name = IssueCapability, inspectable)]
 pub struct WasmIssueCapability(pub(crate) IssueCapability);
 
@@ -453,7 +455,8 @@ impl WasmIssueCapability {
 ///
 /// Requires the `RevokeCapabilities` permission. Adds the capability ID to the trail's denylist.
 /// Pass `capabilityValidUntil` so [`WasmCleanupRevokedCapabilities`] can later prune the entry once
-/// that timestamp elapses; pass `null` to keep the denylist entry permanently.
+/// that timestamp elapses; pass `null` to keep the denylist entry permanently. Emits a
+/// `CapabilityRevoked` event on success.
 #[wasm_bindgen(js_name = RevokeCapability, inspectable)]
 pub struct WasmRevokeCapability(pub(crate) RevokeCapability);
 
@@ -480,7 +483,7 @@ impl WasmRevokeCapability {
 ///
 /// Requires the `RevokeCapabilities` permission. Consumes the owned capability object. This path is
 /// for ordinary capabilities only — initial-admin capabilities must use
-/// [`WasmDestroyInitialAdminCapability`].
+/// [`WasmDestroyInitialAdminCapability`]. Emits a `CapabilityDestroyed` event on success.
 #[wasm_bindgen(js_name = DestroyCapability, inspectable)]
 pub struct WasmDestroyCapability(pub(crate) DestroyCapability);
 
@@ -507,7 +510,8 @@ impl WasmDestroyCapability {
 ///
 /// Self-service: the holder consumes their own initial-admin capability without presenting another
 /// authorization capability. **Warning:** if every initial-admin capability is destroyed (and none
-/// was issued separately), the trail is permanently sealed with no admin access.
+/// was issued separately), the trail is permanently sealed with no admin access. Emits a
+/// `CapabilityDestroyed` event on success.
 #[wasm_bindgen(js_name = DestroyInitialAdminCapability, inspectable)]
 pub struct WasmDestroyInitialAdminCapability(pub(crate) DestroyInitialAdminCapability);
 
@@ -534,7 +538,8 @@ impl WasmDestroyInitialAdminCapability {
 ///
 /// Requires the `RevokeCapabilities` permission. Same denylist semantics as [`WasmRevokeCapability`]
 /// but uses the dedicated entry point reserved for initial-admin capability IDs. **Warning:**
-/// revoking every initial-admin capability permanently seals the trail.
+/// revoking every initial-admin capability permanently seals the trail. Emits a `CapabilityRevoked`
+/// event on success.
 #[wasm_bindgen(js_name = RevokeInitialAdminCapability, inspectable)]
 pub struct WasmRevokeInitialAdminCapability(pub(crate) RevokeInitialAdminCapability);
 
@@ -562,7 +567,8 @@ impl WasmRevokeInitialAdminCapability {
 /// Requires the `RevokeCapabilities` permission. Only prunes denylist entries whose stored
 /// `validUntil` is non-zero and strictly less than the current clock time. Entries with
 /// `validUntil == 0` are kept indefinitely. Does not revoke additional capabilities. Resolves to a
-/// `RevokedCapabilitiesCleanedUp` receipt with `trailId`, `cleanedCount`, `cleanedBy`, and `timestamp`.
+/// `RevokedCapabilitiesCleanedUp` receipt with `trailId`, `cleanedCount`, `cleanedBy`, and
+/// `timestamp`. Emits a `RevokedCapabilitiesCleanedUp` event on success.
 #[wasm_bindgen(js_name = CleanupRevokedCapabilities, inspectable)]
 pub struct WasmCleanupRevokedCapabilities(pub(crate) CleanupRevokedCapabilities);
 
@@ -591,7 +597,7 @@ impl WasmCleanupRevokedCapabilities {
 /// Requires the `AddRecord` permission. While the trail's `writeLock` is active the call aborts.
 /// Tagged writes additionally require the tag to exist in the trail registry and the supplied
 /// capability's role to allow that tag. Records are assigned the trail's current monotonic sequence
-/// number, which is never reused even after deletions.
+/// number, which is never reused even after deletions. Emits a `RecordAdded` event on success.
 #[wasm_bindgen(js_name = AddRecord, inspectable)]
 pub struct WasmAddRecord(pub(crate) AddRecord);
 
@@ -618,7 +624,7 @@ impl WasmAddRecord {
 ///
 /// Requires the `DeleteRecord` permission. Aborts if no record exists at the supplied sequence
 /// number or while the delete-record window still protects it. Tag-aware authorization additionally
-/// applies when the record carries a tag.
+/// applies when the record carries a tag. Emits a `RecordDeleted` event on success.
 #[wasm_bindgen(js_name = DeleteRecord, inspectable)]
 pub struct WasmDeleteRecord(pub(crate) DeleteRecord);
 
@@ -646,7 +652,8 @@ impl WasmDeleteRecord {
 /// Requires the `DeleteAllRecords` permission. Walks the trail from the front and silently skips
 /// records still inside the delete-record window. Tag-aware authorization applies to every record
 /// actually deleted. Resolves to the sequence numbers of the records deleted in this batch, in
-/// deletion order — at most `limit` entries, possibly fewer.
+/// deletion order — at most `limit` entries, possibly fewer. Emits one `RecordDeleted` event per
+/// deletion.
 #[wasm_bindgen(js_name = DeleteRecordsBatch, inspectable)]
 pub struct WasmDeleteRecordsBatch(pub(crate) DeleteRecordsBatch);
 
