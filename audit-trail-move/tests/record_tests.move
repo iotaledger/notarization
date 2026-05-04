@@ -309,8 +309,9 @@ fun test_delete_records_batch_with_matching_role_tags() {
         );
 
         let deleted = trail.delete_records_batch(&cap, 10, &clock, ts::ctx(&mut scenario));
-        assert!(deleted == 1, 0);
-        assert!(trail.record_count() == 0, 1);
+        assert!(vector::length(&deleted) == 1, 0);
+        assert!(*vector::borrow(&deleted, 0) == 0, 1);
+        assert!(trail.record_count() == 0, 2);
 
         cleanup_capability_trail_and_clock(&scenario, cap, trail, clock);
     };

@@ -125,6 +125,24 @@ public struct RecordDeleted has copy, drop {
     timestamp: u64,
 }
 
+/// Emitted when expired revoked-capability entries are removed from the denylist
+public struct RevokedCapabilitiesCleanedUp has copy, drop {
+    trail_id: ID,
+    cleaned_count: u64,
+    cleaned_by: address,
+    timestamp: u64,
+}
+
+/// Returned when a capability is issued through the audit-trail API
+public struct CapabilityIssuedReceipt has copy, drop {
+    target_key: ID,
+    capability_id: ID,
+    role: String,
+    issued_to: Option<address>,
+    valid_from: Option<u64>,
+    valid_until: Option<u64>,
+}
+
 // ===== Constructors =====
 
 /// Creates an `ImmutableMetadata` value to be passed to `create`.
@@ -310,6 +328,8 @@ fun assert_record_tag_allowed<D: store + copy>(
 /// * `ERecordTagNotAllowed` when `cap`'s role does not allow `record_tag`.
 ///
 /// Emits a `RecordAdded` event on success.
+///
+/// Returns the same receipt that is emitted as the `RecordAdded` event.
 public fun add_record<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -318,7 +338,7 @@ public fun add_record<D: store + copy>(
     record_tag: Option<String>,
     clock: &Clock,
     ctx: &mut TxContext,
-) {
+): RecordAdded {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
     self
         .roles
@@ -353,12 +373,15 @@ public fun add_record<D: store + copy>(
     linked_table::push_back(&mut self.records, seq, record);
     self.sequence_number = self.sequence_number + 1;
 
-    event::emit(RecordAdded {
+    let output = RecordAdded {
         trail_id,
         sequence_number: seq,
         added_by: caller,
         timestamp,
-    });
+    };
+
+    event::emit(copy output);
+    output
 }
 
 /// Deletes the record at `sequence_number` from the trail.
@@ -441,14 +464,14 @@ public fun delete_record<D: store + copy + drop>(
 ///
 /// Emits one `RecordDeleted` event per deletion.
 ///
-/// Returns the number of records deleted in this batch.
+/// Returns the sequence numbers deleted in this batch, in deletion order.
 public fun delete_records_batch<D: store + copy + drop>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
     limit: u64,
     clock: &Clock,
     ctx: &mut TxContext,
-): u64 {
+): vector<u64> {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
     self
         .roles
@@ -460,6 +483,7 @@ public fun delete_records_batch<D: store + copy + drop>(
         );
 
     let mut deleted = 0;
+    let mut deleted_sequence_numbers = vector::empty<u64>();
     let caller = ctx.sender();
     let timestamp = clock.timestamp_ms();
     let trail_id = self.id();
@@ -495,11 +519,12 @@ public fun delete_records_batch<D: store + copy + drop>(
             deleted_by: caller,
             timestamp,
         });
+        vector::push_back(&mut deleted_sequence_numbers, sequence_number);
 
         deleted = deleted + 1;
     };
 
-    deleted
+    deleted_sequence_numbers
 }
 
 /// Deletes an empty audit trail and removes the shared object on-chain.
@@ -964,6 +989,8 @@ public fun delete_role<D: store + copy>(
 ///   and `valid_until` are not consistent.
 ///
 /// Emits a `CapabilityIssued` event on success.
+///
+/// Returns the same receipt that is emitted as the `CapabilityIssued` event.
 public fun new_capability<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -973,7 +1000,7 @@ public fun new_capability<D: store + copy>(
     valid_until: Option<u64>,
     clock: &Clock,
     ctx: &mut TxContext,
-) {
+): CapabilityIssuedReceipt {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
 
     let recipient = if (issued_to.is_some()) {
@@ -993,7 +1020,16 @@ public fun new_capability<D: store + copy>(
         clock,
         ctx,
     );
+    let output = CapabilityIssuedReceipt {
+        target_key: self.id(),
+        capability_id: new_cap.id(),
+        role: *new_cap.role(),
+        issued_to: *new_cap.issued_to(),
+        valid_from: *new_cap.valid_from(),
+        valid_until: *new_cap.valid_until(),
+    };
     transfer::public_transfer(new_cap, recipient);
+    output
 }
 
 /// Revokes an issued capability by ID.
@@ -1160,13 +1196,16 @@ public fun revoke_initial_admin_capability<D: store + copy>(
 /// * `EPackageVersionMismatch` when the trail is at a different package version.
 /// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
 ///   authorization checks.
+///
+/// Returns the same receipt that is emitted as the `RevokedCapabilitiesCleanedUp` event.
 public fun cleanup_revoked_capabilities<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
     clock: &Clock,
     ctx: &TxContext,
-) {
+): RevokedCapabilitiesCleanedUp {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
+    let revoked_count_before = linked_table::length(role_map::revoked_capabilities(self.access()));
     self
         .access_mut()
         .cleanup_revoked_capabilities(
@@ -1174,6 +1213,15 @@ public fun cleanup_revoked_capabilities<D: store + copy>(
             clock,
             ctx,
         );
+    let revoked_count_after = linked_table::length(role_map::revoked_capabilities(self.access()));
+    let output = RevokedCapabilitiesCleanedUp {
+        trail_id: self.id(),
+        cleaned_count: revoked_count_before - revoked_count_after,
+        cleaned_by: ctx.sender(),
+        timestamp: clock::timestamp_ms(clock),
+    };
+    event::emit(copy output);
+    output
 }
 
 // ===== Trail Query Functions =====

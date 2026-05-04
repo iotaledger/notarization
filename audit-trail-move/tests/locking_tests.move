@@ -1018,11 +1018,13 @@ fun test_delete_records_batch_skips_locked_records() {
             &clock,
             ts::ctx(&mut scenario),
         );
-        assert!(deleted == 2, 0);
-        assert!(trail.record_count() == 1, 1);
-        assert!(!trail.has_record(0), 2);
-        assert!(!trail.has_record(1), 3);
-        assert!(trail.has_record(2), 4);
+        assert!(vector::length(&deleted) == 2, 0);
+        assert!(*vector::borrow(&deleted, 0) == 0, 1);
+        assert!(*vector::borrow(&deleted, 1) == 1, 2);
+        assert!(trail.record_count() == 1, 3);
+        assert!(!trail.has_record(0), 4);
+        assert!(!trail.has_record(1), 5);
+        assert!(trail.has_record(2), 6);
 
         record_maintenance_cap.destroy_for_testing();
         cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
@@ -1144,8 +1146,9 @@ fun test_delete_audit_trail_after_batch_cleanup() {
             &clock,
             ts::ctx(&mut scenario),
         );
-        assert!(deleted == 1, 0);
-        assert!(trail.record_count() == 0, 1);
+        assert!(vector::length(&deleted) == 1, 0);
+        assert!(*vector::borrow(&deleted, 0) == 0, 1);
+        assert!(trail.record_count() == 0, 2);
 
         main::delete_audit_trail(trail, &delete_maintenance_cap, &clock, ts::ctx(&mut scenario));
 

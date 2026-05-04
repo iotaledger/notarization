@@ -1,21 +1,27 @@
-# IOTA Notarization
+# IOTA Single Notarization
 
-The Notarization Rust library provides a `NotarizationBuilder` that can be used to create Notarization objects on
-the IOTA ledger or to use an already existing Notarization object. The NotarizationBuilder returns a Notarization struct
-instance, which is mapped to the Notarization object on the ledger and can be used to interact with the object.
+The Single Notarization Rust SDK is the Rust client for individual locked and dynamic notarizations in the IOTA
+Notarization Suite.
 
-You can find the full IOTA Notarization documentation [here](https://docs.iota.org/developer/iota-notarization).
+The SDK provides a `NotarizationBuilder` that creates notarization objects on the IOTA ledger or connects to existing
+notarization objects. The builder returns a `Notarization` struct instance that maps to the on-chain object and provides
+typed methods for interacting with it.
+
+Use Single Notarization when you need one notarized object for arbitrary data, documents, hashes, or latest-state
+records. Use Audit Trails when you need a structured record history with roles, capabilities, locking, and tagging.
+
+You can find the full IOTA Notarization Suite documentation [here](https://docs.iota.org/developer/iota-notarization).
 
 ## Process Flows
 
-The following workflows demonstrate how NotarizationBuilder and Notarization instances can be used to create, update and
-destroy Notarization objects on the ledger.
+The following workflows demonstrate how `NotarizationBuilder` and `Notarization` instances create, update, and destroy
+single notarization objects on the ledger.
 
 ### Dynamic Notarizations
 
 A _Dynamic Notarization_ is created on the ledger using the `NotarizationBuilder::create_dynamic()` function.
-To create a _Dynamic Notarization_, the following initial arguments need to be specified using the NotarizationBuilder
-setter functions (The used terms can be found in the [glossary below](#glossary)):
+To create a _Dynamic Notarization_, specify the following initial arguments with the `NotarizationBuilder` setter
+functions. The terms used here are defined in the [glossary below](#glossary).
 
 - Initial State consisting of `Stored Data` and `State Metadata` that will be used to define the first version of the
   Notarization state.
@@ -23,8 +29,8 @@ setter functions (The used terms can be found in the [glossary below](#glossary)
 - Optional `Updatable Metadata` (**Dynamic**: always updatable; **Locked**: immutable)
 - An optional boolean indicator if the Notarization shall be transferable
 
-After a **dynamic** Notarization has been created, it can be updated using the `Notarization::update_state()` function and can be
-destroyed using `Notarization::destroy()`.
+After a **dynamic** Notarization has been created, it can be updated using the `Notarization::update_state()` function
+and destroyed using `Notarization::destroy()`.
 **Locked** notarizations are immutable after creation.
 
 #### Creating a new Dynamic Notarization on the Ledger
@@ -60,7 +66,7 @@ sequenceDiagram
     Lib ->>- Prover: OnChainNotarization + IotaTransactionBlockResponse
 ```
 
-#### Fetching state data from a Notarization already existing on the ledger
+#### Fetching state data from an existing Notarization on the ledger
 
 The following sequence diagram explains the component interaction for `Verifiers` (or other parties) fetching the
 `Latest State`:
@@ -79,7 +85,7 @@ sequenceDiagram
     Lib ->>- Verifier: State
 ```
 
-#### Updating state data of a Notarization already existing on the ledger
+#### Updating state data of an existing Notarization on the ledger
 
 The following sequence diagram shows the component interaction in case a `Prover` wants to update the `Latest State` of a
 Notarization:
@@ -111,17 +117,18 @@ sequenceDiagram
 
 ### Locked Notarizations
 
-In general _Locked Notarizations_ are handled similar to _Dynamic Notarizations_. A `NotarizationBuilder` for _Locked Notarization_ is created
-using the `NotarizationClient::create_locked_notarization()` function. The resulting `NotarizationBuilder<Locked>` can be used to
-create the _Locked Notarization_ on the ledger using the `NotarizationBuilder<Locked>::finish()` function.
+In general, _Locked Notarizations_ are handled similarly to _Dynamic Notarizations_. A `NotarizationBuilder` for a
+_Locked Notarization_ is created using the `NotarizationClient::create_locked_notarization()` function. The resulting
+`NotarizationBuilder<Locked>` can be used to create the _Locked Notarization_ on the ledger using the
+`NotarizationBuilder<Locked>::finish()` function.
 
-To create a _Locked Notarization_ the following arguments need to be specified using the `NotarizationBuilder<Locked>` setter
+To create a _Locked Notarization_, specify the following arguments with the `NotarizationBuilder<Locked>` setter
 functions:
 
 - all arguments needed to create a _Dynamic Notarization_
 - Optional Delete Timelock
 
-After the _Locked Notarization_ has been created - by design - the `Latest State` can not bee updated anymore.
+After the _Locked Notarization_ has been created, the `Latest State` cannot be updated by design.
 
 The lifecycle of a _Locked Notarization_ can be described as:
 
@@ -129,7 +136,7 @@ The lifecycle of a _Locked Notarization_ can be described as:
 - If a `Delete Timelock` has been used, wait at least until the time-lock has expired
 - Destroy the Notarization object
 
-As the `Latest State` of a _Locked Notarization_ can not be updated the lifecycle doesn’t include any update processes.
+As the `Latest State` of a _Locked Notarization_ cannot be updated, the lifecycle does not include any update processes.
 
 ## Glossary
 
@@ -139,12 +146,12 @@ As the `Latest State` of a _Locked Notarization_ can not be updated the lifecycl
   data; each update completely overwrites the previous stored data.
 - `Ledger Object`: A single, updatable on-chain object that holds the `Latest State` of the notarized data. It is
   identified by a unique ObjectId and is modified through update transactions.
-- `Transfer Timelock`k: An optional time-locking period during which the `Ledger Object` can not be transfered.
-- `Delete Timelock`: An optional time-locking period during which the Ledger Object can not be deleted.
+- `Transfer Timelock`: An optional time-locking period during which the `Ledger Object` cannot be transferred.
+- `Delete Timelock`: An optional time-locking period during which the `Ledger Object` cannot be deleted.
 - `State Metadata`: An optional text describing the `Stored Data`. For example, if document hashes of succeeding
   revisions of a document are stored as `Stored Data`, State Metadata can be used to describe the revision specifier of
   the document.
-- `Latest State`: The most recent version of the `Stored Data` (and optionally theState Metadata) within the
+- `Latest State`: The most recent version of the `Stored Data` (and optionally the `State Metadata`) within the
   `Ledger Object`. In _Dynamic Notarization_, only this latest state is visible on-chain, as previous states are
   overwritten. As the `Stored Data` and optionally the `State Metadata` together build the `Latest State` they can only
   be updated together in one function call.
@@ -159,16 +166,16 @@ As the `Latest State` of a _Locked Notarization_ can not be updated the lifecycl
   immutability.
 - `Immutable Description`: An arbitrary informational String that can be used for example to describe the purpose of the
   created _Dynamic Notarization_ object, how often it will be updated or other legally important or useful information.
-  The `Immutable Description` is specified by the `Prover` at creation time and can not be updated after the Notarization
-  abject has been created.
+  The `Immutable Description` is specified by the `Prover` at creation time and cannot be updated after the Notarization
+  object has been created.
 - `Creation Timestamp`: Indicates when the `Ledger Object` was initially created.
 - `Immutable Metadata`: Consists of the `Immutable Description` and `Creation Timestamp`.
 - `Updatable Metadata`: An arbitrary informational String that can be updated at any time by the `Prover` independently
-  from the `Latest State` (dynamic notarizations only; locked notarizations are immutable). Can be used to provide additional useful information that are subject to change from time to
-  time.
+  from the `Latest State` (dynamic notarizations only; locked notarizations are immutable). Can be used to provide
+  additional useful information that is subject to change from time to time.
 - `State Version Count`: Numerical value incremented with each update of the `Latest State`.
-- `Last State Change Time`: Indicates when the `Latest State` has been updated the last time.
+- `Last State Change Time`: Indicates when the `Latest State` was last updated.
 - `Calculated Metadata`: Consists of the `State Version Count` and `Last State Change Time`
-- `Notarized Record`: Some information owned by the `Prover` that describe and include notarized data, so that these data
+- `Notarized Record`: Some information owned by the `Prover` that describes and includes notarized data, so that this data
   can be verified by a `Verifier`. In the context of the _Dynamic Notarization_ method, the latest version of subsequent
   versions of a `Notarized Record` is the `Latest State`.

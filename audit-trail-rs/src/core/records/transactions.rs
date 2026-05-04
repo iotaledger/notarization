@@ -219,6 +219,10 @@ impl Transaction for DeleteRecord {
 
 /// Transaction that deletes multiple records in a batch operation.
 ///
+/// The Move entry point skips locked records, deletes up to `limit` unlocked records in trail order, and returns
+/// the deleted sequence numbers. The Rust implementation mirrors that output by collecting the matching
+/// `RecordDeleted` events in order.
+///
 /// Requires the `DeleteAllRecords` permission. The Move entry point walks the trail from the front,
 /// silently *skips* records that are still inside the delete-record window, deletes up to `limit` unlocked
 /// records in trail order, and reports the number of deleted records through the emitted `RecordDeleted`
@@ -268,7 +272,7 @@ impl DeleteRecordsBatch {
 #[cfg_attr(feature = "send-sync", async_trait)]
 impl Transaction for DeleteRecordsBatch {
     type Error = Error;
-    type Output = u64;
+    type Output = Vec<u64>;
 
     async fn build_programmable_transaction<C>(&self, client: &C) -> Result<ProgrammableTransaction, Self::Error>
     where
@@ -290,7 +294,8 @@ impl Transaction for DeleteRecordsBatch {
             .data
             .iter()
             .filter_map(|data| serde_json::from_value::<Event<RecordDeleted>>(data.parsed_json.clone()).ok())
-            .count() as u64;
+            .map(|event| event.data.sequence_number)
+            .collect();
 
         Ok(deleted)
     }

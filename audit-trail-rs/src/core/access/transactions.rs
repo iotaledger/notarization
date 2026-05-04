@@ -18,7 +18,8 @@ use tokio::sync::OnceCell;
 use super::operations::AccessOps;
 use crate::core::types::{
     CapabilityDestroyed, CapabilityIssueOptions, CapabilityIssued, CapabilityRevoked, Event, PermissionSet,
-    RawRoleCreated, RawRoleDeleted, RawRoleUpdated, RoleCreated, RoleDeleted, RoleTags, RoleUpdated,
+    RawRoleCreated, RawRoleDeleted, RawRoleUpdated, RevokedCapabilitiesCleanedUp, RoleCreated, RoleDeleted, RoleTags,
+    RoleUpdated,
 };
 use crate::error::Error;
 
@@ -737,6 +738,8 @@ impl Transaction for RevokeInitialAdminCapability {
 /// `valid_until` is *non-zero* and *strictly less than* the current clock time; entries with
 /// `valid_until == 0` (capabilities revoked without a known expiry) remain on the denylist
 /// indefinitely. This does not revoke additional capabilities and does not destroy any objects.
+///
+///  Returns the typed cleanup receipt emitted by the Move package.
 #[derive(Debug, Clone)]
 pub struct CleanupRevokedCapabilities {
     trail_id: ObjectID,
@@ -768,7 +771,7 @@ impl CleanupRevokedCapabilities {
 #[cfg_attr(feature = "send-sync", async_trait)]
 impl Transaction for CleanupRevokedCapabilities {
     type Error = Error;
-    type Output = ();
+    type Output = RevokedCapabilitiesCleanedUp;
 
     async fn build_programmable_transaction<C>(&self, client: &C) -> Result<ProgrammableTransaction, Self::Error>
     where
@@ -777,10 +780,30 @@ impl Transaction for CleanupRevokedCapabilities {
         self.cached_ptb.get_or_try_init(|| self.make_ptb(client)).await.cloned()
     }
 
+    async fn apply_with_events<C>(
+        self,
+        _: &mut IotaTransactionBlockEffects,
+        events: &mut IotaTransactionBlockEvents,
+        _: &C,
+    ) -> Result<Self::Output, Self::Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        let event = events
+            .data
+            .iter()
+            .find_map(|data| {
+                serde_json::from_value::<Event<RevokedCapabilitiesCleanedUp>>(data.parsed_json.clone()).ok()
+            })
+            .ok_or_else(|| Error::UnexpectedApiResponse("RevokedCapabilitiesCleanedUp event not found".to_string()))?;
+
+        Ok(event.data)
+    }
+
     async fn apply<C>(self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        Ok(())
+        unreachable!("RevokedCapabilitiesCleanedUp output requires transaction events")
     }
 }

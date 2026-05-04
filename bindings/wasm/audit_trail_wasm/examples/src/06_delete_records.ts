@@ -77,14 +77,17 @@ export async function deleteRecords(): Promise<void> {
         "deleted record should no longer be readable",
     );
 
-    // Batch delete skips locked records and returns how many records were removed.
-    const deletedCount = await maintenanceRecords
+    // Batch delete skips locked records and returns the deleted sequence numbers.
+    const deletedRemaining = await maintenanceRecords
         .deleteBatch(BigInt(10))
         .withGasBudget(TEST_GAS_BUDGET)
         .buildAndExecute(maintenanceAdminClient);
 
-    console.log("Batch deleted", deletedCount.output, "remaining records.");
-    assert.equal(deletedCount.output, 2n);
+    console.log("Batch deleted the remaining sequence numbers:", deletedRemaining.output);
+    assert.deepEqual(Array.from(deletedRemaining.output), [
+        0n,
+        secondAddedRecord.output.sequenceNumber,
+    ]);
     recordCount = await maintenanceRecords.recordCount();
     assert.equal(recordCount, 0n);
 }
