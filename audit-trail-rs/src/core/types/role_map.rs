@@ -90,7 +90,9 @@ pub struct CapabilityIssueOptions {
 
 /// Allowlisted record tags stored as role data.
 ///
-/// The Rust name stays `RecordTags` for API continuity, but it maps to Move `record_tags::RoleTags`.
+/// Every tag listed here must already exist in the trail's
+/// [`TagRegistry`](super::audit_trail::TagRegistry) before the role is created or updated;
+/// otherwise the on-chain call aborts with `ERecordTagNotDefined`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct RoleTags {
     /// Allowlisted record tags for the role.
@@ -151,12 +153,15 @@ pub struct Capability {
     pub target_key: ObjectID,
     /// Role granted by the capability.
     pub role: String,
-    /// Capability holder, if the capability is assigned to an address.
+    /// Address bound to the capability. When `None`, any holder may present the capability for
+    /// authorization.
     pub issued_to: Option<IotaAddress>,
-    /// Millisecond timestamp at which the capability becomes valid.
+    /// Earliest millisecond timestamp (since the Unix epoch, inclusive) at which the capability is
+    /// valid. When `None`, the capability is valid from its creation time.
     #[serde(deserialize_with = "deserialize_option_number_from_string")]
     pub valid_from: Option<u64>,
-    /// Millisecond timestamp at which the capability expires.
+    /// Latest millisecond timestamp (since the Unix epoch, inclusive) at which the capability is
+    /// still valid. When `None`, the capability does not expire.
     #[serde(deserialize_with = "deserialize_option_number_from_string")]
     pub valid_until: Option<u64>,
 }

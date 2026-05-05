@@ -528,6 +528,9 @@ impl From<WasmCapabilityIssueOptions> for CapabilityIssueOptions {
 }
 
 /// Capability data returned to wasm consumers.
+///
+/// A capability grants exactly one role against exactly one trail and may additionally restrict
+/// who may use it and during which time window it is valid.
 #[wasm_bindgen(js_name = Capability, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmCapability {
