@@ -11,7 +11,15 @@ use wasm_bindgen::prelude::*;
 
 use crate::trail_handle::WasmAuditTrailHandle;
 
-/// Package-ID overrides exposed to JavaScript and TypeScript consumers.
+/// Package-ID overrides used when targeting custom audit-trail deployments.
+///
+/// @remarks
+/// Pass an instance of this type to
+/// {@link AuditTrailClientReadOnly.createWithPackageOverrides} or
+/// {@link AuditTrailClient.createFromIotaClientWithPackageOverrides} when the connected network
+/// hosts the audit-trail package — and optionally the `tf_components` package — at addresses that
+/// are not part of the SDK's built-in registry. Leave a field unset to fall back to the registry
+/// lookup for that package.
 #[derive(Clone)]
 #[wasm_bindgen(js_name = PackageOverrides, getter_with_clone, inspectable)]
 pub struct WasmPackageOverrides {
@@ -26,6 +34,11 @@ pub struct WasmPackageOverrides {
 #[wasm_bindgen(js_class = PackageOverrides)]
 impl WasmPackageOverrides {
     /// Creates package overrides for custom deployments.
+    ///
+    /// @param auditTrailPackageId - Optional audit-trail package ID to use instead of the registry
+    /// entry.
+    /// @param tfComponentsPackageId - Optional `tf_components` package ID to use instead of the
+    /// registry entry.
     #[wasm_bindgen(constructor)]
     pub fn new(
         audit_trail_package_id: Option<WasmObjectID>,
@@ -57,11 +70,12 @@ impl TryFrom<WasmPackageOverrides> for PackageOverrides {
     }
 }
 
-/// Read-only audit-trail client exposed to wasm consumers.
+/// Read-only audit-trail client.
 ///
-/// This is the main JS/TS entry point for package resolution and typed reads. Use [`Self::trail`]
-/// to get an [`AuditTrailHandle`](crate::trail_handle::WasmAuditTrailHandle) bound to one trail
-/// object.
+/// @remarks
+/// This is the main entry point for package resolution and typed reads. Use
+/// {@link AuditTrailClientReadOnly.trail} to obtain an {@link AuditTrailHandle} bound to a single
+/// trail object.
 #[derive(Clone)]
 #[wasm_bindgen(js_name = AuditTrailClientReadOnly)]
 pub struct WasmAuditTrailClientReadOnly(pub(crate) AuditTrailClientReadOnly);
@@ -70,8 +84,15 @@ pub struct WasmAuditTrailClientReadOnly(pub(crate) AuditTrailClientReadOnly);
 impl WasmAuditTrailClientReadOnly {
     /// Creates a read-only client by resolving package IDs from the connected network.
     ///
+    /// @remarks
     /// This is the recommended constructor for official deployments tracked by the built-in
     /// package registry.
+    ///
+    /// @param iotaClient - IOTA client used to talk to the network.
+    ///
+    /// @returns A read-only audit-trail client bound to the resolved package IDs.
+    ///
+    /// @throws When package resolution fails for the connected network.
     #[wasm_bindgen(js_name = create)]
     pub async fn new(iota_client: WasmIotaClient) -> Result<WasmAuditTrailClientReadOnly> {
         let client = AuditTrailClientReadOnly::new(iota_client).await.wasm_result()?;
@@ -80,8 +101,16 @@ impl WasmAuditTrailClientReadOnly {
 
     /// Creates a read-only client with explicit package overrides.
     ///
-    /// Prefer this when your JS/TS app talks to a local deployment, preview environment, or any
-    /// package pair that is not yet part of the registry baked into the SDK.
+    /// @remarks
+    /// Prefer this when targeting a local deployment, preview environment, or any package pair
+    /// that is not yet part of the SDK's built-in registry.
+    ///
+    /// @param iotaClient - IOTA client used to talk to the network.
+    /// @param packageOverrides - Package IDs to use instead of registry lookups.
+    ///
+    /// @returns A read-only audit-trail client bound to the supplied package IDs.
+    ///
+    /// @throws When the supplied package IDs are malformed or cannot be resolved.
     #[wasm_bindgen(js_name = createWithPackageOverrides)]
     pub async fn new_with_package_overrides(
         iota_client: WasmIotaClient,
@@ -96,8 +125,15 @@ impl WasmAuditTrailClientReadOnly {
 
     /// Creates a read-only client while overriding only the audit-trail package ID.
     ///
-    /// This is a compatibility helper for existing callers that only need a single package
-    /// override.
+    /// @remarks
+    /// Compatibility helper for callers that need exactly one package override.
+    ///
+    /// @param iotaClient - IOTA client used to talk to the network.
+    /// @param packageId - Audit-trail package ID to use instead of the registry entry.
+    ///
+    /// @returns A read-only audit-trail client bound to `packageId`.
+    ///
+    /// @throws When `packageId` is malformed or cannot be resolved.
     #[wasm_bindgen(js_name = createWithPkgId)]
     pub async fn new_with_pkg_id(
         iota_client: WasmIotaClient,
@@ -116,20 +152,25 @@ impl WasmAuditTrailClientReadOnly {
         Ok(Self(client))
     }
 
-    /// Returns the audit-trail package ID currently in use, as a stringified object ID.
+    /// Returns the audit-trail package ID currently in use.
+    ///
+    /// @returns Stringified object ID of the resolved audit-trail package.
     #[wasm_bindgen(js_name = packageId)]
     pub fn package_id(&self) -> String {
         self.0.package_id().to_string()
     }
 
-    /// Returns the `tf_components` package ID currently in use, as a stringified object ID.
+    /// Returns the `tf_components` package ID currently in use.
+    ///
+    /// @returns Stringified object ID of the resolved `tf_components` package.
     #[wasm_bindgen(js_name = tfComponentsPackageId)]
     pub fn tf_components_package_id(&self) -> String {
         self.0.tf_components_package_id().to_string()
     }
 
-    /// Returns the resolved audit-trail package upgrade history (most recent first) as
-    /// stringified object IDs.
+    /// Returns the resolved audit-trail package upgrade history.
+    ///
+    /// @returns Stringified object IDs of every published version, most recent first.
     #[wasm_bindgen(js_name = packageHistory)]
     pub fn package_history(&self) -> Vec<String> {
         self.0
@@ -140,18 +181,24 @@ impl WasmAuditTrailClientReadOnly {
     }
 
     /// Returns the human-readable name of the network this client is connected to.
+    ///
+    /// @returns Network name (e.g. `"mainnet"`, `"testnet"`, `"localnet"`).
     #[wasm_bindgen]
     pub fn network(&self) -> String {
         self.0.network().to_string()
     }
 
     /// Returns the chain ID of the network this client is connected to.
+    ///
+    /// @returns Hex-encoded chain identifier.
     #[wasm_bindgen(js_name = chainId)]
     pub fn chain_id(&self) -> String {
         self.0.chain_id().to_string()
     }
 
-    /// Returns the underlying IOTA client wrapper used to talk to the network.
+    /// Returns the underlying IOTA client used to talk to the network.
+    ///
+    /// @returns The IOTA client passed to (or constructed during) creation of this client.
     #[wasm_bindgen(js_name = iotaClient)]
     pub fn iota_client(&self) -> WasmIotaClient {
         self.0.iota_client().clone().into_inner()
@@ -159,8 +206,15 @@ impl WasmAuditTrailClientReadOnly {
 
     /// Returns a trail-scoped handle for the given trail object ID.
     ///
-    /// Creating the handle is cheap. Reads only happen when you call methods on the returned
+    /// @remarks
+    /// Creating the handle is cheap. Reads only happen when methods are called on the returned
     /// handle.
+    ///
+    /// @param trailId - Object ID of the trail this handle should target.
+    ///
+    /// @returns Read-only {@link AuditTrailHandle} bound to `trailId`.
+    ///
+    /// @throws When `trailId` is not a valid object ID.
     pub fn trail(&self, trail_id: WasmObjectID) -> Result<WasmAuditTrailHandle> {
         let trail_id = parse_wasm_object_id(&trail_id)?;
         Ok(WasmAuditTrailHandle::from_read_only(self.0.clone(), trail_id))

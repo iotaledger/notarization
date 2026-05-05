@@ -15,8 +15,9 @@ use crate::types::WasmRecordTagEntry;
 
 /// Tag-registry API scoped to a specific trail.
 ///
-/// The registry defines the canonical set of tags that record writes and role-tag restrictions
-/// may reference.
+/// @remarks
+/// The registry defines the canonical set of tags that record writes and {@link RoleTags}
+/// restrictions may reference.
 #[derive(Clone)]
 #[wasm_bindgen(js_name = TrailTags, inspectable)]
 pub struct WasmTrailTags {
@@ -26,7 +27,6 @@ pub struct WasmTrailTags {
 }
 
 impl WasmTrailTags {
-    /// Returns the writable client for tag mutations.
     fn require_write(&self) -> Result<&AuditTrailClient<WasmTransactionSigner>> {
         self.full.as_ref().ok_or_else(|| {
             wasm_error(anyhow!(
@@ -40,7 +40,9 @@ impl WasmTrailTags {
 impl WasmTrailTags {
     /// Lists every tag in the trail's registry alongside its current usage count.
     ///
-    /// Returned entries are sorted alphabetically by tag name.
+    /// @returns Tag entries sorted alphabetically by tag name.
+    ///
+    /// @throws When the trail object cannot be fetched.
     pub async fn list(&self) -> Result<Vec<WasmRecordTagEntry>> {
         let trail = self.read_only.trail(self.trail_id).get().await.wasm_result()?;
         let mut tags: Vec<WasmRecordTagEntry> = trail
@@ -54,9 +56,18 @@ impl WasmTrailTags {
 
     /// Builds a transaction that adds a tag to the trail registry.
     ///
+    /// @remarks
     /// Inserted with a usage count of zero. The on-chain call aborts when the tag is already in
     /// the registry. Added tags become available to future tagged record writes and role-tag
-    /// restrictions. Requires the `AddRecordTags` permission.
+    /// restrictions.
+    ///
+    /// Requires the {@link Permission.AddRecordTags} permission.
+    ///
+    /// @param tag - Tag name to add to the registry.
+    ///
+    /// @returns A {@link TransactionBuilder} wrapping the {@link AddRecordTag} transaction.
+    ///
+    /// @throws When the wrapper was created from a read-only client.
     #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<AddRecordTag>")]
     pub fn add(&self, tag: String) -> Result<WasmTransactionBuilder> {
         let tx = self.require_write()?.trail(self.trail_id).tags().add(tag).into_inner();
@@ -65,9 +76,17 @@ impl WasmTrailTags {
 
     /// Builds a transaction that removes a tag from the trail registry.
     ///
+    /// @remarks
     /// The tag must currently be in the registry and must not be referenced by any record or
-    /// role-tag restriction; the on-chain call aborts otherwise. Requires the `DeleteRecordTags`
-    /// permission.
+    /// role-tag restriction; the on-chain call aborts otherwise.
+    ///
+    /// Requires the {@link Permission.DeleteRecordTags} permission.
+    ///
+    /// @param tag - Tag name to remove from the registry.
+    ///
+    /// @returns A {@link TransactionBuilder} wrapping the {@link RemoveRecordTag} transaction.
+    ///
+    /// @throws When the wrapper was created from a read-only client.
     #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<RemoveRecordTag>")]
     pub fn remove(&self, tag: String) -> Result<WasmTransactionBuilder> {
         let tx = self

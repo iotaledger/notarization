@@ -17,7 +17,7 @@ use product_common::bindings::WasmIotaAddress;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
-/// Placeholder wrapper used for transaction outputs that carry no value.
+/// Placeholder type used as the resolved value of transactions that carry no payload.
 #[wasm_bindgen(js_name = Empty, inspectable)]
 pub struct WasmEmpty;
 
@@ -27,14 +27,21 @@ impl From<()> for WasmEmpty {
     }
 }
 
-/// JS-friendly wrapper for audit-trail record payloads.
+/// Audit-trail record payload.
+///
+/// @remarks
+/// Holds either a UTF-8 string or a raw byte sequence. Use {@link Data.fromString} or
+/// {@link Data.fromBytes} to construct an instance, and {@link Data.toString} or
+/// {@link Data.toBytes} to extract the payload as the desired representation.
 #[wasm_bindgen(js_name = Data, inspectable)]
 #[derive(Clone)]
 pub struct WasmData(pub(crate) Data);
 
 #[wasm_bindgen(js_class = Data)]
 impl WasmData {
-    /// Returns the underlying payload as either a string or `Uint8Array`.
+    /// Returns the underlying payload in its original representation.
+    ///
+    /// @returns A `string` for text payloads or a `Uint8Array` for byte payloads.
     #[wasm_bindgen(getter)]
     pub fn value(&self) -> JsValue {
         match &self.0 {
@@ -43,7 +50,13 @@ impl WasmData {
         }
     }
 
-    /// Returns the payload converted to a string.
+    /// Returns the payload as a string.
+    ///
+    /// @remarks
+    /// Byte payloads are decoded with lossy UTF-8 conversion (invalid sequences become the U+FFFD
+    /// replacement character).
+    ///
+    /// @returns A string view of the payload.
     #[wasm_bindgen(js_name = toString)]
     pub fn to_string(&self) -> String {
         match &self.0 {
@@ -52,7 +65,12 @@ impl WasmData {
         }
     }
 
-    /// Returns the payload converted to raw bytes.
+    /// Returns the payload as raw bytes.
+    ///
+    /// @remarks
+    /// Text payloads are encoded as UTF-8.
+    ///
+    /// @returns A byte view of the payload.
     #[wasm_bindgen(js_name = toBytes)]
     pub fn to_bytes(&self) -> Vec<u8> {
         match &self.0 {
@@ -62,12 +80,20 @@ impl WasmData {
     }
 
     /// Creates a text payload.
+    ///
+    /// @param data - UTF-8 string to wrap.
+    ///
+    /// @returns A {@link Data} carrying `data` as text.
     #[wasm_bindgen(js_name = fromString)]
     pub fn from_string(data: String) -> Self {
         Self(Data::text(data))
     }
 
     /// Creates a binary payload.
+    ///
+    /// @param data - Raw bytes to wrap.
+    ///
+    /// @returns A {@link Data} carrying `data` as bytes.
     #[wasm_bindgen(js_name = fromBytes)]
     pub fn from_bytes(data: Uint8Array) -> Self {
         Self(Data::bytes(data.to_vec()))
@@ -145,32 +171,52 @@ fn sorted_role_entries(roles: HashMap<String, Role>) -> Vec<WasmRolePermissionsE
     roles
 }
 
-/// Permission variants exposed to wasm consumers.
+/// Permission variants enumerated by the audit trail.
 ///
-/// Each variant authorizes one operation on a trail. Variants are grouped by the proposed role that
-/// typically owns them (`Admin`, `RecordAdmin`, `LockingAdmin`, `RoleAdmin`, `CapAdmin`,
-/// `MetadataAdmin`, `TagAdmin`); see [`WasmPermissionSet`] for the recommended sets.
+/// @remarks
+/// Each variant authorizes one operation on a trail. Variants are grouped by the proposed role
+/// that typically owns them (`Admin`, `RecordAdmin`, `LockingAdmin`, `RoleAdmin`, `CapAdmin`,
+/// `MetadataAdmin`, `TagAdmin`); see {@link PermissionSet} for the recommended sets.
 #[wasm_bindgen(js_name = Permission)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum WasmPermission {
+    /// Authorizes deleting the trail itself.
     DeleteAuditTrail,
+    /// Authorizes the batched record-deletion entry point.
     DeleteAllRecords,
+    /// Authorizes appending a record.
     AddRecord,
+    /// Authorizes deleting an individual record.
     DeleteRecord,
+    /// Authorizes adding a record that supersedes earlier records via `RecordCorrection`.
     CorrectRecord,
+    /// Authorizes replacing the full {@link LockingConfig}.
     UpdateLockingConfig,
+    /// Authorizes updating only the delete-record window of the locking configuration.
     UpdateLockingConfigForDeleteRecord,
+    /// Authorizes updating only the delete-trail lock of the locking configuration.
     UpdateLockingConfigForDeleteTrail,
+    /// Authorizes updating only the write lock of the locking configuration.
     UpdateLockingConfigForWrite,
+    /// Authorizes creating roles.
     AddRoles,
+    /// Authorizes updating existing roles.
     UpdateRoles,
+    /// Authorizes deleting roles.
     DeleteRoles,
+    /// Authorizes issuing capabilities.
     AddCapabilities,
+    /// Authorizes revoking, destroying, and cleaning up capabilities.
     RevokeCapabilities,
+    /// Authorizes replacing the trail's `updatableMetadata`.
     UpdateMetadata,
+    /// Authorizes clearing the trail's `updatableMetadata`.
     DeleteMetadata,
+    /// Authorizes the migration entry point used after package upgrades.
     Migrate,
+    /// Authorizes adding entries to the trail's record-tag registry.
     AddRecordTags,
+    /// Authorizes removing entries from the trail's record-tag registry.
     DeleteRecordTags,
 }
 
@@ -226,7 +272,7 @@ impl From<WasmPermission> for Permission {
     }
 }
 
-/// JS-friendly wrapper for a set of permissions.
+/// Set of permissions granted by a role.
 #[wasm_bindgen(js_name = PermissionSet, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmPermissionSet {
@@ -237,48 +283,66 @@ pub struct WasmPermissionSet {
 #[wasm_bindgen(js_class = PermissionSet)]
 impl WasmPermissionSet {
     /// Creates a permission set from an explicit list of permissions.
+    ///
+    /// @param permissions - Permissions to include in the set.
     #[wasm_bindgen(constructor)]
     pub fn new(permissions: Vec<WasmPermission>) -> Self {
         Self { permissions }
     }
 
-    /// Returns the recommended role-administration permission set.
+    /// Returns the recommended permission set for the reserved initial-admin role.
+    ///
+    /// @returns A {@link PermissionSet} that authorizes role and capability administration.
     #[wasm_bindgen(js_name = adminPermissions)]
     pub fn admin_permissions() -> Self {
         PermissionSet::admin_permissions().into()
     }
 
     /// Returns the permissions needed to administer records.
+    ///
+    /// @returns A {@link PermissionSet} that authorizes record reads, writes, and deletions.
     #[wasm_bindgen(js_name = recordAdminPermissions)]
     pub fn record_admin_permissions() -> Self {
         PermissionSet::record_admin_permissions().into()
     }
 
     /// Returns the permissions needed to administer locking rules.
+    ///
+    /// @returns A {@link PermissionSet} that authorizes updates to all locking dimensions.
     #[wasm_bindgen(js_name = lockingAdminPermissions)]
     pub fn locking_admin_permissions() -> Self {
         PermissionSet::locking_admin_permissions().into()
     }
 
     /// Returns the permissions needed to administer roles.
+    ///
+    /// @returns A {@link PermissionSet} that authorizes adding, updating, and deleting roles.
     #[wasm_bindgen(js_name = roleAdminPermissions)]
     pub fn role_admin_permissions() -> Self {
         PermissionSet::role_admin_permissions().into()
     }
 
     /// Returns the permissions needed to issue and revoke capabilities.
+    ///
+    /// @returns A {@link PermissionSet} that authorizes the capability lifecycle.
     #[wasm_bindgen(js_name = capAdminPermissions)]
     pub fn cap_admin_permissions() -> Self {
         PermissionSet::cap_admin_permissions().into()
     }
 
     /// Returns the permissions needed to administer mutable metadata.
+    ///
+    /// @returns A {@link PermissionSet} that authorizes updating and clearing
+    /// `updatableMetadata`.
     #[wasm_bindgen(js_name = metadataAdminPermissions)]
     pub fn metadata_admin_permissions() -> Self {
         PermissionSet::metadata_admin_permissions().into()
     }
 
     /// Returns the permissions needed to administer record tags.
+    ///
+    /// @returns A {@link PermissionSet} that authorizes adding and removing entries from the
+    /// trail's record-tag registry.
     #[wasm_bindgen(js_name = tagAdminPermissions)]
     pub fn tag_admin_permissions() -> Self {
         PermissionSet::tag_admin_permissions().into()
@@ -326,7 +390,7 @@ impl From<LinkedTable<u64>> for WasmLinkedTable {
     }
 }
 
-/// Permission requirements for role administration.
+/// Permissions required to administer roles, as enforced by the trail.
 #[wasm_bindgen(js_name = RoleAdminPermissions, getter_with_clone, inspectable)]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WasmRoleAdminPermissions {
@@ -348,7 +412,7 @@ impl From<RoleAdminPermissions> for WasmRoleAdminPermissions {
     }
 }
 
-/// Permission requirements for capability administration.
+/// Permissions required to administer capabilities, as enforced by the trail.
 #[wasm_bindgen(js_name = CapabilityAdminPermissions, getter_with_clone, inspectable)]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WasmCapabilityAdminPermissions {
@@ -367,7 +431,7 @@ impl From<CapabilityAdminPermissions> for WasmCapabilityAdminPermissions {
     }
 }
 
-/// Flattened role entry exposed inside [`WasmRoleMap`].
+/// Flattened role entry exposed inside {@link RoleMap}.
 #[wasm_bindgen(js_name = RolePermissionsEntry, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmRolePermissionsEntry {
@@ -382,6 +446,7 @@ pub struct WasmRolePermissionsEntry {
 
 /// Allowlisted record tags stored on a role.
 ///
+/// @remarks
 /// Every tag listed here must already exist in the trail's record-tag registry before the role is
 /// created or updated; otherwise the on-chain call aborts.
 #[wasm_bindgen(js_name = RoleTags, getter_with_clone, inspectable)]
@@ -394,6 +459,11 @@ pub struct WasmRoleTags {
 #[wasm_bindgen(js_class = RoleTags)]
 impl WasmRoleTags {
     /// Creates role-tag restrictions from a list of tag names.
+    ///
+    /// @remarks
+    /// The supplied names are sorted alphabetically and de-duplicated.
+    ///
+    /// @param tags - Tag names allowed by the role.
     #[wasm_bindgen(constructor)]
     pub fn new(tags: Vec<String>) -> Self {
         let mut tags = tags;
@@ -434,9 +504,10 @@ impl From<(String, u64)> for WasmRecordTagEntry {
     }
 }
 
-/// JS-friendly view of the trail role map.
+/// Snapshot of the trail's role map.
 ///
-/// Mirrors the access-control state maintained by the Move package, including the reserved
+/// @remarks
+/// Mirrors the access-control state maintained by the audit-trail package, including the reserved
 /// initial-admin role, the revoked-capability denylist, and the role data used for tag-aware
 /// authorization.
 #[wasm_bindgen(js_name = RoleMap, getter_with_clone, inspectable)]
@@ -447,8 +518,9 @@ pub struct WasmRoleMap {
     pub target_key: String,
     /// Role definitions sorted by role name.
     pub roles: Vec<WasmRolePermissionsEntry>,
-    /// Reserved role name used for initial-admin capabilities. Always equals `"Admin"` (matching
-    /// the Move `INITIAL_ADMIN_ROLE_NAME` constant). The role bearing this name cannot be deleted.
+    /// Reserved role name used for initial-admin capabilities.
+    ///
+    /// Always equals `"Admin"`. The role bearing this name cannot be deleted.
     #[wasm_bindgen(js_name = initialAdminRoleName)]
     pub initial_admin_role_name: String,
     /// Denylist of revoked capability IDs.
@@ -504,11 +576,12 @@ impl From<LinkedTable<ObjectID>> for WasmObjectIdLinkedTable {
     }
 }
 
-/// Capability issuance options exposed to wasm consumers.
+/// Capability issuance options.
 ///
-/// These fields configure restrictions on the issued capability object. Matching against the current
-/// caller and the on-chain timestamp happens whenever the capability is later presented for
-/// authorization, not at issue time.
+/// @remarks
+/// These fields configure restrictions on the issued capability object. Matching against the
+/// current caller and the on-chain timestamp happens whenever the capability is later presented
+/// for authorization, not at issue time.
 #[wasm_bindgen(js_name = CapabilityIssueOptions, getter_with_clone, inspectable)]
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct WasmCapabilityIssueOptions {
@@ -529,6 +602,11 @@ pub struct WasmCapabilityIssueOptions {
 #[wasm_bindgen(js_class = CapabilityIssueOptions)]
 impl WasmCapabilityIssueOptions {
     /// Creates capability issuance options.
+    ///
+    /// @param issuedTo - Optional recipient address; `null` keeps the capability with the caller.
+    /// @param validFromMs - Optional earliest valid timestamp in milliseconds since the Unix
+    /// epoch.
+    /// @param validUntilMs - Optional latest valid timestamp in milliseconds since the Unix epoch.
     #[wasm_bindgen(constructor)]
     pub fn new(issued_to: Option<WasmIotaAddress>, valid_from_ms: Option<u64>, valid_until_ms: Option<u64>) -> Self {
         Self {
@@ -559,8 +637,9 @@ impl From<WasmCapabilityIssueOptions> for CapabilityIssueOptions {
     }
 }
 
-/// Capability data returned to wasm consumers.
+/// Capability data describing a granted role and its validity window.
 ///
+/// @remarks
 /// A capability grants exactly one role against exactly one trail and may additionally restrict
 /// who may use it and during which time window it is valid.
 #[wasm_bindgen(js_name = Capability, getter_with_clone, inspectable)]
@@ -785,8 +864,10 @@ pub struct WasmCapabilityRevoked {
     /// Revoked capability object ID.
     #[wasm_bindgen(js_name = capabilityId)]
     pub capability_id: String,
-    /// Millisecond timestamp retained for denylist cleanup. `0` when the capability had no expiry
-    /// — denylist entries with `validUntil == 0` are kept indefinitely.
+    /// Millisecond timestamp retained for denylist cleanup.
+    ///
+    /// `0` when the capability had no expiry — denylist entries with `validUntil == 0` are kept
+    /// indefinitely.
     #[wasm_bindgen(js_name = validUntil)]
     pub valid_until: u64,
 }
@@ -924,7 +1005,7 @@ impl From<RoleDeleted> for WasmRoleDeleted {
     }
 }
 
-/// Discriminant for the shape stored inside [`WasmTimeLock`].
+/// Discriminant for the shape stored inside {@link TimeLock}.
 #[wasm_bindgen(js_name = TimeLockType)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum WasmTimeLockType {
@@ -934,17 +1015,19 @@ pub enum WasmTimeLockType {
     UnlockAt,
     /// The lock unlocks at a Unix timestamp in milliseconds.
     UnlockAtMs,
-    /// The lock stays active until the protected object is explicitly destroyed. Not supported as
-    /// the trail-delete lock.
+    /// The lock stays active until the protected object is explicitly destroyed.
+    ///
+    /// Not supported as the trail-delete lock.
     UntilDestroyed,
     /// The lock is always active.
     Infinite,
 }
 
-/// JS-friendly wrapper for time locks.
+/// Time-based lock used in the trail's {@link LockingConfig}.
 ///
-/// `withUntilDestroyed` is rejected by the audit-trail package when used as the trail-delete lock; pass
-/// it only for the write lock.
+/// @remarks
+/// {@link TimeLock.withUntilDestroyed} is rejected by the audit-trail package when used as the
+/// trail-delete lock; pass it only for the write lock.
 #[wasm_bindgen(js_name = TimeLock, inspectable)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WasmTimeLock(pub(crate) TimeLock);
@@ -952,36 +1035,52 @@ pub struct WasmTimeLock(pub(crate) TimeLock);
 #[wasm_bindgen(js_class = TimeLock)]
 impl WasmTimeLock {
     /// Creates a lock that unlocks at a Unix timestamp in seconds.
+    ///
+    /// @param timeSec - Unlock time in seconds since the Unix epoch.
+    ///
+    /// @returns A lock that unlocks once the on-chain clock reaches `timeSec`.
     #[wasm_bindgen(js_name = withUnlockAt)]
     pub fn with_unlock_at(time_sec: u32) -> Self {
         Self(TimeLock::UnlockAt(time_sec))
     }
 
     /// Creates a lock that unlocks at a Unix timestamp in milliseconds.
+    ///
+    /// @param timeMs - Unlock time in milliseconds since the Unix epoch.
+    ///
+    /// @returns A lock that unlocks once the on-chain clock reaches `timeMs`.
     #[wasm_bindgen(js_name = withUnlockAtMs)]
     pub fn with_unlock_at_ms(time_ms: u64) -> Self {
         Self(TimeLock::UnlockAtMs(time_ms))
     }
 
     /// Creates a lock that stays active until the protected object is destroyed.
+    ///
+    /// @returns A lock that remains active until the protected object is destroyed.
     #[wasm_bindgen(js_name = withUntilDestroyed)]
     pub fn with_until_destroyed() -> Self {
         Self(TimeLock::UntilDestroyed)
     }
 
     /// Creates a lock that never unlocks.
+    ///
+    /// @returns A lock that is always active.
     #[wasm_bindgen(js_name = withInfinite)]
     pub fn with_infinite() -> Self {
         Self(TimeLock::Infinite)
     }
 
     /// Creates a disabled lock.
+    ///
+    /// @returns A lock that does not gate the protected operation.
     #[wasm_bindgen(js_name = withNone)]
     pub fn with_none() -> Self {
         Self(TimeLock::None)
     }
 
     /// Returns the lock variant.
+    ///
+    /// @returns The {@link TimeLockType} discriminant for this lock.
     #[wasm_bindgen(js_name = "type", getter)]
     pub fn lock_type(&self) -> WasmTimeLockType {
         match self.0 {
@@ -994,6 +1093,9 @@ impl WasmTimeLock {
     }
 
     /// Returns the lock argument for parameterized variants.
+    ///
+    /// @returns The numeric argument for `UnlockAt`/`UnlockAtMs` variants, or `undefined`
+    /// otherwise.
     #[wasm_bindgen(js_name = "args", getter)]
     pub fn args(&self) -> JsValue {
         match self.0 {
@@ -1016,7 +1118,7 @@ impl From<WasmTimeLock> for TimeLock {
     }
 }
 
-/// Discriminant for the shape stored inside [`WasmLockingWindow`].
+/// Discriminant for the shape stored inside {@link LockingWindow}.
 #[wasm_bindgen(js_name = LockingWindowType)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum WasmLockingWindowType {
@@ -1028,12 +1130,13 @@ pub enum WasmLockingWindowType {
     CountBased,
 }
 
-/// JS-friendly wrapper for delete windows.
+/// Delete-window definition used in the trail's {@link LockingConfig}.
 ///
+/// @remarks
 /// A window describes the period during which a record stays *locked against deletion*: time-based
 /// windows lock a record while its age is below the configured number of seconds; count-based
-/// windows lock a record while it is among the most recent N records. Records outside the window may
-/// be deleted, subject to remaining permission and tag checks.
+/// windows lock a record while it is among the most recent N records. Records outside the window
+/// may be deleted, subject to remaining permission and tag checks.
 #[wasm_bindgen(js_name = LockingWindow, inspectable)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WasmLockingWindow(pub(crate) LockingWindow);
@@ -1041,24 +1144,37 @@ pub struct WasmLockingWindow(pub(crate) LockingWindow);
 #[wasm_bindgen(js_class = LockingWindow)]
 impl WasmLockingWindow {
     /// Creates a disabled delete window.
+    ///
+    /// @returns A window that does not lock records against deletion.
     #[wasm_bindgen(js_name = withNone)]
     pub fn with_none() -> Self {
         Self(LockingWindow::None)
     }
 
     /// Creates a time-based delete window.
+    ///
+    /// @param seconds - Maximum record age, in seconds, for which the record stays locked against
+    /// deletion.
+    ///
+    /// @returns A window that locks records younger than `seconds`.
     #[wasm_bindgen(js_name = withTimeBased)]
     pub fn with_time_based(seconds: u64) -> Self {
         Self(LockingWindow::TimeBased { seconds })
     }
 
     /// Creates a count-based delete window.
+    ///
+    /// @param count - Number of most recent records that stay locked against deletion.
+    ///
+    /// @returns A window that locks the `count` most recent records.
     #[wasm_bindgen(js_name = withCountBased)]
     pub fn with_count_based(count: u64) -> Self {
         Self(LockingWindow::CountBased { count })
     }
 
     /// Returns the window variant.
+    ///
+    /// @returns The {@link LockingWindowType} discriminant for this window.
     #[wasm_bindgen(js_name = "type", getter)]
     pub fn window_type(&self) -> WasmLockingWindowType {
         match self.0 {
@@ -1069,6 +1185,9 @@ impl WasmLockingWindow {
     }
 
     /// Returns the window argument for parameterized variants.
+    ///
+    /// @returns The numeric argument for `TimeBased`/`CountBased` variants, or `undefined`
+    /// otherwise.
     #[wasm_bindgen(js_name = "args", getter)]
     pub fn args(&self) -> JsValue {
         match self.0 {
@@ -1091,21 +1210,24 @@ impl From<WasmLockingWindow> for LockingWindow {
     }
 }
 
-/// Full locking configuration exposed to wasm consumers.
+/// Full locking configuration.
 ///
+/// @remarks
 /// Combines three independent rules: a per-record delete window, a trail-delete time lock, and a
-/// write-time lock. The trail-delete lock must not be `TimeLock.withUntilDestroyed()`; trail creation
-/// and locking updates that violate this invariant abort on-chain.
+/// write-time lock. The trail-delete lock must not be {@link TimeLock.withUntilDestroyed}; trail
+/// creation and locking updates that violate this invariant abort on-chain.
 #[wasm_bindgen(js_name = LockingConfig, getter_with_clone, inspectable)]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WasmLockingConfig {
-    /// Delete-window policy applied to individual records. Records inside the window are locked
-    /// against deletion.
+    /// Delete-window policy applied to individual records.
+    ///
+    /// Records inside the window are locked against deletion.
     #[wasm_bindgen(js_name = deleteRecordWindow)]
     pub delete_record_window: WasmLockingWindow,
-    /// Time lock that gates deletion of the entire trail. Must not be
-    /// `TimeLock.withUntilDestroyed()`; trail creation and locking updates that violate this
-    /// invariant abort on-chain.
+    /// Time lock that gates deletion of the entire trail.
+    ///
+    /// Must not be {@link TimeLock.withUntilDestroyed}; trail creation and locking updates that
+    /// violate this invariant abort on-chain.
     #[wasm_bindgen(js_name = deleteTrailLock)]
     pub delete_trail_lock: WasmTimeLock,
     /// Time lock that gates record writes (`addRecord`).
@@ -1116,6 +1238,12 @@ pub struct WasmLockingConfig {
 #[wasm_bindgen(js_class = LockingConfig)]
 impl WasmLockingConfig {
     /// Creates a locking configuration.
+    ///
+    /// @param deleteRecordWindow - {@link LockingWindow} that controls when individual records may
+    /// be deleted.
+    /// @param deleteTrailLock - {@link TimeLock} that controls when the trail itself may be
+    /// deleted.
+    /// @param writeLock - {@link TimeLock} that controls when records may be appended.
     #[wasm_bindgen(constructor)]
     pub fn new(
         delete_record_window: WasmLockingWindow,
@@ -1150,10 +1278,11 @@ impl From<WasmLockingConfig> for LockingConfig {
     }
 }
 
-/// Immutable trail metadata exposed to wasm consumers.
+/// Immutable trail metadata.
 ///
+/// @remarks
 /// Stored once on the trail object at creation and exposed read-only thereafter. Use
-/// `OnChainAuditTrail.updatableMetadata` for the mutable counterpart.
+/// {@link OnChainAuditTrail.updatableMetadata} for the mutable counterpart.
 #[wasm_bindgen(js_name = ImmutableMetadata, getter_with_clone, inspectable)]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WasmImmutableMetadata {
@@ -1183,8 +1312,10 @@ impl From<WasmImmutableMetadata> for ImmutableMetadata {
 
 /// Correction metadata attached to a record.
 ///
-/// `replaces` is fixed at record creation and lists the sequence numbers this record supersedes;
-/// `isReplacedBy` is a back-pointer the trail sets later when this record itself is corrected.
+/// @remarks
+/// {@link RecordCorrection.replaces} is fixed at record creation and lists the sequence numbers
+/// this record supersedes; {@link RecordCorrection.isReplacedBy} is a back-pointer the trail sets
+/// later when this record itself is corrected.
 #[wasm_bindgen(js_name = RecordCorrection, getter_with_clone, inspectable)]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WasmRecordCorrection {
@@ -1215,8 +1346,9 @@ impl From<WasmRecordCorrection> for RecordCorrection {
     }
 }
 
-/// Single audit-trail record exposed to wasm consumers.
+/// Single audit-trail record.
 ///
+/// @remarks
 /// Records form a tamper-evident, sequential chain: each record has a monotonically increasing
 /// sequence number that is never reused, even after the record is deleted.
 #[wasm_bindgen(js_name = Record, getter_with_clone, inspectable)]
@@ -1255,13 +1387,13 @@ impl From<Record<Data>> for WasmRecord {
     }
 }
 
-/// One page of records returned by `TrailRecords.listPage(...)`.
+/// One page of records returned by {@link TrailRecords.listPage}.
 #[wasm_bindgen(js_name = PaginatedRecord, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmPaginatedRecord {
     /// Records included in the current page, ordered by sequence number.
     pub records: Vec<WasmRecord>,
-    /// Cursor to pass to the next `TrailRecords.listPage(...)` call.
+    /// Cursor to pass to the next {@link TrailRecords.listPage} call.
     #[wasm_bindgen(js_name = nextCursor)]
     pub next_cursor: Option<u64>,
     /// Indicates whether another page may be available.
