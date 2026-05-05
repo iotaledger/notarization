@@ -276,18 +276,18 @@ entry fun migrate<D: store + copy>(
     self.version = PACKAGE_VERSION;
 }
 
-fun assert_record_tag_allowed<D: store + copy>(
+fun record_tag_allowed<D: store + copy>(
     self: &AuditTrail<D>,
     cap: &Capability,
     tag: &Option<String>,
-) {
+): bool {
     if (tag.is_none()) {
-        return
+        return true
     };
 
     let requested_tag = option::borrow(tag);
     assert!(record_tags::contains(&self.tags, requested_tag), ERecordTagNotDefined);
-    assert!(record_tags::role_allows(&self.roles, cap, requested_tag), ERecordTagNotAllowed);
+    record_tags::role_allows(&self.roles, cap, requested_tag)
 }
 
 // ===== Record Operations =====
@@ -315,7 +315,7 @@ public fun add_record<D: store + copy>(
             ctx,
         );
     assert!(!locking::is_write_locked(&self.locking_config, clock), ETrailWriteLocked);
-    assert_record_tag_allowed(self, cap, &record_tag);
+    assert!(record_tag_allowed(self, cap, &record_tag), ERecordTagNotAllowed);
 
     let caller = ctx.sender();
     let timestamp = clock::timestamp_ms(clock);
@@ -371,10 +371,13 @@ public fun delete_record<D: store + copy + drop>(
             ctx,
         );
     assert!(linked_table::contains(&self.records, sequence_number), ERecordNotFound);
-    assert_record_tag_allowed(
-        self,
-        cap,
-        record::tag(linked_table::borrow(&self.records, sequence_number)),
+    assert!(
+        record_tag_allowed(
+            self,
+            cap,
+            record::tag(linked_table::borrow(&self.records, sequence_number)),
+        ),
+        ERecordTagNotAllowed,
     );
     assert!(!self.is_record_locked(sequence_number, clock), ERecordLocked);
 
@@ -432,11 +435,15 @@ public fun delete_records_batch<D: store + copy + drop>(
             continue
         };
 
-        assert_record_tag_allowed(
-            self,
-            cap,
-            record::tag(linked_table::borrow(&self.records, sequence_number)),
-        );
+        if (
+            !record_tag_allowed(
+                self,
+                cap,
+                record::tag(linked_table::borrow(&self.records, sequence_number)),
+            )
+        ) {
+            continue
+        };
         let record = linked_table::remove(&mut self.records, sequence_number);
 
         if (record::tag(&record).is_some()) {

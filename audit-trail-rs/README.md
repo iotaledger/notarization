@@ -204,7 +204,7 @@ sequenceDiagram
 
 The lifecycle of an _Audit Trail_ deletion can be described as:
 
-- Delete all unlocked records with `TrailRecords::delete()` or `TrailRecords::delete_records_batch()`
+- Delete all eligible unlocked records with `TrailRecords::delete()` or `TrailRecords::delete_records_batch()`
 - Wait until the `Delete Trail Lock` allows trail deletion, if a lock is configured
 - Delete the trail object with `AuditTrailHandle::delete_audit_trail()`
 
