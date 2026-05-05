@@ -435,11 +435,13 @@ public fun delete_records_batch<D: store + copy + drop>(
             continue
         };
 
-        if (!record_tag_allowed(
-            self,
-            cap,
-            record::tag(linked_table::borrow(&self.records, sequence_number)),
-        )) {
+        if (
+            !record_tag_allowed(
+                self,
+                cap,
+                record::tag(linked_table::borrow(&self.records, sequence_number)),
+            )
+        ) {
             continue
         };
         let record = linked_table::remove(&mut self.records, sequence_number);
