@@ -14,6 +14,9 @@ use crate::trail::{WasmAddRecordTag, WasmRemoveRecordTag};
 use crate::types::WasmRecordTagEntry;
 
 /// Tag-registry API scoped to a specific trail.
+///
+/// The registry defines the canonical set of tags that record writes and role-tag restrictions
+/// may reference.
 #[derive(Clone)]
 #[wasm_bindgen(js_name = TrailTags, inspectable)]
 pub struct WasmTrailTags {
@@ -35,6 +38,9 @@ impl WasmTrailTags {
 
 #[wasm_bindgen(js_class = TrailTags)]
 impl WasmTrailTags {
+    /// Lists every tag in the trail's registry alongside its current usage count.
+    ///
+    /// Returned entries are sorted alphabetically by tag name.
     pub async fn list(&self) -> Result<Vec<WasmRecordTagEntry>> {
         let trail = self.read_only.trail(self.trail_id).get().await.wasm_result()?;
         let mut tags: Vec<WasmRecordTagEntry> = trail
@@ -47,6 +53,10 @@ impl WasmTrailTags {
     }
 
     /// Builds a transaction that adds a tag to the trail registry.
+    ///
+    /// Inserted with a usage count of zero. The on-chain call aborts when the tag is already in
+    /// the registry. Added tags become available to future tagged record writes and role-tag
+    /// restrictions. Requires the `AddRecordTags` permission.
     #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<AddRecordTag>")]
     pub fn add(&self, tag: String) -> Result<WasmTransactionBuilder> {
         let tx = self.require_write()?.trail(self.trail_id).tags().add(tag).into_inner();
@@ -54,6 +64,10 @@ impl WasmTrailTags {
     }
 
     /// Builds a transaction that removes a tag from the trail registry.
+    ///
+    /// The tag must currently be in the registry and must not be referenced by any record or
+    /// role-tag restriction; the on-chain call aborts otherwise. Requires the `DeleteRecordTags`
+    /// permission.
     #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<RemoveRecordTag>")]
     pub fn remove(&self, tag: String) -> Result<WasmTransactionBuilder> {
         let tx = self

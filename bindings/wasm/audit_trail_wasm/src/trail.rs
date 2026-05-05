@@ -31,6 +31,12 @@ use crate::types::{
 };
 
 /// Read-only view of an on-chain audit trail for wasm consumers.
+///
+/// The trail is a *shared*, tamper-evident object that maintains an ordered sequence of records.
+/// Each record is assigned a unique, auto-incrementing sequence number that is never reused (the
+/// counter does not decrement on deletion). Access is governed by capability-based RBAC: every
+/// mutating call must present a `Capability` bound to a role whose permissions cover the
+/// operation.
 #[wasm_bindgen(js_name = OnChainAuditTrail, inspectable)]
 #[derive(Clone)]
 pub struct WasmOnChainAuditTrail(pub(crate) OnChainAuditTrail);
@@ -47,37 +53,45 @@ impl WasmOnChainAuditTrail {
         self.0.id.id.to_string()
     }
 
-    /// Returns the creator address.
+    /// Returns the address that created this trail.
     #[wasm_bindgen(getter)]
     pub fn creator(&self) -> String {
         self.0.creator.to_string()
     }
 
-    /// Returns the creation timestamp in milliseconds.
+    /// Returns the creation timestamp in milliseconds since the Unix epoch.
     #[wasm_bindgen(js_name = createdAt, getter)]
     pub fn created_at(&self) -> u64 {
         self.0.created_at
     }
 
-    /// Returns the current record sequence counter.
+    /// Returns the next sequence number that will be assigned to a new record.
+    ///
+    /// This is a monotonic counter that never decrements, even after records are deleted, so
+    /// existing sequence numbers remain unique for the lifetime of the trail.
     #[wasm_bindgen(js_name = sequenceNumber, getter)]
     pub fn sequence_number(&self) -> u64 {
         self.0.sequence_number
     }
 
-    /// Returns the active locking configuration.
+    /// Returns the active locking configuration that governs record deletion, trail deletion, and
+    /// record writes.
     #[wasm_bindgen(js_name = lockingConfig, getter)]
     pub fn locking_config(&self) -> WasmLockingConfig {
         self.0.locking_config.clone().into()
     }
 
-    /// Returns the record linked-table metadata.
+    /// Returns the linked-table metadata for record storage.
+    ///
+    /// Returns table size and head/tail sequence numbers; record contents must be loaded via
+    /// `TrailRecords`.
     #[wasm_bindgen(getter)]
     pub fn records(&self) -> WasmLinkedTable {
         self.0.records.clone().into()
     }
 
-    /// Returns the trail-owned record tags together with usage counts.
+    /// Returns the canonical list of tags that may be attached to records in this trail, together
+    /// with their combined usage counts. Sorted alphabetically by tag name.
     #[wasm_bindgen(getter)]
     pub fn tags(&self) -> Vec<WasmRecordTagEntry> {
         let mut tags: Vec<WasmRecordTagEntry> = self
@@ -90,25 +104,28 @@ impl WasmOnChainAuditTrail {
         tags
     }
 
-    /// Returns the trail role map.
+    /// Returns the trail's role definitions, the revoked-capability denylist, and the
+    /// permissions required to administer roles and capabilities.
     #[wasm_bindgen(getter)]
     pub fn roles(&self) -> WasmRoleMap {
         self.0.roles.clone().into()
     }
 
-    /// Returns immutable metadata when present.
+    /// Returns metadata fixed at creation time, when present.
     #[wasm_bindgen(js_name = immutableMetadata, getter)]
     pub fn immutable_metadata(&self) -> Option<WasmImmutableMetadata> {
         self.0.immutable_metadata.clone().map(Into::into)
     }
 
-    /// Returns mutable metadata when present.
+    /// Returns metadata that holders of `UpdateMetadata` can change after creation, when present.
     #[wasm_bindgen(js_name = updatableMetadata, getter)]
     pub fn updatable_metadata(&self) -> Option<String> {
         self.0.updatable_metadata.clone()
     }
 
-    /// Returns the on-chain version of the trail object.
+    /// Returns the on-chain package version of the trail object. Use
+    /// `AuditTrailHandle.migrate()` after a package upgrade if this lags behind the SDK's
+    /// expected version.
     #[wasm_bindgen(getter)]
     pub fn version(&self) -> u64 {
         self.0.version

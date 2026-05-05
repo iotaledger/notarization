@@ -16,6 +16,9 @@ use crate::trail::{
 use crate::types::{WasmLockingConfig, WasmLockingWindow, WasmTimeLock};
 
 /// Locking API scoped to a specific trail.
+///
+/// Updates the trail's locking configuration and queries whether an individual record is
+/// currently locked against deletion.
 #[derive(Clone)]
 #[wasm_bindgen(js_name = TrailLocking, inspectable)]
 pub struct WasmTrailLocking {
@@ -40,6 +43,10 @@ impl WasmTrailLocking {
 #[wasm_bindgen(js_class = TrailLocking)]
 impl WasmTrailLocking {
     /// Builds a transaction that replaces the full locking configuration.
+    ///
+    /// Overwrites all three locking dimensions at once: delete-record window, delete-trail lock,
+    /// and write lock. `config.deleteTrailLock` must not be `TimeLock.withUntilDestroyed()`; the
+    /// on-chain call aborts otherwise. Requires the `UpdateLockingConfig` permission.
     #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<UpdateLockingConfig>")]
     pub fn update(&self, config: WasmLockingConfig) -> Result<WasmTransactionBuilder> {
         let tx = self
@@ -52,6 +59,10 @@ impl WasmTrailLocking {
     }
 
     /// Builds a transaction that updates only the delete-record window.
+    ///
+    /// Replaces the trail's `deleteRecordWindow`. Records currently inside the new window
+    /// immediately become locked against deletion. Requires the
+    /// `UpdateLockingConfigForDeleteRecord` permission.
     #[wasm_bindgen(js_name = updateDeleteRecordWindow, unchecked_return_type = "TransactionBuilder<UpdateDeleteRecordWindow>")]
     pub fn update_delete_record_window(&self, window: WasmLockingWindow) -> Result<WasmTransactionBuilder> {
         let tx = self
@@ -64,6 +75,10 @@ impl WasmTrailLocking {
     }
 
     /// Builds a transaction that updates only the delete-trail lock.
+    ///
+    /// Replaces the trail's `deleteTrailLock`. The new lock must not be
+    /// `TimeLock.withUntilDestroyed()`; the on-chain call aborts otherwise. Requires the
+    /// `UpdateLockingConfigForDeleteTrail` permission.
     #[wasm_bindgen(js_name = updateDeleteTrailLock, unchecked_return_type = "TransactionBuilder<UpdateDeleteTrailLock>")]
     pub fn update_delete_trail_lock(&self, lock: WasmTimeLock) -> Result<WasmTransactionBuilder> {
         let tx = self
@@ -76,6 +91,10 @@ impl WasmTrailLocking {
     }
 
     /// Builds a transaction that updates only the write lock.
+    ///
+    /// Replaces the trail's `writeLock`. While the new lock is active, `addRecord` aborts.
+    /// `TimeLock.withUntilDestroyed()` is permitted here. Requires the
+    /// `UpdateLockingConfigForWrite` permission.
     #[wasm_bindgen(js_name = updateWriteLock, unchecked_return_type = "TransactionBuilder<UpdateWriteLock>")]
     pub fn update_write_lock(&self, lock: WasmTimeLock) -> Result<WasmTransactionBuilder> {
         let tx = self
@@ -88,6 +107,9 @@ impl WasmTrailLocking {
     }
 
     /// Returns whether a record is currently locked against deletion.
+    ///
+    /// Evaluates the trail's `deleteRecordWindow` against the record at `sequenceNumber` and the
+    /// current clock time. Throws when no record exists at that sequence number.
     #[wasm_bindgen(js_name = isRecordLocked)]
     pub async fn is_record_locked(&self, sequence_number: u64) -> Result<bool> {
         self.read_only

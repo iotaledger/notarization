@@ -330,8 +330,11 @@ impl From<LinkedTable<u64>> for WasmLinkedTable {
 #[wasm_bindgen(js_name = RoleAdminPermissions, getter_with_clone, inspectable)]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WasmRoleAdminPermissions {
+    /// Permission required to create roles.
     pub add: WasmPermission,
+    /// Permission required to delete roles.
     pub delete: WasmPermission,
+    /// Permission required to update roles.
     pub update: WasmPermission,
 }
 
@@ -349,7 +352,9 @@ impl From<RoleAdminPermissions> for WasmRoleAdminPermissions {
 #[wasm_bindgen(js_name = CapabilityAdminPermissions, getter_with_clone, inspectable)]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WasmCapabilityAdminPermissions {
+    /// Permission required to issue capabilities.
     pub add: WasmPermission,
+    /// Permission required to revoke capabilities.
     pub revoke: WasmPermission,
 }
 
@@ -366,8 +371,11 @@ impl From<CapabilityAdminPermissions> for WasmCapabilityAdminPermissions {
 #[wasm_bindgen(js_name = RolePermissionsEntry, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmRolePermissionsEntry {
+    /// Role name.
     pub name: String,
+    /// Permissions granted by the role.
     pub permissions: Vec<WasmPermission>,
+    /// Optional role-scoped record-tag restrictions.
     #[wasm_bindgen(js_name = roleTags)]
     pub role_tags: Option<WasmRoleTags>,
 }
@@ -413,7 +421,9 @@ impl From<WasmRoleTags> for RoleTags {
 #[wasm_bindgen(js_name = RecordTagEntry, getter_with_clone, inspectable)]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WasmRecordTagEntry {
+    /// Tag name.
     pub tag: String,
+    /// Combined number of records and roles currently referencing the tag.
     #[wasm_bindgen(js_name = usageCount)]
     pub usage_count: u64,
 }
@@ -425,20 +435,32 @@ impl From<(String, u64)> for WasmRecordTagEntry {
 }
 
 /// JS-friendly view of the trail role map.
+///
+/// Mirrors the access-control state maintained by the Move package, including the reserved
+/// initial-admin role, the revoked-capability denylist, and the role data used for tag-aware
+/// authorization.
 #[wasm_bindgen(js_name = RoleMap, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmRoleMap {
+    /// Trail object ID that this role map protects.
     #[wasm_bindgen(js_name = targetKey)]
     pub target_key: String,
+    /// Role definitions sorted by role name.
     pub roles: Vec<WasmRolePermissionsEntry>,
+    /// Reserved role name used for initial-admin capabilities. Always equals `"Admin"` (matching
+    /// the Move `INITIAL_ADMIN_ROLE_NAME` constant). The role bearing this name cannot be deleted.
     #[wasm_bindgen(js_name = initialAdminRoleName)]
     pub initial_admin_role_name: String,
+    /// Denylist of revoked capability IDs.
     #[wasm_bindgen(js_name = revokedCapabilities)]
     pub revoked_capabilities: WasmObjectIdLinkedTable,
+    /// Capability IDs currently recognized as initial-admin capabilities.
     #[wasm_bindgen(js_name = initialAdminCapIds)]
     pub initial_admin_cap_ids: Vec<String>,
+    /// Permissions required to administer roles.
     #[wasm_bindgen(js_name = roleAdminPermissions)]
     pub role_admin_permissions: WasmRoleAdminPermissions,
+    /// Permissions required to administer capabilities.
     #[wasm_bindgen(js_name = capabilityAdminPermissions)]
     pub capability_admin_permissions: WasmCapabilityAdminPermissions,
 }
@@ -461,9 +483,13 @@ impl From<RoleMap> for WasmRoleMap {
 #[wasm_bindgen(js_name = ObjectIdLinkedTable, getter_with_clone, inspectable)]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WasmObjectIdLinkedTable {
+    /// Linked-table object ID.
     pub id: String,
+    /// Declared number of entries in the table.
     pub size: u64,
+    /// Object ID of the first entry, if any.
     pub head: Option<String>,
+    /// Object ID of the last entry, if any.
     pub tail: Option<String>,
 }
 
@@ -486,10 +512,16 @@ impl From<LinkedTable<ObjectID>> for WasmObjectIdLinkedTable {
 #[wasm_bindgen(js_name = CapabilityIssueOptions, getter_with_clone, inspectable)]
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct WasmCapabilityIssueOptions {
+    /// Address that should own the issued capability. When `null`, the capability is transferred
+    /// to the caller.
     #[wasm_bindgen(js_name = issuedTo)]
     pub issued_to: Option<WasmIotaAddress>,
+    /// Earliest millisecond timestamp (since the Unix epoch) at which the capability becomes
+    /// valid. When `null`, the capability is valid from its creation time.
     #[wasm_bindgen(js_name = validFromMs)]
     pub valid_from_ms: Option<u64>,
+    /// Latest millisecond timestamp (since the Unix epoch) at which the capability is still
+    /// valid. When `null`, the capability does not expire.
     #[wasm_bindgen(js_name = validUntilMs)]
     pub valid_until_ms: Option<u64>,
 }
@@ -534,14 +566,23 @@ impl From<WasmCapabilityIssueOptions> for CapabilityIssueOptions {
 #[wasm_bindgen(js_name = Capability, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmCapability {
+    /// Capability object ID.
     pub id: String,
+    /// Trail object ID protected by the capability.
     #[wasm_bindgen(js_name = targetKey)]
     pub target_key: String,
+    /// Role granted by the capability.
     pub role: String,
+    /// Address bound to the capability. When `null`, any holder may present the capability for
+    /// authorization.
     #[wasm_bindgen(js_name = issuedTo)]
     pub issued_to: Option<WasmIotaAddress>,
+    /// Earliest millisecond timestamp (since the Unix epoch, inclusive) at which the capability
+    /// is valid. When `null`, the capability is valid from its creation time.
     #[wasm_bindgen(js_name = validFrom)]
     pub valid_from: Option<u64>,
+    /// Latest millisecond timestamp (since the Unix epoch, inclusive) at which the capability is
+    /// still valid. When `null`, the capability does not expire.
     #[wasm_bindgen(js_name = validUntil)]
     pub valid_until: Option<u64>,
 }
@@ -563,9 +604,12 @@ impl From<Capability> for WasmCapability {
 #[wasm_bindgen(js_name = AuditTrailCreated, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmAuditTrailCreated {
+    /// Newly created trail object ID.
     #[wasm_bindgen(js_name = trailId)]
     pub trail_id: String,
+    /// Address that created the trail.
     pub creator: WasmIotaAddress,
+    /// Millisecond event timestamp.
     pub timestamp: u64,
 }
 
@@ -583,8 +627,10 @@ impl From<AuditTrailCreated> for WasmAuditTrailCreated {
 #[wasm_bindgen(js_name = AuditTrailDeleted, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmAuditTrailDeleted {
+    /// Deleted trail object ID.
     #[wasm_bindgen(js_name = trailId)]
     pub trail_id: String,
+    /// Millisecond event timestamp.
     pub timestamp: u64,
 }
 
@@ -601,12 +647,16 @@ impl From<AuditTrailDeleted> for WasmAuditTrailDeleted {
 #[wasm_bindgen(js_name = RecordAdded, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmRecordAdded {
+    /// Trail object ID receiving the new record.
     #[wasm_bindgen(js_name = trailId)]
     pub trail_id: String,
+    /// Sequence number assigned to the new record.
     #[wasm_bindgen(js_name = sequenceNumber)]
     pub sequence_number: u64,
+    /// Address that added the record.
     #[wasm_bindgen(js_name = addedBy)]
     pub added_by: WasmIotaAddress,
+    /// Millisecond event timestamp.
     pub timestamp: u64,
 }
 
@@ -625,12 +675,16 @@ impl From<RecordAdded> for WasmRecordAdded {
 #[wasm_bindgen(js_name = RecordDeleted, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmRecordDeleted {
+    /// Trail object ID from which the record was deleted.
     #[wasm_bindgen(js_name = trailId)]
     pub trail_id: String,
+    /// Sequence number of the deleted record.
     #[wasm_bindgen(js_name = sequenceNumber)]
     pub sequence_number: u64,
+    /// Address that deleted the record.
     #[wasm_bindgen(js_name = deletedBy)]
     pub deleted_by: WasmIotaAddress,
+    /// Millisecond event timestamp.
     pub timestamp: u64,
 }
 
@@ -649,15 +703,23 @@ impl From<RecordDeleted> for WasmRecordDeleted {
 #[wasm_bindgen(js_name = CapabilityIssued, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmCapabilityIssued {
+    /// Trail object ID protected by the capability.
     #[wasm_bindgen(js_name = targetKey)]
     pub target_key: String,
+    /// Newly created capability object ID.
     #[wasm_bindgen(js_name = capabilityId)]
     pub capability_id: String,
+    /// Role granted by the capability.
     pub role: String,
+    /// Address bound to the capability, if one was assigned at issue time.
     #[wasm_bindgen(js_name = issuedTo)]
     pub issued_to: Option<WasmIotaAddress>,
+    /// Earliest millisecond timestamp (since the Unix epoch, inclusive) at which the capability
+    /// becomes valid. `null` when no lower bound was set.
     #[wasm_bindgen(js_name = validFrom)]
     pub valid_from: Option<u64>,
+    /// Latest millisecond timestamp (since the Unix epoch, inclusive) at which the capability is
+    /// still valid. `null` when no expiry was set.
     #[wasm_bindgen(js_name = validUntil)]
     pub valid_until: Option<u64>,
 }
@@ -679,15 +741,23 @@ impl From<CapabilityIssued> for WasmCapabilityIssued {
 #[wasm_bindgen(js_name = CapabilityDestroyed, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmCapabilityDestroyed {
+    /// Trail object ID protected by the capability.
     #[wasm_bindgen(js_name = targetKey)]
     pub target_key: String,
+    /// Destroyed capability object ID.
     #[wasm_bindgen(js_name = capabilityId)]
     pub capability_id: String,
+    /// Role granted by the capability.
     pub role: String,
+    /// Address bound to the capability, if one had been assigned.
     #[wasm_bindgen(js_name = issuedTo)]
     pub issued_to: Option<WasmIotaAddress>,
+    /// Earliest millisecond timestamp (since the Unix epoch, inclusive) at which the capability
+    /// became valid. `null` when no lower bound had been set.
     #[wasm_bindgen(js_name = validFrom)]
     pub valid_from: Option<u64>,
+    /// Latest millisecond timestamp (since the Unix epoch, inclusive) at which the capability had
+    /// been valid. `null` when no expiry had been set.
     #[wasm_bindgen(js_name = validUntil)]
     pub valid_until: Option<u64>,
 }
@@ -709,10 +779,14 @@ impl From<CapabilityDestroyed> for WasmCapabilityDestroyed {
 #[wasm_bindgen(js_name = CapabilityRevoked, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmCapabilityRevoked {
+    /// Trail object ID protected by the capability.
     #[wasm_bindgen(js_name = targetKey)]
     pub target_key: String,
+    /// Revoked capability object ID.
     #[wasm_bindgen(js_name = capabilityId)]
     pub capability_id: String,
+    /// Millisecond timestamp retained for denylist cleanup. `0` when the capability had no expiry
+    /// — denylist entries with `validUntil == 0` are kept indefinitely.
     #[wasm_bindgen(js_name = validUntil)]
     pub valid_until: u64,
 }
@@ -731,12 +805,16 @@ impl From<CapabilityRevoked> for WasmCapabilityRevoked {
 #[wasm_bindgen(js_name = RevokedCapabilitiesCleanedUp, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmRevokedCapabilitiesCleanedUp {
+    /// Trail object ID whose denylist was pruned.
     #[wasm_bindgen(js_name = trailId)]
     pub trail_id: String,
+    /// Number of expired entries removed by this cleanup call.
     #[wasm_bindgen(js_name = cleanedCount)]
     pub cleaned_count: u64,
+    /// Address that triggered the cleanup.
     #[wasm_bindgen(js_name = cleanedBy)]
     pub cleaned_by: WasmIotaAddress,
+    /// Millisecond event timestamp.
     pub timestamp: u64,
 }
 
@@ -755,14 +833,20 @@ impl From<RevokedCapabilitiesCleanedUp> for WasmRevokedCapabilitiesCleanedUp {
 #[wasm_bindgen(js_name = RoleCreated, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmRoleCreated {
+    /// Trail object ID that owns the role.
     #[wasm_bindgen(js_name = trailId)]
     pub trail_id: String,
+    /// Role name.
     pub role: String,
+    /// Permissions granted by the new role.
     pub permissions: WasmPermissionSet,
+    /// Optional record-tag restrictions stored as role data.
     #[wasm_bindgen(js_name = roleTags)]
     pub role_tags: Option<WasmRoleTags>,
+    /// Address that created the role.
     #[wasm_bindgen(js_name = createdBy)]
     pub created_by: WasmIotaAddress,
+    /// Millisecond event timestamp.
     pub timestamp: u64,
 }
 
@@ -783,14 +867,20 @@ impl From<RoleCreated> for WasmRoleCreated {
 #[wasm_bindgen(js_name = RoleUpdated, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmRoleUpdated {
+    /// Trail object ID that owns the role.
     #[wasm_bindgen(js_name = trailId)]
     pub trail_id: String,
+    /// Role name.
     pub role: String,
+    /// Updated permissions for the role.
     pub permissions: WasmPermissionSet,
+    /// Updated record-tag restrictions, if any.
     #[wasm_bindgen(js_name = roleTags)]
     pub role_tags: Option<WasmRoleTags>,
+    /// Address that updated the role.
     #[wasm_bindgen(js_name = updatedBy)]
     pub updated_by: WasmIotaAddress,
+    /// Millisecond event timestamp.
     pub timestamp: u64,
 }
 
@@ -811,11 +901,15 @@ impl From<RoleUpdated> for WasmRoleUpdated {
 #[wasm_bindgen(js_name = RoleDeleted, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmRoleDeleted {
+    /// Trail object ID that owned the role.
     #[wasm_bindgen(js_name = trailId)]
     pub trail_id: String,
+    /// Role name.
     pub role: String,
+    /// Address that deleted the role.
     #[wasm_bindgen(js_name = deletedBy)]
     pub deleted_by: WasmIotaAddress,
+    /// Millisecond event timestamp.
     pub timestamp: u64,
 }
 
@@ -834,10 +928,16 @@ impl From<RoleDeleted> for WasmRoleDeleted {
 #[wasm_bindgen(js_name = TimeLockType)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum WasmTimeLockType {
+    /// The time lock is disabled.
     None,
+    /// The lock unlocks at a Unix timestamp in seconds.
     UnlockAt,
+    /// The lock unlocks at a Unix timestamp in milliseconds.
     UnlockAtMs,
+    /// The lock stays active until the protected object is explicitly destroyed. Not supported as
+    /// the trail-delete lock.
     UntilDestroyed,
+    /// The lock is always active.
     Infinite,
 }
 
@@ -920,8 +1020,11 @@ impl From<WasmTimeLock> for TimeLock {
 #[wasm_bindgen(js_name = LockingWindowType)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum WasmLockingWindowType {
+    /// No delete window is enforced; records may be deleted at any time.
     None,
+    /// The window locks records while their age is below a configured number of seconds.
     TimeBased,
+    /// The window locks records while they are among the most recent N records.
     CountBased,
 }
 
@@ -996,10 +1099,16 @@ impl From<WasmLockingWindow> for LockingWindow {
 #[wasm_bindgen(js_name = LockingConfig, getter_with_clone, inspectable)]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WasmLockingConfig {
+    /// Delete-window policy applied to individual records. Records inside the window are locked
+    /// against deletion.
     #[wasm_bindgen(js_name = deleteRecordWindow)]
     pub delete_record_window: WasmLockingWindow,
+    /// Time lock that gates deletion of the entire trail. Must not be
+    /// `TimeLock.withUntilDestroyed()`; trail creation and locking updates that violate this
+    /// invariant abort on-chain.
     #[wasm_bindgen(js_name = deleteTrailLock)]
     pub delete_trail_lock: WasmTimeLock,
+    /// Time lock that gates record writes (`addRecord`).
     #[wasm_bindgen(js_name = writeLock)]
     pub write_lock: WasmTimeLock,
 }
@@ -1042,10 +1151,15 @@ impl From<WasmLockingConfig> for LockingConfig {
 }
 
 /// Immutable trail metadata exposed to wasm consumers.
+///
+/// Stored once on the trail object at creation and exposed read-only thereafter. Use
+/// `OnChainAuditTrail.updatableMetadata` for the mutable counterpart.
 #[wasm_bindgen(js_name = ImmutableMetadata, getter_with_clone, inspectable)]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WasmImmutableMetadata {
+    /// Human-readable trail name.
     pub name: String,
+    /// Optional human-readable description.
     pub description: Option<String>,
 }
 
@@ -1068,10 +1182,15 @@ impl From<WasmImmutableMetadata> for ImmutableMetadata {
 }
 
 /// Correction metadata attached to a record.
+///
+/// `replaces` is fixed at record creation and lists the sequence numbers this record supersedes;
+/// `isReplacedBy` is a back-pointer the trail sets later when this record itself is corrected.
 #[wasm_bindgen(js_name = RecordCorrection, getter_with_clone, inspectable)]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WasmRecordCorrection {
+    /// Sorted sequence numbers that this record supersedes.
     pub replaces: Vec<u64>,
+    /// Sequence number of the record that supersedes this one, if any.
     #[wasm_bindgen(js_name = isReplacedBy)]
     pub is_replaced_by: Option<u64>,
 }
@@ -1103,15 +1222,22 @@ impl From<WasmRecordCorrection> for RecordCorrection {
 #[wasm_bindgen(js_name = Record, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmRecord {
+    /// Record payload stored on-chain.
     pub data: WasmData,
+    /// Optional application-defined metadata.
     pub metadata: Option<String>,
+    /// Optional trail-owned tag attached to the record.
     pub tag: Option<String>,
+    /// Monotonic record sequence number inside the trail.
     #[wasm_bindgen(js_name = sequenceNumber)]
     pub sequence_number: u64,
+    /// Address that added the record.
     #[wasm_bindgen(js_name = addedBy)]
     pub added_by: WasmIotaAddress,
+    /// Millisecond timestamp at which the record was added.
     #[wasm_bindgen(js_name = addedAt)]
     pub added_at: u64,
+    /// Correction relationships for this record.
     pub correction: WasmRecordCorrection,
 }
 
@@ -1133,9 +1259,12 @@ impl From<Record<Data>> for WasmRecord {
 #[wasm_bindgen(js_name = PaginatedRecord, getter_with_clone, inspectable)]
 #[derive(Clone)]
 pub struct WasmPaginatedRecord {
+    /// Records included in the current page, ordered by sequence number.
     pub records: Vec<WasmRecord>,
+    /// Cursor to pass to the next `TrailRecords.listPage(...)` call.
     #[wasm_bindgen(js_name = nextCursor)]
     pub next_cursor: Option<u64>,
+    /// Indicates whether another page may be available.
     #[wasm_bindgen(js_name = hasNextPage)]
     pub has_next_page: bool,
 }

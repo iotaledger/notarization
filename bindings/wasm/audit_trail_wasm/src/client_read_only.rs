@@ -116,19 +116,20 @@ impl WasmAuditTrailClientReadOnly {
         Ok(Self(client))
     }
 
-    /// Returns the audit-trail package ID used by this client.
+    /// Returns the audit-trail package ID currently in use, as a stringified object ID.
     #[wasm_bindgen(js_name = packageId)]
     pub fn package_id(&self) -> String {
         self.0.package_id().to_string()
     }
 
-    /// Returns the `tf_components` package ID used by this client.
+    /// Returns the `tf_components` package ID currently in use, as a stringified object ID.
     #[wasm_bindgen(js_name = tfComponentsPackageId)]
     pub fn tf_components_package_id(&self) -> String {
         self.0.tf_components_package_id().to_string()
     }
 
-    /// Returns the resolved audit-trail package history as stringified object IDs.
+    /// Returns the resolved audit-trail package upgrade history (most recent first) as
+    /// stringified object IDs.
     #[wasm_bindgen(js_name = packageHistory)]
     pub fn package_history(&self) -> Vec<String> {
         self.0
@@ -138,19 +139,19 @@ impl WasmAuditTrailClientReadOnly {
             .collect()
     }
 
-    /// Returns the connected network name.
+    /// Returns the human-readable name of the network this client is connected to.
     #[wasm_bindgen]
     pub fn network(&self) -> String {
         self.0.network().to_string()
     }
 
-    /// Returns the connected chain ID.
+    /// Returns the chain ID of the network this client is connected to.
     #[wasm_bindgen(js_name = chainId)]
     pub fn chain_id(&self) -> String {
         self.0.chain_id().to_string()
     }
 
-    /// Returns the underlying IOTA client wrapper.
+    /// Returns the underlying IOTA client wrapper used to talk to the network.
     #[wasm_bindgen(js_name = iotaClient)]
     pub fn iota_client(&self) -> WasmIotaClient {
         self.0.iota_client().clone().into_inner()

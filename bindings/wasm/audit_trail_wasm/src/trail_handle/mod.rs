@@ -75,6 +75,9 @@ impl WasmAuditTrailHandle {
     }
 
     /// Builds a migration transaction for this trail.
+    ///
+    /// Bumps the trail's stored data layout to the current package version. Intended to be called
+    /// once after the audit-trail Move package is upgraded. Requires the `Migrate` permission.
     #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<Migrate>")]
     pub fn migrate(&self) -> Result<WasmTransactionBuilder> {
         let tx = self.require_write()?.trail(self.trail_id).migrate().into_inner();
@@ -82,6 +85,10 @@ impl WasmAuditTrailHandle {
     }
 
     /// Builds a delete transaction for this trail.
+    ///
+    /// Requires the `DeleteAuditTrail` permission. Deletion additionally requires the trail to be
+    /// empty (the on-chain call aborts otherwise) and the configured `deleteTrailLock` to have
+    /// elapsed. Emits an `AuditTrailDeleted` event on success.
     #[wasm_bindgen(js_name = deleteAuditTrail, unchecked_return_type = "TransactionBuilder<DeleteAuditTrail>")]
     pub fn delete_audit_trail(&self) -> Result<WasmTransactionBuilder> {
         let tx = self
@@ -93,6 +100,9 @@ impl WasmAuditTrailHandle {
     }
 
     /// Builds a mutable-metadata update transaction for this trail.
+    ///
+    /// Replaces or clears the trail's `updatableMetadata` field. Pass `null` to clear the field.
+    /// Requires the `UpdateMetadata` permission.
     #[wasm_bindgen(js_name = updateMetadata, unchecked_return_type = "TransactionBuilder<UpdateMetadata>")]
     pub fn update_metadata(&self, metadata: Option<String>) -> Result<WasmTransactionBuilder> {
         let tx = self
@@ -104,6 +114,8 @@ impl WasmAuditTrailHandle {
     }
 
     /// Returns the record API scoped to this trail.
+    ///
+    /// Use this for record reads, appends, and deletions.
     pub fn records(&self) -> WasmTrailRecords {
         WasmTrailRecords {
             read_only: self.read_only.clone(),
@@ -113,6 +125,8 @@ impl WasmAuditTrailHandle {
     }
 
     /// Returns the access-control API scoped to this trail.
+    ///
+    /// Use this for roles, capabilities, and access-policy updates.
     pub fn access(&self) -> WasmTrailAccess {
         WasmTrailAccess {
             full: self.full.clone(),
@@ -121,6 +135,8 @@ impl WasmAuditTrailHandle {
     }
 
     /// Returns the locking API scoped to this trail.
+    ///
+    /// Use this for inspecting lock state and updating locking rules.
     pub fn locking(&self) -> WasmTrailLocking {
         WasmTrailLocking {
             read_only: self.read_only.clone(),
@@ -130,6 +146,9 @@ impl WasmAuditTrailHandle {
     }
 
     /// Returns the tag-registry API scoped to this trail.
+    ///
+    /// Use this for managing the canonical tag registry that record writes and role-tag
+    /// restrictions must reference.
     pub fn tags(&self) -> WasmTrailTags {
         WasmTrailTags {
             read_only: self.read_only.clone(),
