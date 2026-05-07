@@ -4,15 +4,30 @@
 # to the related Rust entities in `audit-trail-rs/src/` and WASM/TS entities in
 # `bindings/wasm/audit_trail_wasm/src/`.
 #
-# TOML keys are formed as `<move_module>.<move_function_or_struct>`.
+# TOML section keys are formed as `<product>.<module>.<entity>`:
+#   - `<product>` — the product identifier, derived from the basename of the
+#     Move package directory with any trailing `-move` stripped and `-`
+#     replaced by `_`. For this file: `audit_trail`.
+#   - `<module>`  — `main` for the Move source file whose basename matches
+#     the product name (`audit_trail.move` → `main`); for any other Move
+#     source file, the bare filename without extension (e.g. `locking.move`
+#     → `locking`).
+#   - `<entity>`  — the function name or struct/enum/const name in that module.
 #
-# `rust` and `wasm` arrays list the Rust- resp. WASM-level functions, methods, and
-# types that wrap, build, or otherwise correspond to the Move entity. Entries use
-# `Type::method` for inherent methods, `Type` for plain types/structs/enums, and
-# `module::function` for free functions.
+# `rust` and `wasm` arrays list the Rust- resp. WASM-level functions, methods,
+# and types that wrap, build, or otherwise correspond to the Move entity.
+# Entry conventions:
+#   - `Type::method`   — an inherent method on `Type`
+#   - `Type::Variant`  — an enum variant
+#   - `Type`           — a plain type/struct/enum
+#   - `Type.field`     — a struct field
+#   - `module::function` — a free function
+#
+# An entry of `[]` means there is intentionally no counterpart on that side.
 #
 # This mapping is intended for automatic comparison of function and struct
-# documentation across the three implementation layers.
+# documentation across the three implementation layers, and is maintained via
+# the `update-api-mapping` and `sync-product-docs` skills under `.claude/skills/`.
 
 # =============================================================================
 # Module: audit_trail::main (audit-trail-move/sources/audit_trail.move)
