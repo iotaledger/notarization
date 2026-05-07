@@ -1,4 +1,6 @@
-# CLAUDE.md — Documentation Style Guide for `notarization_wasm`
+# CLAUDE.md — Guidelines for `notarization_wasm`
+
+## Documentation Style Guide
 
 Follow the guidelines in `../DOC-STYLEGUIDE.md`.
 
