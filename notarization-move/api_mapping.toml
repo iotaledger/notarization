@@ -1,0 +1,421 @@
+# Notarization API Mapping
+#
+# Maps each public Move function or struct in the `notarization-move/sources/` modules
+# to the related Rust entities in `notarization-rs/src/` and WASM/TS entities in
+# `bindings/wasm/notarization_wasm/src/`.
+#
+# TOML section keys are formed as `<product>.<module>.<entity>`:
+#   - `<product>` — the product identifier, derived from the basename of the
+#     Move package directory with any trailing `-move` stripped and `-`
+#     replaced by `_`. For this file: `notarization`.
+#   - `<module>`  — `main` for the Move source file whose basename matches
+#     the product name (`notarization.move` → `main`); for any other Move
+#     source file, the bare filename without extension (e.g. `method.move`
+#     → `method`).
+#   - `<entity>`  — the function name or struct/enum/const name in that module.
+#
+# `rust` and `wasm` arrays list the Rust- resp. WASM-level functions, methods,
+# and types that wrap, build, or otherwise correspond to the Move entity.
+# Entry conventions:
+#   - `Type::method`     — an inherent method on `Type`
+#   - `Type::Variant`    — an enum variant
+#   - `Type`             — a plain type/struct/enum
+#   - `Type.field`       — a struct field
+#   - `module::function` — a free function
+#
+# An entry of `[]` means there is intentionally no counterpart on that side.
+#
+# This mapping is intended for automatic comparison of function and struct
+# documentation across the three implementation layers, and is maintained via
+# the `update-api-mapping` and `sync-product-docs` skills under `.claude/skills/`.
+
+# =============================================================================
+# Module: notarization::main (notarization-move/sources/notarization.move)
+# =============================================================================
+
+[notarization.main.Notarization]
+rust = [
+    "OnChainNotarization",
+    "NotarizationClientReadOnly::get_notarization_by_id",
+]
+wasm = [
+    "WasmOnChainNotarization",
+]
+
+[notarization.main.ImmutableMetadata]
+rust = [
+    "ImmutableMetadata",
+]
+wasm = [
+    "WasmImmutableMetadata",
+]
+
+[notarization.main.LockMetadata]
+rust = [
+    "LockMetadata",
+]
+wasm = [
+    "WasmLockMetadata",
+]
+
+[notarization.main.State]
+rust = [
+    "State",
+    "Data",
+    "State::data",
+    "State::metadata",
+    "State::from_bytes",
+    "State::from_string",
+    "State::as_bytes",
+    "State::as_text",
+]
+wasm = [
+    "WasmState",
+    "WasmData",
+    "WasmState::data",
+    "WasmState::metadata",
+    "WasmState::from_string",
+    "WasmState::from_bytes",
+    "WasmData::value",
+    "WasmData::value_type",
+    "WasmData::value_byte_size",
+    "WasmData::to_string",
+    "WasmData::to_bytes",
+]
+
+[notarization.main.NotarizationUpdated]
+rust = [
+    "Event",
+]
+wasm = []
+
+[notarization.main.NotarizationDestroyed]
+rust = [
+    "Event",
+]
+wasm = []
+
+[notarization.main.new_state_from_bytes]
+rust = [
+    "State::from_bytes",
+    "Data",
+    "NotarizationBuilder::with_bytes_state",
+]
+wasm = [
+    "WasmState::from_bytes",
+    "WasmNotarizationBuilderLocked::with_bytes_state",
+    "WasmNotarizationBuilderDynamic::with_bytes_state",
+]
+
+[notarization.main.new_state_from_string]
+rust = [
+    "State::from_string",
+    "Data",
+    "NotarizationBuilder::with_string_state",
+]
+wasm = [
+    "WasmState::from_string",
+    "WasmNotarizationBuilderLocked::with_string_state",
+    "WasmNotarizationBuilderDynamic::with_string_state",
+]
+
+[notarization.main.new_state_from_generic]
+rust = []
+wasm = []
+
+[notarization.main.new_lock_metadata]
+rust = [
+    "LockMetadata",
+    "TimeLock",
+    "TimeLock::new_with_ts",
+    "TimeLock::new_with_ts_ms",
+]
+wasm = [
+    "WasmLockMetadata",
+    "WasmTimeLock",
+    "WasmTimeLock::with_unlock_at",
+    "WasmTimeLock::with_unlock_at_ms",
+    "WasmTimeLock::with_until_destroyed",
+    "WasmTimeLock::with_infinite",
+    "WasmTimeLock::with_none",
+    "WasmTimeLockType",
+]
+
+[notarization.main.update_state]
+rust = [
+    "UpdateState",
+    "UpdateState::new",
+    "NotarizationClient::update_state",
+]
+wasm = [
+    "WasmUpdateState",
+    "WasmUpdateState::new",
+    "WasmUpdateState::build_programmable_transaction",
+    "WasmUpdateState::apply_with_events",
+    "WasmNotarizationClient::update_state",
+]
+
+[notarization.main.destroy]
+rust = [
+    "DestroyNotarization",
+    "DestroyNotarization::new",
+    "NotarizationClient::destroy",
+]
+wasm = [
+    "WasmDestroyNotarization",
+    "WasmDestroyNotarization::new",
+    "WasmDestroyNotarization::build_programmable_transaction",
+    "WasmDestroyNotarization::apply_with_events",
+    "WasmNotarizationClient::destroy_notarization",
+]
+
+[notarization.main.update_metadata]
+rust = [
+    "UpdateMetadata",
+    "UpdateMetadata::new",
+    "NotarizationClient::update_metadata",
+]
+wasm = [
+    "WasmUpdateMetadata",
+    "WasmUpdateMetadata::new",
+    "WasmUpdateMetadata::build_programmable_transaction",
+    "WasmUpdateMetadata::apply_with_events",
+    "WasmNotarizationClient::update_metadata",
+]
+
+[notarization.main.id]
+rust = [
+    "NotarizationClientReadOnly::get_notarization_by_id",
+]
+wasm = [
+    "WasmOnChainNotarization::id",
+]
+
+[notarization.main.state]
+rust = [
+    "NotarizationClientReadOnly::state",
+    "NotarizationClientReadOnly::state_as",
+]
+wasm = [
+    "WasmOnChainNotarization::state",
+]
+
+[notarization.main.created_at]
+rust = [
+    "NotarizationClientReadOnly::created_at_ts",
+]
+wasm = [
+    "WasmImmutableMetadata::created_at",
+]
+
+[notarization.main.last_change]
+rust = [
+    "NotarizationClientReadOnly::last_state_change_ts",
+]
+wasm = [
+    "WasmOnChainNotarization::last_state_change_at",
+]
+
+[notarization.main.version_count]
+rust = [
+    "NotarizationClientReadOnly::state_version_count",
+]
+wasm = [
+    "WasmOnChainNotarization::state_version_count",
+]
+
+[notarization.main.description]
+rust = [
+    "NotarizationClientReadOnly::description",
+    "NotarizationBuilder::with_immutable_description",
+]
+wasm = [
+    "WasmImmutableMetadata::description",
+    "WasmNotarizationBuilderLocked::with_immutable_description",
+    "WasmNotarizationBuilderDynamic::with_immutable_description",
+]
+
+[notarization.main.updatable_metadata]
+rust = [
+    "NotarizationClientReadOnly::updatable_metadata",
+    "NotarizationBuilder::with_updatable_metadata",
+]
+wasm = [
+    "WasmOnChainNotarization::updatable_metadata",
+    "WasmNotarizationBuilderLocked::with_updatable_metadata",
+    "WasmNotarizationBuilderDynamic::with_updatable_metadata",
+]
+
+[notarization.main.notarization_method]
+rust = [
+    "NotarizationClientReadOnly::notarization_method",
+    "NotarizationMethod",
+]
+wasm = [
+    "WasmOnChainNotarization::method",
+    "WasmNotarizationMethod",
+]
+
+[notarization.main.lock_metadata]
+rust = [
+    "NotarizationClientReadOnly::lock_metadata",
+    "LockMetadata",
+]
+wasm = [
+    "WasmImmutableMetadata::locking",
+    "WasmLockMetadata",
+]
+
+[notarization.main.is_update_locked]
+rust = [
+    "NotarizationClientReadOnly::is_update_locked",
+]
+wasm = []
+
+[notarization.main.is_delete_locked]
+rust = []
+wasm = []
+
+[notarization.main.is_transfer_locked]
+rust = [
+    "NotarizationClientReadOnly::is_transfer_locked",
+]
+wasm = []
+
+[notarization.main.is_destroy_allowed]
+rust = [
+    "NotarizationClientReadOnly::is_destroy_allowed",
+]
+wasm = []
+
+# =============================================================================
+# Module: notarization::dynamic_notarization (notarization-move/sources/dynamic_notarization.move)
+# =============================================================================
+
+[notarization.dynamic_notarization.DynamicNotarizationCreated]
+rust = [
+    "Event",
+]
+wasm = []
+
+[notarization.dynamic_notarization.DynamicNotarizationTransferred]
+rust = [
+    "Event",
+]
+wasm = []
+
+[notarization.dynamic_notarization.new]
+rust = [
+    "Dynamic",
+    "NotarizationBuilder",
+    "NotarizationBuilder::dynamic",
+]
+wasm = [
+    "WasmNotarizationBuilderDynamic",
+    "WasmNotarizationBuilderDynamic::dynamic",
+]
+
+[notarization.dynamic_notarization.create]
+rust = [
+    "CreateNotarization",
+    "CreateNotarization::new",
+    "NotarizationBuilder::finish",
+    "NotarizationClient::create_dynamic_notarization",
+]
+wasm = [
+    "WasmCreateNotarizationDynamic",
+    "WasmCreateNotarizationDynamic::new",
+    "WasmCreateNotarizationDynamic::build_programmable_transaction",
+    "WasmCreateNotarizationDynamic::apply_with_events",
+    "WasmNotarizationClient::create_dynamic",
+    "WasmNotarizationBuilderDynamic::finish",
+]
+
+[notarization.dynamic_notarization.transfer]
+rust = [
+    "TransferNotarization",
+    "TransferNotarization::new",
+    "NotarizationClient::transfer_notarization",
+]
+wasm = [
+    "WasmTransferNotarization",
+    "WasmTransferNotarization::new",
+    "WasmTransferNotarization::build_programmable_transaction",
+    "WasmTransferNotarization::apply_with_events",
+    "WasmNotarizationClient::transfer_notarization",
+]
+
+[notarization.dynamic_notarization.is_transferable]
+rust = []
+wasm = []
+
+# =============================================================================
+# Module: notarization::locked_notarization (notarization-move/sources/locked_notarization.move)
+# =============================================================================
+
+[notarization.locked_notarization.LockedNotarizationCreated]
+rust = [
+    "Event",
+]
+wasm = []
+
+[notarization.locked_notarization.new]
+rust = [
+    "Locked",
+    "NotarizationBuilder",
+    "NotarizationBuilder::locked",
+    "NotarizationBuilder::with_delete_lock",
+]
+wasm = [
+    "WasmNotarizationBuilderLocked",
+    "WasmNotarizationBuilderLocked::locked",
+    "WasmNotarizationBuilderLocked::with_delete_lock",
+]
+
+[notarization.locked_notarization.create]
+rust = [
+    "CreateNotarization",
+    "CreateNotarization::new",
+    "NotarizationBuilder::finish",
+    "NotarizationClient::create_locked_notarization",
+]
+wasm = [
+    "WasmCreateNotarizationLocked",
+    "WasmCreateNotarizationLocked::new",
+    "WasmCreateNotarizationLocked::build_programmable_transaction",
+    "WasmCreateNotarizationLocked::apply_with_events",
+    "WasmNotarizationClient::create_locked",
+    "WasmNotarizationBuilderLocked::finish",
+]
+
+# =============================================================================
+# Module: notarization::method (notarization-move/sources/method.move)
+# =============================================================================
+
+[notarization.method.NotarizationMethod]
+rust = [
+    "NotarizationMethod",
+]
+wasm = [
+    "WasmNotarizationMethod",
+]
+
+[notarization.method.new_dynamic]
+rust = []
+wasm = []
+
+[notarization.method.new_locked]
+rust = []
+wasm = []
+
+[notarization.method.is_dynamic]
+rust = []
+wasm = []
+
+[notarization.method.is_locked]
+rust = []
+wasm = []
+
+[notarization.method.to_str]
+rust = []
+wasm = []
