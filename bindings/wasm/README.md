@@ -93,3 +93,10 @@ It is used by the following run tasks for the following tsconfig files and distr
 | `bundle:nodejs`      | `./lib/tsconfig.json`          | `node`              |
 | `bundle:web`         | `./lib/tsconfig.web.json`      | `web`               |
 | `build:examples:web` | `./examples/tsconfig.web.json` | `./examples/dist`   |
+
+## Documentation Style Guide for generated TSDoc/JSDoc
+
+The [DOC-STYLEGUIDE.md](./DOC-STYLEGUIDE.md) states rules to be followed for the documentation
+of Rust types being compiled in TS/JS types using wasm-bindgen.
+
+These rules are obligatory for developers and AI agents.

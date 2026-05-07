@@ -26,6 +26,9 @@ pub struct PaginatedRecord<D = Data> {
 }
 
 /// A single record in the audit trail.
+///
+/// Records form a tamper-evident, sequential chain: each record receives a monotonically increasing
+/// sequence number that is never reused, even after the record is deleted.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Record<D = Data> {
     /// Record payload stored on-chain.
@@ -106,6 +109,9 @@ impl InitialRecord {
 }
 
 /// Bidirectional correction tracking for audit records.
+///
+/// `replaces` is fixed at creation and lists the sequence numbers this record supersedes;
+/// `is_replaced_by` is a back-pointer the trail sets later when *this* record itself is corrected.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct RecordCorrection {
     /// Sequence numbers that this record supersedes.

@@ -16,6 +16,17 @@ use crate::core::create::CreateTrail;
 /// The builder collects the full create-time configuration before it is normalized into the Move `create`
 /// call. Any tag list configured here becomes the trail-owned registry that later role-tag and record-tag
 /// checks refer to.
+///
+/// Creation has three additional on-chain effects worth noting:
+///
+/// - The trail object is published as a *shared* object.
+/// - A reserved `Admin` role is seeded with the permissions returned by
+///   [`PermissionSet::admin_permissions`](super::types::PermissionSet::admin_permissions),
+///   and an *initial-admin* capability is minted and transferred to the configured admin address.
+/// - When [`Self::with_initial_record`] is set, that record is stored as sequence number `0`. Its
+///   tag (if any) must already appear in the configured record tags; otherwise the on-chain
+///   create call aborts with `ERecordTagNotDefined`.
+/// - An `AuditTrailCreated` event is emitted.
 #[derive(Debug, Clone, Default)]
 pub struct AuditTrailBuilder {
     /// Initial admin address that should receive the initial admin capability.

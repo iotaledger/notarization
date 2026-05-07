@@ -27,8 +27,11 @@ use crate::error::Error;
 
 /// Transaction that creates a role on a trail.
 ///
-/// This maps to the audit-trail `create_role` Move entry point and therefore requires an authorization
-/// capability with `AddRoles`.
+/// Requires an authorization capability with `AddRoles`. Any [`RoleTags`] supplied as role data must
+/// already be present in the trail's tag registry; otherwise the Move package aborts with
+/// `ERecordTagNotDefined`. Each tag referenced by the new role bumps that tag's usage counter, which
+/// then prevents the tag from being removed from the registry. On success a `RoleCreated` event is
+/// emitted.
 #[derive(Debug, Clone)]
 pub struct CreateRole {
     trail_id: ObjectID,
@@ -121,8 +124,11 @@ impl Transaction for CreateRole {
 
 /// Transaction that updates an existing role.
 ///
-/// This updates both the permission set and the optional role-tag data stored for the role. The entry point
-/// requires `UpdateRoles`.
+/// Requires the `UpdateRoles` permission. Updates both the permission set and the optional role-tag
+/// data stored for the role. Any newly supplied [`RoleTags`] must already be in the trail's tag
+/// registry, otherwise the Move package aborts with `ERecordTagNotDefined`. Tag usage counters are
+/// adjusted to reflect the difference between the old and new role-tag sets. On success a
+/// `RoleUpdated` event is emitted.
 #[derive(Debug, Clone)]
 pub struct UpdateRole {
     trail_id: ObjectID,
@@ -213,7 +219,9 @@ impl Transaction for UpdateRole {
 
 /// Transaction that deletes a role.
 ///
-/// The reserved initial-admin role cannot be deleted even if the caller holds `DeleteRoles`.
+/// Requires the `DeleteRoles` permission. The reserved initial-admin role (`"Admin"`) cannot be
+/// deleted, even by a holder of `DeleteRoles`. Removing a role decrements the usage counters of all
+/// tags it referenced through its [`RoleTags`]. On success a `RoleDeleted` event is emitted.
 #[derive(Debug, Clone)]
 pub struct DeleteRole {
     trail_id: ObjectID,
@@ -291,8 +299,11 @@ impl Transaction for DeleteRole {
 
 /// Transaction that issues a capability for a role.
 ///
-/// This mints a new capability object for `role` against `trail_id`. Optional issuance restrictions are
-/// copied into the capability object and later enforced on-chain.
+/// Requires the `AddCapabilities` permission. Mints a new capability object for `role` against
+/// `trail_id` and transfers it to the address in [`CapabilityIssueOptions::issued_to`] (or the caller
+/// if absent). Optional `valid_from_ms` / `valid_until_ms` restrictions are copied into the capability
+/// object and later enforced on-chain when the capability is used. A `CapabilityIssued` event is
+/// emitted on success.
 #[derive(Debug, Clone)]
 pub struct IssueCapability {
     trail_id: ObjectID,
@@ -379,8 +390,11 @@ impl Transaction for IssueCapability {
 
 /// Transaction that revokes a capability.
 ///
-/// Revocation writes the capability ID into the trail's revoked-capability denylist. Supplying
-/// `capability_valid_until` preserves the same expiry boundary later used by denylist cleanup.
+/// Requires the `RevokeCapabilities` permission. Revocation writes the capability ID into the trail's
+/// revoked-capability denylist. Supplying `capability_valid_until` preserves the capability's original
+/// expiry boundary so [`CleanupRevokedCapabilities`] can later prune the entry once that timestamp has
+/// elapsed; pass `None` (which becomes `0` on chain) to keep the entry permanently. A
+/// `CapabilityRevoked` event is emitted on success.
 #[derive(Debug, Clone)]
 pub struct RevokeCapability {
     trail_id: ObjectID,
@@ -467,8 +481,10 @@ impl Transaction for RevokeCapability {
 
 /// Transaction that destroys a capability object.
 ///
-/// This path is for ordinary capabilities. Initial-admin capabilities must use
-/// [`DestroyInitialAdminCapability`] instead.
+/// Requires the `RevokeCapabilities` permission and consumes the owned capability object. This path is
+/// for ordinary capabilities only — initial-admin capabilities must use [`DestroyInitialAdminCapability`]
+/// instead, since their IDs are tracked separately. A `CapabilityDestroyed` event is emitted on
+/// success.
 #[derive(Debug, Clone)]
 pub struct DestroyCapability {
     trail_id: ObjectID,
@@ -553,7 +569,14 @@ impl Transaction for DestroyCapability {
 
 /// Transaction that destroys an initial-admin capability without an auth capability.
 ///
-/// Initial-admin capability IDs are tracked separately and cannot be removed through the generic destroy path.
+/// Self-service: the holder passes their own initial-admin capability and consumes it; no additional
+/// authorization is required because the capability itself proves ownership. Initial-admin capability
+/// IDs are tracked separately and cannot be removed through the generic destroy path.
+///
+/// **Warning:** if every initial-admin capability is destroyed (and none was issued separately), the
+/// trail is permanently sealed with no admin access possible.
+///
+/// On success a `CapabilityDestroyed` event is emitted.
 #[derive(Debug, Clone)]
 pub struct DestroyInitialAdminCapability {
     trail_id: ObjectID,
@@ -622,7 +645,15 @@ impl Transaction for DestroyInitialAdminCapability {
 
 /// Transaction that revokes an initial-admin capability.
 ///
-/// This is the dedicated revoke path for capability IDs recognized as active initial-admin capabilities.
+/// Requires the `RevokeCapabilities` permission. This is the dedicated revoke path for capability IDs
+/// recognized as active initial-admin capabilities; ordinary capabilities must use [`RevokeCapability`]
+/// instead. The same denylist semantics apply: pass the capability's `valid_until` to allow later
+/// cleanup once the original expiry elapses, or `None` to keep the denylist entry permanently.
+///
+/// **Warning:** revoking every initial-admin capability permanently seals the trail with no admin
+/// access possible.
+///
+/// On success a `CapabilityRevoked` event is emitted.
 #[derive(Debug, Clone)]
 pub struct RevokeInitialAdminCapability {
     trail_id: ObjectID,
@@ -709,8 +740,15 @@ impl Transaction for RevokeInitialAdminCapability {
 
 /// Transaction that cleans up expired revoked-capability entries.
 ///
-/// This does not revoke additional capabilities. It only prunes denylist entries whose stored expiry has
-/// already elapsed and returns the typed cleanup receipt emitted by the Move package.
+/// Requires the `RevokeCapabilities` permission. Only prunes denylist entries whose stored
+/// `valid_until` is *non-zero* and *strictly less than* the current clock time; entries with
+/// `valid_until == 0` (capabilities revoked without a known expiry) remain on the denylist
+/// indefinitely. This does not revoke additional capabilities and does not destroy any objects.
+///
+/// On success a `RevokedCapabilitiesCleanedUp` event is emitted.
+///
+/// Returns the typed cleanup receipt with the trail ID, the number of entries removed, the address that
+/// triggered the cleanup, and the millisecond timestamp.
 #[derive(Debug, Clone)]
 pub struct CleanupRevokedCapabilities {
     trail_id: ObjectID,

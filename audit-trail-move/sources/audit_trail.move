@@ -145,30 +145,35 @@ public struct CapabilityIssuedReceipt has copy, drop {
 
 // ===== Constructors =====
 
-/// Create immutable trail metadata
+/// Creates an `ImmutableMetadata` value to be passed to `create`.
+///
+/// Returns the constructed `ImmutableMetadata`.
 public fun new_trail_metadata(name: String, description: Option<String>): ImmutableMetadata {
     ImmutableMetadata { name, description }
 }
 
 // ===== Trail Creation =====
 
-/// Create a new audit trail with optional initial record
+/// Creates a new audit trail with an optional initial record and shares it on-chain.
 ///
-/// Initial roles config
-/// --------------------
-/// Initializes the `roles` map with only one role, called "Admin" which is associated with the permissions
-/// * TrailDelete
-/// * CapabilitiesAdd
-/// * CapabilitiesRevoke
-/// * RolesAdd
-/// * RolesUpdate
-/// * RolesDelete
+/// Initialises the trail's role map with a single role named "Admin" associated with
+/// the permissions `DeleteAuditTrail`, `AddCapabilities`, `RevokeCapabilities`,
+/// `AddRoles`, `UpdateRoles` and `DeleteRoles`. The creator receives an initial admin
+/// capability that may be used to define further roles and to issue capabilities to
+/// other users.
 ///
-/// Returns
-/// -------
-/// * Capability with *Admin* role, allowing the creator to define custom
-///   roles and issue capabilities to other users.
-/// * Trail ID
+/// When `initial_record` is provided it is stored at sequence number `0`; otherwise
+/// the trail is created empty. If the initial record carries a tag, that tag must
+/// already be listed in `tags` and its usage count is bumped accordingly.
+///
+/// Aborts with:
+/// * `ERecordTagNotDefined` when `initial_record` carries a tag that is not listed
+///   in `tags`.
+///
+/// Emits an `AuditTrailCreated` event on success.
+///
+/// Returns the tuple `(admin_cap, trail_id)`: the initial admin `Capability` and the
+/// ID of the newly shared `AuditTrail` object.
 public fun create<D: store + copy>(
     initial_record: Option<InitialRecord<D>>,
     locking_config: LockingConfig,
@@ -253,11 +258,24 @@ public fun create<D: store + copy>(
     (admin_cap, trail_id)
 }
 
+/// Returns the name reserved for the initial admin role created by `create`.
+///
+/// Returns the constant string `"Admin"`.
 public fun initial_admin_role_name(): String {
     INITIAL_ADMIN_ROLE_NAME.to_string()
 }
 
-/// Migrate the trail to the latest package version
+/// Migrates the trail's stored data layout to the current package version.
+///
+/// Bumps the trail's `version` field from a previous package version to
+/// `PACKAGE_VERSION`. Intended to be called once after a package upgrade.
+///
+/// Requires a capability granting the `Migrate` permission.
+///
+/// Aborts with:
+/// * `EPackageVersionMismatch` when the trail is already at `PACKAGE_VERSION`.
+/// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
+///   authorization checks.
 entry fun migrate<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -292,9 +310,25 @@ fun assert_record_tag_allowed<D: store + copy>(
 
 // ===== Record Operations =====
 
-/// Add a record to the trail
+/// Adds a record to the trail at the next available sequence number.
 ///
-/// Records are added sequentially with auto-assigned sequence numbers.
+/// Records are appended sequentially with auto-assigned sequence numbers. When
+/// `record_tag` is set, the trail's tag-registry usage count for that tag is
+/// incremented.
+///
+/// Requires a capability granting the `AddRecord` permission and, when `record_tag`
+/// is set, a role whose `RoleTags` allow that tag.
+///
+/// Aborts with:
+/// * `EPackageVersionMismatch` when the trail is at a different package version.
+/// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
+///   authorization checks.
+/// * `ETrailWriteLocked` while `write_lock` is active.
+/// * `ERecordTagNotDefined` when `record_tag` is not in the trail's tag registry.
+/// * `ERecordTagNotAllowed` when `cap`'s role does not allow `record_tag`.
+///
+/// Emits a `RecordAdded` event on success.
+///
 /// Returns the same receipt that is emitted as the `RecordAdded` event.
 public fun add_record<D: store + copy>(
     self: &mut AuditTrail<D>,
@@ -350,10 +384,25 @@ public fun add_record<D: store + copy>(
     output
 }
 
-/// Delete a record from the trail by sequence number
+/// Deletes the record at `sequence_number` from the trail.
 ///
-/// The record must not be locked (based on the trail's locking configuration).
-/// Requires the DeleteRecord permission.
+/// When the deleted record carries a tag, the trail's tag-registry usage count for
+/// that tag is decremented.
+///
+/// Requires a capability granting the `DeleteRecord` permission and, when the stored
+/// record carries a tag, a role whose `RoleTags` allow that tag.
+///
+/// Aborts with:
+/// * `EPackageVersionMismatch` when the trail is at a different package version.
+/// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
+///   authorization checks.
+/// * `ERecordNotFound` when no record exists at `sequence_number`.
+/// * `ERecordTagNotAllowed` when `cap`'s role does not allow the stored record's
+///   tag.
+/// * `ERecordLocked` while the configured delete-record window still protects the
+///   record.
+///
+/// Emits a `RecordDeleted` event on success.
 public fun delete_record<D: store + copy + drop>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -396,9 +445,25 @@ public fun delete_record<D: store + copy + drop>(
     });
 }
 
-/// Delete up to `limit` records from the front of the trail.
+/// Deletes up to `limit` records from the front of the trail.
 ///
-/// Requires `DeleteAllRecords` permission. Locked records are skipped.
+/// Walks the record list from the front and silently skips records still inside the
+/// delete-record window. Tag-aware authorization is applied to every record actually
+/// deleted, and tag usage counts are decremented for tagged records. Because of the
+/// silent skipping, the returned count may be less than `limit`.
+///
+/// Requires a capability granting the `DeleteAllRecords` permission and, for every
+/// tagged record actually deleted, a role whose `RoleTags` allow that tag.
+///
+/// Aborts with:
+/// * `EPackageVersionMismatch` when the trail is at a different package version.
+/// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
+///   authorization checks.
+/// * `ERecordTagNotAllowed` when an encountered record carries a tag that `cap`'s
+///   role does not allow.
+///
+/// Emits one `RecordDeleted` event per deletion.
+///
 /// Returns the sequence numbers deleted in this batch, in deletion order.
 public fun delete_records_batch<D: store + copy + drop>(
     self: &mut AuditTrail<D>,
@@ -462,9 +527,20 @@ public fun delete_records_batch<D: store + copy + drop>(
     deleted_sequence_numbers
 }
 
-/// Delete an empty audit trail.
+/// Deletes an empty audit trail and removes the shared object on-chain.
 ///
-/// Requires `DeleteAuditTrail` permission and aborts if records still exist.
+/// The trail must contain no records before it can be deleted.
+///
+/// Requires a capability granting the `DeleteAuditTrail` permission.
+///
+/// Aborts with:
+/// * `EPackageVersionMismatch` when the trail is at a different package version.
+/// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
+///   authorization checks.
+/// * `ETrailDeleteLocked` while the configured `delete_trail_lock` is active.
+/// * `ETrailNotEmpty` when records still exist.
+///
+/// Emits an `AuditTrailDeleted` event on success.
 public fun delete_audit_trail<D: store + copy>(
     self: AuditTrail<D>,
     cap: &Capability,
@@ -511,8 +587,15 @@ public fun delete_audit_trail<D: store + copy>(
 
 // ===== Locking =====
 
-/// Check if a record is locked based on the trail's locking configuration.
-/// Aborts with ERecordNotFound if the record doesn't exist.
+/// Checks whether the record at `sequence_number` is currently locked against deletion.
+///
+/// Evaluates the trail's `delete_record_window` against the record's metadata and the
+/// current clock time.
+///
+/// Aborts with:
+/// * `ERecordNotFound` when no record exists at `sequence_number`.
+///
+/// Returns `true` when the record falls inside the active delete-record window.
 public fun is_record_locked<D: store + copy>(
     self: &AuditTrail<D>,
     sequence_number: u64,
@@ -532,7 +615,16 @@ public fun is_record_locked<D: store + copy>(
     )
 }
 
-/// Update the locking configuration. Requires `UpdateLockingConfig` permission.
+/// Replaces the trail's whole locking configuration with `new_config`.
+///
+/// Requires a capability granting the `UpdateLockingConfig` permission.
+///
+/// Aborts with:
+/// * `EPackageVersionMismatch` when the trail is at a different package version.
+/// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
+///   authorization checks.
+/// * `EUntilDestroyedNotSupportedForDeleteTrail` when
+///   `new_config.delete_trail_lock` is `TimeLock::UntilDestroyed`.
 public fun update_locking_config<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -552,7 +644,14 @@ public fun update_locking_config<D: store + copy>(
     set_config(&mut self.locking_config, new_config);
 }
 
-/// Update the `delete_record_lock` locking configuration
+/// Replaces the trail's `delete_record_window` configuration.
+///
+/// Requires a capability granting the `UpdateLockingConfigForDeleteRecord` permission.
+///
+/// Aborts with:
+/// * `EPackageVersionMismatch` when the trail is at a different package version.
+/// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
+///   authorization checks.
 public fun update_delete_record_window<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -572,7 +671,16 @@ public fun update_delete_record_window<D: store + copy>(
     set_delete_record_window(&mut self.locking_config, new_delete_record_lock);
 }
 
-/// Update the `delete_trail_lock` locking configuration.
+/// Replaces the trail's `delete_trail_lock` timelock.
+///
+/// Requires a capability granting the `UpdateLockingConfigForDeleteTrail` permission.
+///
+/// Aborts with:
+/// * `EPackageVersionMismatch` when the trail is at a different package version.
+/// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
+///   authorization checks.
+/// * `EUntilDestroyedNotSupportedForDeleteTrail` when `new_delete_trail_lock` is
+///   `TimeLock::UntilDestroyed`.
 public fun update_delete_trail_lock<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -592,7 +700,16 @@ public fun update_delete_trail_lock<D: store + copy>(
     set_delete_trail_lock(&mut self.locking_config, new_delete_trail_lock);
 }
 
-/// Update the `write_lock` locking configuration.
+/// Replaces the trail's `write_lock` timelock.
+///
+/// While the new lock is active, `add_record` aborts with `ETrailWriteLocked`.
+///
+/// Requires a capability granting the `UpdateLockingConfigForWrite` permission.
+///
+/// Aborts with:
+/// * `EPackageVersionMismatch` when the trail is at a different package version.
+/// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
+///   authorization checks.
 public fun update_write_lock<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -612,7 +729,16 @@ public fun update_write_lock<D: store + copy>(
     set_write_lock(&mut self.locking_config, new_write_lock);
 }
 
-/// Update the trail's mutable metadata
+/// Replaces or clears the trail's mutable metadata field.
+///
+/// Passing `option::none()` clears `updatable_metadata`.
+///
+/// Requires a capability granting the `UpdateMetadata` permission.
+///
+/// Aborts with:
+/// * `EPackageVersionMismatch` when the trail is at a different package version.
+/// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
+///   authorization checks.
 public fun update_metadata<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -632,7 +758,17 @@ public fun update_metadata<D: store + copy>(
     self.updatable_metadata = new_metadata;
 }
 
-/// Adds a new record tag to the trail registry.
+/// Adds a new record tag to the trail's tag registry.
+///
+/// The tag is inserted with a usage count of zero.
+///
+/// Requires a capability granting the `AddRecordTags` permission.
+///
+/// Aborts with:
+/// * `EPackageVersionMismatch` when the trail is at a different package version.
+/// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
+///   authorization checks.
+/// * `ERecordTagAlreadyDefined` when `tag` is already in the registry.
 public fun add_record_tag<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -648,7 +784,19 @@ public fun add_record_tag<D: store + copy>(
     self.tags.insert_tag(tag, 0);
 }
 
-/// Removes a record tag from the trail registry if it is not used by any record.
+/// Removes a record tag from the trail's tag registry.
+///
+/// The tag must not currently be referenced by any record or role-tag restriction.
+///
+/// Requires a capability granting the `DeleteRecordTags` permission.
+///
+/// Aborts with:
+/// * `EPackageVersionMismatch` when the trail is at a different package version.
+/// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
+///   authorization checks.
+/// * `ERecordTagNotDefined` when `tag` is not in the registry.
+/// * `ERecordTagInUse` when it is still referenced by an existing record or
+///   role-tag restriction.
 public fun remove_record_tag<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -668,7 +816,21 @@ public fun remove_record_tag<D: store + copy>(
 
 // ===== Role and Capability Administration =====
 
-/// Creates a new role with the provided permissions.
+/// Creates a new role on the trail with the provided permissions and optional record-tag allowlist.
+///
+/// Each tag listed in `role_tags` bumps that tag's usage counter in the trail's tag
+/// registry.
+///
+/// Requires a capability granting the `AddRoles` permission.
+///
+/// Aborts with:
+/// * `EPackageVersionMismatch` when the trail is at a different package version.
+/// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
+///   authorization checks.
+/// * `ERecordTagNotDefined` when any tag listed in `role_tags` is not in the
+///   trail's tag registry.
+///
+/// Emits a `RoleCreated` event on success.
 public fun create_role<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -704,7 +866,25 @@ public fun create_role<D: store + copy>(
     };
 }
 
-/// Updates permissions for an existing role.
+/// Updates the permissions and record-tag allowlist of an existing role.
+///
+/// Tag usage counters are adjusted to reflect the difference between the old and the
+/// new role-tag sets.
+///
+/// Requires a capability granting the `UpdateRoles` permission.
+///
+/// Aborts with:
+/// * `EPackageVersionMismatch` when the trail is at a different package version.
+/// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
+///   authorization checks.
+/// * `ERoleDoesNotExist` when `role` is not defined on the trail.
+/// * `EInitialAdminPermissionsInconsistent` when updating the initial-admin role
+///   with `new_permissions` that does not include every permission configured in
+///   the trail's role- and capability-admin permission sets.
+/// * `ERecordTagNotDefined` when any tag in the new `role_tags` is not in the
+///   trail's tag registry.
+///
+/// Emits a `RoleUpdated` event on success.
 public fun update_role_permissions<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -751,7 +931,23 @@ public fun update_role_permissions<D: store + copy>(
     };
 }
 
-/// Deletes an existing role.
+/// Deletes an existing role from the trail.
+///
+/// Decrements the usage count of every tag that was referenced by the role's
+/// `RoleTags`. The reserved initial-admin role (`INITIAL_ADMIN_ROLE_NAME`) cannot be
+/// deleted.
+///
+/// Requires a capability granting the `DeleteRoles` permission.
+///
+/// Aborts with:
+/// * `EPackageVersionMismatch` when the trail is at a different package version.
+/// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
+///   authorization checks.
+/// * `ERoleDoesNotExist` when `role` is not defined on the trail.
+/// * `EInitialAdminRoleCannotBeDeleted` when targeting the reserved initial-admin
+///   role.
+///
+/// Emits a `RoleDeleted` event on success.
 public fun delete_role<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -775,9 +971,25 @@ public fun delete_role<D: store + copy>(
     };
 }
 
-/// Issues a new capability for an existing role.
+/// Issues a new capability for an existing role and transfers it to its recipient.
 ///
-/// The capability object is transferred to `issued_to` if provided, otherwise to the caller.
+/// The capability object is transferred to `issued_to` if provided, otherwise to the
+/// caller. `valid_from` and `valid_until` (milliseconds since the Unix epoch) configure
+/// usage restrictions that are enforced on-chain whenever the capability is later
+/// presented for authorization.
+///
+/// Requires a capability granting the `AddCapabilities` permission.
+///
+/// Aborts with:
+/// * `EPackageVersionMismatch` when the trail is at a different package version.
+/// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
+///   authorization checks.
+/// * `ERoleDoesNotExist` when `role` is not defined on the trail.
+/// * `tf_components::capability::EValidityPeriodInconsistent` when `valid_from`
+///   and `valid_until` are not consistent.
+///
+/// Emits a `CapabilityIssued` event on success.
+///
 /// Returns the same receipt that is emitted as the `CapabilityIssued` event.
 public fun new_capability<D: store + copy>(
     self: &mut AuditTrail<D>,
@@ -821,6 +1033,33 @@ public fun new_capability<D: store + copy>(
 }
 
 /// Revokes an issued capability by ID.
+///
+/// Writes `cap_to_revoke` into the trail's revoked-capability denylist.
+/// `cap_to_revoke_valid_until` should be the capability's original expiry so that
+/// `cleanup_revoked_capabilities` can later prune the entry once that timestamp has
+/// elapsed; pass `option::none()` (encoded as `0`) to keep the entry permanently.
+///
+/// The function does not verify that `cap_to_revoke` actually identifies an existing
+/// capability issued by this trail — any ID will be accepted and stored. Callers are
+/// expected to track issued capability IDs (and their optional expiries) off-chain:
+/// the trail uses a denylist, not an allowlist, to keep storage costs low when many
+/// capabilities are issued.
+///
+/// Initial admin capabilities cannot be revoked via this function; use
+/// `revoke_initial_admin_capability` instead.
+///
+/// Requires a capability granting the `RevokeCapabilities` permission.
+///
+/// Aborts with:
+/// * `EPackageVersionMismatch` when the trail is at a different package version.
+/// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
+///   authorization checks.
+/// * `ECapabilityToRevokeHasAlreadyBeenRevoked` when `cap_to_revoke` is already on
+///   the denylist.
+/// * `EInitialAdminCapabilityMustBeExplicitlyDestroyed` when `cap_to_revoke`
+///   identifies an initial admin capability.
+///
+/// Emits a `CapabilityRevoked` event on success.
 public fun revoke_capability<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -840,9 +1079,24 @@ public fun revoke_capability<D: store + copy>(
     );
 }
 
-/// Destroys a capability object.
+/// Destroys a capability object and removes any matching entry from the denylist.
 ///
-/// Requires a capability with `RevokeCapabilities` permission.
+/// If `cap_to_destroy` is currently on the trail's revoked-capability denylist, its
+/// entry is removed as part of the destruction. Initial admin capabilities cannot be
+/// destroyed via this function; use `destroy_initial_admin_capability` instead.
+///
+/// Requires a capability granting the `RevokeCapabilities` permission.
+///
+/// Aborts with:
+/// * `EPackageVersionMismatch` when the trail is at a different package version.
+/// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
+///   authorization checks.
+/// * `ECapabilityTargetKeyMismatch` when `cap_to_destroy` was not issued for this
+///   trail.
+/// * `EInitialAdminCapabilityMustBeExplicitlyDestroyed` when `cap_to_destroy` is
+///   an initial admin capability.
+///
+/// Emits a `CapabilityDestroyed` event on success.
 public fun destroy_capability<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -862,13 +1116,24 @@ public fun destroy_capability<D: store + copy>(
     role_map::destroy_capability(self.access_mut(), cap_to_destroy);
 }
 
-/// Destroys an initial admin capability.
+/// Destroys an initial admin capability owned by the caller.
 ///
-/// Self-service: the owner passes in their own initial admin capability to destroy it.
-/// No additional authorization is required.
+/// Self-service operation: the owner passes in their own initial admin capability;
+/// no additional authorization is required. If the capability is currently on the
+/// trail's revoked-capability denylist, its entry is removed as part of the
+/// destruction.
 ///
-/// WARNING: If all initial admin capabilities are destroyed, the trail will be permanently
-/// sealed with no admin access possible.
+/// WARNING: If all initial admin capabilities are destroyed, the trail will be
+/// permanently sealed with no admin access possible.
+///
+/// Aborts with:
+/// * `EPackageVersionMismatch` when the trail is at a different package version.
+/// * `ECapabilityTargetKeyMismatch` when `cap_to_destroy` was not issued for this
+///   trail.
+/// * `ECapabilityIsNotInitialAdmin` when `cap_to_destroy` is not an initial admin
+///   capability.
+///
+/// Emits a `CapabilityDestroyed` event on success.
 public fun destroy_initial_admin_capability<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap_to_destroy: Capability,
@@ -879,10 +1144,25 @@ public fun destroy_initial_admin_capability<D: store + copy>(
 
 /// Revokes an initial admin capability by ID.
 ///
-/// Requires a capability with `RevokeCapabilities` permission.
+/// See `revoke_capability` for the meaning of `cap_to_revoke` and
+/// `cap_to_revoke_valid_until` and the off-chain tracking of issued capabilities the
+/// trail expects.
 ///
-/// WARNING: If all initial admin capabilities are revoked, the trail will be permanently
-/// sealed with no admin access possible.
+/// WARNING: If all initial admin capabilities are revoked, the trail will be
+/// permanently sealed with no admin access possible.
+///
+/// Requires a capability granting the `RevokeCapabilities` permission.
+///
+/// Aborts with:
+/// * `EPackageVersionMismatch` when the trail is at a different package version.
+/// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
+///   authorization checks.
+/// * `ECapabilityIsNotInitialAdmin` when `cap_to_revoke` does not identify an
+///   initial admin capability.
+/// * `ECapabilityToRevokeHasAlreadyBeenRevoked` when it is already on the
+///   denylist.
+///
+/// Emits a `CapabilityRevoked` event on success.
 public fun revoke_initial_admin_capability<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -902,27 +1182,24 @@ public fun revoke_initial_admin_capability<D: store + copy>(
     );
 }
 
-/// Remove expired entries from the `revoked_capabilities` denylist.
+/// Removes already-expired entries from the trail's revoked-capability denylist.
 ///
-/// Iterates through the revoked capabilities list and removes every entry whose
-/// `valid_until` timestamp is **non-zero** and **less than** the current clock time,
-/// because those capabilities are already naturally expired and no longer need to
-/// occupy space in the denylist.
+/// Iterates through the denylist and removes every entry whose `valid_until`
+/// timestamp is non-zero and less than the current clock time. Entries with
+/// `valid_until == 0` (capabilities that had no expiry) are kept since they remain
+/// potentially valid and must stay on the denylist. See `revoke_capability` for the
+/// rationale behind off-chain tracking of issued capabilities.
 ///
-/// Entries with `valid_until == 0` (i.e. capabilities that had no expiry) are kept,
-/// since they remain potentially valid and must stay on the denylist.
+/// Requires a capability granting the `RevokeCapabilities` permission.
+///
+/// Aborts with:
+/// * `EPackageVersionMismatch` when the trail is at a different package version.
+/// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
+///   authorization checks.
+///
+/// Emits a RevokedCapabilitiesCleanedUp event on success.
 ///
 /// Returns the same receipt that is emitted as the `RevokedCapabilitiesCleanedUp` event.
-///
-/// Parameters
-/// ----------
-/// - cap: Reference to the capability used to authorize this operation.
-///   Needs to grant the `CapabilityAdminPermissions::revoke` permission.
-/// - clock: Reference to a Clock instance for obtaining the current timestamp.
-/// - ctx: Reference to the transaction context.
-///
-/// Errors:
-/// - Aborts with any error documented by `assert_capability_valid` if the provided capability fails authorization checks.
 public fun cleanup_revoked_capabilities<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -951,37 +1228,39 @@ public fun cleanup_revoked_capabilities<D: store + copy>(
 
 // ===== Trail Query Functions =====
 
-/// Get the total number of records currently in the trail
+/// Returns the total number of records currently stored in the trail.
 public fun record_count<D: store + copy>(self: &AuditTrail<D>): u64 {
     linked_table::length(&self.records)
 }
 
-/// Get the next sequence number (monotonic counter, never decrements)
+/// Returns the next sequence number that will be assigned to a new record.
+///
+/// The sequence number is a monotonic counter that never decrements.
 public fun sequence_number<D: store + copy>(self: &AuditTrail<D>): u64 {
     self.sequence_number
 }
 
-/// Get the trail creator address
+/// Returns the address that created this trail.
 public fun creator<D: store + copy>(self: &AuditTrail<D>): address {
     self.creator
 }
 
-/// Get the trail creation timestamp
+/// Returns the trail's creation timestamp in milliseconds since the Unix epoch.
 public fun created_at<D: store + copy>(self: &AuditTrail<D>): u64 {
     self.created_at
 }
 
-/// Get the trail's object ID
+/// Returns the trail's on-chain object ID.
 public fun id<D: store + copy>(self: &AuditTrail<D>): ID {
     object::uid_to_inner(&self.id)
 }
 
-/// Get the trail name
+/// Returns the trail's immutable name from `ImmutableMetadata`, when set.
 public fun name<D: store + copy>(self: &AuditTrail<D>): Option<String> {
     self.immutable_metadata.map!(|metadata| metadata.name)
 }
 
-/// Get the trail description
+/// Returns the trail's immutable description from `ImmutableMetadata`, when set.
 public fun description<D: store + copy>(self: &AuditTrail<D>): Option<String> {
     if (self.immutable_metadata.is_some()) {
         option::borrow(&self.immutable_metadata).description
@@ -990,65 +1269,85 @@ public fun description<D: store + copy>(self: &AuditTrail<D>): Option<String> {
     }
 }
 
-/// Get the updatable metadata
+/// Returns a reference to the trail's mutable `updatable_metadata` field.
 public fun metadata<D: store + copy>(self: &AuditTrail<D>): &Option<String> {
     &self.updatable_metadata
 }
 
-/// Get the locking configuration
+/// Returns a reference to the trail's `LockingConfig`.
 public fun locking_config<D: store + copy>(self: &AuditTrail<D>): &LockingConfig {
     &self.locking_config
 }
 
-/// Get the trail-defined record tags and their combined usage counts.
+/// Returns a reference to the trail's record-tag registry with combined usage counts.
 public fun tags<D: store + copy>(self: &AuditTrail<D>): &TagRegistry {
     &self.tags
 }
 
-/// Check if the trail is empty
+/// Checks whether the trail contains any records.
+///
+/// Returns `true` when the trail's record list is empty.
 public fun is_empty<D: store + copy>(self: &AuditTrail<D>): bool {
     linked_table::is_empty(&self.records)
 }
 
-/// Get the first sequence number
+/// Returns the sequence number of the first record in the trail, when any.
 public fun first_sequence<D: store + copy>(self: &AuditTrail<D>): Option<u64> {
     *linked_table::front(&self.records)
 }
 
-/// Get the last sequence number
+/// Returns the sequence number of the last record in the trail, when any.
 public fun last_sequence<D: store + copy>(self: &AuditTrail<D>): Option<u64> {
     *linked_table::back(&self.records)
 }
 
 // ===== Record Query Functions =====
 
-/// Get a record by sequence number
+/// Returns a reference to the record stored at `sequence_number`.
+///
+/// Aborts with:
+/// * `EPackageVersionMismatch` when the trail is at a different package version.
+/// * `ERecordNotFound` when no record exists at `sequence_number`.
 public fun get_record<D: store + copy>(self: &AuditTrail<D>, sequence_number: u64): &Record<D> {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
     assert!(linked_table::contains(&self.records, sequence_number), ERecordNotFound);
     linked_table::borrow(&self.records, sequence_number)
 }
 
-/// Check if a record exists at the given sequence number
+/// Checks whether a record exists at the given sequence number.
+///
+/// Aborts with:
+/// * `EPackageVersionMismatch` when the trail is at a different package version.
+///
+/// Returns `true` when a record is stored at `sequence_number`.
 public fun has_record<D: store + copy>(self: &AuditTrail<D>, sequence_number: u64): bool {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
     linked_table::contains(&self.records, sequence_number)
 }
 
-/// Returns all records of the audit trail
+/// Returns a reference to the trail's record table indexed by sequence number.
+///
+/// Aborts with:
+/// * `EPackageVersionMismatch` when the trail is at a different package version.
 public fun records<D: store + copy>(self: &AuditTrail<D>): &LinkedTable<u64, Record<D>> {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
     &self.records
 }
 // ===== Access Control Functions =====
 
-/// Returns a reference to the RoleMap managing access (roles and capabilities) for the audit trail.
+/// Returns a reference to the `RoleMap` managing roles and capabilities for this trail.
+///
+/// Aborts with:
+/// * `EPackageVersionMismatch` when the trail is at a different package version.
 public fun access<D: store + copy>(self: &AuditTrail<D>): &RoleMap<Permission, RoleTags> {
     assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
     &self.roles
 }
 
-/// Returns a mutable reference to the RoleMap managing access (roles and capabilities) for the audit trail.
+/// Returns a mutable reference to the `RoleMap` managing roles and capabilities for this trail.
+///
+/// Aborts with:
+/// * `EPackageVersionMismatch` when the trail is at a different package version.
 public(package) fun access_mut<D: store + copy>(
     self: &mut AuditTrail<D>,
 ): &mut RoleMap<Permission, RoleTags> {

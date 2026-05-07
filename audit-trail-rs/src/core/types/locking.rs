@@ -11,13 +11,20 @@ use crate::core::internal::tx;
 use crate::error::Error;
 
 /// Locking configuration for the audit trail.
+///
+/// Combines three independent rules: a per-record delete window, a trail-delete
+/// time lock, and a write time lock. The trail-delete lock must not be
+/// [`TimeLock::UntilDestroyed`]; the Move package aborts trail creation and
+/// updates that violate this invariant.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct LockingConfig {
-    /// Delete-window policy applied to individual records.
+    /// Delete-window policy applied to individual records. Records that fall
+    /// inside the window are locked against deletion.
     pub delete_record_window: LockingWindow,
-    /// Time lock that gates deletion of the entire trail.
+    /// Time lock that gates deletion of the entire trail. Must not be
+    /// [`TimeLock::UntilDestroyed`].
     pub delete_trail_lock: TimeLock,
-    /// Time lock that gates record writes.
+    /// Time lock that gates record writes (`add_record`).
     pub write_lock: TimeLock,
 }
 
@@ -47,6 +54,9 @@ impl LockingConfig {
 
 /// Time-based lock for trail-level operations.
 ///
+/// `UntilDestroyed` is rejected by the audit-trail package when used for the
+/// trail-delete lock; pass it only for the write lock.
+///
 /// Must match `tf_components::timelock::TimeLock` variant order for BCS compatibility.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum TimeLock {
@@ -55,6 +65,7 @@ pub enum TimeLock {
     /// Unlocks at the given Unix timestamp in milliseconds.
     UnlockAtMs(u64),
     /// Remains locked until the protected object is explicitly destroyed.
+    /// Not supported as the trail-delete lock.
     UntilDestroyed,
     /// Represents an always-locked state.
     Infinite,
@@ -116,19 +127,25 @@ impl TimeLock {
 }
 
 /// Defines a locking window (none, time based, or count based).
+///
+/// A window describes the period during which a record is *locked against
+/// deletion*. Records outside the window may be deleted (subject to the
+/// remaining permission and tag checks).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum LockingWindow {
-    /// No delete window is enforced.
+    /// No delete window is enforced; records may be deleted at any time.
     #[default]
     None,
-    /// Records may be deleted only within the given number of seconds since creation.
+    /// A record is locked against deletion while its age (in milliseconds)
+    /// is below the configured number of seconds since it was added.
     TimeBased {
-        /// Window size in seconds.
+        /// Window size in seconds. Records younger than this are locked.
         seconds: u64,
     },
-    /// Records may be deleted only within the first `count` subsequent records.
+    /// A record is locked against deletion while it is among the most recent
+    /// `count` records in the trail.
     CountBased {
-        /// Number of subsequent records after which deletion is no longer allowed.
+        /// Number of trailing records that remain locked against deletion.
         count: u64,
     },
 }

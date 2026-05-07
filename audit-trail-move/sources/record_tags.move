@@ -17,14 +17,16 @@ public struct RoleTags has copy, drop, store {
     tags: VecSet<String>,
 }
 
-/// Create a new `RoleTags`.
+/// Creates a new `RoleTags` allowlisting the given record tags.
+///
+/// Returns the constructed `RoleTags`.
 public fun new_role_tags(tags: vector<String>): RoleTags {
     RoleTags {
         tags: vec_set::from_keys(tags),
     }
 }
 
-/// Get the allowlisted record tags for a role from a `RoleTags`.
+/// Returns a reference to the set of record tags allowlisted by this `RoleTags`.
 public fun tags(self: &RoleTags): &VecSet<String> {
     &self.tags
 }
@@ -38,13 +40,14 @@ public struct TagRegistry has copy, drop, store {
     tag_map: VecMap<String, u64>,
 }
 
-/// Get a mapping of record tag names to `u64`.
+/// Returns a reference to the registry's mapping of tag names to combined usage counts.
 public fun tag_map(self: &TagRegistry): &VecMap<String, u64> {
     &self.tag_map
 }
 
-/// Create a `TagRegistry` with zeroed usage counts to manage a list of available tags to be
-/// associated with records and roles on an audit trail.
+/// Creates a `TagRegistry` listing the given tags with zero usage counts.
+///
+/// Returns the constructed `TagRegistry`.
 public(package) fun new_tag_registry(mut tags: vector<String>): TagRegistry {
     let mut usage = vec_map::empty<String, u64>();
     tags.reverse();
@@ -56,7 +59,9 @@ public(package) fun new_tag_registry(mut tags: vector<String>): TagRegistry {
     TagRegistry { tag_map: usage }
 }
 
-/// Destroys the `TagRegistry` by emptying the internal tag map and then destroying it.
+/// Destroys the `TagRegistry`.
+///
+/// Empties the internal tag map and then destroys the empty container.
 public(package) fun destroy(mut self: TagRegistry) {
     while (!self.tag_map.is_empty()) {
         let (_, _) = self.tag_map.pop();
@@ -64,19 +69,27 @@ public(package) fun destroy(mut self: TagRegistry) {
     self.tag_map.destroy_empty();
 }
 
+/// Inserts `tag` into the registry with the given initial `usage_count`.
 public(package) fun insert_tag(self: &mut TagRegistry, tag: String, usage_count: u64) {
     self.tag_map.insert(tag, usage_count);
 }
 
+/// Removes `tag` from the registry.
 public(package) fun remove_tag(self: &mut TagRegistry, tag: &String) {
     self.tag_map.remove(tag);
 }
 
+/// Returns the set of tag names currently registered, as a `vector<String>`.
 public(package) fun tag_keys(self: &TagRegistry): vector<String> {
     iota::vec_map::keys(&self.tag_map)
 }
 
-/// Returns true when all provided `role_tags` (tags associated with a role) are contained in the `TagRegistry`.
+/// Checks whether every tag listed in `role_tags` is registered.
+///
+/// `option::none()` is treated as the empty set and trivially satisfies the check.
+///
+/// Returns `true` when every tag in `role_tags` is contained in the registry, or
+/// when `role_tags` is `option::none()`.
 public(package) fun contains_all_role_tags(self: &TagRegistry, role_tags: &Option<RoleTags>): bool {
     if (!role_tags.is_some()) {
         return true
@@ -97,13 +110,16 @@ public(package) fun contains_all_role_tags(self: &TagRegistry, role_tags: &Optio
     true
 }
 
-/// Returns true when the specified tag is contained in the `TagRegistry`.
+/// Checks whether `tag` is registered in the `TagRegistry`.
+///
+/// Returns `true` when `tag` is present.
 public(package) fun contains(self: &TagRegistry, tag: &String): bool {
     iota::vec_map::contains(&self.tag_map, tag)
 }
 
-/// Returns the current combined usage count (sum of role and record usages) for a tag.
-/// Returns `Option::none()` if the tag is not contained in the registry.
+/// Returns the combined usage count (sum of role and record usages) for `tag`.
+///
+/// Returns `option::none()` when `tag` is not in the registry.
 public(package) fun usage_count(self: &TagRegistry, tag: &String): Option<u64> {
     if (self.tag_map.contains(tag)) {
         option::some(*self.tag_map.get(tag))
@@ -112,8 +128,9 @@ public(package) fun usage_count(self: &TagRegistry, tag: &String): Option<u64> {
     }
 }
 
-/// Increments the usage count for a tag by 1.
-/// Will be without effect if the tag is not contained in the registry.
+/// Increments the combined usage count for `tag` by one.
+///
+/// Has no effect when `tag` is not in the registry.
 public(package) fun increment_usage_count(self: &mut TagRegistry, tag: &String) {
     if (self.tag_map.contains(tag)) {
         let counters = vec_map::get_mut(&mut self.tag_map, tag);
@@ -121,8 +138,9 @@ public(package) fun increment_usage_count(self: &mut TagRegistry, tag: &String) 
     };
 }
 
-/// Decrements the usage count for a tag by 1.
-/// Will be without effect if the tag is not contained in the registry.
+/// Decrements the combined usage count for `tag` by one.
+///
+/// Has no effect when `tag` is not in the registry.
 public(package) fun decrement_usage_count(self: &mut TagRegistry, tag: &String) {
     if (self.tag_map.contains(tag)) {
         let counters = vec_map::get_mut(&mut self.tag_map, tag);
@@ -130,15 +148,23 @@ public(package) fun decrement_usage_count(self: &mut TagRegistry, tag: &String) 
     };
 }
 
-/// Returns if the specified is in use.
-/// Returns false if the tag is not contained in the registry.
+/// Checks whether `tag` is currently referenced by any record or role.
+///
+/// Returns `false` when `tag` is not in the registry or when its combined usage
+/// count is zero.
 public(package) fun is_in_use(self: &TagRegistry, tag: &String): bool {
     (*self.usage_count(tag).borrow_with_default(&0)) > 0
 }
 
 // ----------- RoleMap related -------
 
-/// Returns true when the capability's role data allows the requested tag.
+/// Checks whether the role associated with `cap` allows the given record `tag`.
+///
+/// Looks up the `RoleTags` stored as role-data for `cap`'s role and tests whether
+/// `tag` is part of that role's allowlist.
+///
+/// Returns `true` when the role has `RoleTags` whose set contains `tag`, otherwise
+/// `false` (including when the role has no `RoleTags`).
 public(package) fun role_allows(
     roles: &RoleMap<Permission, RoleTags>,
     cap: &Capability,

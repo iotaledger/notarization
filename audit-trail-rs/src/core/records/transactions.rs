@@ -23,8 +23,12 @@ use crate::error::Error;
 
 /// Transaction that appends a record to a trail.
 ///
-/// Tagged writes require the tag to exist in the trail registry and a capability whose role explicitly allows
-/// that tag in addition to `AddRecord`.
+/// Requires the `AddRecord` permission. Tagged writes additionally require the tag to exist in the trail
+/// registry and a capability whose role explicitly allows that tag; otherwise the Move package aborts with
+/// `ERecordTagNotDefined` or `ERecordTagNotAllowed`. The package also aborts with `ETrailWriteLocked` while
+/// the configured `write_lock` is active. On success the new record is stored at the trail's current
+/// monotonic sequence number (which never decrements, even after deletions) and a `RecordAdded` event is
+/// emitted.
 #[derive(Debug, Clone)]
 pub struct AddRecord {
     /// Trail object ID that will receive the record.
@@ -123,8 +127,10 @@ impl Transaction for AddRecord {
 
 /// Transaction that deletes a single record.
 ///
-/// This uses the single-record delete entry point, which remains subject to record-locking and tag-aware
-/// authorization checks.
+/// Requires the `DeleteRecord` permission. The Move package aborts with `ERecordNotFound` when no record
+/// exists at `sequence_number` and with `ERecordLocked` while the configured delete-record window still
+/// protects the record. Tag-aware authorization additionally applies: if the record carries a tag, the
+/// supplied capability's role must allow that tag. On success a `RecordDeleted` event is emitted.
 #[derive(Debug, Clone)]
 pub struct DeleteRecord {
     /// Trail object ID containing the record.
@@ -213,9 +219,13 @@ impl Transaction for DeleteRecord {
 
 /// Transaction that deletes multiple records in a batch operation.
 ///
-/// The Move entry point skips locked records, deletes up to `limit` unlocked records in trail order, and returns
-/// the deleted sequence numbers. The Rust implementation mirrors that output by collecting the matching
-/// `RecordDeleted` events in order.
+/// Requires the `DeleteAllRecords` permission. The Move entry point walks the trail from the front,
+/// silently *skips* records still inside the delete-record window, and deletes up to `limit` unlocked
+/// records in trail order. Tag-aware authorization applies to every record actually deleted. On success a
+/// `RecordDeleted` event is emitted per deletion.
+///
+/// Resolves to the sequence numbers of the records deleted in this batch, in deletion order. Its length is
+/// at most `limit` and may be smaller when locked records were skipped or the trail was exhausted.
 #[derive(Debug, Clone)]
 pub struct DeleteRecordsBatch {
     /// Trail object ID containing the records.

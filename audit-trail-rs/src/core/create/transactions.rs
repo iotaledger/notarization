@@ -45,6 +45,12 @@ impl TrailCreated {
 ///
 /// The builder state is normalized into the exact Move `create` call shape, including tag-registry setup,
 /// optional initial-record creation, and initial-admin capability assignment.
+///
+/// On execution the Move package: shares the trail object, seeds the reserved `Admin` role with the
+/// permissions returned by `permission::admin_permissions`, transfers a freshly minted initial-admin
+/// capability to the admin address, stores the optional initial record at sequence number `0`, and emits
+/// an `AuditTrailCreated` event. If an initial record carries a tag, the tag must already be in the
+/// configured record-tag registry or the call aborts with `ERecordTagNotDefined`.
 #[derive(Debug, Clone)]
 pub struct CreateTrail {
     builder: AuditTrailBuilder,
