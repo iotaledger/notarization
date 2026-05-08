@@ -113,8 +113,8 @@ impl RecordsOps {
 
     /// Builds the `delete_records_batch` call.
     ///
-    /// Batch deletion requires `DeleteAllRecords`, skips locked records, and deletes up to `limit` unlocked records
-    /// in trail order.
+    /// Batch deletion requires `DeleteAllRecords`, skips locked records and records outside the capability's tag
+    /// access, and deletes up to `limit` eligible records in trail order.
     pub(super) async fn delete_records_batch<C>(
         client: &C,
         trail_id: ObjectID,

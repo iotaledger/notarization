@@ -492,8 +492,7 @@ fun test_delete_tagged_record_requires_matching_role_tags() {
 }
 
 #[test]
-#[expected_failure(abort_code = audit_trail::main::ERecordTagNotAllowed)]
-fun test_delete_records_batch_requires_matching_role_tags() {
+fun test_delete_records_batch_skips_records_without_matching_role_tags() {
     let admin = @0xAD;
     let mut scenario = ts::begin(admin);
 
@@ -568,6 +567,14 @@ fun test_delete_records_batch_requires_matching_role_tags() {
 
         trail.add_record(
             &tagged_writer_cap,
+            record::new_text(string::utf8(b"Untagged record")),
+            std::option::none(),
+            std::option::none(),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+        trail.add_record(
+            &tagged_writer_cap,
             record::new_text(string::utf8(b"Tagged record")),
             std::option::none(),
             std::option::some(string::utf8(b"finance")),
@@ -586,7 +593,17 @@ fun test_delete_records_batch_requires_matching_role_tags() {
         let mut clock = clock::create_for_testing(ts::ctx(&mut scenario));
         clock.set_for_testing(initial_time_for_testing() + 2000);
 
-        trail.delete_records_batch(&delete_all_cap, 10, &clock, ts::ctx(&mut scenario));
+        let deleted = trail.delete_records_batch(
+            &delete_all_cap,
+            10,
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+        assert!(vector::length(&deleted) == 1, 0);
+        assert!(*vector::borrow(&deleted, 0) == 0, 1);
+        assert!(trail.record_count() == 1, 2);
+        assert!(!trail.has_record(0), 3);
+        assert!(trail.has_record(1), 4);
 
         cleanup_capability_trail_and_clock(&scenario, delete_all_cap, trail, clock);
     };
