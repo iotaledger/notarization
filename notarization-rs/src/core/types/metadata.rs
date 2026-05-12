@@ -15,8 +15,7 @@ pub struct ImmutableMetadata {
     /// Optional lock metadata.
     ///
     /// Presence depends on the Notarization Method:
-    /// * `Dynamic`: absent when the Dynamic-Notarization carries no transfer
-    ///   lock; present otherwise.
+    /// * `Dynamic`: absent when the Dynamic-Notarization carries no transfer lock; present otherwise.
     /// * `Locked`: always present.
     pub locking: Option<LockMetadata>,
 }

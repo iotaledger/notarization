@@ -42,9 +42,8 @@ pub struct OnChainNotarization {
     ///
     /// Mutability depends on the Notarization Method:
     /// * `Dynamic`: updatable after creation via
-    ///   [`NotarizationClient::update_metadata`](crate::client::NotarizationClient::update_metadata);
-    ///   updates do not bump `state_version_count` nor change
-    ///   `last_state_change_at`.
+    ///   [`NotarizationClient::update_metadata`](crate::client::NotarizationClient::update_metadata); updates do not
+    ///   bump `state_version_count` nor change `last_state_change_at`.
     /// * `Locked`: immutable after creation.
     ///
     /// `updatable_metadata` can be updated independently of `state`.

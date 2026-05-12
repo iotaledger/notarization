@@ -9,10 +9,8 @@
 //!
 //! The update-state transaction replaces the `state` of an existing
 //! notarization. Behaviour depends on the Notarization Method:
-//! * `Dynamic`: always permitted — the underlying `update_lock` is fixed to
-//!   `TimeLock::None`.
-//! * `Locked`: always aborts on-chain, because the underlying `update_lock`
-//!   is pinned to `TimeLock::UntilDestroyed`.
+//! * `Dynamic`: always permitted — the underlying `update_lock` is fixed to `TimeLock::None`.
+//! * `Locked`: always aborts on-chain, because the underlying `update_lock` is pinned to `TimeLock::UntilDestroyed`.
 
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
@@ -35,10 +33,8 @@ use crate::error::Error;
 /// timestamp (in milliseconds since the Unix epoch).
 ///
 /// Behaviour depends on the Notarization Method:
-/// * `Dynamic`: always permitted — the underlying `update_lock` is fixed to
-///   `TimeLock::None`.
-/// * `Locked`: always aborts on-chain, because the underlying `update_lock`
-///   is pinned to `TimeLock::UntilDestroyed`.
+/// * `Dynamic`: always permitted — the underlying `update_lock` is fixed to `TimeLock::None`.
+/// * `Locked`: always aborts on-chain, because the underlying `update_lock` is pinned to `TimeLock::UntilDestroyed`.
 ///
 /// Emits a `NotarizationUpdated` event on success.
 ///

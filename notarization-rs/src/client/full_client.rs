@@ -240,10 +240,9 @@ where
     /// Move event.
     ///
     /// Behaviour depends on the Notarization Method:
-    /// * `Dynamic`: always permitted — the underlying `update_lock` is fixed
-    ///   to `TimeLock::None`.
-    /// * `Locked`: always aborts on-chain, because the underlying
-    ///   `update_lock` is pinned to `TimeLock::UntilDestroyed`.
+    /// * `Dynamic`: always permitted — the underlying `update_lock` is fixed to `TimeLock::None`.
+    /// * `Locked`: always aborts on-chain, because the underlying `update_lock` is pinned to
+    ///   `TimeLock::UntilDestroyed`.
     ///
     /// ## Parameters
     ///
@@ -315,10 +314,9 @@ where
     /// `immutable_metadata`.
     ///
     /// Behaviour depends on the Notarization Method:
-    /// * `Dynamic`: always permitted — the underlying `update_lock` is fixed
-    ///   to `TimeLock::None`.
-    /// * `Locked`: always aborts on-chain, because the underlying
-    ///   `update_lock` is pinned to `TimeLock::UntilDestroyed`.
+    /// * `Dynamic`: always permitted — the underlying `update_lock` is fixed to `TimeLock::None`.
+    /// * `Locked`: always aborts on-chain, because the underlying `update_lock` is pinned to
+    ///   `TimeLock::UntilDestroyed`.
     ///
     /// ## Parameters
     ///
@@ -357,12 +355,10 @@ where
     /// its `transfer_lock` is not currently active.
     ///
     /// Behaviour depends on the Notarization Method:
-    /// * `Dynamic`: on success the notarization is transferred to
-    ///   `recipient`. Submitting while the configured `transfer_lock` is
-    ///   engaged aborts on-chain.
-    /// * `Locked`: always aborts on-chain — Locked-Notarizations have their
-    ///   `transfer_lock` pinned to `TimeLock::UntilDestroyed` and are
-    ///   therefore non-transferable.
+    /// * `Dynamic`: on success the notarization is transferred to `recipient`. Submitting while the configured
+    ///   `transfer_lock` is engaged aborts on-chain.
+    /// * `Locked`: always aborts on-chain — Locked-Notarizations have their `transfer_lock` pinned to
+    ///   `TimeLock::UntilDestroyed` and are therefore non-transferable.
     ///
     /// On success the on-chain transaction emits a
     /// `DynamicNotarizationTransferred` event.

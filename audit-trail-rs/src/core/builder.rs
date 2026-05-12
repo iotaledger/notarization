@@ -21,11 +21,11 @@ use crate::core::create::CreateTrail;
 ///
 /// - The trail object is published as a *shared* object.
 /// - A reserved `Admin` role is seeded with the permissions returned by
-///   [`PermissionSet::admin_permissions`](super::types::PermissionSet::admin_permissions),
-///   and an *initial-admin* capability is minted and transferred to the configured admin address.
-/// - When [`Self::with_initial_record`] is set, that record is stored as sequence number `0`. Its
-///   tag (if any) must already appear in the configured record tags; otherwise the on-chain
-///   create call aborts with `ERecordTagNotDefined`.
+///   [`PermissionSet::admin_permissions`](super::types::PermissionSet::admin_permissions), and an *initial-admin*
+///   capability is minted and transferred to the configured admin address.
+/// - When [`Self::with_initial_record`] is set, that record is stored as sequence number `0`. Its tag (if any) must
+///   already appear in the configured record tags; otherwise the on-chain create call aborts with
+///   `ERecordTagNotDefined`.
 /// - An `AuditTrailCreated` event is emitted.
 #[derive(Debug, Clone, Default)]
 pub struct AuditTrailBuilder {

@@ -13,11 +13,9 @@
 //! or when its `transfer_lock` is not currently active.
 //!
 //! Behaviour depends on the Notarization Method:
-//! * `Dynamic`: gated by the configured `transfer_lock`. Submitting while
-//!   the lock is engaged aborts on-chain.
-//! * `Locked`: always aborts on-chain — Locked-Notarizations have their
-//!   `transfer_lock` pinned to `TimeLock::UntilDestroyed` and are therefore
-//!   non-transferable.
+//! * `Dynamic`: gated by the configured `transfer_lock`. Submitting while the lock is engaged aborts on-chain.
+//! * `Locked`: always aborts on-chain — Locked-Notarizations have their `transfer_lock` pinned to
+//!   `TimeLock::UntilDestroyed` and are therefore non-transferable.
 
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
@@ -39,12 +37,10 @@ use crate::error::Error;
 /// `transfer_lock` is not currently active.
 ///
 /// Behaviour depends on the Notarization Method:
-/// * `Dynamic`: on success the notarization is transferred to `recipient`.
-///   Submitting while the configured `transfer_lock` is engaged aborts
-///   on-chain.
-/// * `Locked`: always aborts on-chain — Locked-Notarizations have their
-///   `transfer_lock` pinned to `TimeLock::UntilDestroyed` and are therefore
-///   non-transferable.
+/// * `Dynamic`: on success the notarization is transferred to `recipient`. Submitting while the configured
+///   `transfer_lock` is engaged aborts on-chain.
+/// * `Locked`: always aborts on-chain — Locked-Notarizations have their `transfer_lock` pinned to
+///   `TimeLock::UntilDestroyed` and are therefore non-transferable.
 ///
 /// Emits a `DynamicNotarizationTransferred` event on success.
 pub struct TransferNotarization {

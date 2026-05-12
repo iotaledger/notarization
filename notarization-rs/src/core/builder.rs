@@ -11,10 +11,9 @@
 //! and version tracking. The Notarization Method selected at builder construction time fixes the
 //! mutation and destruction rules of the resulting object:
 //!
-//! - `Locked` — state and updatable metadata are immutable after creation; destruction is gated by a
-//!   `delete_lock`.
-//! - `Dynamic` — state and updatable metadata can be updated after creation; ownership may
-//!   optionally be transfer-locked.
+//! - `Locked` — state and updatable metadata are immutable after creation; destruction is gated by a `delete_lock`.
+//! - `Dynamic` — state and updatable metadata can be updated after creation; ownership may optionally be
+//!   transfer-locked.
 //!
 //! ## Examples
 //!

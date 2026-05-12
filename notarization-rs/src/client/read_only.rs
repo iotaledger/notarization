@@ -359,8 +359,7 @@ impl NotarizationClientReadOnly {
     ///
     /// Result depends on the Notarization Method:
     /// * `Dynamic`: always returns `false`.
-    /// * `Locked`: returns whether the configured `update_lock` is currently
-    ///   timelocked.
+    /// * `Locked`: returns whether the configured `update_lock` is currently timelocked.
     ///
     /// # Arguments
     ///
@@ -377,12 +376,10 @@ impl NotarizationClientReadOnly {
     /// Checks if the notarized object is currently allowed to be destroyed.
     ///
     /// Behaviour depends on the Notarization Method:
-    /// * `Dynamic`: destruction is gated only on the `transfer_lock` — the
-    ///   object is destroy-allowed unless `transfer_lock` is currently
-    ///   `UnlockAt`-locked.
-    /// * `Locked`: destruction is gated on all of `update_lock`,
-    ///   `delete_lock`, and `transfer_lock` — the object is destroy-allowed
-    ///   only when none of them is currently `UnlockAt`-locked.
+    /// * `Dynamic`: destruction is gated only on the `transfer_lock` — the object is destroy-allowed unless
+    ///   `transfer_lock` is currently `UnlockAt`-locked.
+    /// * `Locked`: destruction is gated on all of `update_lock`, `delete_lock`, and `transfer_lock` — the object is
+    ///   destroy-allowed only when none of them is currently `UnlockAt`-locked.
     ///
     /// `TimeLock::Infinite` is treated as not currently `UnlockAt` for this
     /// check but will still abort `destroy`, because such locks are not

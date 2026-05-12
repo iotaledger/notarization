@@ -31,11 +31,9 @@ use crate::error::Error;
 /// the on-chain constructor aborts otherwise.
 ///
 /// Permitted lock configurations depend on the Notarization Method:
-/// * `Dynamic`: `update_lock` is fixed to `TimeLock::None`; `transfer_lock`
-///   may carry any [`TimeLock`] variant.
-/// * `Locked`: both `update_lock` and `transfer_lock` are pinned to
-///   `TimeLock::UntilDestroyed` — Locked-Notarizations are non-transferable
-///   and their state is immutable.
+/// * `Dynamic`: `update_lock` is fixed to `TimeLock::None`; `transfer_lock` may carry any [`TimeLock`] variant.
+/// * `Locked`: both `update_lock` and `transfer_lock` are pinned to `TimeLock::UntilDestroyed` — Locked-Notarizations
+///   are non-transferable and their state is immutable.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct LockMetadata {
     /// Lock guarding `update_state` and `update_metadata`.
@@ -51,8 +49,7 @@ pub struct LockMetadata {
     ///
     /// Role depends on the Notarization Method:
     /// * `Dynamic`: gates `NotarizationClient::transfer_notarization`.
-    /// * `Locked`: pinned to `TimeLock::UntilDestroyed` —
-    ///   Locked-Notarizations are non-transferable.
+    /// * `Locked`: pinned to `TimeLock::UntilDestroyed` — Locked-Notarizations are non-transferable.
     pub transfer_lock: TimeLock,
 }
 

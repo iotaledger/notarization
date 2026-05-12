@@ -11,13 +11,10 @@
 //! `Notarization<D>` object and transfers it to the transaction sender. The
 //! marker type parameter `M` selects the Notarization Method and the set of
 //! per-method invariants enforced before submission:
-//! * `Dynamic`: the resulting object has no `LockMetadata` when
-//!   `transfer_lock` is `TimeLock::None`; otherwise its `LockMetadata` has
-//!   `update_lock = delete_lock = TimeLock::None` and the supplied
-//!   `transfer_lock`.
-//! * `Locked`: the resulting object always carries `LockMetadata` with both
-//!   `update_lock` and `transfer_lock` pinned to `TimeLock::UntilDestroyed`
-//!   and `delete_lock` set to the supplied value.
+//! * `Dynamic`: the resulting object has no `LockMetadata` when `transfer_lock` is `TimeLock::None`; otherwise its
+//!   `LockMetadata` has `update_lock = delete_lock = TimeLock::None` and the supplied `transfer_lock`.
+//! * `Locked`: the resulting object always carries `LockMetadata` with both `update_lock` and `transfer_lock` pinned to
+//!   `TimeLock::UntilDestroyed` and `delete_lock` set to the supplied value.
 //!
 //! `state_version_count` starts at `0` and `last_state_change_at` is set to
 //! the on-chain clock timestamp at creation.

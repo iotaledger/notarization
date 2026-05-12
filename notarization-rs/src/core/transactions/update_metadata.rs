@@ -11,10 +11,8 @@
 //! existing notarization. It does not affect `state`, `state_version_count`,
 //! `last_state_change_at`, or the immutable description. Behaviour depends
 //! on the Notarization Method:
-//! * `Dynamic`: always permitted — the underlying `update_lock` is fixed to
-//!   `TimeLock::None`.
-//! * `Locked`: always aborts on-chain, because the underlying `update_lock`
-//!   is pinned to `TimeLock::UntilDestroyed`.
+//! * `Dynamic`: always permitted — the underlying `update_lock` is fixed to `TimeLock::None`.
+//! * `Locked`: always aborts on-chain, because the underlying `update_lock` is pinned to `TimeLock::UntilDestroyed`.
 
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
@@ -35,10 +33,8 @@ use crate::error::Error;
 /// or the immutable description.
 ///
 /// Behaviour depends on the Notarization Method:
-/// * `Dynamic`: always permitted — the underlying `update_lock` is fixed to
-///   `TimeLock::None`.
-/// * `Locked`: always aborts on-chain, because the underlying `update_lock`
-///   is pinned to `TimeLock::UntilDestroyed`.
+/// * `Dynamic`: always permitted — the underlying `update_lock` is fixed to `TimeLock::None`.
+/// * `Locked`: always aborts on-chain, because the underlying `update_lock` is pinned to `TimeLock::UntilDestroyed`.
 pub struct UpdateMetadata {
     metadata: Option<String>,
     /// The ID of the notarization to update

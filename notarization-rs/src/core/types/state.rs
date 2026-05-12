@@ -61,10 +61,9 @@ use crate::error::Error;
 /// Whether the `State` of an existing notarization may change depends on the
 /// Notarization Method:
 /// * `Dynamic`: `data` and `metadata` are replaced together via
-///   [`NotarizationClient::update_state`](crate::client::NotarizationClient::update_state).
-///   Every such update bumps `OnChainNotarization::state_version_count` and
-///   refreshes `OnChainNotarization::last_state_change_at`, even when only
-///   `metadata` changes.
+///   [`NotarizationClient::update_state`](crate::client::NotarizationClient::update_state). Every such update bumps
+///   `OnChainNotarization::state_version_count` and refreshes `OnChainNotarization::last_state_change_at`, even when
+///   only `metadata` changes.
 /// * `Locked`: the `State` is immutable after creation.
 ///
 /// ## Type Parameter
