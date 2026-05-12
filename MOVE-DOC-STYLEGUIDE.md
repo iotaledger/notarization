@@ -7,12 +7,12 @@ Apply it whenever you add or edit a doc comment in one of these packages.
 The style guides needs to be referenced in the `CLAUDE.md` file of the respective
 Move project folder like this:
 
-````markdown
+```markdown
 ## Documentation Style Guide
 
 Follow the guidelines in `relative/path/to/MOVE-DOC-STYLEGUIDE.md` and make sure to
 follow all rules stated there.
-````
+```
 
 Product specific explanations e.g. regarding used access control (i.e. `RoleMap` based)
 should follow the above paragraph.
@@ -149,6 +149,7 @@ For functions whose summary does not already describe the result:
 For tuples, name the components:
 
 Example regarding [RoleMap](https://github.com/iotaledger/product-core/blob/main/components_move/sources/role_map.move) initialization:
+
 ```move
 /// Returns the tuple `(role_map, admin_cap)`: the role_map object
 /// and the initial admin `Capability`.
@@ -218,6 +219,7 @@ For `Option<T>` returns, document both branches:
 ## Worked example
 
 Example taken from IOTA Audit Trail:
+
 ```move
 /// Adds a record to the trail at the next available sequence number.
 ///

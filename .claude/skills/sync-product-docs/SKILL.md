@@ -15,11 +15,12 @@ implementation layers that need to convey the same behavior to their users:
 - **WASM/TypeScript** — `<wasm-bindings-path>/**/*.rs`
 
 The product's `api_mapping.toml` (located at `<move-sc-path>/../api_mapping.toml`
+
 - see **`api-mapping-path`** below for more details)
-is the canonical mapping from each public Move function/struct to the Rust and
-WASM entities that wrap, build, or otherwise correspond to it. This skill uses
-that mapping to keep the doc comments of each "triplet" (Move ↔ Rust ↔ WASM)
-semantically aligned.
+  is the canonical mapping from each public Move function/struct to the Rust and
+  WASM entities that wrap, build, or otherwise correspond to it. This skill uses
+  that mapping to keep the doc comments of each "triplet" (Move ↔ Rust ↔ WASM)
+  semantically aligned.
 
 The Move layer is the **authoritative source of behavior**. Its doc comments
 describe what the on-chain function does, what arguments it takes, what events
@@ -177,7 +178,7 @@ Follow these steps:
 - **Group edits by file.** When fixing, batch all edits to the same Rust or
   WASM file into a single pass to minimize re-reads.
 - **Follow existing doc style guides.** Lookup possibly referenced documentation
-  guidelines in `CLAUDE.md` files in the Rust crate or Move package folder. 
+  guidelines in `CLAUDE.md` files in the Rust crate or Move package folder.
 - **Preserve existing doc style.** If no documentation
   guideline can be found, match the surrounding crate's tone.
 - **List Move events.** If Move events are documented with the related Move
@@ -211,6 +212,7 @@ the constraint, that is a `DRIFT Rust` finding.
 ## Example invocation
 
 ### Example 1
+
 > `/sync-product-docs notarization`
 
 Expected behavior:
@@ -225,8 +227,8 @@ Expected behavior:
 6. Edit the docs accordingly
 7. Print a summary grouped by Move module.
 
-
 ### Example 2
+
 User:
 
 > `/sync-product-docs`

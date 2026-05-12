@@ -40,12 +40,12 @@ Use TSDoc/JSDoc link syntax only. Never use Rust intra-doc links.
 
 Examples from `https://github.com/iotaledger/notarization/tree/feat/audit-trails-dev/bindings/wasm/audit_trail_wasm`
 
-| Use                                       | Don't use                          |
-|-------------------------------------------|------------------------------------|
-| `{@link AuditTrailBuilder}`               | `` [`AuditTrailBuilder`] ``        |
-| `{@link AuditTrailBuilder.withAdmin}`     | `` [`Self::with_admin`] ``         |
-| `{@link RoleMap.initialAdminRoleName \| Admin}` (display text) | rust path-style links |
-| `{@link Permission.AddRecord}`            | enum path links                    |
+| Use                                                            | Don't use                 |
+| -------------------------------------------------------------- | ------------------------- |
+| `{@link AuditTrailBuilder}`                                    | ``[`AuditTrailBuilder`]`` |
+| `{@link AuditTrailBuilder.withAdmin}`                          | ``[`Self::with_admin`]``  |
+| `{@link RoleMap.initialAdminRoleName \| Admin}` (display text) | rust path-style links     |
+| `{@link Permission.AddRecord}`                                 | enum path links           |
 
 Always link by **TS-visible name** (the value of `js_name`, or the camelCase form
 that wasm-bindgen produces), not by Rust identifier:
@@ -119,7 +119,7 @@ Rules:
 
 When a function/transaction is gated on one or more capabilities/permissions,
 state it in a dedicated paragraph that begins with "Requires …" and link the
-permission(s) (examples are using 
+permission(s) (examples are using
 [RoleMap based access control](https://github.com/iotaledger/product-core/blob/main/components_move/sources/role_map.move)):
 
 ```

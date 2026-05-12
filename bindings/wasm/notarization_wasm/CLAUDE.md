@@ -7,7 +7,7 @@ Follow the guidelines in `../DOC-STYLEGUIDE.md`.
 ## No Capability based access control
 
 Ignore the rules stated in the `Capability gating` section because
-`notarization_wasm` only uses access control through Move object ownership. 
+`notarization_wasm` only uses access control through Move object ownership.
 
 ## Notarization-product-specific terminology and rules
 

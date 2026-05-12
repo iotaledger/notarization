@@ -15,7 +15,7 @@ init-api-mapping  ─►  update-api-mapping  ─►  sync-product-docs
 Inputs every skill needs (it will try to guess from your cwd, but always
 validate the guesses):
 
-- `move-sc-path`    — e.g. `notarization-move/sources`
+- `move-sc-path` — e.g. `notarization-move/sources`
 - `rust-crate-path` — e.g. `notarization-rs/src`
 - `wasm-bindings-path` — e.g. `bindings/wasm/notarization_wasm/src`
 

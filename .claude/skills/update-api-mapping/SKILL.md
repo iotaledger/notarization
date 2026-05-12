@@ -227,16 +227,16 @@ update is mechanical.
    and figure out if the three input arguments can be guessed from the product name `notarization`.
 2. Present the guessed input arguments to the user for validation or - in case of doubts - ask the
    user for the correct product name or input arguments.
-4. Diff that 653a27c..HEAD restricted to the three source paths.
-5. Find e.g. an added `public fun foo_bar` in `notarization.move`, an
+3. Diff that 653a27c..HEAD restricted to the three source paths.
+4. Find e.g. an added `public fun foo_bar` in `notarization.move`, an
    added `FooBar` struct + `FooBar::new` in `notarization-rs/src`,
    and `WasmFooBar` with the usual two methods in the WASM crate.
-6. Propose a new `[notarization.main.foo_bar]` section with both arrays
+5. Propose a new `[notarization.main.foo_bar]` section with both arrays
    prefilled.
-7. Find e.g. that `delete_foo`'s removed Rust helper
+6. Find e.g. that `delete_foo`'s removed Rust helper
    `FooBar::delete_legacy` should be dropped from the existing
    section.
-8. Show the change set, apply on confirmation, verify, summarize.
+7. Show the change set, apply on confirmation, verify, summarize.
 
 ### Example 2
 

@@ -12,7 +12,7 @@ already exists but has never had an API mapping committed) needs a starting
 `api_mapping.toml` placed in the Move package root. This skill scaffolds that
 file with the standard header and conventions, then hands off to the
 `update-api-mapping` skill to fill in every section by diffing against the
-empty tree — i.e. treating *every* current public Move/Rust/WASM entity as
+empty tree — i.e. treating _every_ current public Move/Rust/WASM entity as
 "newly added".
 
 The actual extraction, naming, and reconciliation logic lives in
@@ -181,7 +181,7 @@ validation.
 - **Don't duplicate `update-api-mapping`'s logic.** This skill scaffolds
   and delegates; it must not extract symbols, propose Rust/WASM matches,
   or edit individual sections itself. If `update-api-mapping`'s behavior
-  needs to change, change *that* skill, not this one.
+  needs to change, change _that_ skill, not this one.
 - **One product per invocation.** Bootstrap one mapping at a time so
   the bootstrap diff is reviewable.
 - **Never overwrite an existing TOML silently.** Stop and ask if
