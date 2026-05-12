@@ -109,8 +109,7 @@ impl From<WasmData> for Data {
 /// the configured {@link NotarizationMethod}.
 ///
 /// Mutability depends on the Notarization Method:
-/// * `Dynamic`: `data` and `metadata` can be replaced after creation via
-///   {@link NotarizationClient.updateState}.
+/// * `Dynamic`: `data` and `metadata` can be replaced after creation via {@link NotarizationClient.updateState}.
 /// * `Locked`: the state is fixed at creation and cannot be replaced.
 ///
 /// `data` and `metadata` can only be replaced together, in a single
@@ -177,21 +176,18 @@ impl From<WasmState> for State {
 /// `transferLock` — on-chain creation aborts otherwise.
 ///
 /// Permitted lock configurations depend on the {@link NotarizationMethod}:
-/// * `Dynamic`: `updateLock` is fixed to {@link TimeLockType.None};
-///   `transferLock` may carry any {@link TimeLock} variant.
-/// * `Locked`: both `updateLock` and `transferLock` are fixed to
-///   {@link TimeLockType.UntilDestroyed} — Locked-Notarizations are
-///   non-transferable and their state is immutable.
+/// * `Dynamic`: `updateLock` is fixed to {@link TimeLockType.None}; `transferLock` may carry any {@link TimeLock}
+///   variant.
+/// * `Locked`: both `updateLock` and `transferLock` are fixed to {@link TimeLockType.UntilDestroyed} —
+///   Locked-Notarizations are non-transferable and their state is immutable.
 #[wasm_bindgen(js_name = LockMetadata, getter_with_clone, inspectable)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WasmLockMetadata {
     /// Lock gating state and metadata updates.
     ///
     /// Value depends on the Notarization Method:
-    /// * `Dynamic`: fixed to {@link TimeLockType.None} — state and updatable
-    ///   metadata are always replaceable via
-    ///   {@link NotarizationClient.updateState} and
-    ///   {@link NotarizationClient.updateMetadata}.
+    /// * `Dynamic`: fixed to {@link TimeLockType.None} — state and updatable metadata are always replaceable via
+    ///   {@link NotarizationClient.updateState} and {@link NotarizationClient.updateMetadata}.
     /// * `Locked`: fixed to {@link TimeLockType.UntilDestroyed}.
     #[wasm_bindgen(js_name = updateLock)]
     pub update_lock: WasmTimeLock,
@@ -202,10 +198,8 @@ pub struct WasmLockMetadata {
     /// Lock gating ownership transfer.
     ///
     /// Value depends on the Notarization Method:
-    /// * `Dynamic`: any {@link TimeLock} variant — controls when ownership
-    ///   transfer is permitted.
-    /// * `Locked`: fixed to {@link TimeLockType.UntilDestroyed} —
-    ///   Locked-Notarizations are non-transferable.
+    /// * `Dynamic`: any {@link TimeLock} variant — controls when ownership transfer is permitted.
+    /// * `Locked`: fixed to {@link TimeLockType.UntilDestroyed} — Locked-Notarizations are non-transferable.
     #[wasm_bindgen(js_name = transferLock)]
     pub transfer_lock: WasmTimeLock,
 }
@@ -253,8 +247,7 @@ impl WasmImmutableMetadata {
     ///
     /// @remarks
     /// Presence depends on the Notarization Method:
-    /// * `Dynamic`: absent when the Dynamic-Notarization carries no transfer
-    ///   lock; present otherwise.
+    /// * `Dynamic`: absent when the Dynamic-Notarization carries no transfer lock; present otherwise.
     /// * `Locked`: always present.
     ///
     /// @returns The {@link LockMetadata}, or `null` when none is attached.

@@ -301,12 +301,10 @@ impl WasmNotarizationClientReadOnly {
     ///
     /// @remarks
     /// Behaviour depends on the Notarization Method:
-    /// * `Dynamic`: destruction is gated only on the `transferLock`. The
-    ///   notarization is destroy-allowed unless `transferLock` is currently
-    ///   `UnlockAt`-locked.
-    /// * `Locked`: destruction is gated on `updateLock`, `deleteLock`, and
-    ///   `transferLock`. The notarization is destroy-allowed only when none
-    ///   of them is currently `UnlockAt`-locked.
+    /// * `Dynamic`: destruction is gated only on the `transferLock`. The notarization is destroy-allowed unless
+    ///   `transferLock` is currently `UnlockAt`-locked.
+    /// * `Locked`: destruction is gated on `updateLock`, `deleteLock`, and `transferLock`. The notarization is
+    ///   destroy-allowed only when none of them is currently `UnlockAt`-locked.
     ///
     /// @param notarizedObjectId - The notarization object's ID.
     ///
@@ -329,8 +327,7 @@ impl WasmNotarizationClientReadOnly {
     /// @remarks
     /// Result depends on the Notarization Method:
     /// * `Dynamic`: `true` when the configured `transferLock` is engaged.
-    /// * `Locked`: always `true` — Locked-Notarizations are non-transferable
-    ///   by design.
+    /// * `Locked`: always `true` — Locked-Notarizations are non-transferable by design.
     ///
     /// @param notarizedObjectId - The notarization object's ID.
     ///

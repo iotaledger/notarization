@@ -157,10 +157,9 @@ impl WasmNotarizationClient {
     /// Unix epoch).
     ///
     /// Behaviour depends on the Notarization Method:
-    /// * `Dynamic`: always permitted — the underlying `updateLock` is fixed
-    ///   to {@link TimeLockType.None}.
-    /// * `Locked`: always aborts on-chain, because the underlying
-    ///   `updateLock` is pinned to {@link TimeLockType.UntilDestroyed}.
+    /// * `Dynamic`: always permitted — the underlying `updateLock` is fixed to {@link TimeLockType.None}.
+    /// * `Locked`: always aborts on-chain, because the underlying `updateLock` is pinned to {@link
+    ///   TimeLockType.UntilDestroyed}.
     ///
     /// @param newState - The replacement {@link State}.
     /// @param notarizationId - The notarization object's ID.
@@ -186,10 +185,9 @@ impl WasmNotarizationClient {
     /// `lastStateChangeAt`, or the immutable description.
     ///
     /// Behaviour depends on the Notarization Method:
-    /// * `Dynamic`: always permitted — the underlying `updateLock` is fixed
-    ///   to {@link TimeLockType.None}.
-    /// * `Locked`: always aborts on-chain, because the underlying
-    ///   `updateLock` is pinned to {@link TimeLockType.UntilDestroyed}.
+    /// * `Dynamic`: always permitted — the underlying `updateLock` is fixed to {@link TimeLockType.None}.
+    /// * `Locked`: always aborts on-chain, because the underlying `updateLock` is pinned to {@link
+    ///   TimeLockType.UntilDestroyed}.
     ///
     /// @param metadata - The replacement metadata, or `null` to clear it.
     /// @param notarizationId - The notarization object's ID.
@@ -243,12 +241,10 @@ impl WasmNotarizationClient {
     /// when its `transferLock` is not currently active.
     ///
     /// Behaviour depends on the Notarization Method:
-    /// * `Dynamic`: on success the notarization is transferred to
-    ///   `recipient`. Submitting while the configured `transferLock` is
-    ///   currently engaged aborts on-chain.
-    /// * `Locked`: always aborts on-chain — Locked-Notarizations have their
-    ///   `transferLock` pinned to {@link TimeLockType.UntilDestroyed} and
-    ///   are therefore non-transferable.
+    /// * `Dynamic`: on success the notarization is transferred to `recipient`. Submitting while the configured
+    ///   `transferLock` is currently engaged aborts on-chain.
+    /// * `Locked`: always aborts on-chain — Locked-Notarizations have their `transferLock` pinned to {@link
+    ///   TimeLockType.UntilDestroyed} and are therefore non-transferable.
     ///
     /// @param notarizationId - The notarization object's ID.
     /// @param recipient - The new owner's IOTA address.

@@ -58,8 +58,7 @@ impl WasmOnChainNotarization {
     /// associated with the current version of the `state`.
     ///
     /// Mutability depends on the Notarization Method:
-    /// * `Dynamic`: the state can be replaced after creation via
-    ///   {@link NotarizationClient.updateState}.
+    /// * `Dynamic`: the state can be replaced after creation via {@link NotarizationClient.updateState}.
     /// * `Locked`: the state is fixed at creation and cannot be replaced.
     #[wasm_bindgen(getter)]
     pub fn state(&self) -> WasmState {
@@ -83,8 +82,8 @@ impl WasmOnChainNotarization {
     /// Provides context or additional information for third parties.
     ///
     /// Mutability depends on the Notarization Method:
-    /// * `Dynamic`: the updatable metadata can be replaced after creation
-    ///   via {@link NotarizationClient.updateMetadata}.
+    /// * `Dynamic`: the updatable metadata can be replaced after creation via {@link
+    ///   NotarizationClient.updateMetadata}.
     /// * `Locked`: the value is fixed at creation and cannot be replaced.
     ///
     /// `updatableMetadata` is independent of {@link OnChainNotarization.state}:
@@ -322,10 +321,9 @@ impl WasmCreateNotarizationDynamic {
 /// refreshes `lastStateChangeAt` to the on-chain clock timestamp.
 ///
 /// Behavior depends on the Notarization Method:
-/// * `Dynamic`: always permitted — the underlying `updateLock` is fixed to
-///   {@link TimeLockType.None}.
-/// * `Locked`: always aborts on-chain, because the underlying `updateLock`
-///   is pinned to {@link TimeLockType.UntilDestroyed}.
+/// * `Dynamic`: always permitted — the underlying `updateLock` is fixed to {@link TimeLockType.None}.
+/// * `Locked`: always aborts on-chain, because the underlying `updateLock` is pinned to {@link
+///   TimeLockType.UntilDestroyed}.
 ///
 /// Emits a `NotarizationUpdated` event on success.
 #[wasm_bindgen(js_name = UpdateState, inspectable)]
@@ -388,10 +386,9 @@ impl WasmUpdateState {
 /// `lastStateChangeAt` timestamp, or the immutable description.
 ///
 /// Behavior depends on the Notarization Method:
-/// * `Dynamic`: always permitted — the underlying `updateLock` is fixed to
-///   {@link TimeLockType.None}.
-/// * `Locked`: always aborts on-chain, because the underlying `updateLock`
-///   is pinned to {@link TimeLockType.UntilDestroyed}.
+/// * `Dynamic`: always permitted — the underlying `updateLock` is fixed to {@link TimeLockType.None}.
+/// * `Locked`: always aborts on-chain, because the underlying `updateLock` is pinned to {@link
+///   TimeLockType.UntilDestroyed}.
 #[wasm_bindgen(js_name = UpdateMetadata, inspectable)]
 pub struct WasmUpdateMetadata(pub(crate) UpdateMetadata);
 
