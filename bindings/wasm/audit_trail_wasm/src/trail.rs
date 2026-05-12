@@ -1077,6 +1077,11 @@ impl WasmDeleteRecord {
 /// Walks the trail from the front and silently skips records still inside the delete-record
 /// window. Tag-aware authorization applies to every record actually deleted.
 ///
+/// `limit` caps the number of records actually deleted, not the number of records inspected.
+/// Ineligible records at the front of the trail are silently walked past without counting
+/// toward `limit`, so more than `limit` records may be visited before `limit` deletions
+/// accumulate.
+///
 /// Requires the {@link Permission.DeleteAllRecords} permission.
 ///
 /// Emits one {@link RecordDeleted} event per deletion.
