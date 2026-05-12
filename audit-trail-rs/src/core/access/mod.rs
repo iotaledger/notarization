@@ -4,11 +4,12 @@
 //! Role and capability management APIs for audit trails.
 //!
 //! This module is the Rust-facing wrapper around the access-control state integrated into each audit trail.
-//! Roles grant [`PermissionSet`] values, while capability objects bind one role to one trail and may add
-//! optional address or time restrictions.
+//! Roles grant [`crate::core::types::PermissionSet`] values, while capability objects bind one role to one trail and
+//! may add optional address or time restrictions.
 //!
-//! Additional record-tag constraints are represented as [`RoleTags`]. They narrow which tagged records a role
-//! may operate on, but they do not replace the underlying permission checks enforced by the Move package.
+//! Additional record-tag constraints are represented as [`crate::core::types::RoleTags`]. They narrow which tagged
+//! records a role may operate on, but they do not replace the underlying permission checks enforced by the Move
+//! package.
 
 use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::{IotaKeySignature, OptionalSync};
