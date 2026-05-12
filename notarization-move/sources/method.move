@@ -1,29 +1,36 @@
 // Copyright (c) 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-/// This module provides enum NotarizationMethod used to distinguish programmatically
-/// between Notarization methods.
+/// Defines the `NotarizationMethod` enum used to distinguish between
+/// Notarization Methods at runtime.
 module iota_notarization::method;
 
 use std::string::{Self, String};
 
-// Indicates the Notarization method.
+/// Identifies the Notarization Method of a `Notarization`.
+///
+/// The set of Notarization Methods is closed in the current version of the
+/// package but may be extended in future versions.
 public enum NotarizationMethod has copy, drop, store {
+    /// Method whose `state` and `updatable_metadata` can be updated after
+    /// creation and which may optionally be transfer-locked.
     Dynamic,
+    /// Method whose `state` and `updatable_metadata` are immutable after
+    /// creation and whose destruction is gated by a `delete_lock`.
     Locked,
 }
 
-/// Returns a new NotarizationMethod::Dynamic.
+/// Returns the `Dynamic` Notarization Method.
 public fun new_dynamic(): NotarizationMethod {
     NotarizationMethod::Dynamic
 }
 
-/// Returns a new NotarizationMethod::Locked.
+/// Returns the `Locked` Notarization Method.
 public fun new_locked(): NotarizationMethod {
     NotarizationMethod::Locked
 }
 
-/// Returns true if the NotarizationMethod is Dynamic
+/// Returns `true` when `method` is `Dynamic`.
 public fun is_dynamic(method: &NotarizationMethod): bool {
     match (method) {
         NotarizationMethod::Dynamic => true,
@@ -31,7 +38,7 @@ public fun is_dynamic(method: &NotarizationMethod): bool {
     }
 }
 
-/// Returns true if the NotarizationMethod is Locked
+/// Returns `true` when `method` is `Locked`.
 public fun is_locked(method: &NotarizationMethod): bool {
     match (method) {
         NotarizationMethod::Dynamic => false,
@@ -39,7 +46,11 @@ public fun is_locked(method: &NotarizationMethod): bool {
     }
 }
 
-/// Returns the Notarization method as String
+/// Returns the human-readable name of `method` as a `String`.
+///
+/// The result depends on the Notarization Method:
+/// * `Dynamic`: `"DynamicNotarization"`.
+/// * `Locked`: `"LockedNotarization"`.
 public fun to_str(method: &NotarizationMethod): String {
     match (method) {
         NotarizationMethod::Dynamic => {

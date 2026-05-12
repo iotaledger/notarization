@@ -30,6 +30,8 @@ across modules.
 - Use Markdown inside doc comments; doc-tools render it.
 - Wrap lines at roughly 100 columns. Continuation lines of a Markdown bullet
   are indented two spaces under the `*`.
+- Ignore existing line comments using `//` as these comments are dedicated for developers of the
+  product and don't need to apply to this style guide.
 
 ## Function doc structure
 
@@ -211,6 +213,7 @@ For `Option<T>` returns, document both branches:
 - Don't number bullet points unless ordering is meaningful.
 - Don't add a doc comment that simply restates the function name in
   English ("Get the foo-bar creator address"). Either add value or omit.
+- Don't edit or remove already existing line comments starting with `//` (only two slashes instead of three).
 
 ## Worked example
 

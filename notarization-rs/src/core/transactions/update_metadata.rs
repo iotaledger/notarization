@@ -1,13 +1,20 @@
 // Copyright 2020-2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-//! # Notarization Metadata
+//! # Update Metadata
 //!
-//! This module defines the metadata for notarizations.
+//! This module defines the update-metadata transaction.
 //!
 //! ## Overview
 //!
-//! The metadata is used to store the metadata for a notarization.
+//! The update-metadata transaction replaces the `updatable_metadata` of an
+//! existing notarization. It does not affect `state`, `state_version_count`,
+//! `last_state_change_at`, or the immutable description. Behaviour depends
+//! on the Notarization Method:
+//! * `Dynamic`: always permitted — the underlying `update_lock` is fixed to
+//!   `TimeLock::None`.
+//! * `Locked`: always aborts on-chain, because the underlying `update_lock`
+//!   is pinned to `TimeLock::UntilDestroyed`.
 
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
@@ -21,7 +28,17 @@ use tokio::sync::OnceCell;
 use super::super::operations::{NotarizationImpl, NotarizationOperations};
 use crate::error::Error;
 
-/// A transaction that updates the metadata of a notarization.
+/// A transaction that replaces the `updatable_metadata` of an existing
+/// notarization.
+///
+/// Does not affect `state`, `state_version_count`, `last_state_change_at`,
+/// or the immutable description.
+///
+/// Behaviour depends on the Notarization Method:
+/// * `Dynamic`: always permitted — the underlying `update_lock` is fixed to
+///   `TimeLock::None`.
+/// * `Locked`: always aborts on-chain, because the underlying `update_lock`
+///   is pinned to `TimeLock::UntilDestroyed`.
 pub struct UpdateMetadata {
     metadata: Option<String>,
     /// The ID of the notarization to update

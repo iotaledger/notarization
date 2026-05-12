@@ -194,7 +194,7 @@ category, or a single `@throws` summarizing them when they share a phrase.
 ## Field docs
 
 Public fields of `getter_with_clone` annotated structs are visible to TS as plain
-properties. Document each with a one-line description above the field. If the
+properties. Document each with at least a one-line description above the field. If the
 semantics are non-trivial (e.g. nullable, normalized, sorted), state that in
 the description:
 
@@ -203,7 +203,8 @@ the description:
 pub head: Option<u64>,
 ```
 
-For longer field documentation, the same blank-line block ordering applies.
+In case of references to functions, important concepts, edge cases or other explanatory details
+related to the field add longer field documentation, where the same blank-line block ordering applies.
 
 ## Enum variant docs
 

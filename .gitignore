@@ -15,3 +15,4 @@
 /iota/
 /toml-cli/
 /audit-trail-move/build
+/.claude/settings.local.json

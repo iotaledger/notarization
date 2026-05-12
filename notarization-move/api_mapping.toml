@@ -84,15 +84,11 @@ wasm = [
 ]
 
 [notarization.main.NotarizationUpdated]
-rust = [
-    "Event",
-]
+rust = []
 wasm = []
 
 [notarization.main.NotarizationDestroyed]
-rust = [
-    "Event",
-]
+rust = []
 wasm = []
 
 [notarization.main.new_state_from_bytes]
@@ -293,15 +289,11 @@ wasm = []
 # =============================================================================
 
 [notarization.dynamic_notarization.DynamicNotarizationCreated]
-rust = [
-    "Event",
-]
+rust = []
 wasm = []
 
 [notarization.dynamic_notarization.DynamicNotarizationTransferred]
-rust = [
-    "Event",
-]
+rust = []
 wasm = []
 
 [notarization.dynamic_notarization.new]
@@ -354,9 +346,7 @@ wasm = []
 # =============================================================================
 
 [notarization.locked_notarization.LockedNotarizationCreated]
-rust = [
-    "Event",
-]
+rust = []
 wasm = []
 
 [notarization.locked_notarization.new]

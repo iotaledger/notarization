@@ -10,46 +10,53 @@ use super::metadata::ImmutableMetadata;
 use super::state::State;
 
 /// A notarization record stored on the blockchain.
+///
+/// Stores user-defined data together with immutable provenance, optional
+/// updatable metadata, and lock metadata that governs whether the object can
+/// be updated, transferred, or destroyed. The selected
+/// [`NotarizationMethod`] determines which mutations are allowed after
+/// creation.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct OnChainNotarization {
     /// The unique identifier of the notarization.
     pub id: UID,
-    /// The state of the notarization.
+    /// Notarized data and its associated state metadata.
     ///
-    /// The `state` of a notarization contains the notarized data and metadata associated with
-    /// the current version of the `state`.
+    /// The `state` of a notarization contains the notarized data and metadata
+    /// associated with the current version of the `state`.
     ///
-    /// `state` can be updated depending on the used `NotarizationMethod`:
-    /// - Dynamic: Can be updated anytime after notarization creation
-    /// - Locked: Immutable after notarization creation
-    ///
-    /// Use `NotarizationClient::update_state()` for `state` updates.
+    /// Mutability depends on the Notarization Method:
+    /// * `Dynamic`: updatable after creation via
+    ///   [`NotarizationClient::update_state`](crate::client::NotarizationClient::update_state).
+    /// * `Locked`: immutable after creation.
     pub state: State,
-    /// The immutable metadata of the notarization.
+    /// Provenance fixed at creation time.
     ///
-    /// NOTE:
-    /// - provides immutable information, assertions and guaranties for third parties
-    /// - `immutable_metadata` are automatically created at creation time and cannot be updated thereafter
+    /// Carries the creation timestamp, the optional immutable description,
+    /// and the optional [`LockMetadata`](crate::core::types::LockMetadata).
+    /// Provides immutable information, assertions, and guarantees for third
+    /// parties and cannot be updated after creation.
     pub immutable_metadata: ImmutableMetadata,
-    /// The updatable metadata of the notarization.
+    /// Free-form metadata providing context or additional information for
+    /// third parties.
     ///
-    /// Provides context or additional information for third parties
+    /// Mutability depends on the Notarization Method:
+    /// * `Dynamic`: updatable after creation via
+    ///   [`NotarizationClient::update_metadata`](crate::client::NotarizationClient::update_metadata);
+    ///   updates do not bump `state_version_count` nor change
+    ///   `last_state_change_at`.
+    /// * `Locked`: immutable after creation.
     ///
-    /// `updatable_metadata` can be updated depending on the used `NotarizationMethod`:
-    /// - Dynamic: Can be updated anytime after notarization creation
-    /// - Locked: Immutable after notarization creation
-    ///
-    /// NOTE:
-    /// - `updatable_metadata` can be updated independently of `state`
-    /// - Updating `updatable_metadata` does not increase the `state_version_count`
-    /// - Updating `updatable_metadata` does not change the `last_state_change_at` timestamp
-    /// - Use `NotarizationClient::update_metadata()` for `updatable_metadata` updates.
+    /// `updatable_metadata` can be updated independently of `state`.
     pub updatable_metadata: Option<String>,
-    /// The timestamp of the last state change (milliseconds since UNIX epoch)
+    /// Timestamp of the most recent `state` change, in milliseconds since
+    /// the Unix epoch.
     pub last_state_change_at: u64,
-    /// The number of state changes.
+    /// Number of times `state` has been updated since creation. `0` means
+    /// the state has not been updated since creation.
     pub state_version_count: u64,
-    /// The method of the notarization.
+    /// Notarization Method governing the mutation and destruction rules of
+    /// this notarization.
     pub method: NotarizationMethod,
     /// The owner of the notarization.
     #[serde(skip)]

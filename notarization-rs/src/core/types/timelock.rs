@@ -22,11 +22,37 @@ use serde::{Deserialize, Serialize};
 use super::super::move_utils;
 use crate::error::Error;
 
-/// Metadata containing time-based access restrictions for a notarization.
+/// Bundle of three [`TimeLock`]s controlling whether a notarization can be
+/// updated, destroyed, or transferred.
+///
+/// `delete_lock` cannot be `TimeLock::UntilDestroyed` — that variant is
+/// reserved for the other locks. The `delete_lock`'s unlock time must be
+/// no earlier than the `update_lock` and `transfer_lock` unlock times;
+/// the on-chain constructor aborts otherwise.
+///
+/// Permitted lock configurations depend on the Notarization Method:
+/// * `Dynamic`: `update_lock` is fixed to `TimeLock::None`; `transfer_lock`
+///   may carry any [`TimeLock`] variant.
+/// * `Locked`: both `update_lock` and `transfer_lock` are pinned to
+///   `TimeLock::UntilDestroyed` — Locked-Notarizations are non-transferable
+///   and their state is immutable.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct LockMetadata {
+    /// Lock guarding `update_state` and `update_metadata`.
+    ///
+    /// Value depends on the Notarization Method:
+    /// * `Dynamic`: fixed to `TimeLock::None`.
+    /// * `Locked`: fixed to `TimeLock::UntilDestroyed`.
     pub update_lock: TimeLock,
+    /// Lock guarding destruction. Must not be `TimeLock::UntilDestroyed`;
+    /// its unlock time must be ≥ both other locks' unlock times.
     pub delete_lock: TimeLock,
+    /// Lock guarding ownership transfer.
+    ///
+    /// Role depends on the Notarization Method:
+    /// * `Dynamic`: gates `NotarizationClient::transfer_notarization`.
+    /// * `Locked`: pinned to `TimeLock::UntilDestroyed` —
+    ///   Locked-Notarizations are non-transferable.
     pub transfer_lock: TimeLock,
 }
 

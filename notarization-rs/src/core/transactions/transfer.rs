@@ -3,13 +3,21 @@
 
 //! # Transfer Notarization
 //!
-//! This module defines the transfer notarization transaction.
+//! This module defines the transfer-notarization transaction.
 //!
 //! ## Overview
 //!
-//! The transfer notarization transaction is used to transfer ownership of a dynamic notarization to a new address.
+//! The transfer-notarization transaction transfers ownership of a
+//! Dynamic-Notarization to a new address. Permitted only when the
+//! notarization has no [`LockMetadata`](super::super::types::LockMetadata)
+//! or when its `transfer_lock` is not currently active.
 //!
-//! Note that this transaction is only available for dynamic notarizations.
+//! Behaviour depends on the Notarization Method:
+//! * `Dynamic`: gated by the configured `transfer_lock`. Submitting while
+//!   the lock is engaged aborts on-chain.
+//! * `Locked`: always aborts on-chain — Locked-Notarizations have their
+//!   `transfer_lock` pinned to `TimeLock::UntilDestroyed` and are therefore
+//!   non-transferable.
 
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
@@ -23,7 +31,22 @@ use tokio::sync::OnceCell;
 use super::super::operations::{NotarizationImpl, NotarizationOperations};
 use crate::error::Error;
 
-/// A transaction that transfers ownership of a dynamic notarization.
+/// A transaction that transfers ownership of a Dynamic-Notarization to
+/// another address.
+///
+/// Permitted only when the notarization has no
+/// [`LockMetadata`](super::super::types::LockMetadata) or when its
+/// `transfer_lock` is not currently active.
+///
+/// Behaviour depends on the Notarization Method:
+/// * `Dynamic`: on success the notarization is transferred to `recipient`.
+///   Submitting while the configured `transfer_lock` is engaged aborts
+///   on-chain.
+/// * `Locked`: always aborts on-chain — Locked-Notarizations have their
+///   `transfer_lock` pinned to `TimeLock::UntilDestroyed` and are therefore
+///   non-transferable.
+///
+/// Emits a `DynamicNotarizationTransferred` event on success.
 pub struct TransferNotarization {
     recipient: IotaAddress,
     notarization_id: ObjectID,

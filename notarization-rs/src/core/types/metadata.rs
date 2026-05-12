@@ -5,13 +5,18 @@ use serde::{Deserialize, Serialize};
 
 use super::timelock::LockMetadata;
 
-/// The immutable metadata of a notarization.
+/// Immutable provenance fields of a notarization, fixed at creation time.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ImmutableMetadata {
-    /// Timestamp when the `Notarization` was created
+    /// Creation timestamp, in milliseconds since the Unix epoch.
     pub created_at: u64,
-    /// Description of the `Notarization`
+    /// Human-readable description of the notarization.
     pub description: Option<String>,
-    /// Optional lock metadata for `Notarization`
+    /// Optional lock metadata.
+    ///
+    /// Presence depends on the Notarization Method:
+    /// * `Dynamic`: absent when the Dynamic-Notarization carries no transfer
+    ///   lock; present otherwise.
+    /// * `Locked`: always present.
     pub locking: Option<LockMetadata>,
 }
