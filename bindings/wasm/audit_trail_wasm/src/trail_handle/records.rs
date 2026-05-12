@@ -229,6 +229,11 @@ impl WasmTrailRecords {
     /// window, deleting up to `limit` unlocked records in trail order. Tag-aware authorization
     /// applies to every record actually deleted.
     ///
+    /// `limit` caps the number of records actually deleted, not the number of records inspected.
+    /// Ineligible records at the front of the trail are silently walked past without counting
+    /// toward `limit`, so more than `limit` records may be visited before `limit` deletions
+    /// accumulate.
+    ///
     /// Requires the {@link Permission.DeleteAllRecords} permission.
     ///
     /// @param limit - Maximum number of records to delete in this batch.

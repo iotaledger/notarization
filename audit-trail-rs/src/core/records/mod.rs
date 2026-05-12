@@ -114,6 +114,10 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
     ///
     /// Batch deletion requires `DeleteAllRecords`, skips locked records and records outside the capability's tag
     /// access, and removes up to `limit` eligible records in trail order.
+    ///
+    /// `limit` caps the number of records actually deleted, not the number of records inspected. Ineligible
+    /// records at the front of the trail are silently walked past without counting toward `limit`, so more
+    /// than `limit` records may be visited before `limit` deletions accumulate.
     pub fn delete_records_batch<S>(&self, limit: u64) -> TransactionBuilder<DeleteRecordsBatch>
     where
         C: AuditTrailFull + CoreClient<S>,

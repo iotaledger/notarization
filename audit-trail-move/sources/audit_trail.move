@@ -467,6 +467,11 @@ public fun delete_record<D: store + copy + drop>(
 /// deleted, and tag usage counts are decremented for tagged records. Because of the
 /// silent skipping, the returned count may be less than `limit`.
 ///
+/// `limit` caps the number of records actually deleted, not the number of records
+/// inspected. Records at the front of the trail that are not eligible for deletion
+/// are walked past without counting toward `limit`, so more than `limit` records may
+/// be visited before `limit` deletions accumulate.
+///
 /// Requires a capability granting the `DeleteAllRecords` permission and, for every
 /// tagged record actually deleted, a role whose `RoleTags` allow that tag.
 ///

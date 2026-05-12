@@ -224,6 +224,10 @@ impl Transaction for DeleteRecord {
 /// records in trail order. Tag-aware authorization applies to every record actually deleted. On success a
 /// `RecordDeleted` event is emitted per deletion.
 ///
+/// `limit` caps the number of records actually deleted, not the number of records inspected. Ineligible
+/// records at the front of the trail are silently walked past without counting toward `limit`, so more
+/// than `limit` records may be visited before `limit` deletions accumulate.
+///
 /// Resolves to the sequence numbers of the records deleted in this batch, in deletion order. Its length is
 /// at most `limit` and may be smaller when locked records were skipped or the trail was exhausted.
 #[derive(Debug, Clone)]
