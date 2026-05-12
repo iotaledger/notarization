@@ -56,7 +56,7 @@ public struct Notarization<D: store + drop + copy> has key {
     /// - `updatable_metadata` can be updated independently of `state`
     /// - Updating `updatable_metadata` does not increase the `state_version_count`
     /// - Updating `updatable_metadata` does not change the `last_state_change_at` timestamp
-        /// - Use `Notarization::update_metadata()` for `updatable_metadata` updates.
+    /// - Use `Notarization::update_metadata()` for `updatable_metadata` updates.
     updatable_metadata: Option<String>,
     /// Timestamp of the most recent `state` change, in milliseconds since the
     /// Unix epoch.
