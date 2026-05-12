@@ -1115,11 +1115,12 @@ async fn delete_records_batch_requires_delete_all_records_permission() -> anyhow
 }
 
 #[tokio::test]
-async fn delete_records_batch_requires_matching_role_tag_access() -> anyhow::Result<()> {
+async fn delete_records_batch_skips_unauthorized_tagged_records() -> anyhow::Result<()> {
     let client = get_funded_test_client().await?;
     let trail_id = client
         .create_test_trail_with_tags(Data::text("batch-delete-tagged-deny"), ["finance"])
         .await?;
+    let records = client.trail(trail_id).records();
 
     client
         .create_role(
@@ -1130,7 +1131,12 @@ async fn delete_records_batch_requires_matching_role_tag_access() -> anyhow::Res
         )
         .await?;
     client
-        .create_role(trail_id, "DeleteAllWithoutTags", [Permission::DeleteAllRecords], None)
+        .create_role(
+            trail_id,
+            "DeleteAllWithoutTags",
+            [Permission::DeleteRecord, Permission::DeleteAllRecords],
+            None,
+        )
         .await?;
     client
         .issue_cap(trail_id, "TaggedWriter", CapabilityIssueOptions::default())
@@ -1139,53 +1145,7 @@ async fn delete_records_batch_requires_matching_role_tag_access() -> anyhow::Res
         .issue_cap(trail_id, "DeleteAllWithoutTags", CapabilityIssueOptions::default())
         .await?;
 
-    client
-        .trail(trail_id)
-        .records()
-        .add(Data::text("tagged record"), None, Some("finance".to_string()))
-        .build_and_execute(&client)
-        .await?;
-
-    let denied = client
-        .trail(trail_id)
-        .records()
-        .delete_records_batch(10)
-        .build_and_execute(&client)
-        .await;
-
-    assert!(
-        denied.is_err(),
-        "tagged batch deletes should require matching role tag access"
-    );
-    assert_eq!(client.trail(trail_id).records().record_count().await?, 2);
-    assert_eq!(
-        client.trail(trail_id).records().get(1).await?.tag.as_deref(),
-        Some("finance")
-    );
-
-    Ok(())
-}
-
-#[tokio::test]
-async fn delete_records_batch_with_matching_role_tag_access_succeeds() -> anyhow::Result<()> {
-    let client = get_funded_test_client().await?;
-    let trail_id = client
-        .create_test_trail_with_tags(Data::text("batch-delete-tagged-allow"), ["finance"])
-        .await?;
-    let records = client.trail(trail_id).records();
-
-    client
-        .create_role(
-            trail_id,
-            "TaggedDeleteAll",
-            [Permission::AddRecord, Permission::DeleteAllRecords],
-            Some(RoleTags::new(["finance"])),
-        )
-        .await?;
-    client
-        .issue_cap(trail_id, "TaggedDeleteAll", CapabilityIssueOptions::default())
-        .await?;
-
+    records.delete(0).build_and_execute(&client).await?;
     records
         .add(Data::text("tagged record"), None, Some("finance".to_string()))
         .build_and_execute(&client)
@@ -1196,9 +1156,57 @@ async fn delete_records_batch_with_matching_role_tag_access_succeeds() -> anyhow
         .build_and_execute(&client)
         .await?
         .output;
-    assert_eq!(deleted, vec![0, 1]);
+
+    assert!(deleted.is_empty());
+    assert_eq!(records.record_count().await?, 1);
+    assert_eq!(records.get(1).await?.tag.as_deref(), Some("finance"));
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn delete_records_batch_deletes_authorized_differently_tagged_records() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let trail_id = client
+        .create_test_trail_with_tags(Data::text("batch-delete-tagged-allow"), ["finance", "legal"])
+        .await?;
+    let records = client.trail(trail_id).records();
+
+    client
+        .create_role(
+            trail_id,
+            "TaggedDeleteAll",
+            [
+                Permission::AddRecord,
+                Permission::DeleteRecord,
+                Permission::DeleteAllRecords,
+            ],
+            Some(RoleTags::new(["finance", "legal"])),
+        )
+        .await?;
+    client
+        .issue_cap(trail_id, "TaggedDeleteAll", CapabilityIssueOptions::default())
+        .await?;
+
+    records.delete(0).build_and_execute(&client).await?;
+    records
+        .add(Data::text("finance record"), None, Some("finance".to_string()))
+        .build_and_execute(&client)
+        .await?;
+    records
+        .add(Data::text("legal record"), None, Some("legal".to_string()))
+        .build_and_execute(&client)
+        .await?;
+
+    let deleted = records
+        .delete_records_batch(10)
+        .build_and_execute(&client)
+        .await?
+        .output;
+    assert_eq!(deleted, vec![1, 2]);
     assert_eq!(records.record_count().await?, 0);
     assert!(records.get(1).await.is_err());
+    assert!(records.get(2).await.is_err());
 
     Ok(())
 }

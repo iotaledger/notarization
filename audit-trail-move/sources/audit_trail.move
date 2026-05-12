@@ -294,18 +294,41 @@ entry fun migrate<D: store + copy>(
     self.version = PACKAGE_VERSION;
 }
 
-fun assert_record_tag_allowed<D: store + copy>(
+fun is_record_tag_allowed<D: store + copy>(
     self: &AuditTrail<D>,
     cap: &Capability,
     tag: &Option<String>,
-) {
+): bool {
     if (tag.is_none()) {
-        return
+        return true
     };
 
     let requested_tag = option::borrow(tag);
     assert!(record_tags::contains(&self.tags, requested_tag), ERecordTagNotDefined);
-    assert!(record_tags::role_allows(&self.roles, cap, requested_tag), ERecordTagNotAllowed);
+    record_tags::role_allows(&self.roles, cap, requested_tag)
+}
+
+fun remove_record<D: store + copy + drop>(
+    self: &mut AuditTrail<D>,
+    sequence_number: u64,
+    deleted_by: address,
+    timestamp: u64,
+    trail_id: ID,
+) {
+    let record = linked_table::remove(&mut self.records, sequence_number);
+
+    if (record.tag().is_some()) {
+        record_tags::decrement_usage_count(&mut self.tags, option::borrow(record.tag()));
+    };
+
+    record.destroy();
+
+    event::emit(RecordDeleted {
+        trail_id,
+        sequence_number,
+        deleted_by,
+        timestamp,
+    });
 }
 
 // ===== Record Operations =====
@@ -349,7 +372,7 @@ public fun add_record<D: store + copy>(
             ctx,
         );
     assert!(!locking::is_write_locked(&self.locking_config, clock), ETrailWriteLocked);
-    assert_record_tag_allowed(self, cap, &record_tag);
+    assert!(is_record_tag_allowed(self, cap, &record_tag), ERecordTagNotAllowed);
 
     let caller = ctx.sender();
     let timestamp = clock::timestamp_ms(clock);
@@ -420,10 +443,13 @@ public fun delete_record<D: store + copy + drop>(
             ctx,
         );
     assert!(linked_table::contains(&self.records, sequence_number), ERecordNotFound);
-    assert_record_tag_allowed(
-        self,
-        cap,
-        record::tag(linked_table::borrow(&self.records, sequence_number)),
+    assert!(
+        is_record_tag_allowed(
+            self,
+            cap,
+            self.records.borrow(sequence_number).tag(),
+        ),
+        ERecordTagNotAllowed,
     );
     assert!(!self.is_record_locked(sequence_number, clock), ERecordLocked);
 
@@ -431,18 +457,7 @@ public fun delete_record<D: store + copy + drop>(
     let timestamp = clock::timestamp_ms(clock);
     let trail_id = self.id();
 
-    let record = linked_table::remove(&mut self.records, sequence_number);
-    if (record::tag(&record).is_some()) {
-        record_tags::decrement_usage_count(&mut self.tags, option::borrow(record::tag(&record)));
-    };
-    record::destroy(record);
-
-    event::emit(RecordDeleted {
-        trail_id,
-        sequence_number,
-        deleted_by: caller,
-        timestamp,
-    });
+    self.remove_record(sequence_number, caller, timestamp, trail_id);
 }
 
 /// Deletes up to `limit` records from the front of the trail.
@@ -497,28 +512,16 @@ public fun delete_records_batch<D: store + copy + drop>(
             continue
         };
 
-        assert_record_tag_allowed(
-            self,
-            cap,
-            record::tag(linked_table::borrow(&self.records, sequence_number)),
-        );
-        let record = linked_table::remove(&mut self.records, sequence_number);
-
-        if (record::tag(&record).is_some()) {
-            record_tags::decrement_usage_count(
-                &mut self.tags,
-                option::borrow(record::tag(&record)),
-            );
+        if (
+            !is_record_tag_allowed(
+                self,
+                cap,
+                self.records.borrow(sequence_number).tag(),
+            )
+        ) {
+            continue
         };
-
-        record.destroy();
-
-        event::emit(RecordDeleted {
-            trail_id,
-            sequence_number,
-            deleted_by: caller,
-            timestamp,
-        });
+        self.remove_record(sequence_number, caller, timestamp, trail_id);
         vector::push_back(&mut deleted_sequence_numbers, sequence_number);
 
         deleted = deleted + 1;
