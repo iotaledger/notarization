@@ -129,7 +129,7 @@ When issuing a capability, `CapabilityIssueOptions` allows restricting its use:
 Trails support three independent lock dimensions:
 
 - **Write lock** (`TimeLock`): Prevents new records from being added
-- **Delete-record window** (`LockingWindow`): Time-based or count-based window during which a record can be deleted after creation
+- **Delete-record window** (`LockingWindow`): Time-based window or count-based protection for the last N records currently present in trail order
 - **Delete-trail lock** (`TimeLock`): Prevents the trail itself from being destroyed
 
 `TimeLock` variants: `None`, `UnlockAt(u32)`, `UnlockAtMs(u64)`, `UntilDestroyed`, `Infinite`.
@@ -147,7 +147,7 @@ Trails support three independent lock dimensions:
 ### Compliance Use Cases
 
 - **Locked write windows** to prevent retroactive record insertion
-- **Delete-record windows** to allow corrections within a time limit, then freeze
+- **Delete-record windows** to allow corrections within a time limit or retain the latest N current records
 - **Role separation** to enforce least-privilege access (auditors can read, operators can write)
 - **Bound capabilities** to tie a capability to a specific operator address
 

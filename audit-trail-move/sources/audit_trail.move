@@ -313,6 +313,30 @@ fun remove_record<D: store + copy + drop>(
     });
 }
 
+/// Returns true if the record is within the last `count` records currently
+/// present in linked-table order.
+fun is_record_in_last_current_records<D: store + copy>(
+    records: &LinkedTable<u64, Record<D>>,
+    sequence_number: u64,
+    count: u64,
+): bool {
+    let mut remaining = count;
+    let mut current = *linked_table::back(records);
+
+    while (remaining > 0 && current.is_some()) {
+        let current_sequence_number = current.destroy_some();
+
+        if (current_sequence_number == sequence_number) {
+            return true
+        };
+
+        current = *linked_table::prev(records, current_sequence_number);
+        remaining = remaining - 1;
+    };
+
+    false
+}
+
 // ===== Record Operations =====
 
 /// Add a record to the trail
@@ -515,6 +539,9 @@ public fun delete_audit_trail<D: store + copy>(
 // ===== Locking =====
 
 /// Check if a record is locked based on the trail's locking configuration.
+///
+/// Count-based windows lock the last N records currently present in the trail,
+/// using the linked-table order after any deletions.
 /// Aborts with ERecordNotFound if the record doesn't exist.
 public fun is_record_locked<D: store + copy>(
     self: &AuditTrail<D>,
@@ -525,14 +552,22 @@ public fun is_record_locked<D: store + copy>(
 
     let record = linked_table::borrow(&self.records, sequence_number);
     let current_time = clock::timestamp_ms(clock);
+    let window = locking::delete_record_window(&self.locking_config);
 
-    locking::is_delete_record_locked(
-        &self.locking_config,
-        sequence_number,
-        record::added_at(record),
-        self.sequence_number,
-        current_time,
-    )
+    if (locking::is_time_locked(window, record::added_at(record), current_time)) {
+        return true
+    };
+
+    let count = locking::count_window(window);
+    if (count.is_some()) {
+        return is_record_in_last_current_records(
+            &self.records,
+            sequence_number,
+            count.destroy_some(),
+        )
+    };
+
+    false
 }
 
 /// Update the locking configuration. Requires `UpdateLockingConfig` permission.

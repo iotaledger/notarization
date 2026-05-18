@@ -115,7 +115,7 @@ impl TimeLock {
     }
 }
 
-/// Defines a locking window (none, time based, or count based).
+/// Defines a delete-record locking window.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum LockingWindow {
     /// No delete window is enforced.
@@ -126,9 +126,13 @@ pub enum LockingWindow {
         /// Window size in seconds.
         seconds: u64,
     },
-    /// Records may be deleted only within the first `count` subsequent records.
+    /// Locks the last `count` records currently present in trail order.
+    ///
+    /// Deletions can move older records into this protected window. The on-chain
+    /// check walks backward from the current tail, so delete gas scales linearly
+    /// with `count`.
     CountBased {
-        /// Number of subsequent records after which deletion is no longer allowed.
+        /// Number of current tail records protected from deletion.
         count: u64,
     },
 }

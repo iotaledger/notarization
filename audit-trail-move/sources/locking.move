@@ -12,10 +12,11 @@ use tf_components::timelock::{Self, TimeLock};
 /// UntilDestroyed cannot be used for trail deletion protection.
 const EUntilDestroyedNotSupportedForDeleteTrail: u64 = 0;
 
-/// Defines a locking window (time XOR count based, or none)
+/// Defines a delete-record locking window (time-based, count-based, or none).
 public enum LockingWindow has copy, drop, store {
     None,
     TimeBased { seconds: u64 },
+    /// Locks the last `count` records currently present in trail order.
     CountBased { count: u64 },
 }
 
@@ -41,7 +42,10 @@ public fun window_time_based(seconds: u64): LockingWindow {
     LockingWindow::TimeBased { seconds }
 }
 
-/// Create a count-based locking window
+/// Create a count-based locking window.
+///
+/// The trail locks the last `count` records currently present in linked-table
+/// order. Deletions can move older records into the protected window.
 public fun window_count_based(count: u64): LockingWindow {
     LockingWindow::CountBased { count }
 }
@@ -137,7 +141,11 @@ public(package) fun set_config(config: &mut LockingConfig, new_config: LockingCo
 
 /// Check if a record is locked based on time window.
 /// Returns true if the record was created within the time window.
-fun is_time_locked(window: &LockingWindow, record_timestamp: u64, current_time: u64): bool {
+public(package) fun is_time_locked(
+    window: &LockingWindow,
+    record_timestamp: u64,
+    current_time: u64,
+): bool {
     match (window) {
         LockingWindow::TimeBased { seconds } => {
             let time_window_ms = (*seconds) * 1000;
@@ -148,48 +156,7 @@ fun is_time_locked(window: &LockingWindow, record_timestamp: u64, current_time: 
     }
 }
 
-/// Check if a record is locked based on count window.
-/// Returns true if the record is among the last N records.
-fun is_count_locked(window: &LockingWindow, sequence_number: u64, total_records: u64): bool {
-    match (window) {
-        LockingWindow::CountBased { count } => {
-            let records_after = total_records - sequence_number - 1;
-            records_after < *count
-        },
-        _ => false,
-    }
-}
-
-/// Check if a record is locked by a window (either by time or count).
-fun is_window_locked(
-    window: &LockingWindow,
-    sequence_number: u64,
-    record_timestamp: u64,
-    total_records: u64,
-    current_time: u64,
-): bool {
-    is_time_locked(window, record_timestamp, current_time)
-        || is_count_locked(window, sequence_number, total_records)
-}
-
 // ===== Locking Logic (LockingConfig) =====
-
-/// Check if a record is locked for deletion.
-public fun is_delete_record_locked(
-    config: &LockingConfig,
-    sequence_number: u64,
-    record_timestamp: u64,
-    total_records: u64,
-    current_time: u64,
-): bool {
-    is_window_locked(
-        &config.delete_record_window,
-        sequence_number,
-        record_timestamp,
-        total_records,
-        current_time,
-    )
-}
 
 /// Check if trail deletion is currently locked.
 public fun is_delete_trail_locked(config: &LockingConfig, clock: &Clock): bool {

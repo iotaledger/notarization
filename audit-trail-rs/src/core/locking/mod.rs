@@ -65,6 +65,9 @@ impl<'a, C> TrailLocking<'a, C> {
     }
 
     /// Updates only the delete-record window.
+    ///
+    /// Count-based windows protect the last N records currently present in trail
+    /// order. Large count values increase delete gas linearly.
     pub fn update_delete_record_window<S>(&self, window: LockingWindow) -> TransactionBuilder<UpdateDeleteRecordWindow>
     where
         C: AuditTrailFull + CoreClient<S>,
@@ -110,6 +113,9 @@ impl<'a, C> TrailLocking<'a, C> {
     }
 
     /// Returns `true` when the given record is currently locked against deletion.
+    ///
+    /// For count-based windows, the check uses the current on-chain record order
+    /// after deletions.
     ///
     /// # Errors
     ///
