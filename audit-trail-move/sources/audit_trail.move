@@ -561,10 +561,10 @@ public fun is_record_locked<D: store + copy>(
     let count = locking::count_window(window);
     if (count.is_some()) {
         return is_record_in_last_current_records(
-            &self.records,
-            sequence_number,
-            count.destroy_some(),
-        )
+                &self.records,
+                sequence_number,
+                count.destroy_some(),
+            )
     };
 
     false
