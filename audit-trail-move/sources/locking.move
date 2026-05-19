@@ -12,6 +12,9 @@ use tf_components::timelock::{Self, TimeLock};
 /// UntilDestroyed cannot be used for trail deletion protection.
 const EUntilDestroyedNotSupportedForDeleteTrail: u64 = 0;
 
+/// A count-based locking window must protect at least one record.
+const ECountWindowMustBePositive: u64 = 1;
+
 /// Defines a delete-record locking window (time-based, count-based, or none).
 public enum LockingWindow has copy, drop, store {
     None,
@@ -45,8 +48,16 @@ public fun window_time_based(seconds: u64): LockingWindow {
 /// Create a count-based locking window.
 ///
 /// The trail locks the last `count` records currently present in linked-table
-/// order. Deletions can move older records into the protected window.
+/// order. To express "no deletion lock", use `window_none()` instead of
+/// passing `count == 0`.
+///
+/// Aborts
+/// ------
+/// * `ECountWindowMustBePositive` if `count == 0`. A zero-count window would
+///   protect no records and is functionally identical to `window_none()`;
+///   rejecting it at construction prevents silently misconfigured trails.
 public fun window_count_based(count: u64): LockingWindow {
+    assert!(count > 0, ECountWindowMustBePositive);
     LockingWindow::CountBased { count }
 }
 
