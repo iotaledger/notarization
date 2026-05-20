@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use audit_trail::core::builder::AuditTrailBuilder;
-use iota_interaction_ts::wasm_error::Result;
+use iota_interaction_ts::wasm_error::{Result, WasmResult};
 use product_common::bindings::transaction::WasmTransactionBuilder;
 use product_common::bindings::utils::{into_transaction_builder, parse_wasm_iota_address};
 use product_common::bindings::WasmIotaAddress;
@@ -66,8 +66,11 @@ impl WasmAuditTrailBuilder {
     }
 
     /// Finalizes the builder into a transaction wrapper.
+    ///
+    /// Throws when the configured `LockingConfig` is invalid (e.g. `CountBased` window with `count == 0`).
     #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<CreateTrail>")]
     pub fn finish(self) -> Result<WasmTransactionBuilder> {
-        Ok(into_transaction_builder(WasmCreateTrail::new(self)))
+        let tx = self.0.finish().wasm_result()?.into_inner();
+        Ok(into_transaction_builder(WasmCreateTrail(tx)))
     }
 }

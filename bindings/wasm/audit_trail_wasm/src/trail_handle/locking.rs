@@ -47,6 +47,7 @@ impl WasmTrailLocking {
             .trail(self.trail_id)
             .locking()
             .update(config.into())
+            .wasm_result()?
             .into_inner();
         Ok(into_transaction_builder(WasmUpdateLockingConfig(tx)))
     }
@@ -59,6 +60,7 @@ impl WasmTrailLocking {
             .trail(self.trail_id)
             .locking()
             .update_delete_record_window(window.into())
+            .wasm_result()?
             .into_inner();
         Ok(into_transaction_builder(WasmUpdateDeleteRecordWindow(tx)))
     }
@@ -71,6 +73,7 @@ impl WasmTrailLocking {
             .trail(self.trail_id)
             .locking()
             .update_delete_trail_lock(lock.into())
+            .wasm_result()?
             .into_inner();
         Ok(into_transaction_builder(WasmUpdateDeleteTrailLock(tx)))
     }

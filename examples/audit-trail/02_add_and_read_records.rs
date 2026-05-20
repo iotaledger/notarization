@@ -42,7 +42,7 @@ async fn main() -> Result<()> {
             Some("event:trail_created".to_string()),
             None,
         ))
-        .finish()
+        .finish()?
         .build_and_execute(&admin_client)
         .await?
         .output;

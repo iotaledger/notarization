@@ -49,52 +49,79 @@ impl<'a, C> TrailLocking<'a, C> {
     /// Replaces the full locking configuration for the trail.
     ///
     /// This overwrites all three locking dimensions at once: record delete window, trail delete lock, and
-    /// write lock.
-    pub fn update<S>(&self, config: LockingConfig) -> TransactionBuilder<UpdateLockingConfig>
+    /// write lock. The supplied [`LockingConfig`] is validated before the transaction is constructed.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::InvalidArgument`] when `config` contains:
+    /// * `delete_record_window` using [`LockingWindow::CountBased`] with `count == 0` (mirrors the Move `ECountWindowMustBePositive` abort).
+    /// * `delete_trail_lock` using [`TimeLock::UntilDestroyed`] (mirrors the Move `EUntilDestroyedNotSupportedForDeleteTrail` abort).
+    pub fn update<S>(&self, config: LockingConfig) -> Result<TransactionBuilder<UpdateLockingConfig>, Error>
     where
         C: AuditTrailFull + CoreClient<S>,
         S: Signer<IotaKeySignature> + OptionalSync,
     {
+        config.validate()?;
         let owner = self.client.sender_address();
-        TransactionBuilder::new(UpdateLockingConfig::new(
+        Ok(TransactionBuilder::new(UpdateLockingConfig::new(
             self.trail_id,
             owner,
             config,
             self.selected_capability_id,
-        ))
+        )))
     }
 
     /// Updates only the delete-record window.
     ///
-    /// Count-based windows protect the last N records currently present in trail
-    /// order. Large count values increase delete gas linearly.
-    pub fn update_delete_record_window<S>(&self, window: LockingWindow) -> TransactionBuilder<UpdateDeleteRecordWindow>
+    /// Count-based windows protect the last N records present in trail order at the start of each call that
+    /// consults the window. `count` must be positive; pass [`LockingWindow::None`] to remove the lock.
+    /// Large count values increase delete gas linearly because the on-chain check walks backward from the tail
+    /// to determine the protected window's lower bound.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::InvalidArgument`] when `window` is [`LockingWindow::CountBased`] with `count == 0`
+    /// (mirrors the Move `ECountWindowMustBePositive` abort).
+    pub fn update_delete_record_window<S>(
+        &self,
+        window: LockingWindow,
+    ) -> Result<TransactionBuilder<UpdateDeleteRecordWindow>, Error>
     where
         C: AuditTrailFull + CoreClient<S>,
         S: Signer<IotaKeySignature> + OptionalSync,
     {
+        window.validate()?;
         let owner = self.client.sender_address();
-        TransactionBuilder::new(UpdateDeleteRecordWindow::new(
+        Ok(TransactionBuilder::new(UpdateDeleteRecordWindow::new(
             self.trail_id,
             owner,
             window,
             self.selected_capability_id,
-        ))
+        )))
     }
 
     /// Updates only the delete-trail time lock.
-    pub fn update_delete_trail_lock<S>(&self, lock: TimeLock) -> TransactionBuilder<UpdateDeleteTrailLock>
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::InvalidArgument`] when `lock` is [`TimeLock::UntilDestroyed`]
+    /// (mirrors the Move `EUntilDestroyedNotSupportedForDeleteTrail` abort).
+    pub fn update_delete_trail_lock<S>(
+        &self,
+        lock: TimeLock,
+    ) -> Result<TransactionBuilder<UpdateDeleteTrailLock>, Error>
     where
         C: AuditTrailFull + CoreClient<S>,
         S: Signer<IotaKeySignature> + OptionalSync,
     {
+        lock.validate_as_delete_trail_lock()?;
         let owner = self.client.sender_address();
-        TransactionBuilder::new(UpdateDeleteTrailLock::new(
+        Ok(TransactionBuilder::new(UpdateDeleteTrailLock::new(
             self.trail_id,
             owner,
             lock,
             self.selected_capability_id,
-        ))
+        )))
     }
 
     /// Updates only the write lock.
@@ -114,8 +141,9 @@ impl<'a, C> TrailLocking<'a, C> {
 
     /// Returns `true` when the given record is currently locked against deletion.
     ///
-    /// For count-based windows, the check uses the current on-chain record order
-    /// after deletions.
+    /// For count-based windows, the check determines the protected window's lower bound by walking back
+    /// from the current tail at call time; time-based locks are evaluated against the clock timestamp at
+    /// call time. The result reflects the trail snapshot observed by this read-only call.
     ///
     /// # Errors
     ///

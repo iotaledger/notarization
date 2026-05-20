@@ -22,6 +22,21 @@ pub struct LockingConfig {
 }
 
 impl LockingConfig {
+    /// Validates the locking configuration without contacting the chain.
+    ///
+    /// Currently this rejects:
+    /// - [`LockingWindow::CountBased`] with `count == 0` (mirrors the Move `ECountWindowMustBePositive` abort).
+    /// - [`TimeLock::UntilDestroyed`] used as `delete_trail_lock` (mirrors the Move
+    ///   `EUntilDestroyedNotSupportedForDeleteTrail` abort). `write_lock` may still be `UntilDestroyed`.
+    ///
+    /// Public entry points that accept a `LockingConfig` call this so that misconfiguration is reported
+    /// before any transaction is built.
+    pub fn validate(&self) -> Result<(), Error> {
+        self.delete_record_window.validate()?;
+        self.delete_trail_lock.validate_as_delete_trail_lock()?;
+        Ok(())
+    }
+
     /// Creates a new `Argument` from the `LockingConfig`.
     ///
     /// To be used when creating or updating locking config on the ledger.
@@ -64,6 +79,20 @@ pub enum TimeLock {
 }
 
 impl TimeLock {
+    /// Validates this lock as a candidate for the trail-level delete lock.
+    ///
+    /// Rejects [`TimeLock::UntilDestroyed`] (mirrors the Move
+    /// `EUntilDestroyedNotSupportedForDeleteTrail` abort). All other variants are accepted; time-based
+    /// timestamp validity is enforced on-chain because it depends on the clock at execution time.
+    pub fn validate_as_delete_trail_lock(&self) -> Result<(), Error> {
+        if matches!(self, Self::UntilDestroyed) {
+            return Err(Error::InvalidArgument(
+                "TimeLock::UntilDestroyed is not supported as a delete-trail lock".to_string(),
+            ));
+        }
+        Ok(())
+    }
+
     pub(in crate::core) fn to_ptb(&self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
         match self {
             Self::None => Ok(ptb.programmable_move_call(
@@ -128,20 +157,41 @@ pub enum LockingWindow {
     },
     /// Locks the last `count` records currently present in trail order.
     ///
-    /// Deletions can move older records into this protected window. The on-chain
-    /// check walks backward from the current tail, so delete gas scales linearly
-    /// with `count`.
+    /// The protected window is evaluated against the records present when the
+    /// transaction begins; concurrent additions are observed by subsequent
+    /// transactions only. `count` must be positive — use [`LockingWindow::None`]
+    /// to express "no deletion lock". Constructing this variant with `count == 0`
+    /// is rejected client-side with [`Error::InvalidArgument`] and would otherwise
+    /// abort on-chain with `ECountWindowMustBePositive`.
+    ///
+    /// The on-chain check walks backward from the current tail once per call,
+    /// so delete gas scales linearly with `count`.
     CountBased {
-        /// Number of current tail records protected from deletion.
+        /// Number of current tail records protected from deletion. Must be `> 0`.
         count: u64,
     },
 }
 
 impl LockingWindow {
+    /// Validates the window configuration without contacting the chain.
+    ///
+    /// Rejects [`LockingWindow::CountBased`] with `count == 0` (mirrors the Move
+    /// `ECountWindowMustBePositive` abort). All other variants are always valid.
+    pub fn validate(&self) -> Result<(), Error> {
+        if let Self::CountBased { count: 0 } = self {
+            return Err(Error::InvalidArgument(
+                "LockingWindow::CountBased requires count > 0; use LockingWindow::None for no deletion lock"
+                    .to_string(),
+            ));
+        }
+        Ok(())
+    }
+
     /// Creates a new `Argument` from the `LockingWindow`.
     ///
     /// To be used when creating or updating locking config on the ledger.
     pub(in crate::core) fn to_ptb(&self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
+        self.validate()?;
         match self {
             Self::None => Ok(ptb.programmable_move_call(
                 package_id,
