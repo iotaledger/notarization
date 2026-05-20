@@ -1,6 +1,6 @@
 # IOTA Audit Trail Examples
 
-The following code examples demonstrate how to use IOTA Audit Trails for creating structured, role-based audit logs on the IOTA network.
+The following code examples demonstrate how to use IOTA Audit Trail for creating structured, role-based audit logs on the IOTA network.
 
 ## Prerequisites
 

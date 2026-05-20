@@ -1,14 +1,14 @@
 # IOTA Single Notarization
 
-The Single Notarization Rust SDK is the Rust client for individual locked and dynamic notarizations in the IOTA
+The Single Notarization Rust Package is the Rust client for individual locked and dynamic notarizations in the IOTA
 Notarization Suite.
 
-The SDK provides a `NotarizationBuilder` that creates notarization objects on the IOTA ledger or connects to existing
+The package provides a `NotarizationBuilder` that creates notarization objects on the IOTA ledger or connects to existing
 notarization objects. The builder returns a `Notarization` struct instance that maps to the on-chain object and provides
 typed methods for interacting with it.
 
 Use Single Notarization when you need one notarized object for arbitrary data, documents, hashes, or latest-state
-records. Use Audit Trails when you need a structured record history with roles, capabilities, locking, and tagging.
+records. Use Audit Trail when you need a structured record history with roles, capabilities, locking, and tagging.
 
 You can find the full IOTA Notarization Suite documentation [here](https://docs.iota.org/developer/iota-notarization).
 

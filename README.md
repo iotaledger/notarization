@@ -28,13 +28,13 @@ The suite includes:
 
 - **Single Notarization**
   Use this for individual locked or dynamic notarizations of arbitrary data, documents, hashes, or latest-state records.
-- **Audit Trails**
+- **Audit Trail**
   Use this for structured record histories with sequential entries, role-based access control, locking, and tagging.
 
 Each suite component is available as:
 
-- a **Move package** for the on-chain contracts
-- a **Rust SDK** for typed client access and transaction builders
+- a **Move Package** for the on-chain contracts
+- a **Rust Package** for typed client access and transaction builders
 - **wasm bindings** for JavaScript and TypeScript integrations
 
 ## Where To Start
@@ -43,64 +43,64 @@ Each suite component is available as:
 
 Use **Single Notarization** when your main need is proving the existence, integrity, or latest state of one notarized object on-chain.
 
-- [Single Notarization Rust SDK](./notarization-rs)
+- [Single Notarization Rust Package](./notarization-rs)
 - [Single Notarization Move Package](./notarization-move)
-- [Single Notarization Wasm SDK](./bindings/wasm/notarization_wasm)
+- [Single Notarization Wasm Package](./bindings/wasm/notarization_wasm)
 - [Single Notarization examples](./bindings/wasm/notarization_wasm/examples/README.md)
 
 ### I want an audit trail
 
-Use **Audit Trails** when you need a structured record history with permissions, capabilities, tagging, and write or delete controls.
+Use **Audit Trail** when you need a structured record history with permissions, capabilities, tagging, and write or delete controls.
 
-- [Audit Trails Rust SDK](./audit-trail-rs)
-- [Audit Trails Move Package](./audit-trail-move)
-- [Audit Trails Wasm SDK](./bindings/wasm/audit_trail_wasm)
-- [Audit Trails examples](./bindings/wasm/audit_trail_wasm/examples/README.md)
+- [Audit Trail Rust Package](./audit-trail-rs)
+- [Audit Trail Move Package](./audit-trail-move)
+- [Audit Trail Wasm Package](./bindings/wasm/audit_trail_wasm)
+- [Audit Trail examples](./bindings/wasm/audit_trail_wasm/examples/README.md)
 
 ### I want the on-chain contracts
 
 - [Single Notarization Move](./notarization-move)
-- [Audit Trails Move](./audit-trail-move)
+- [Audit Trail Move](./audit-trail-move)
 
 ### I want application SDKs
 
 - [Single Notarization Rust](./notarization-rs)
-- [Audit Trails Rust](./audit-trail-rs)
+- [Audit Trail Rust](./audit-trail-rs)
 - [Single Notarization Wasm](./bindings/wasm/notarization_wasm)
-- [Audit Trails Wasm](./bindings/wasm/audit_trail_wasm)
+- [Audit Trail Wasm](./bindings/wasm/audit_trail_wasm)
 
 ## Suite Components
 
-| Component           | Best for                                                                    | Move Package                               | Rust SDK                               | Wasm SDK                                                 |
-| ------------------- | --------------------------------------------------------------------------- | ------------------------------------------ | -------------------------------------- | -------------------------------------------------------- |
+| Component           | Best for                                                                    | Move Package                               | Rust Package                           | Wasm Package                                             |
+|---------------------|-----------------------------------------------------------------------------|--------------------------------------------|----------------------------------------|----------------------------------------------------------|
 | Single Notarization | Individual locked or dynamic notarizations for documents, hashes, and state | [`notarization-move`](./notarization-move) | [`notarization-rs`](./notarization-rs) | [`notarization_wasm`](./bindings/wasm/notarization_wasm) |
-| Audit Trails        | Shared sequential records with roles, capabilities, tagging, and locking    | [`audit-trail-move`](./audit-trail-move)   | [`audit-trail-rs`](./audit-trail-rs)   | [`audit_trail_wasm`](./bindings/wasm/audit_trail_wasm)   |
+| Audit Trail         | Shared sequential records with roles, capabilities, tagging, and locking    | [`audit-trail-move`](./audit-trail-move)   | [`audit-trail-rs`](./audit-trail-rs)   | [`audit_trail_wasm`](./bindings/wasm/audit_trail_wasm)   |
 
 ### Which one should I use?
 
 | Need                                                                      | Best fit            |
-| ------------------------------------------------------------------------- | ------------------- |
+| ------------------------------------------------------------------------- |---------------------|
 | Locked proof object for arbitrary data                                    | Single Notarization |
 | Dynamic latest-state notarization flow                                    | Single Notarization |
-| Shared sequential records with roles, capabilities, and record tag policy | Audit Trails        |
-| Team or system audit log with governance and operational controls         | Audit Trails        |
+| Shared sequential records with roles, capabilities, and record tag policy | Audit Trail         |
+| Team or system audit log with governance and operational controls         | Audit Trail         |
 
 ## Documentation And Resources
 
 ### Single Notarization
 
-- [Single Notarization Rust SDK README](./notarization-rs/README.md)
+- [Single Notarization Rust Package README](./notarization-rs/README.md)
 - [Single Notarization Move Package README](./notarization-move/README.md)
-- [Single Notarization Wasm README](./bindings/wasm/notarization_wasm/README.md)
+- [Single Notarization Wasm Package README](./bindings/wasm/notarization_wasm/README.md)
 - [Single Notarization examples](./bindings/wasm/notarization_wasm/examples/README.md)
 - [IOTA Notarization Docs Portal](https://docs.iota.org/developer/iota-notarization)
 
-### Audit Trails
+### Audit Trail
 
-- [Audit Trails Rust SDK README](./audit-trail-rs/README.md)
-- [Audit Trails Move Package README](./audit-trail-move/README.md)
-- [Audit Trails Wasm README](./bindings/wasm/audit_trail_wasm/README.md)
-- [Audit Trails examples](./bindings/wasm/audit_trail_wasm/examples/README.md)
+- [Audit Trail Rust Package README](./audit-trail-rs/README.md)
+- [Audit Trail Move Package README](./audit-trail-move/README.md)
+- [Audit Trail Wasm Package README](./bindings/wasm/audit_trail_wasm/README.md)
+- [Audit Trail examples](./bindings/wasm/audit_trail_wasm/examples/README.md)
 
 ### Shared
 
@@ -111,7 +111,7 @@ Use **Audit Trails** when you need a structured record history with permissions,
 [Foreign Function Interface (FFI)](https://en.wikipedia.org/wiki/Foreign_function_interface) bindings available in this repository:
 
 - [Web Assembly for Single Notarization](./bindings/wasm/notarization_wasm)
-- [Web Assembly for Audit Trails](./bindings/wasm/audit_trail_wasm)
+- [Web Assembly for Audit Trail](./bindings/wasm/audit_trail_wasm)
 
 ## Contributing
 
