@@ -1,6 +1,6 @@
 # IOTA Single Notarization
 
-The Single Notarization Rust Package is the Rust client for individual locked and dynamic notarizations in the IOTA
+The Single Notarization Rust package is the Rust client for individual locked and dynamic notarizations in the IOTA
 Notarization Toolkit.
 
 The package provides a `NotarizationBuilder` that creates notarization objects on the IOTA ledger or connects to existing
