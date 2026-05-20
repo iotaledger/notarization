@@ -150,7 +150,7 @@ impl WasmOnChainAuditTrail {
     /// Returns the on-chain package version of the trail object.
     ///
     /// @remarks
-    /// Use {@link AuditTrailHandle.migrate} after a package upgrade if this lags behind the SDK's
+    /// Use {@link AuditTrailHandle.migrate} after a package upgrade if this lags behind the package's
     /// expected version.
     ///
     /// @returns Stored package version of the trail object.

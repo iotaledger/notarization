@@ -27,11 +27,11 @@ The cost for creating a Notarization object can roughly be calculated by the fol
 Where:
 
 | Parameter            | Description                                                                                                                                                                                                                          |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| -------------------- |--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `FlexDataSize`       | Sum of the byte sizes of State Data, State Metadata, Updatable Metadata and Immutable Metadata. The value must be reduced by 1 as the `MinimumStorageCost` uses 1 byte of State Data.                                                |
 | `FlexDataByteCost`   | A constant value of 0.0000076 IOTA/Byte <br> This value denotes (`StorageCost` - `MinimumStorageCost`) divided by `FlexDataSize`.                                                                                                    |
 | `MinimumStorageCost` | A constant value of 0.00295 IOTA. <br> This value denotes the `StorageCost` for a Notarization with 1 Byte of `FlexDataSize` meaning a Notarization with 1 Byte of State Data, no meta data and no optional locks.                   |
-| `ComputationCost`    | A constant value of 0.001 IOTA. <br> Given the Gas Price is 1000 nano, the `ComputationCost` will always be 0.001 IOTA as creating Notarizations always consume 1000 Computation Units.                                              |
+| `ComputationCost`    | A constant value of 0.001 IOTA. <br> Given the Gas Price is 1000 nano, the `ComputationCost` will always be 0.001 IOTA as creating notarizations always consumes 1000 Computation Units.                                             |
 | `TotalCost`          | The amount of IOTA that would need to be paid for gas when Storage Rebate is not taken into account. The real gas cost will be lower, due to Storage Rebate, which is usually -0.0009804 IOTA when a Notarization object is created. |
 
 Examples:

@@ -125,13 +125,13 @@ impl WasmTrailRecords {
     ///
     /// @param cursor - Sequence-number cursor for the page boundary; pass `null` for the first
     /// page and reuse {@link PaginatedRecord.nextCursor} for subsequent pages.
-    /// @param limit - Maximum number of records to return; may not exceed the SDK-side maximum
+    /// @param limit - Maximum number of records to return; may not exceed the package-side maximum
     /// page size.
     ///
     /// @returns A {@link PaginatedRecord} carrying the loaded records and pagination metadata.
     ///
     /// @throws When the trail object cannot be fetched, a record cannot be deserialized, or
-    /// `limit` exceeds the SDK-side maximum.
+    /// `limit` exceeds the package-side maximum.
     #[wasm_bindgen(js_name = listPage)]
     pub async fn list_page(&self, cursor: Option<u64>, limit: usize) -> Result<WasmPaginatedRecord> {
         let page = self
