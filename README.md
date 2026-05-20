@@ -62,7 +62,7 @@ Use **Audit Trail** when you need a structured record history with permissions, 
 - [Single Notarization Move](./notarization-move)
 - [Audit Trail Move](./audit-trail-move)
 
-### I want application SDKs
+### I want a toolkit to build an application
 
 - [Single Notarization Rust](./notarization-rs)
 - [Audit Trail Rust](./audit-trail-rs)

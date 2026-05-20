@@ -1,7 +1,7 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-//! Record read and mutation APIs for audit trails.
+//! Record read and mutation APIs for Audit Trail.
 
 use std::collections::{BTreeMap, HashMap};
 

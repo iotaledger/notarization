@@ -1,7 +1,7 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-//! Record-tag registry APIs for audit trails.
+//! Record-tag registry APIs for Audit Trail.
 
 use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::{IotaKeySignature, OptionalSync};

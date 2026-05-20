@@ -7,7 +7,7 @@
  * Models a Digital Product Passport (DPP) for an e-bike battery, inspired by the
  * public IOTA DPP demo.
  *
- * Scope note: this example stays within the Audit Trail SDK. The demo's wider
+ * Scope note: this example stays within the Audit Trail package. The demo's wider
  * IOTA stack (Identity, Hierarchies, Tokenization, and Gas Station) is mapped
  * here onto audit-trail-native concepts:
  *
