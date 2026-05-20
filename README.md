@@ -10,7 +10,7 @@
 <p align="center">
   <a href="#introduction">Introduction</a> ◈
   <a href="#where-to-start">Where To Start</a> ◈
-  <a href="#suite-components">Suite Components</a> ◈
+  <a href="#toolkit-components">Toolkit Components</a> ◈
   <a href="#documentation-and-resources">Documentation & Resources</a> ◈
   <a href="#bindings">Bindings</a> ◈
   <a href="#contributing">Contributing</a>
@@ -18,20 +18,20 @@
 
 ---
 
-# IOTA Notarization Suite
+# IOTA Notarization Toolkit
 
 ## Introduction
 
-This repository contains the IOTA Notarization Suite, a set of IOTA ledger tools for verifiable on-chain data workflows.
+This repository contains the IOTA Notarization Toolkit, a set of IOTA ledger tools for verifiable on-chain data workflows.
 
-The suite includes:
+The toolkit includes:
 
 - **Single Notarization**
   Use this for individual locked or dynamic notarizations of arbitrary data, documents, hashes, or latest-state records.
 - **Audit Trail**
   Use this for structured record histories with sequential entries, role-based access control, locking, and tagging.
 
-Each suite component is available as:
+Each toolkit component is available as:
 
 - a **Move Package** for the on-chain contracts
 - a **Rust Package** for typed client access and transaction builders
@@ -69,7 +69,7 @@ Use **Audit Trail** when you need a structured record history with permissions, 
 - [Single Notarization Wasm](./bindings/wasm/notarization_wasm)
 - [Audit Trail Wasm](./bindings/wasm/audit_trail_wasm)
 
-## Suite Components
+## Toolkit Components
 
 | Component           | Best for                                                                    | Move Package                               | Rust Package                           | Wasm Package                                             |
 |---------------------|-----------------------------------------------------------------------------|--------------------------------------------|----------------------------------------|----------------------------------------------------------|
@@ -115,7 +115,7 @@ Use **Audit Trail** when you need a structured record history with permissions, 
 
 ## Contributing
 
-We would love to have you help us with the development of the IOTA Notarization Suite. Each and every contribution is greatly valued.
+We would love to have you help us with the development of the IOTA Notarization Toolkit. Each and every contribution is greatly valued.
 
 Please review the [contribution](https://docs.iota.org/developer/iota-notarization/contribute) sections in the [IOTA Docs Portal](https://docs.iota.org/developer/iota-notarization/).
 
