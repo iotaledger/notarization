@@ -571,13 +571,15 @@ public fun delete_records_batch<D: store + copy + drop>(
         let sequence_number = current.destroy_some();
         current = *self.records.next(sequence_number);
 
-        if (is_record_locked_in_window(
-            &self.records,
-            sequence_number,
-            &lock_window,
-            &count_lock_threshold,
-            timestamp,
-        )) {
+        if (
+            is_record_locked_in_window(
+                &self.records,
+                sequence_number,
+                &lock_window,
+                &count_lock_threshold,
+                timestamp,
+            )
+        ) {
             continue
         };
 
