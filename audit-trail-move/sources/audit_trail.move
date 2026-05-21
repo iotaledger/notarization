@@ -26,6 +26,7 @@ use std::string::String;
 use tf_components::{capability::Capability, role_map::{Self, RoleMap}, timelock::TimeLock};
 
 // ===== Errors =====
+
 #[error]
 const ERecordNotFound: vector<u8> = b"Record not found at the given sequence number";
 #[error]
@@ -50,7 +51,9 @@ const ERecordTagAlreadyDefined: vector<u8> =
 #[error]
 const ERecordTagInUse: vector<u8> =
     b"The requested tag cannot be removed because it is already used by an existing record or role";
+
 // ===== Constants =====
+
 const INITIAL_ADMIN_ROLE_NAME: vector<u8> = b"Admin";
 
 // Package version, incremented when the package is updated
