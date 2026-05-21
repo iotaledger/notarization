@@ -8,7 +8,7 @@ use std::collections::HashSet;
 use iota_interaction::types::base_types::IotaAddress;
 use product_common::transaction::transaction_builder::TransactionBuilder;
 
-use super::types::{Data, ImmutableMetadata, InitialRecord, LockingConfig, LockingWindow, TimeLock};
+use super::types::{Data, ImmutableMetadata, InitialRecord, LockingConfig};
 use crate::core::create::CreateTrail;
 use crate::error::Error;
 
