@@ -75,7 +75,7 @@ async fn main() -> Result<()> {
             Some("event:trial_opened".to_string()),
             Some("enrollment".to_string()),
         ))
-        .finish()
+        .finish()?
         .build_and_execute(&admin_client)
         .await?
         .output;
@@ -318,7 +318,7 @@ async fn main() -> Result<()> {
     data_safety_board_client
         .trail(trail_id)
         .locking()
-        .update_delete_trail_lock(TimeLock::Infinite)
+        .update_delete_trail_lock(TimeLock::Infinite)?
         .build_and_execute(&data_safety_board_client)
         .await?;
 

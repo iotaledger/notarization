@@ -26,6 +26,7 @@ use std::string::String;
 use tf_components::{capability::Capability, role_map::{Self, RoleMap}, timelock::TimeLock};
 
 // ===== Errors =====
+
 #[error]
 const ERecordNotFound: vector<u8> = b"Record not found at the given sequence number";
 #[error]
@@ -50,7 +51,9 @@ const ERecordTagAlreadyDefined: vector<u8> =
 #[error]
 const ERecordTagInUse: vector<u8> =
     b"The requested tag cannot be removed because it is already used by an existing record or role";
+
 // ===== Constants =====
+
 const INITIAL_ADMIN_ROLE_NAME: vector<u8> = b"Admin";
 
 // Package version, incremented when the package is updated
@@ -313,28 +316,75 @@ fun remove_record<D: store + copy + drop>(
     });
 }
 
-/// Returns true if the record is within the last `count` records currently
-/// present in linked-table order.
-fun is_record_in_last_current_records<D: store + copy>(
+/// Returns the lowest sequence_number within the last `count` records,
+/// given that sequence_numbers decrease monotonically, walking from
+/// the tail toward the head. Returns 0 if the table is empty or `count` is 0.
+fun get_lowest_sequence_number_in_count_window<D: store + copy>(
     records: &LinkedTable<u64, Record<D>>,
-    sequence_number: u64,
     count: u64,
-): bool {
-    let mut remaining = count;
+): u64 {
+    if (count == 0) {
+        return 0
+    };
+
     let mut current = *linked_table::back(records);
+    let mut remaining = count - 1;
+    let mut lowest = 0;
 
-    while (remaining > 0 && current.is_some()) {
+    while (current.is_some()) {
         let current_sequence_number = current.destroy_some();
+        lowest = current_sequence_number;
 
-        if (current_sequence_number == sequence_number) {
-            return true
+        if (remaining == 0) {
+            break
         };
 
         current = *linked_table::prev(records, current_sequence_number);
         remaining = remaining - 1;
     };
 
-    false
+    lowest
+}
+
+/// Precomputes the count-window threshold for `lock_window`.
+///
+/// Returns `Some(lowest_sequence_number_in_window)` when `lock_window` is a
+/// count-based window with a positive count, or `None` otherwise. A record
+/// with `sequence_number >= threshold` is count-locked.
+fun compute_count_lock_threshold<D: store + copy>(
+    records: &LinkedTable<u64, Record<D>>,
+    lock_window: &LockingWindow,
+): Option<u64> {
+    let count_opt = lock_window.count_window();
+    if (count_opt.is_some() && *count_opt.borrow() > 0) {
+        option::some(get_lowest_sequence_number_in_count_window(records, count_opt.destroy_some()))
+    } else {
+        option::none()
+    }
+}
+
+// Returns true if the record at `sequence_number` is locked by the
+// `lock_window`. Uses the precomputed `count_lock_threshold` to evaluate
+// count based windows and the `current_time` values to evaluate time
+// based windows.
+//
+// Aborts if `sequence_number` is not in `records`.
+fun is_record_locked_in_window<D: store + copy>(
+    records: &LinkedTable<u64, Record<D>>,
+    sequence_number: u64,
+    lock_window: &LockingWindow,
+    count_lock_threshold: &Option<u64>,
+    current_time: u64,
+): bool {
+    // This is the shared lock-evaluation core used by `is_record_locked` and
+    // `delete_records_batch`. Add new lock kinds here so both call sites pick
+    // them up automatically.
+    if (count_lock_threshold.is_some() && sequence_number >= *count_lock_threshold.borrow()) {
+        return true
+    };
+
+    let record = records.borrow(sequence_number);
+    lock_window.is_time_locked(record.added_at(), current_time)
 }
 
 // ===== Record Operations =====
@@ -437,8 +487,55 @@ public fun delete_record<D: store + copy + drop>(
 
 /// Delete up to `limit` records from the front of the trail.
 ///
-/// Requires `DeleteAllRecords` permission. Locked records are skipped.
-/// Returns the sequence numbers deleted in this batch, in deletion order.
+/// Requires `DeleteAllRecords` permission. Locked records and records whose
+/// tag is not permitted by `cap` are silently skipped. Returns the sequence
+/// numbers actually deleted, in deletion order. The returned vector may be
+/// shorter than `limit` (or empty) if records are skipped or the trail runs
+/// out of records before `limit` is reached.
+///
+/// Locking semantics
+/// -----------------
+/// The set of locked records is fixed at the start of the transaction:
+///
+/// * If a count-based `LockingWindow` is configured, the protected window is
+///   the last `count` records present *when this call begins*. Records that
+///   this same call deletes do not have an impact onto other records.
+///   The oldest protected record in the count-based `LockingWindow` is
+///   determined up front and its sequence_number is reused as delete criteria
+///   for every other candidate record. Concurrent transactions that add
+///   records or update the locking configuration are observed by *subsequent*
+///   transactions only.
+/// * Time-based locks are evaluated against the clock timestamp captured at
+///   the start of the call, so a record's lock status is also stable for the
+///   duration of the batch.
+///
+/// Equivalence with `delete_record`
+/// --------------------------------
+/// Running `delete_records_batch(limit)` produces the same final trail state as invoking
+/// `delete_record` once for every sequence number this batch would delete,
+/// as long as the locking configuration is not mutated and no new records are added
+/// to the trail between the batch calls.
+/// This holds because the count-window's lower bound is monotonic under deletion:
+/// in-window records are locked and therefore never deleted, so deleting any
+/// out-of-window record leaves the window's contents unchanged.
+///
+/// Caveats
+/// -------
+/// * **Partial progress.** The function always returns success even when
+///   fewer than `limit` records are deleted. Callers that need to detect
+///   "nothing left to delete" should inspect the length of the returned
+///   vector — an empty vector means every front-to-back candidate was either
+///   locked or tag-filtered out.
+/// * **Tag filtering is silent.** Records whose tag is not in `cap`'s allowed
+///   set are skipped without error. A capability with a narrow tag scope can
+///   therefore make the batch appear to "stop early" while locked-and-disallowed
+///   records still exist further back.
+/// * **Gas and object-size limits.** The call walks the trail from the front
+///   and deletes inline. Large `limit` values can exhaust the per-transaction
+///   gas budget or hit object-mutation limits. Prefer lower `limit` values
+///   resulting in modest batch sizes and repeat the call.
+/// * **Front-to-back order is fixed.** There is no way to target specific
+///   sequence numbers through this API — use `delete_record` for that.
 public fun delete_records_batch<D: store + copy + drop>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -461,13 +558,26 @@ public fun delete_records_batch<D: store + copy + drop>(
     let caller = ctx.sender();
     let timestamp = clock.timestamp_ms();
     let trail_id = self.id();
-    let mut current = *linked_table::front(&self.records);
+
+    let lock_window = *self.locking_config.delete_record_window();
+
+    // Precompute the count-window threshold once. Iteration deletes from the
+    // front while the back is preserved, so the threshold stays valid.
+    let count_lock_threshold = compute_count_lock_threshold(&self.records, &lock_window);
+
+    let mut current = *self.records.front();
 
     while (deleted < limit && current.is_some()) {
         let sequence_number = current.destroy_some();
-        current = *linked_table::next(&self.records, sequence_number);
+        current = *self.records.next(sequence_number);
 
-        if (self.is_record_locked(sequence_number, clock)) {
+        if (is_record_locked_in_window(
+            &self.records,
+            sequence_number,
+            &lock_window,
+            &count_lock_threshold,
+            timestamp,
+        )) {
             continue
         };
 
@@ -481,7 +591,7 @@ public fun delete_records_batch<D: store + copy + drop>(
             continue
         };
         self.remove_record(sequence_number, caller, timestamp, trail_id);
-        vector::push_back(&mut deleted_sequence_numbers, sequence_number);
+        deleted_sequence_numbers.push_back(sequence_number);
 
         deleted = deleted + 1;
     };
@@ -550,24 +660,17 @@ public fun is_record_locked<D: store + copy>(
 ): bool {
     assert!(linked_table::contains(&self.records, sequence_number), ERecordNotFound);
 
-    let record = linked_table::borrow(&self.records, sequence_number);
-    let current_time = clock::timestamp_ms(clock);
-    let window = locking::delete_record_window(&self.locking_config);
+    let current_time = clock.timestamp_ms();
+    let lock_window = self.locking_config.delete_record_window();
+    let count_lock_threshold = compute_count_lock_threshold(&self.records, lock_window);
 
-    if (locking::is_time_locked(window, record::added_at(record), current_time)) {
-        return true
-    };
-
-    let count = locking::count_window(window);
-    if (count.is_some()) {
-        return is_record_in_last_current_records(
-                &self.records,
-                sequence_number,
-                count.destroy_some(),
-            )
-    };
-
-    false
+    is_record_locked_in_window(
+        &self.records,
+        sequence_number,
+        lock_window,
+        &count_lock_threshold,
+        current_time,
+    )
 }
 
 /// Update the locking configuration. Requires `UpdateLockingConfig` permission.

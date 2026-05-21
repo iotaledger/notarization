@@ -112,8 +112,29 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
 
     /// Builds a transaction that deletes up to `limit` records in one operation.
     ///
-    /// Batch deletion requires `DeleteAllRecords`, skips locked records and records outside the capability's tag
-    /// access, and removes up to `limit` eligible records in trail order.
+    /// Batch deletion requires `DeleteAllRecords`, walks the trail from the front in sequence order, and silently
+    /// skips records that are either locked or whose tag is not in the capability's allowed set. The returned
+    /// vector contains the sequence numbers actually deleted in deletion order; it may be shorter than `limit`
+    /// (or empty) when records are skipped or the trail runs out of records before `limit` is reached.
+    ///
+    /// # Locking semantics
+    ///
+    /// The set of locked records is fixed at the start of the transaction. For count-based windows, the protected
+    /// window is the last `count` records present when the call begins — records this same call deletes do not
+    /// change which other records are protected. Time-based locks are evaluated against the clock timestamp
+    /// captured at the start of the call. Running `delete_records_batch(limit)` therefore produces the same
+    /// final trail state as invoking `delete_record` once per deletable sequence number, as long as the locking
+    /// configuration is not mutated and no new records are added between calls.
+    ///
+    /// # Caveats
+    ///
+    /// - **Partial progress is not an error.** An empty returned vector means every front-to-back candidate was
+    ///   either locked or tag-filtered out.
+    /// - **Tag filtering is silent.** A capability with a narrow tag scope can make the batch appear to stop
+    ///   early while locked-and-disallowed records still exist further back.
+    /// - **Gas and object-size limits.** The call walks and mutates inline; prefer modest `limit` values and
+    ///   repeat the call rather than passing a single large `limit`.
+    /// - **Order is fixed.** Use [`Self::delete`] to target specific sequence numbers.
     pub fn delete_records_batch<S>(&self, limit: u64) -> TransactionBuilder<DeleteRecordsBatch>
     where
         C: AuditTrailFull + CoreClient<S>,

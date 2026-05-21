@@ -35,7 +35,7 @@ async fn main() -> Result<()> {
             None,
             None,
         ))
-        .finish()
+        .finish()?
         .build_and_execute(&admin_client)
         .await?
         .output;

@@ -30,7 +30,7 @@ async fn main() -> Result<()> {
     let created_trail = admin_client
         .create_trail()
         .with_initial_record(InitialRecord::new(Data::text("Trail created"), None, None))
-        .finish()
+        .finish()?
         .build_and_execute(&admin_client)
         .await?
         .output;

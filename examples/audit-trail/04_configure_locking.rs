@@ -34,7 +34,7 @@ async fn main() -> Result<()> {
             Some("event:created".to_string()),
             None,
         ))
-        .finish()
+        .finish()?
         .build_and_execute(&admin_client)
         .await?
         .output;
@@ -127,13 +127,13 @@ async fn main() -> Result<()> {
     locking_admin_client
         .trail(trail_id)
         .locking()
-        .update_delete_record_window(LockingWindow::CountBased { count: 2 })
+        .update_delete_record_window(LockingWindow::CountBased { count: 2 })?
         .build_and_execute(&locking_admin_client)
         .await?;
     locking_admin_client
         .trail(trail_id)
         .locking()
-        .update_delete_trail_lock(TimeLock::Infinite)
+        .update_delete_trail_lock(TimeLock::Infinite)?
         .build_and_execute(&locking_admin_client)
         .await?;
 

@@ -219,7 +219,7 @@ impl TestClient {
             .create_trail()
             .with_initial_record(InitialRecord::new(data, None, None))
             .with_record_tags(tags)
-            .finish()
+            .finish()?
             .build_and_execute(self)
             .await?
             .output;

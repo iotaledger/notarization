@@ -66,7 +66,7 @@ fun setup_trail_with_record_admin_role(scenario: &mut Scenario, admin_user: addr
     // Setup: Create audit trail with admin capability
     let trail_id = {
         let locking_config = locking::new(
-            locking::window_count_based(0),
+            locking::window_none(),
             timelock::none(),
             timelock::none(),
         );
@@ -118,7 +118,7 @@ fun test_new_capability() {
 
     let trail_id = {
         let locking_config = locking::new(
-            locking::window_count_based(0),
+            locking::window_none(),
             timelock::none(),
             timelock::none(),
         );
@@ -603,7 +603,7 @@ fun test_revoked_capability_cannot_be_used() {
 
     {
         let locking_config = locking::new(
-            locking::window_count_based(0),
+            locking::window_none(),
             timelock::none(),
             timelock::none(),
         );
@@ -694,7 +694,7 @@ fun test_new_capability_for_nonexistent_role() {
 
     {
         let locking_config = locking::new(
-            locking::window_count_based(0),
+            locking::window_none(),
             timelock::none(),
             timelock::none(),
         );
@@ -736,7 +736,7 @@ fun test_revoke_capability_permission_denied() {
 
     {
         let locking_config = locking::new(
-            locking::window_count_based(0),
+            locking::window_none(),
             timelock::none(),
             timelock::none(),
         );
@@ -834,7 +834,7 @@ fun test_new_capability_permission_denied() {
 
     {
         let locking_config = locking::new(
-            locking::window_count_based(0),
+            locking::window_none(),
             timelock::none(),
             timelock::none(),
         );
