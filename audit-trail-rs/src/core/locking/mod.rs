@@ -54,8 +54,10 @@ impl<'a, C> TrailLocking<'a, C> {
     /// # Errors
     ///
     /// Returns [`Error::InvalidArgument`] when `config` contains:
-    /// * `delete_record_window` using [`LockingWindow::CountBased`] with `count == 0` (mirrors the Move `ECountWindowMustBePositive` abort).
-    /// * `delete_trail_lock` using [`TimeLock::UntilDestroyed`] (mirrors the Move `EUntilDestroyedNotSupportedForDeleteTrail` abort).
+    /// * `delete_record_window` using [`LockingWindow::CountBased`] with `count == 0` (mirrors the Move
+    ///   `ECountWindowMustBePositive` abort).
+    /// * `delete_trail_lock` using [`TimeLock::UntilDestroyed`] (mirrors the Move
+    ///   `EUntilDestroyedNotSupportedForDeleteTrail` abort).
     pub fn update<S>(&self, config: LockingConfig) -> Result<TransactionBuilder<UpdateLockingConfig>, Error>
     where
         C: AuditTrailFull + CoreClient<S>,

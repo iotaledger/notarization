@@ -128,12 +128,12 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
     ///
     /// # Caveats
     ///
-    /// - **Partial progress is not an error.** An empty returned vector means every front-to-back candidate was
-    ///   either locked or tag-filtered out.
-    /// - **Tag filtering is silent.** A capability with a narrow tag scope can make the batch appear to stop
-    ///   early while locked-and-disallowed records still exist further back.
-    /// - **Gas and object-size limits.** The call walks and mutates inline; prefer modest `limit` values and
-    ///   repeat the call rather than passing a single large `limit`.
+    /// - **Partial progress is not an error.** An empty returned vector means every front-to-back candidate was either
+    ///   locked or tag-filtered out.
+    /// - **Tag filtering is silent.** A capability with a narrow tag scope can make the batch appear to stop early
+    ///   while locked-and-disallowed records still exist further back.
+    /// - **Gas and object-size limits.** The call walks and mutates inline; prefer modest `limit` values and repeat the
+    ///   call rather than passing a single large `limit`.
     /// - **Order is fixed.** Use [`Self::delete`] to target specific sequence numbers.
     pub fn delete_records_batch<S>(&self, limit: u64) -> TransactionBuilder<DeleteRecordsBatch>
     where
