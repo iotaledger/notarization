@@ -927,7 +927,8 @@ impl WasmLockingWindow {
         Self(LockingWindow::TimeBased { seconds })
     }
 
-    /// Creates a count-based delete window.
+    /// Creates a count-based delete window that protects the last `count`
+    /// records currently present in trail order.
     #[wasm_bindgen(js_name = withCountBased)]
     pub fn with_count_based(count: u64) -> Self {
         Self(LockingWindow::CountBased { count })

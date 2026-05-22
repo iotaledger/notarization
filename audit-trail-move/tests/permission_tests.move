@@ -117,6 +117,13 @@ fun test_admin_permissions_include_tag_management() {
 }
 
 #[test]
+fun test_admin_permissions_include_migration() {
+    let perms = permission::admin_permissions();
+
+    assert!(permission::has_permission(&perms, &permission::migrate_audit_trail()), 0);
+}
+
+#[test]
 #[expected_failure(abort_code = vec_set::EKeyAlreadyExists)]
 fun test_from_vec_duplicate_permission() {
     // VecSet should throw error EKeyAlreadyExists on duplicate insertions

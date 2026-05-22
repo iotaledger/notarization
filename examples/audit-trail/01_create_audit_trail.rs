@@ -53,7 +53,7 @@ async fn main() -> Result<()> {
             Some("event:shipment_created;location:warehouse-a".to_string()),
             None,
         ))
-        .finish()
+        .finish()?
         .build_and_execute(&admin_client)
         .await?
         .output;

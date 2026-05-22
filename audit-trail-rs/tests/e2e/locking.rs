@@ -39,7 +39,7 @@ async fn update_locking_config_roundtrip() -> anyhow::Result<()> {
 
     trail
         .locking()
-        .update(config_with_window(LockingWindow::CountBased { count: 2 }))
+        .update(config_with_window(LockingWindow::CountBased { count: 2 }))?
         .build_and_execute(&client)
         .await?;
 
@@ -63,7 +63,7 @@ async fn update_locking_config_switches_count_to_time_based() -> anyhow::Result<
             None,
         ))
         .with_locking_config(config_with_window(LockingWindow::CountBased { count: 3 }))
-        .finish()
+        .finish()?
         .build_and_execute(&client)
         .await?
         .output
@@ -80,7 +80,7 @@ async fn update_locking_config_switches_count_to_time_based() -> anyhow::Result<
 
     trail
         .locking()
-        .update(config_with_window(LockingWindow::TimeBased { seconds: 300 }))
+        .update(config_with_window(LockingWindow::TimeBased { seconds: 300 }))?
         .build_and_execute(&client)
         .await?;
 
@@ -111,7 +111,7 @@ async fn update_delete_record_window_roundtrip() -> anyhow::Result<()> {
 
     trail
         .locking()
-        .update_delete_record_window(LockingWindow::TimeBased { seconds: 120 })
+        .update_delete_record_window(LockingWindow::TimeBased { seconds: 120 })?
         .build_and_execute(&client)
         .await?;
 
@@ -142,7 +142,7 @@ async fn update_delete_trail_lock_roundtrip() -> anyhow::Result<()> {
 
     trail
         .locking()
-        .update_delete_trail_lock(TimeLock::Infinite)
+        .update_delete_trail_lock(TimeLock::Infinite)?
         .build_and_execute(&client)
         .await?;
 
@@ -211,7 +211,7 @@ async fn update_locking_config_requires_permission() -> anyhow::Result<()> {
     let result = client
         .trail(trail_id)
         .locking()
-        .update(config_with_window(LockingWindow::TimeBased { seconds: 60 }))
+        .update(config_with_window(LockingWindow::TimeBased { seconds: 60 }))?
         .build_and_execute(&client)
         .await;
 
@@ -252,7 +252,7 @@ async fn is_record_locked_supports_count_window_and_missing_sequence() -> anyhow
         .create_trail()
         .with_initial_record(InitialRecord::new(Data::text("trail-locking-status-e2e"), None, None))
         .with_locking_config(config_with_window(LockingWindow::CountBased { count: 2 }))
-        .finish()
+        .finish()?
         .build_and_execute(&client)
         .await?
         .output
@@ -305,7 +305,7 @@ async fn delete_window_variants_roundtrip() -> anyhow::Result<()> {
 
     trail
         .locking()
-        .update_delete_record_window(LockingWindow::TimeBased { seconds: 3600 })
+        .update_delete_record_window(LockingWindow::TimeBased { seconds: 3600 })?
         .build_and_execute(&client)
         .await?;
 
@@ -317,7 +317,7 @@ async fn delete_window_variants_roundtrip() -> anyhow::Result<()> {
 
     trail
         .locking()
-        .update_delete_record_window(LockingWindow::CountBased { count: 1 })
+        .update_delete_record_window(LockingWindow::CountBased { count: 1 })?
         .build_and_execute(&client)
         .await?;
 
@@ -329,7 +329,7 @@ async fn delete_window_variants_roundtrip() -> anyhow::Result<()> {
 
     trail
         .locking()
-        .update_delete_record_window(LockingWindow::None)
+        .update_delete_record_window(LockingWindow::None)?
         .build_and_execute(&client)
         .await?;
 
@@ -367,7 +367,7 @@ async fn updated_time_lock_blocks_record_deletion() -> anyhow::Result<()> {
 
     trail
         .locking()
-        .update(config_with_window(LockingWindow::TimeBased { seconds: 3600 }))
+        .update(config_with_window(LockingWindow::TimeBased { seconds: 3600 }))?
         .build_and_execute(&client)
         .await?;
 
@@ -399,7 +399,7 @@ async fn updated_delete_window_can_block_and_then_allow_deletion() -> anyhow::Re
 
     trail
         .locking()
-        .update_delete_record_window(LockingWindow::CountBased { count: 1 })
+        .update_delete_record_window(LockingWindow::CountBased { count: 1 })?
         .build_and_execute(&client)
         .await?;
 
@@ -411,7 +411,7 @@ async fn updated_delete_window_can_block_and_then_allow_deletion() -> anyhow::Re
 
     trail
         .locking()
-        .update_delete_record_window(LockingWindow::None)
+        .update_delete_record_window(LockingWindow::None)?
         .build_and_execute(&client)
         .await?;
 

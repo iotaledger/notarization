@@ -863,6 +863,89 @@ fun test_count_based_locking_old_record_can_delete() {
 }
 
 #[test]
+fun test_count_based_locking_uses_current_records_after_tail_deletion() {
+    let admin = @0xAD;
+    let mut scenario = ts::begin(admin);
+
+    {
+        let locking_config = locking::new(
+            locking::window_none(),
+            timelock::none(),
+            timelock::none(),
+        );
+        let (admin_cap, _) = setup_test_audit_trail(
+            &mut scenario,
+            locking_config,
+            std::option::none(),
+        );
+        transfer::public_transfer(admin_cap, admin);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let (admin_cap, mut trail, mut clock) = fetch_capability_trail_and_clock(&mut scenario);
+        let record_lock_admin_role = string::utf8(b"RecordLockAdmin");
+        let record_lock_admin_perms = permission::from_vec(vector[
+            permission::add_record(),
+            permission::delete_record(),
+            permission::update_locking_config_for_delete_record(),
+        ]);
+
+        trail
+            .access_mut()
+            .create_role(
+                &admin_cap,
+                record_lock_admin_role,
+                record_lock_admin_perms,
+                std::option::none(),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
+
+        let record_lock_admin_cap = test_utils::new_capability_without_restrictions(
+            trail.access_mut(),
+            &admin_cap,
+            &string::utf8(b"RecordLockAdmin"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        clock.set_for_testing(initial_time_for_testing() + 1000);
+
+        let mut i = 0u64;
+        while (i < 5) {
+            trail.add_record(
+                &record_lock_admin_cap,
+                record::new_text(string::utf8(b"Record")),
+                std::option::none(),
+                std::option::none(),
+                &clock,
+                ts::ctx(&mut scenario),
+            );
+            i = i + 1;
+        };
+
+        trail.delete_record(&record_lock_admin_cap, 4, &clock, ts::ctx(&mut scenario));
+        trail.update_delete_record_window(
+            &record_lock_admin_cap,
+            locking::window_count_based(2),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        assert!(!trail.has_record(4), 0);
+        assert!(!trail.is_record_locked(1, &clock), 1);
+        assert!(trail.is_record_locked(2, &clock), 2);
+        assert!(trail.is_record_locked(3, &clock), 3);
+
+        record_lock_admin_cap.destroy_for_testing();
+        cleanup_capability_trail_and_clock(&scenario, admin_cap, trail, clock);
+    };
+
+    ts::end(scenario);
+}
+
+#[test]
 fun test_time_based_locking_still_locked_before_expiry() {
     let admin = @0xAD;
     let mut scenario = ts::begin(admin);
