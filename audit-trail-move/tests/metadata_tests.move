@@ -28,7 +28,7 @@ fun test_update_metadata_success() {
     // Setup: Create audit trail
     {
         let locking_config = locking::new(
-            locking::window_count_based(0),
+            locking::window_none(),
             timelock::none(),
             timelock::none(),
         );
@@ -151,7 +151,7 @@ fun test_update_metadata_permission_denied() {
     // Setup
     {
         let locking_config = locking::new(
-            locking::window_count_based(0),
+            locking::window_none(),
             timelock::none(),
             timelock::none(),
         );
@@ -223,7 +223,7 @@ fun test_update_metadata_revoked_capability() {
     // Setup: Create audit trail
     {
         let locking_config = locking::new(
-            locking::window_count_based(0),
+            locking::window_none(),
             timelock::none(),
             timelock::none(),
         );

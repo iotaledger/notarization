@@ -1164,9 +1164,10 @@ impl WasmLockingWindow {
 
     /// Creates a count-based delete window.
     ///
-    /// @param count - Number of most recent records that stay locked against deletion.
+    /// @param count - Number of most recent records that stay locked against deletion. Must be
+    /// greater than zero; use {@link LockingWindow.withNone} for no deletion lock.
     ///
-    /// @returns A window that locks the `count` most recent records.
+    /// @returns A window that protects the last `count` records currently present in trail order.
     #[wasm_bindgen(js_name = withCountBased)]
     pub fn with_count_based(count: u64) -> Self {
         Self(LockingWindow::CountBased { count })

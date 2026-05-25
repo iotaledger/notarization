@@ -99,7 +99,7 @@ async fn main() -> Result<()> {
             Some("event:dpp_created".to_string()),
             Some("manufacturing".to_string()),
         ))
-        .finish()
+        .finish()?
         .build_and_execute(&manufacturer_client)
         .await?
         .output;
