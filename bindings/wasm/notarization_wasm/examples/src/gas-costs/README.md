@@ -27,7 +27,7 @@ The cost for creating a Notarization object can roughly be calculated by the fol
 Where:
 
 | Parameter            | Description                                                                                                                                                                                                                          |
-| -------------------- |--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `FlexDataSize`       | Sum of the byte sizes of State Data, State Metadata, Updatable Metadata and Immutable Metadata. The value must be reduced by 1 as the `MinimumStorageCost` uses 1 byte of State Data.                                                |
 | `FlexDataByteCost`   | A constant value of 0.0000076 IOTA/Byte <br> This value denotes (`StorageCost` - `MinimumStorageCost`) divided by `FlexDataSize`.                                                                                                    |
 | `MinimumStorageCost` | A constant value of 0.00295 IOTA. <br> This value denotes the `StorageCost` for a Notarization with 1 Byte of `FlexDataSize` meaning a Notarization with 1 Byte of State Data, no meta data and no optional locks.                   |
