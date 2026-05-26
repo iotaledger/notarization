@@ -32,7 +32,7 @@ fun test_role_based_permission_delegation() {
     // Step 1: admin_user creates the audit trail
     let trail_id = {
         let locking_config = locking::new(
-            locking::window_count_based(0),
+            locking::window_none(),
             timelock::none(),
             timelock::none(),
         );
@@ -227,7 +227,7 @@ fun test_create_role_rejects_undefined_record_tags() {
 
     {
         let locking_config = locking::new(
-            locking::window_count_based(0),
+            locking::window_none(),
             timelock::none(),
             timelock::none(),
         );
@@ -268,7 +268,7 @@ fun test_delete_role_success() {
 
     {
         let locking_config = locking::new(
-            locking::window_count_based(0),
+            locking::window_none(),
             timelock::none(),
             timelock::none(),
         );
@@ -332,7 +332,7 @@ fun test_remove_record_tag_rejects_role_only_usage() {
 
     {
         let locking_config = locking::new(
-            locking::window_count_based(0),
+            locking::window_none(),
             timelock::none(),
             timelock::none(),
         );
@@ -385,7 +385,7 @@ fun test_create_role_permission_denied() {
     // Setup
     {
         let locking_config = locking::new(
-            locking::window_count_based(0),
+            locking::window_none(),
             timelock::none(),
             timelock::none(),
         );
@@ -463,7 +463,7 @@ fun test_delete_role_permission_denied() {
     // Setup
     {
         let locking_config = locking::new(
-            locking::window_count_based(0),
+            locking::window_none(),
             timelock::none(),
             timelock::none(),
         );
@@ -545,7 +545,7 @@ fun test_update_role_permissions_permission_denied() {
     // Setup
     {
         let locking_config = locking::new(
-            locking::window_count_based(0),
+            locking::window_none(),
             timelock::none(),
             timelock::none(),
         );
@@ -634,7 +634,7 @@ fun test_get_role_permissions_nonexistent() {
 
     {
         let locking_config = locking::new(
-            locking::window_count_based(0),
+            locking::window_none(),
             timelock::none(),
             timelock::none(),
         );
@@ -667,7 +667,7 @@ fun test_update_role_permissions_success() {
 
     {
         let locking_config = locking::new(
-            locking::window_count_based(0),
+            locking::window_none(),
             timelock::none(),
             timelock::none(),
         );
@@ -733,7 +733,7 @@ fun test_update_role_permissions_rejects_undefined_record_tags() {
 
     {
         let locking_config = locking::new(
-            locking::window_count_based(0),
+            locking::window_none(),
             timelock::none(),
             timelock::none(),
         );
@@ -783,7 +783,7 @@ fun test_update_role_permissions_nonexistent() {
 
     {
         let locking_config = locking::new(
-            locking::window_count_based(0),
+            locking::window_none(),
             timelock::none(),
             timelock::none(),
         );

@@ -12,14 +12,18 @@ use tf_components::timelock::{Self, TimeLock};
 /// UntilDestroyed cannot be used for trail deletion protection.
 const EUntilDestroyedNotSupportedForDeleteTrail: u64 = 0;
 
-/// Defines a locking window (time XOR count based, or none).
+/// A count-based locking window must protect at least one record.
+const ECountWindowMustBePositive: u64 = 1;
+
+/// Defines a delete-record locking window (time-based, count-based, or none).
 ///
 /// A window describes the period during which a record stays locked against
-/// deletion. Records outside the window may be deleted (subject to remaining
-/// permission and tag checks).
+/// deletion. Records outside the window may be deleted, subject to remaining
+/// permission and tag checks.
 public enum LockingWindow has copy, drop, store {
     None,
     TimeBased { seconds: u64 },
+    /// Locks the last `count` records currently present in trail order.
     CountBased { count: u64 },
 }
 
@@ -53,10 +57,19 @@ public fun window_time_based(seconds: u64): LockingWindow {
 
 /// Creates a count-based locking window.
 ///
-/// The most recent `count` records in the trail are considered locked.
+/// The trail locks the last `count` records currently present in linked-table
+/// order. To express "no deletion lock", use `window_none()` instead of
+/// passing `count == 0`.
+///
+/// Aborts
+/// ------
+/// * `ECountWindowMustBePositive` if `count == 0`. A zero-count window would
+///   protect no records and is functionally identical to `window_none()`;
+///   rejecting it at construction prevents silently misconfigured trails.
 ///
 /// Returns the `LockingWindow::CountBased` variant.
 public fun window_count_based(count: u64): LockingWindow {
+    assert!(count > 0, ECountWindowMustBePositive);
     LockingWindow::CountBased { count }
 }
 
@@ -177,7 +190,11 @@ public(package) fun set_config(config: &mut LockingConfig, new_config: LockingCo
 ///
 /// Returns `true` when `window` is `LockingWindow::TimeBased` and the record's age
 /// is below the configured number of seconds.
-fun is_time_locked(window: &LockingWindow, record_timestamp: u64, current_time: u64): bool {
+public(package) fun is_time_locked(
+    window: &LockingWindow,
+    record_timestamp: u64,
+    current_time: u64,
+): bool {
     match (window) {
         LockingWindow::TimeBased { seconds } => {
             let time_window_ms = (*seconds) * 1000;
@@ -188,55 +205,7 @@ fun is_time_locked(window: &LockingWindow, record_timestamp: u64, current_time: 
     }
 }
 
-/// Checks whether a record is locked by the count-based window.
-///
-/// Returns `true` when `window` is `LockingWindow::CountBased` and the record is
-/// among the last `count` records of the trail.
-fun is_count_locked(window: &LockingWindow, sequence_number: u64, total_records: u64): bool {
-    match (window) {
-        LockingWindow::CountBased { count } => {
-            let records_after = total_records - sequence_number - 1;
-            records_after < *count
-        },
-        _ => false,
-    }
-}
-
-/// Checks whether a record is locked by `window`, evaluating both its time- and
-/// count-based variants.
-///
-/// Returns `true` when the record is locked by either dimension of `window`.
-fun is_window_locked(
-    window: &LockingWindow,
-    sequence_number: u64,
-    record_timestamp: u64,
-    total_records: u64,
-    current_time: u64,
-): bool {
-    is_time_locked(window, record_timestamp, current_time)
-        || is_count_locked(window, sequence_number, total_records)
-}
-
 // ===== Locking Logic (LockingConfig) =====
-
-/// Checks whether a record is currently locked against deletion by `delete_record_window`.
-///
-/// Returns `true` when the record falls inside the active locking window.
-public fun is_delete_record_locked(
-    config: &LockingConfig,
-    sequence_number: u64,
-    record_timestamp: u64,
-    total_records: u64,
-    current_time: u64,
-): bool {
-    is_window_locked(
-        &config.delete_record_window,
-        sequence_number,
-        record_timestamp,
-        total_records,
-        current_time,
-    )
-}
 
 /// Checks whether trail deletion is currently blocked by `delete_trail_lock`.
 ///

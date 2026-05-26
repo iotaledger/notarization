@@ -879,7 +879,7 @@ async fn delete_record_fails_while_time_locked() -> anyhow::Result<()> {
         .create_trail()
         .with_initial_record(InitialRecord::new(Data::text("locked"), None, None))
         .with_locking_config(config_with_window(LockingWindow::TimeBased { seconds: 3600 }))
-        .finish()
+        .finish()?
         .build_and_execute(&client)
         .await?
         .output;
@@ -942,7 +942,7 @@ async fn delete_record_fails_while_count_locked() -> anyhow::Result<()> {
         .create_trail()
         .with_initial_record(InitialRecord::new(Data::text("count-locked"), None, None))
         .with_locking_config(config_with_window(LockingWindow::CountBased { count: 5 }))
-        .finish()
+        .finish()?
         .build_and_execute(&client)
         .await?
         .output;
@@ -965,7 +965,7 @@ async fn delete_records_batch_respects_limit_and_deletes_oldest_first() -> anyho
         .create_trail()
         .with_initial_record(InitialRecord::new(Data::text("batch-initial"), None, None))
         .with_locking_config(config_with_window(LockingWindow::None))
-        .finish()
+        .finish()?
         .build_and_execute(&client)
         .await?
         .output;
@@ -1034,7 +1034,7 @@ async fn delete_records_batch_skips_locked_records() -> anyhow::Result<()> {
         .create_trail()
         .with_initial_record(InitialRecord::new(Data::text("batch-skip-locked-initial"), None, None))
         .with_locking_config(config_with_window(LockingWindow::CountBased { count: 1 }))
-        .finish()
+        .finish()?
         .build_and_execute(&client)
         .await?
         .output;

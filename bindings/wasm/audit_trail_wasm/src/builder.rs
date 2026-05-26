@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use audit_trail::core::builder::AuditTrailBuilder;
-use iota_interaction_ts::wasm_error::Result;
+use iota_interaction_ts::wasm_error::{Result, WasmResult};
 use product_common::bindings::transaction::WasmTransactionBuilder;
 use product_common::bindings::utils::{into_transaction_builder, parse_wasm_iota_address};
 use product_common::bindings::WasmIotaAddress;
@@ -157,11 +157,13 @@ impl WasmAuditTrailBuilder {
     /// @returns A {@link TransactionBuilder} wrapping the {@link CreateTrail} transaction.
     ///
     /// @throws When the builder is missing a required field or its initial record references a tag
-    /// that is not in the record-tag list.
+    /// that is not in the record-tag list, or when the configured {@link LockingConfig} is invalid
+    /// (for example, a count-based delete window with `count == 0`).
     ///
     /// Emits an {@link AuditTrailCreated} event on success.
     #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<CreateTrail>")]
     pub fn finish(self) -> Result<WasmTransactionBuilder> {
-        Ok(into_transaction_builder(WasmCreateTrail::new(self)))
+        let tx = self.0.finish().wasm_result()?.into_inner();
+        Ok(into_transaction_builder(WasmCreateTrail(tx)))
     }
 }

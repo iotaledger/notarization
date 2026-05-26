@@ -220,16 +220,19 @@ impl Transaction for DeleteRecord {
 /// Transaction that deletes multiple records in a batch operation.
 ///
 /// Requires the `DeleteAllRecords` permission. The Move entry point walks the trail from the front,
-/// silently *skips* records still inside the delete-record window, and deletes up to `limit` unlocked
-/// records in trail order. Tag-aware authorization applies to every record actually deleted. On success a
-/// `RecordDeleted` event is emitted per deletion.
+/// silently skips records still inside the delete-record window or outside the capability's allowed tag set,
+/// and deletes up to `limit` eligible records in trail order. On success a `RecordDeleted` event is emitted
+/// per deletion.
 ///
 /// `limit` caps the number of records actually deleted, not the number of records inspected. Ineligible
 /// records at the front of the trail are silently walked past without counting toward `limit`, so more
 /// than `limit` records may be visited before `limit` deletions accumulate.
 ///
-/// Resolves to the sequence numbers of the records deleted in this batch, in deletion order. Its length is
-/// at most `limit` and may be smaller when locked records were skipped or the trail was exhausted.
+/// Lock state — both count-based
+/// and time-based — is evaluated against the trail snapshot and clock timestamp captured at the start of the
+/// call, so the deletable set is stable for the batch's duration. The Rust implementation mirrors the Move
+/// output by collecting the matching `RecordDeleted` events in deletion order; the returned vector may be
+/// shorter than `limit` (or empty) and that is not an error.
 #[derive(Debug, Clone)]
 pub struct DeleteRecordsBatch {
     /// Trail object ID containing the records.

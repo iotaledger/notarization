@@ -175,6 +175,8 @@ controls three independent behaviors:
 
 An audit trail can be deleted only after its records are removed and the delete-trail lock allows deletion. Records can
 be deleted individually with `TrailRecords::delete()` or in batches with `TrailRecords::delete_records_batch()`.
+For count-based delete windows, the Move package protects the last N records currently present in trail order. Deletions
+can move older records into that protected window, and large count values increase delete gas linearly.
 
 #### Updating Locking Rules
 
@@ -232,7 +234,8 @@ The trail deletion process does not remove records automatically. The trail must
   tag.
 - `Role Tags`: Optional role-scoped tag restrictions. They narrow which tagged records a role may operate on.
 - `Locking Config`: The active locking rules for record deletion, trail deletion, and record writes.
-- `Delete Record Window`: A locking rule that controls when individual records can be deleted.
+- `Delete Record Window`: A locking rule that controls when individual records can be deleted. Count-based windows protect
+  the last N records currently present in trail order.
 - `Delete Trail Lock`: A time lock that controls when the entire trail can be deleted.
 - `Write Lock`: A time lock that controls when new records can be added.
 - `Immutable Metadata`: Optional metadata stored at creation time and never updated after the trail is created.

@@ -70,7 +70,7 @@ async fn main() -> Result<()> {
             Some("event:case_opened".to_string()),
             Some("documents".to_string()),
         ))
-        .finish()
+        .finish()?
         .build_and_execute(&admin_client)
         .await?
         .output;

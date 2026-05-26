@@ -22,7 +22,7 @@
 //! let created = client
 //!     .create_trail()
 //!     .with_initial_record_parts(Data::text("Initial record"), None, None)
-//!     .finish()
+//!     .finish()?
 //!     .with_gas_budget(1_000_000)
 //!     .build_and_execute(client)
 //!     .await?;
@@ -53,7 +53,7 @@
 //!     .create_trail()
 //!     .with_initial_record_parts(Data::text("Initial record"), None, None)
 //!     .with_record_tags(["finance"])
-//!     .finish()
+//!     .finish()?
 //!     .build_and_execute(client)
 //!     .await?;
 //!

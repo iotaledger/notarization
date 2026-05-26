@@ -106,6 +106,7 @@ public fun admin_permissions(): VecSet<Permission> {
     perms.insert(add_roles());
     perms.insert(update_roles());
     perms.insert(delete_roles());
+    perms.insert(migrate_audit_trail());
     perms
 }
 

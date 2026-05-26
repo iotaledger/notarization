@@ -33,7 +33,7 @@ async fn main() -> Result<()> {
             Some("event:created".to_string()),
             None,
         ))
-        .finish()
+        .finish()?
         .build_and_execute(&admin_client)
         .await?
         .output;

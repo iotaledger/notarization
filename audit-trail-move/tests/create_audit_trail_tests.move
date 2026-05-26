@@ -26,7 +26,7 @@ fun test_create_without_initial_record() {
 
     {
         let locking_config = locking::new(
-            locking::window_count_based(0),
+            locking::window_none(),
             timelock::none(),
             timelock::none(),
         );
@@ -68,7 +68,7 @@ fun test_tag_admin_role_can_manage_available_record_tags() {
 
     {
         let locking_config = locking::new(
-            locking::window_count_based(0),
+            locking::window_none(),
             timelock::none(),
             timelock::none(),
         );
@@ -296,7 +296,7 @@ fun test_create_minimal_metadata() {
         clock.set_for_testing(3000);
 
         let locking_config = locking::new(
-            locking::window_count_based(0),
+            locking::window_none(),
             timelock::none(),
             timelock::none(),
         );
@@ -379,7 +379,7 @@ fun test_create_multiple_trails() {
     // Create first trail
     {
         let locking_config = locking::new(
-            locking::window_count_based(0),
+            locking::window_none(),
             timelock::none(),
             timelock::none(),
         );
@@ -398,7 +398,7 @@ fun test_create_multiple_trails() {
     // Create second trail
     {
         let locking_config = locking::new(
-            locking::window_count_based(0),
+            locking::window_none(),
             timelock::none(),
             timelock::none(),
         );
@@ -428,7 +428,7 @@ fun test_create_metadata_admin_role() {
     // Creator creates the audit trail
     {
         let locking_config = locking::new(
-            locking::window_count_based(0),
+            locking::window_none(),
             timelock::none(),
             timelock::none(),
         );

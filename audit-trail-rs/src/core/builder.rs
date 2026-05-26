@@ -10,6 +10,7 @@ use product_common::transaction::transaction_builder::TransactionBuilder;
 
 use super::types::{Data, ImmutableMetadata, InitialRecord, LockingConfig};
 use crate::core::create::CreateTrail;
+use crate::error::Error;
 
 /// Builder for creating an audit trail.
 ///
@@ -115,7 +116,17 @@ impl AuditTrailBuilder {
     }
 
     /// Finalizes the builder and creates the trail-creation transaction builder.
-    pub fn finish(self) -> TransactionBuilder<CreateTrail> {
-        TransactionBuilder::new(CreateTrail::new(self))
+    ///
+    /// Validates the configured [`LockingConfig`] before returning the transaction. Currently this rejects:
+    /// - [`LockingWindow::CountBased`] with `count == 0` (mirrors the Move `ECountWindowMustBePositive` abort).
+    /// - [`TimeLock::UntilDestroyed`] used as `delete_trail_lock` (mirrors the Move
+    ///   `EUntilDestroyedNotSupportedForDeleteTrail` abort). `write_lock` may still be `UntilDestroyed`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::InvalidArgument`] when the locking configuration is invalid.
+    pub fn finish(self) -> Result<TransactionBuilder<CreateTrail>, Error> {
+        self.locking_config.validate()?;
+        Ok(TransactionBuilder::new(CreateTrail::new(self)))
     }
 }
