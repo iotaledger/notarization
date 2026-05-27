@@ -392,7 +392,7 @@ async fn test_locked_notarization_transfer_fails() -> anyhow::Result<()> {
         .output
         .id;
 
-    let alice = IotaAddress::random_for_testing_only();
+    let alice = IotaAddress::random();
 
     // Transfer should fail because locked notarizations have transfer_lock = UntilDestroyed
     let transfer_result = test_client
