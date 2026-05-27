@@ -43,10 +43,10 @@
 use std::str::FromStr;
 
 use iota_interaction::ident_str;
-use iota_interaction::types::base_types::ObjectID;
+use iota_interaction::types::MOVE_STDLIB_PACKAGE_ID;
+use iota_interaction::types::base_types::{ObjectID, TypeTag};
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use iota_interaction::types::transaction::Argument;
-use iota_interaction::types::{MOVE_STDLIB_PACKAGE_ID, base_types::TypeTag};
 use serde::{Deserialize, Deserializer, Serialize};
 
 use super::super::move_utils;

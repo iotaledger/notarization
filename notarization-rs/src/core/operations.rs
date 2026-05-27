@@ -12,7 +12,7 @@
 use std::str::FromStr;
 
 use async_trait::async_trait;
-use iota_interaction::types::base_types::{IotaAddress, ObjectID, Identifier};
+use iota_interaction::types::base_types::{Identifier, IotaAddress, ObjectID};
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use iota_interaction::types::transaction::{Argument, CallArg, ProgrammableTransaction};
 use iota_interaction::{OptionalSync, ident_str};
