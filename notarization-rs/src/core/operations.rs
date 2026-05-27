@@ -12,10 +12,9 @@
 use std::str::FromStr;
 
 use async_trait::async_trait;
-use iota_interaction::types::Identifier;
-use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::base_types::{IotaAddress, ObjectID, Identifier};
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use iota_interaction::types::transaction::{Argument, ObjectArg, ProgrammableTransaction};
+use iota_interaction::types::transaction::{Argument, CallArg, ProgrammableTransaction};
 use iota_interaction::{OptionalSync, ident_str};
 use product_common::core_client::CoreClientReadOnly;
 
@@ -65,7 +64,7 @@ impl NotarizationImpl {
             let notarization = move_utils::get_object_ref_by_id(client, &object_id).await?;
 
             vec![
-                ptb.obj(ObjectArg::ImmOrOwnedObject(notarization))
+                ptb.obj(CallArg::ImmutableOrOwned(notarization))
                     .map_err(|e| Error::InvalidArgument(format!("Failed to create object argument: {e}")))?,
             ]
         };
@@ -82,7 +81,7 @@ impl NotarizationImpl {
         // Build the move call
         ptb.programmable_move_call(
             client.package_id(),
-            ident_str!("notarization").into(),
+            ident_str!("notarization").as_str().into(),
             function,
             tag,
             args,
@@ -118,8 +117,8 @@ pub(crate) trait NotarizationOperations {
 
         ptb.programmable_move_call(
             package_id,
-            ident_str!("locked_notarization").into(),
-            ident_str!("create").into(),
+            ident_str!("locked_notarization").as_str().into(),
+            ident_str!("create").as_str().into(),
             vec![tag],
             vec![state_arg, immutable_description, updatable_metadata, delete_lock, clock],
         );
@@ -146,8 +145,8 @@ pub(crate) trait NotarizationOperations {
 
         ptb.programmable_move_call(
             package_id,
-            ident_str!("dynamic_notarization").into(),
-            ident_str!("create").into(),
+            ident_str!("dynamic_notarization").as_str().into(),
+            ident_str!("create").as_str().into(),
             vec![tag],
             vec![
                 state_arg,
@@ -320,15 +319,15 @@ pub(crate) trait NotarizationOperations {
 
         let notarization = move_utils::get_object_ref_by_id(client, &object_id).await?;
         let notarization = ptb
-            .obj(ObjectArg::ImmOrOwnedObject(notarization))
+            .obj(CallArg::ImmutableOrOwned(notarization))
             .map_err(|e| Error::InvalidArgument(format!("Failed to create notarization argument: {e}")))?;
 
         let clock = move_utils::get_clock_ref(&mut ptb);
 
         ptb.programmable_move_call(
             client.package_id(),
-            ident_str!("dynamic_notarization").into(),
-            ident_str!("transfer").into(),
+            ident_str!("dynamic_notarization").as_str().into(),
+            ident_str!("transfer").as_str().into(),
             tag,
             vec![notarization, recipient, clock],
         );

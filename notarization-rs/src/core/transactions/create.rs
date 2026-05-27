@@ -242,11 +242,12 @@ pub(crate) async fn get_notarization_with_owner(
         .ok_or_else(|| Error::ObjectLookup("missing owner in data".to_string()))?;
 
     let address = match owner {
-        Owner::AddressOwner(address) => address,
-        Owner::ObjectOwner(address) => address,
-        Owner::Shared { .. } | Owner::Immutable => {
+        Owner::Address(address) => address,
+        Owner::Object(object_id) => *object_id.as_address(),
+        Owner::Shared(_) | Owner::Immutable => {
             unreachable!("object is not owned by an address");
         }
+        _ => unreachable!("non-exhaustive Owner variant"),
     };
 
     Ok((notarization, address))

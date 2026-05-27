@@ -417,7 +417,7 @@ impl NotarizationClientReadOnly {
         let inspection_result = self
             .iota_client
             .read_api()
-            .dev_inspect_transaction_block(IotaAddress::ZERO, TransactionKind::programmable(tx), None, None, None)
+            .dev_inspect_transaction_block(IotaAddress::ZERO, TransactionKind::Programmable(tx), None, None, None)
             .await
             .map_err(|err| Error::UnexpectedApiResponse(format!("Failed to inspect transaction block: {err}")))?;
 
