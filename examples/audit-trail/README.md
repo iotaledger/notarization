@@ -9,7 +9,7 @@ Examples can be run against:
 - A local IOTA node
 - An existing network, e.g., the IOTA testnet
 
-When setting up a local node, you'll need to publish an audit trail package as described in the IOTA documentation. You'll also need to provide environment variables for your locally deployed audit trail package to run the examples against the local node.
+When setting up a local node, you'll need to publish an Audit Trail Package as described in the IOTA documentation. You'll also need to provide environment variables for your locally deployed Audit Trail Package to run the examples against the local node.
 
 If running the examples on `testnet`, use the appropriate package IDs for the testnet deployment.
 
@@ -25,7 +25,7 @@ You'll need one or more of the following environment variables depending on your
 | IOTA_TF_COMPONENTS_PKG_ID |            x            |                      |                         |
 | API_ENDPOINT              |                         |          x           |            x            |
 
-> **Note:** On localnet both `IOTA_AUDIT_TRAIL_PKG_ID` and `IOTA_TF_COMPONENTS_PKG_ID` resolve to the same package ID because the TfComponents dependency is published together with the audit trail package.
+> **Note:** On localnet both `IOTA_AUDIT_TRAIL_PKG_ID` and `IOTA_TF_COMPONENTS_PKG_ID` resolve to the same package ID because the TfComponents dependency is published together with the Audit Trail Package.
 
 ## Running Examples
 
