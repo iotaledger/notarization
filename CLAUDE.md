@@ -49,8 +49,8 @@ IOTA Notarization enables creation of immutable, on-chain records for arbitrary 
     - For WASM:
       - The term `Package` can have two meanings:
         - The WASM-Rust package containing the WASM binding code
-          -  If the documentation refers to this aspect (i.e. explaining the existence of wasm bindings in the Rust package)
-             the term "wasm bindings" instead of `Package` is OK.
+          - If the documentation refers to this aspect (i.e. explaining the existence of wasm bindings in the Rust package)
+            the term "wasm bindings" instead of `Package` is OK.
         - The JS/TS package created out of the WASM-Rust binding code using wasm-bindgen
       - In most contexts this doesn't need to be distinguished, so just use the term `Package`
 

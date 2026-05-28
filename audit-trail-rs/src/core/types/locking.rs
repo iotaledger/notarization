@@ -15,10 +15,9 @@ use crate::error::Error;
 /// Combines three independent rules: a per-record delete window, a trail-delete
 /// time lock, and a write time lock. Two invariants apply:
 ///
-/// - `delete_trail_lock` must not be [`TimeLock::UntilDestroyed`]; that variant
-///   is reserved for `write_lock`.
-/// - `delete_record_window`, when [`LockingWindow::CountBased`], must use
-///   `count > 0`; use [`LockingWindow::None`] to express "no deletion lock".
+/// - `delete_trail_lock` must not be [`TimeLock::UntilDestroyed`]; that variant is reserved for `write_lock`.
+/// - `delete_record_window`, when [`LockingWindow::CountBased`], must use `count > 0`; use [`LockingWindow::None`] to
+///   express "no deletion lock".
 ///
 /// Public entry points that accept a `LockingConfig` call [`LockingConfig::validate`]
 /// up front, so misconfiguration is reported client-side before any transaction

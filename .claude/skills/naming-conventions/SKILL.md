@@ -87,8 +87,8 @@ If the user names a single TF product ("audit the audit-trail naming",
 
    **Product-sense vs instance-sense — the central judgement call.**
    Most product names in the rules (`Audit Trail`, `Notarization`, …)
-   are required to be title case *when they refer to the TF product
-   itself*, but the same words may appear lowercase in plural or
+   are required to be title case _when they refer to the TF product
+   itself_, but the same words may appear lowercase in plural or
    instance form (per the rules' own examples). Deciding which sense
    an occurrence is in requires reading the surrounding sentence, not
    a regex. Lean on these heuristics:
