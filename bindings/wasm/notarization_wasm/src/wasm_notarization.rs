@@ -22,131 +22,118 @@ use wasm_bindgen::prelude::*;
 use crate::wasm_notarization_builder::{WasmNotarizationBuilderDynamic, WasmNotarizationBuilderLocked};
 use crate::wasm_types::{WasmEmpty, WasmImmutableMetadata, WasmNotarizationMethod, WasmState};
 
-/// Represents an on-chain notarization object.
+/// The on-chain representation of a notarization.
 ///
-/// Provides access to various properties of the notarization, such as its ID, state, metadata
-/// and method.
+/// @remarks
+/// Stores user-defined data together with immutable provenance, optional
+/// updatable metadata, and lock metadata that governs whether the object can
+/// be updated, transferred, or destroyed. The selected
+/// {@link NotarizationMethod} determines which mutations are allowed after
+/// creation.
+///
+/// Returned by {@link NotarizationClientReadOnly.getNotarizationById} and by
+/// the executed transaction. Exposes the notarization's identity, current
+/// state, immutable and updatable metadata, the {@link NotarizationMethod},
+/// and the current owner.
 #[wasm_bindgen(js_name = OnChainNotarization, inspectable)]
 #[derive(Clone)]
 pub struct WasmOnChainNotarization(pub(crate) OnChainNotarization);
 
 #[wasm_bindgen(js_class = OnChainNotarization)]
 impl WasmOnChainNotarization {
-    // Creates a new `OnChainNotarization` instance.
-    //
-    // # Arguments
-    // * `notarization` - The `OnChainNotarization` object to wrap.
     pub(crate) fn new(notarization: OnChainNotarization) -> Self {
         Self(notarization)
     }
 
-    /// Retrieves the ID of the notarization.
-    ///
-    /// # Returns
-    /// A hexadecimal string representing the notarization ID.
+    /// The notarization's object ID, as a hexadecimal string.
     #[wasm_bindgen(getter)]
     pub fn id(&self) -> String {
         self.0.id.id.bytes.to_hex()
     }
 
-    /// Retrieves the current `state` of the notarization.
+    /// The current {@link State} of the notarization.
     ///
-    /// The `state` of a notarization contains the notarized data and metadata associated with
-    /// the current version of the `state`.
+    /// @remarks
+    /// The `state` of a notarization contains the notarized data and metadata
+    /// associated with the current version of the `state`.
     ///
-    /// `state` can be updated depending on the used `NotarizationMethod`:
-    /// - Dynamic: Can be updated anytime after notarization creation
-    /// - Locked: Immutable after notarization creation
-    ///
-    /// Use `NotarizationClient::updateState()` for `state` updates.
-    ///
-    /// # Returns
-    /// A `State` object representing the notarization state.
+    /// Mutability depends on the Notarization Method:
+    /// * `Dynamic`: the state can be replaced after creation via {@link NotarizationClient.updateState}.
+    /// * `Locked`: the state is fixed at creation and cannot be replaced.
     #[wasm_bindgen(getter)]
     pub fn state(&self) -> WasmState {
         WasmState(self.0.state.clone())
     }
 
-    /// Retrieves the immutable metadata of the notarization.
+    /// The fixed-at-creation {@link ImmutableMetadata}.
     ///
-    /// NOTE:
-    /// - provides immutable information, assertions and guaranties for third parties
-    /// - `immutableMetadata` are automatically created at creation time and cannot be updated thereafter
-    ///
-    /// # Returns
-    /// An `ImmutableMetadata` object containing the metadata.
+    /// @remarks
+    /// Provides immutable information, assertions, and guarantees for third
+    /// parties: it is created automatically at notarization creation and
+    /// cannot be changed afterwards.
     #[wasm_bindgen(js_name = immutableMetadata, getter)]
     pub fn immutable_metadata(&self) -> WasmImmutableMetadata {
         WasmImmutableMetadata(self.0.immutable_metadata.clone())
     }
 
-    /// Retrieves the updatable metadata of the notarization.
+    /// The current updatable metadata, if any.
     ///
-    /// Provides context or additional information for third parties
+    /// @remarks
+    /// Provides context or additional information for third parties.
     ///
-    /// `updatableMetadata` can be updated depending on the used `NotarizationMethod`:
-    /// - Dynamic: Can be updated anytime after notarization creation
-    /// - Locked: Immutable after notarization creation
+    /// Mutability depends on the Notarization Method:
+    /// * `Dynamic`: the updatable metadata can be replaced after creation via {@link
+    ///   NotarizationClient.updateMetadata}.
+    /// * `Locked`: the value is fixed at creation and cannot be replaced.
     ///
-    /// NOTE:
-    /// - `updatableMetadata` can be updated independently of `state`
-    /// - Updating `updatableMetadata` does not increase the `stateVersionCount`
-    /// - Updating `updatableMetadata` does not change the `lastStateChangeAt` timestamp
-    /// - Use `NotarizationClient::updateMetadata()` for `updatableMetadata` updates.
-    ///
-    /// # Returns
-    /// An optional string containing the metadata.
+    /// `updatableMetadata` is independent of {@link OnChainNotarization.state}:
+    /// replacing it does not increment the `stateVersionCount` and does not
+    /// update the `lastStateChangeAt` timestamp.
     #[wasm_bindgen(js_name = updatableMetadata, getter)]
     pub fn updatable_metadata(&self) -> Option<String> {
         self.0.updatable_metadata.clone()
     }
 
-    /// Retrieves the timestamp of the last state change.
-    ///
-    /// # Returns
-    /// A `number` value representing the timestamp,
-    /// the time in milliseconds since UNIX epoch.
+    /// The timestamp of the most recent state change, in milliseconds since
+    /// the Unix epoch.
     #[wasm_bindgen(js_name = lastStateChangeAt, getter)]
     pub fn last_state_change_at(&self) -> u64 {
         self.0.last_state_change_at
     }
 
-    /// Retrieves the count of state versions.
-    ///
-    /// # Returns
-    /// A `number` value representing the number of state versions.
+    /// The number of state versions the notarization has gone through.
+    /// `0` means the state has not been updated since creation.
     #[wasm_bindgen(js_name = stateVersionCount, getter)]
     pub fn state_version_count(&self) -> u64 {
         self.0.state_version_count
     }
 
-    /// Retrieves the notarization method.
-    ///
-    /// # Returns
-    /// A `NotarizationMethod` object representing the method.
+    /// The {@link NotarizationMethod} the notarization was created with.
     #[wasm_bindgen(getter)]
     pub fn method(&self) -> WasmNotarizationMethod {
         self.0.method.clone().into()
     }
 
-    /// Retrieves the owner address of the notarization.
-    ///
-    /// # Returns
-    /// An `IotaAddress` object representing the owner address.
+    /// The current owner's IOTA address.
     #[wasm_bindgen(getter)]
     pub fn owner(&self) -> WasmIotaAddress {
         WasmIotaAddress::from_str(&self.0.owner.to_string())
             .expect("Invalid address stored on-chain, this should never happen")
     }
 
-    /// Returns an IOTA Resource Locator (IRL) to the data stored within
-    /// this notarization object.
+    /// Creates an IOTA Resource Locator (IRL) builder rooted at this
+    /// notarization.
     ///
-    /// The returned IRL will be in the form:
-    /// `iota:<network alias or genesis digest>/<notarization ID>/state/data`.
-    /// # Errors
-    /// Throws an error if the given `network` string is not a valid IOTA
-    /// network identifier.
+    /// @remarks
+    /// The returned builder produces IRLs of the form
+    /// `iota:<network alias or genesis digest>/<notarization ID>/state/data`
+    /// and similar paths for related fields.
+    ///
+    /// @param network - The IOTA network identifier (e.g. `"mainnet"`).
+    ///
+    /// @returns A {@link NotarizationResourceBuilder} for this notarization.
+    ///
+    /// @throws When `network` is not a valid IOTA network identifier.
     #[wasm_bindgen(js_name = iotaResourceLocatorBuilder)]
     pub fn iota_resource_locator_builder(
         &self,
@@ -159,87 +146,101 @@ impl WasmOnChainNotarization {
     }
 }
 
-// Converts an `OnChainNotarization` into a `WasmOnChainNotarization`.
 impl From<OnChainNotarization> for WasmOnChainNotarization {
     fn from(notarization: OnChainNotarization) -> Self {
         WasmOnChainNotarization::new(notarization)
     }
 }
 
-/// A builder for creating IOTA Resource Locators (IRLs) pointing within a notarization.
+/// Builder for IOTA Resource Locators (IRLs) pointing at fields of an
+/// {@link OnChainNotarization}.
 #[wasm_bindgen(js_name = NotarizationResourceBuilder)]
 pub struct WasmNotarizationResourceBuilder(NotarizationResourceBuilder);
 
 #[wasm_bindgen(js_class = NotarizationResourceBuilder)]
 impl WasmNotarizationResourceBuilder {
-    /// Returns an IRL referencing this {@link OnChainNotarization} state's data.
+    /// An IRL pointing at the notarization's current state payload.
     pub fn data(&self) -> String {
         self.0.data().to_string()
     }
 
-    /// Returns an IRL referencing this {@link OnChainNotarization}'s immutable metadata.
+    /// An IRL pointing at the notarization's immutable metadata.
     #[wasm_bindgen(js_name = immutableMetadata)]
     pub fn immutable_metadata(&self) -> String {
         self.0.immutable_metadata().to_string()
     }
 
-    /// Returns an IRL referencing this {@link OnChainNotarization} state's metadata.
+    /// An IRL pointing at the notarization's current state metadata.
     #[wasm_bindgen(js_name = stateMetadata)]
     pub fn state_metadata(&self) -> String {
         self.0.state_metadata().to_string()
     }
 
-    /// Returns an IRL referencing this {@link OnChainNotarization}'s updatable metadata.
+    /// An IRL pointing at the notarization's updatable metadata.
     #[wasm_bindgen(js_name = updatableMetadata)]
     pub fn updatable_metadata(&self) -> String {
         self.0.updatable_metadata().to_string()
     }
 
-    /// Returns an IRL referencing this {@link OnChainNotarization}'s owner.
+    /// An IRL pointing at the notarization's owner.
     pub fn owner(&self) -> String {
         self.0.owner().to_string()
     }
 }
 
-/// Represents a transaction for creating locked notarization's.
+/// Transaction that creates a Locked-Notarization.
 ///
-/// Locked notarization's cannot be modified after creation, ensuring data permanence.
+/// @remarks
+/// A Locked-Notarization is immutable after creation: its state and
+/// updatable metadata are fixed for the lifetime of the object. On
+/// success the new notarization object is transferred to the transaction
+/// sender.
+///
+/// Emits a `LockedNotarizationCreated` event on success.
 #[wasm_bindgen(js_name = CreateNotarizationLocked, inspectable)]
 pub struct WasmCreateNotarizationLocked(pub(crate) CreateNotarization<Locked>);
 
 #[wasm_bindgen(js_class = CreateNotarizationLocked)]
 impl WasmCreateNotarizationLocked {
+    /// Constructs the transaction from a configured Locked-Notarization
+    /// builder.
+    ///
+    /// @param builder - A finalized {@link NotarizationBuilderLocked}.
     #[wasm_bindgen(constructor)]
     pub fn new(builder: WasmNotarizationBuilderLocked) -> Self {
         WasmCreateNotarizationLocked(CreateNotarization::<Locked>::new(builder.0))
     }
 
+    /// Builds the programmable transaction bytes.
+    ///
+    /// @param client - A read-only client connected to the target network.
+    ///
+    /// @returns The BCS-serialized programmable transaction, ready to be
+    /// signed and submitted.
+    ///
+    /// @throws When the transaction cannot be built — e.g. when the
+    /// configured state, metadata, or lock combination is rejected.
     #[wasm_bindgen(js_name = buildProgrammableTransaction)]
-    /// Builds and returns a programmable transaction for creating a locked notarization.
-    ///
-    /// # Returns
-    /// The binary BCS serialization of the programmable transaction.
-    /// This transaction can be submitted to the network to create a new locked notarization.
-    ///
-    /// # Errors
-    /// Returns an error if the transaction cannot be built due to invalid parameters
-    /// or other constraints.
     pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
         build_programmable_transaction(&self.0, client).await
     }
 
-    /// Applies transaction effects and events to this notarization creation operation.
+    /// Reads the on-chain effects and events of the submitted transaction
+    /// and returns the resulting {@link OnChainNotarization}.
     ///
-    /// This method is called automatically by Transaction::build_programmable_transaction()
-    /// and Transaction::apply() methods after the transaction has been successfully submitted
-    /// to process the results from the ledger.
+    /// @remarks
+    /// Invoked automatically by the {@link TransactionBuilder} machinery
+    /// after the transaction has been submitted; calling it directly is
+    /// normally not necessary.
     ///
-    /// # Arguments
-    /// * `effects` - The transaction block effects to apply.
-    /// * `events` - The transaction block events to apply.
+    /// @param effects - The transaction block effects produced on-chain.
+    /// @param events - The transaction block events produced on-chain.
+    /// @param client - A read-only client connected to the target network.
     ///
-    /// # Returns
-    /// The created notarization ID if successful.
+    /// @returns The created {@link OnChainNotarization}.
+    ///
+    /// @throws When the effects/events are inconsistent with this transaction
+    /// or the result cannot be reconstructed.
     #[wasm_bindgen(js_name = applyWithEvents)]
     pub async fn apply_with_events(
         self,
@@ -251,47 +252,57 @@ impl WasmCreateNotarizationLocked {
     }
 }
 
-/// Represents a transaction for creating dynamic notarization's.
+/// Transaction that creates a Dynamic-Notarization.
 ///
-/// Dynamic notarization's can be updated after creation, with modification capabilities
-/// for both state and metadata.
+/// @remarks
+/// A Dynamic-Notarization can be updated after creation. On success the new
+/// notarization object is transferred to the transaction sender.
+///
+/// Emits a `DynamicNotarizationCreated` event on success.
 #[wasm_bindgen(js_name = CreateNotarizationDynamic, inspectable)]
 pub struct WasmCreateNotarizationDynamic(pub(crate) CreateNotarization<Dynamic>);
 
 #[wasm_bindgen(js_class = CreateNotarizationDynamic)]
 impl WasmCreateNotarizationDynamic {
+    /// Constructs the transaction from a configured Dynamic-Notarization
+    /// builder.
+    ///
+    /// @param builder - A finalized {@link NotarizationBuilderDynamic}.
     #[wasm_bindgen(constructor)]
     pub fn new(builder: WasmNotarizationBuilderDynamic) -> Self {
         WasmCreateNotarizationDynamic(CreateNotarization::<Dynamic>::new(builder.0))
     }
 
-    /// Builds and returns a programmable transaction for creating a dynamic notarization.
+    /// Builds the programmable transaction bytes.
     ///
-    /// # Returns
-    /// The binary BCS serialization of the programmable transaction.
-    /// This transaction can be submitted to the network to create a new dynamic notarization.
+    /// @param client - A read-only client connected to the target network.
     ///
-    /// # Errors
-    /// Returns an error if the transaction cannot be built due to invalid parameters
-    /// or other constraints.
+    /// @returns The BCS-serialized programmable transaction, ready to be
+    /// signed and submitted.
+    ///
+    /// @throws When the transaction cannot be built — e.g. when the
+    /// configured state, metadata, or lock combination is rejected.
     #[wasm_bindgen(js_name = buildProgrammableTransaction)]
     pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
         build_programmable_transaction(&self.0, client).await
     }
 
-    /// Applies transaction effects and events to this notarization creation operation.
+    /// Reads the on-chain effects and events of the submitted transaction
+    /// and returns the resulting {@link OnChainNotarization}.
     ///
+    /// @remarks
+    /// Invoked automatically by the {@link TransactionBuilder} machinery
+    /// after the transaction has been submitted; calling it directly is
+    /// normally not necessary.
     ///
-    /// This method is called automatically by Transaction::build_programmable_transaction()
-    /// and Transaction::apply() methods after the transaction has been successfully submitted
-    /// to process the results from the ledger.
+    /// @param effects - The transaction block effects produced on-chain.
+    /// @param events - The transaction block events produced on-chain.
+    /// @param client - A read-only client connected to the target network.
     ///
-    /// # Arguments
-    /// * `effects` - The transaction block effects to apply.
-    /// * `events` - The transaction block events to apply.
+    /// @returns The created {@link OnChainNotarization}.
     ///
-    /// # Returns
-    /// The created notarization ID if successful.
+    /// @throws When the effects/events are inconsistent with this transaction
+    /// or the result cannot be reconstructed.
     #[wasm_bindgen(js_name = applyWithEvents)]
     pub async fn apply_with_events(
         self,
@@ -303,43 +314,60 @@ impl WasmCreateNotarizationDynamic {
     }
 }
 
-/// Represents a transaction for updating the state of a dynamic notarization.
+/// Transaction that replaces the state of a notarization.
 ///
-/// This is only available for dynamic notarization's
+/// @remarks
+/// On success the transaction increments `stateVersionCount` by one and
+/// refreshes `lastStateChangeAt` to the on-chain clock timestamp.
+///
+/// Behavior depends on the Notarization Method:
+/// * `Dynamic`: always permitted — the underlying `updateLock` is fixed to {@link TimeLockType.None}.
+/// * `Locked`: always aborts on-chain, because the underlying `updateLock` is pinned to {@link
+///   TimeLockType.UntilDestroyed}.
+///
+/// Emits a `NotarizationUpdated` event on success.
 #[wasm_bindgen(js_name = UpdateState, inspectable)]
 pub struct WasmUpdateState(pub(crate) UpdateState);
 
 #[wasm_bindgen(js_class = UpdateState)]
 impl WasmUpdateState {
+    /// Constructs the transaction.
+    ///
+    /// @param state - The replacement {@link State}.
+    /// @param objectId - The notarization object's ID.
+    ///
+    /// @throws When the ID is malformed.
     #[wasm_bindgen(constructor)]
     pub fn new(state: WasmState, object_id: WasmObjectID) -> Result<Self> {
         let obj_id = parse_wasm_object_id(&object_id)?;
         Ok(WasmUpdateState(UpdateState::new(state.0, obj_id)))
     }
 
-    /// Builds and returns a programmable transaction for updating the state of a notarization.
+    /// Builds the programmable transaction bytes.
     ///
-    /// # Returns
-    /// The binary BCS serialization of the programmable transaction.
-    /// This transaction can be submitted to the network to updating the state of a notarization.
+    /// @param client - A read-only client connected to the target network.
     ///
-    /// # Errors
-    /// Returns an error if the transaction cannot be built due to invalid parameters
-    /// or other constraints.
+    /// @returns The BCS-serialized programmable transaction, ready to be
+    /// signed and submitted.
+    ///
+    /// @throws When the transaction cannot be built.
     #[wasm_bindgen(js_name = buildProgrammableTransaction)]
     pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
         build_programmable_transaction(&self.0, client).await
     }
 
-    /// Applies transaction effects and events to this state update operation.
+    /// Reads the on-chain effects and events of the submitted transaction.
     ///
-    /// This method is called automatically by Transaction::build_programmable_transaction()
-    /// and Transaction::apply() methods after the transaction has been successfully submitted
-    /// to process the results from the ledger.
+    /// @remarks
+    /// Invoked automatically by the {@link TransactionBuilder} machinery
+    /// after the transaction has been submitted; calling it directly is
+    /// normally not necessary.
     ///
-    /// # Arguments
-    /// * `effects` - The transaction block effects to apply.
-    /// * `events` - The transaction block events to apply.
+    /// @param effects - The transaction block effects produced on-chain.
+    /// @param events - The transaction block events produced on-chain.
+    /// @param client - A read-only client connected to the target network.
+    ///
+    /// @throws When the effects/events are inconsistent with this transaction.
     #[wasm_bindgen(js_name = applyWithEvents)]
     pub async fn apply_with_events(
         self,
@@ -351,41 +379,58 @@ impl WasmUpdateState {
     }
 }
 
-/// Represents a transaction for updating the metadata of a notarization.
+/// Transaction that replaces the updatable metadata of a notarization.
+///
+/// @remarks
+/// Does not affect the state, the `stateVersionCount`, the
+/// `lastStateChangeAt` timestamp, or the immutable description.
+///
+/// Behavior depends on the Notarization Method:
+/// * `Dynamic`: always permitted — the underlying `updateLock` is fixed to {@link TimeLockType.None}.
+/// * `Locked`: always aborts on-chain, because the underlying `updateLock` is pinned to {@link
+///   TimeLockType.UntilDestroyed}.
 #[wasm_bindgen(js_name = UpdateMetadata, inspectable)]
 pub struct WasmUpdateMetadata(pub(crate) UpdateMetadata);
 
 #[wasm_bindgen(js_class = UpdateMetadata)]
 impl WasmUpdateMetadata {
+    /// Constructs the transaction.
+    ///
+    /// @param metadata - The replacement metadata, or `null` to clear it.
+    /// @param objectId - The notarization object's ID.
+    ///
+    /// @throws When the ID is malformed.
     #[wasm_bindgen(constructor)]
     pub fn new(metadata: Option<String>, object_id: WasmObjectID) -> Result<Self> {
         let obj_id = parse_wasm_object_id(&object_id)?;
         Ok(WasmUpdateMetadata(UpdateMetadata::new(metadata, obj_id)))
     }
 
-    /// Builds and returns a programmable transaction for updating the metadata of a notarization.
+    /// Builds the programmable transaction bytes.
     ///
-    /// # Returns
-    /// The binary BCS serialization of the programmable transaction.
-    /// This transaction can be submitted to the network to update the metadata of a notarization.
+    /// @param client - A read-only client connected to the target network.
     ///
-    /// # Errors
-    /// Returns an error if the transaction cannot be built due to invalid parameters
-    /// or other constraints.
+    /// @returns The BCS-serialized programmable transaction, ready to be
+    /// signed and submitted.
+    ///
+    /// @throws When the transaction cannot be built.
     #[wasm_bindgen(js_name = buildProgrammableTransaction)]
     pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
         build_programmable_transaction(&self.0, client).await
     }
 
-    /// Applies transaction effects and events to this metadata update operation.
+    /// Reads the on-chain effects and events of the submitted transaction.
     ///
-    /// This method is called automatically by Transaction::build_programmable_transaction()
-    /// and Transaction::apply() methods after the transaction has been successfully submitted
-    /// to process the results from the ledger.
+    /// @remarks
+    /// Invoked automatically by the {@link TransactionBuilder} machinery
+    /// after the transaction has been submitted; calling it directly is
+    /// normally not necessary.
     ///
-    /// # Arguments
-    /// * `effects` - The transaction block effects to apply.
-    /// * `events` - The transaction block events to apply.
+    /// @param effects - The transaction block effects produced on-chain.
+    /// @param events - The transaction block events produced on-chain.
+    /// @param client - A read-only client connected to the target network.
+    ///
+    /// @throws When the effects/events are inconsistent with this transaction.
     #[wasm_bindgen(js_name = applyWithEvents)]
     pub async fn apply_with_events(
         self,
@@ -397,41 +442,58 @@ impl WasmUpdateMetadata {
     }
 }
 
-/// Represents a transaction for deleting a notarization.
+/// Transaction that destroys a notarization and releases its object ID.
+///
+/// @remarks
+/// The notarization must currently be destroy-allowed (see
+/// {@link NotarizationClientReadOnly.isDestroyAllowed}); otherwise the
+/// on-chain transaction aborts. All component {@link TimeLock}s of the
+/// attached {@link LockMetadata} are destroyed in the process.
+/// A {@link TimeLockType.Infinite} lock is not
+/// destructible and therefore always blocks destruction.
+///
+/// Emits a `NotarizationDestroyed` event on success.
 #[wasm_bindgen(js_name = DestroyNotarization, inspectable)]
 pub struct WasmDestroyNotarization(pub(crate) DestroyNotarization);
 
 #[wasm_bindgen(js_class = DestroyNotarization)]
 impl WasmDestroyNotarization {
+    /// Constructs the transaction.
+    ///
+    /// @param objectId - The notarization object's ID.
+    ///
+    /// @throws When the ID is malformed.
     #[wasm_bindgen(constructor)]
     pub fn new(object_id: WasmObjectID) -> Result<Self> {
         let obj_id = parse_wasm_object_id(&object_id)?;
         Ok(WasmDestroyNotarization(DestroyNotarization::new(obj_id)))
     }
 
-    /// Builds and returns a programmable transaction for deleting a notarization.
+    /// Builds the programmable transaction bytes.
     ///
-    /// # Returns
-    /// The binary BCS serialization of the programmable transaction.
-    /// This transaction can be submitted to the network to delete a notarization.
+    /// @param client - A read-only client connected to the target network.
     ///
-    /// # Errors
-    /// Returns an error if the transaction cannot be built due to invalid parameters
-    /// or other constraints.
+    /// @returns The BCS-serialized programmable transaction, ready to be
+    /// signed and submitted.
+    ///
+    /// @throws When the transaction cannot be built.
     #[wasm_bindgen(js_name = buildProgrammableTransaction)]
     pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
         build_programmable_transaction(&self.0, client).await
     }
 
-    /// Applies transaction effects and events to this notarization delete operation.
+    /// Reads the on-chain effects and events of the submitted transaction.
     ///
-    /// This method is called automatically by Transaction::build_programmable_transaction()
-    /// and Transaction::apply() methods after the transaction has been successfully submitted
-    /// to process the results from the ledger.
+    /// @remarks
+    /// Invoked automatically by the {@link TransactionBuilder} machinery
+    /// after the transaction has been submitted; calling it directly is
+    /// normally not necessary.
     ///
-    /// # Arguments
-    /// * `effects` - The transaction block effects to apply.
-    /// * `events` - The transaction block events to apply.
+    /// @param effects - The transaction block effects produced on-chain.
+    /// @param events - The transaction block events produced on-chain.
+    /// @param client - A read-only client connected to the target network.
+    ///
+    /// @throws When the effects/events are inconsistent with this transaction.
     #[wasm_bindgen(js_name = applyWithEvents)]
     pub async fn apply_with_events(
         self,
@@ -443,14 +505,25 @@ impl WasmDestroyNotarization {
     }
 }
 
-/// Represents a transaction for transferring a dynamic notarization to a new owner.
+/// Transaction that transfers ownership of a Dynamic-Notarization.
 ///
-/// This is only available for dynamic notarization's
+/// @remarks
+/// Permitted only when the notarization has no {@link LockMetadata} or when
+/// its `transferLock` is not currently active. Submitting against a
+/// Locked-Notarization or while the transfer lock is engaged aborts on-chain.
+///
+/// Emits a `DynamicNotarizationTransferred` event on success.
 #[wasm_bindgen(js_name = TransferNotarization, inspectable)]
 pub struct WasmTransferNotarization(pub(crate) TransferNotarization);
 
 #[wasm_bindgen(js_class = TransferNotarization)]
 impl WasmTransferNotarization {
+    /// Constructs the transaction.
+    ///
+    /// @param recipient - The new owner's IOTA address.
+    /// @param objectId - The notarization object's ID.
+    ///
+    /// @throws When the ID or address is malformed.
     #[wasm_bindgen(constructor)]
     pub fn new(recipient: WasmIotaAddress, object_id: WasmObjectID) -> Result<Self> {
         let obj_id = parse_wasm_object_id(&object_id)?;
@@ -461,29 +534,31 @@ impl WasmTransferNotarization {
         )))
     }
 
-    /// Builds and returns a programmable transaction for transferring a notarization.
+    /// Builds the programmable transaction bytes.
     ///
-    /// # Returns
-    /// The binary BCS serialization of the programmable transaction.
-    /// This transaction can be submitted to the network to transfer a notarization.
+    /// @param client - A read-only client connected to the target network.
     ///
-    /// # Errors
-    /// Returns an error if the transaction cannot be built due to invalid parameters
-    /// or other constraints.
+    /// @returns The BCS-serialized programmable transaction, ready to be
+    /// signed and submitted.
+    ///
+    /// @throws When the transaction cannot be built.
     #[wasm_bindgen(js_name = buildProgrammableTransaction)]
     pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
         build_programmable_transaction(&self.0, client).await
     }
 
-    /// Applies transaction effects and events to this transfer operation.
+    /// Reads the on-chain effects and events of the submitted transaction.
     ///
-    /// This method is called automatically by Transaction::build_programmable_transaction()
-    /// and Transaction::apply() methods after the transaction has been successfully submitted
-    /// to process the results from the ledger.
+    /// @remarks
+    /// Invoked automatically by the {@link TransactionBuilder} machinery
+    /// after the transaction has been submitted; calling it directly is
+    /// normally not necessary.
     ///
-    /// # Arguments
-    /// * `effects` - The transaction block effects to apply.
-    /// * `events` - The transaction block events to apply.
+    /// @param effects - The transaction block effects produced on-chain.
+    /// @param events - The transaction block events produced on-chain.
+    /// @param client - A read-only client connected to the target network.
+    ///
+    /// @throws When the effects/events are inconsistent with this transaction.
     #[wasm_bindgen(js_name = applyWithEvents)]
     pub async fn apply_with_events(
         self,

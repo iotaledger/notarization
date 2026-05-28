@@ -14,11 +14,17 @@ use serde::{Deserialize, Serialize};
 use crate::error::Error;
 
 /// Audit-trail permission variants mirrored from the Move permission module.
+///
+/// Variants are grouped by the proposed role that typically owns them — `Admin`
+/// (whole-trail), `RecordAdmin`, `LockingAdmin`, `RoleAdmin`, `CapAdmin`,
+/// `MetadataAdmin`, and `TagAdmin`. The [`PermissionSet`] convenience
+/// constructors below build the recommended sets for those roles.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub enum Permission {
-    /// Allows deleting the entire trail.
+    /// Allows deleting the entire trail. Proposed role: `Admin`.
     DeleteAuditTrail,
-    /// Allows deleting all records in batch form.
+    /// Allows deleting all records via the batch cleanup workflow.
+    /// Proposed role: `Admin`.
     DeleteAllRecords,
     /// Allows adding records.
     AddRecord,
@@ -112,7 +118,11 @@ impl PermissionSet {
 
         Ok(ptb.command(Command::MakeMoveVec(Some(permission_type.into()), permission_args)))
     }
-    /// Returns the recommended role-administration permissions.
+    /// Returns the recommended permission set for the `Admin` role.
+    ///
+    /// Mirrors `audit_trail::permission::admin_permissions` in the Move
+    /// package. This is the same set the package seeds when a trail is
+    /// created and the initial-admin capability is minted.
     pub fn admin_permissions() -> Self {
         Self {
             permissions: HashSet::from([

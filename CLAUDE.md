@@ -4,7 +4,55 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-IOTA Notarization enables creation of immutable, on-chain records for arbitrary data by storing it (or a hash) in dedicated Move objects on the IOTA ledger. The workspace has two main subsystems: **Notarization** (creating tamper-proof records) and **Audit Trails** (structured, role-based audit logging).
+IOTA Notarization enables creation of immutable, on-chain records for arbitrary data by storing it (or a hash) in dedicated Move objects on the IOTA ledger. The workspace has two components: **Notarization** (creating tamper-proof records) and **Audit Trail** (structured, role-based audit logging).
+
+## Naming Conventions
+
+- Everything contained in this repository is part of the **Notarization Toolkit** - do not use synonyms like "Notarization Suite",
+  "Notarization SDK" or similar labels for the Notarization Toolkit.
+- The Notarization Toolkit is part of the IOTA Trust Framework
+  - Use standard capitalization for the word `Toolkit` (includes "title case" where needed) - use "Toolkit" or "toolkit"
+    whatever suites into the context the best. In this stylguide `Toolkit` is used for referencing the term. Use "title case"
+    allways for `Notarization Toolkit` (never use `Notarization toolkit` or `notarization toolkit`).
+- The IOTA Trust Framework consist of Trust Framework Products (TF products)
+- The Notarization Toolkit contains two TF products: **Single Notarization** and **Audit Trail**
+  - In the context of Notarization Toolkit documentation, Single Notarization and Audit Trail are called components
+  - In the context of IOTA Trust Framework documentation, Single Notarization and Audit Trail are called TF products
+  - These rules also apply to future TF products in the Notarization Toolkit (i.e. "Proof of Inclusion")
+- The name of TF products resp. Notarization Toolkit components is allways a singular term
+  - Use capitalization (a.k.a. title case) for the words of a product name if the product is meant itself - examples `Audit Trail`, `Notarization`
+  - Use plural (i.e. `audit trails` or `notarizations`) only where multiple instances of the TF product are meant
+    - Use lower case for the plural form - except at the beginning of sentences and in markdown titles
+  - In situations where the TF product itself or the plural form can be addressed choose whatever fits best
+  - This rule - including capitalization aspects - only applies to TF products resp. Notarization Toolkit components using
+    plural for other entities like i.e. Notarization Methods (`Locked Notarization`, `Dynamic Notarization` - see below) is OK.
+  - Example `Audit Trail`:
+    - Do not use `Audit Trails` - always use `Audit Trail` to denote the product itself
+    - Use plural (i.e. `audit trails` or `Audit trails`) only where multiple instances of the TF product are meant - Examples:
+      - `A client for creating and managing audit trails on the IOTA blockchain`
+      - `Audit trails and their records are ...`
+      - `Audit trails provide ...` (could also be `Audit Trail provides ...`)
+- Regarding Single Notarization (Component/TF product):
+  - Single Notarization provides two **Notarization Methods**: **Locked Notarization** and **Dynamic Notarization**
+    - There might be additional Notarization Methods in future versions of Single Notarization (i.e. "Custom Notarization")
+    - For Notarization Methods, the following can be used to describe or identify the method (whatever suites into the context the best):
+      - Short Name: `Locked`, `Dynamic`, ...
+      - Full Name: `Locked Notarization`, `Dynamic Notarization`, ...
+- Each TF product/component provides packages for Move, Rust and WASM/TypeScript:
+  - Do not use terms like `toolkit`, `SDK`, ... for the packages - only use the term `Package`
+  - Use standard capitalization for the word `Package` (includes "title case" where needed) - use "Package" or "package"
+    whatever suites into the context the best. In this stylguide `Package` is used for referencing the term.
+  - Aspects regarding the use of `Package` for software development in general:
+    - For Move the term `Package` is allways used
+    - In Rust contexts, the term `Package` denotes a bundle of one or more crates containing a Cargo. toml file. Use the term
+      `Crate` and `Package` whatever suites into the context the best
+    - For WASM:
+      - The term `Package` can have two meanings:
+        - The WASM-Rust package containing the WASM binding code
+          - If the documentation refers to this aspect (i.e. explaining the existence of wasm bindings in the Rust package)
+            the term "wasm bindings" instead of `Package` is OK.
+        - The JS/TS package created out of the WASM-Rust binding code using wasm-bindgen
+      - In most contexts this doesn't need to be distinguished, so just use the term `Package`
 
 ## Common Commands
 
@@ -87,7 +135,7 @@ cargo run --release --example <example_name_goes_here>
 
 The `eval` form is required because the publish script prints shell `export` statements for two variables:
 
-- `IOTA_AUDIT_TRAIL_PKG_ID` — the audit trail package ID
+- `IOTA_AUDIT_TRAIL_PKG_ID` — the Audit Trail package ID
 - `IOTA_TF_COMPONENTS_PKG_ID` — the TfComponents package ID (equals `IOTA_AUDIT_TRAIL_PKG_ID` on localnet)
 
 ## Developing Examples
@@ -96,7 +144,7 @@ The `eval` form is required because the publish script prints shell `export` sta
 
 1. Create the source file under `examples/notarization/` or `examples/audit-trail/`.
 2. Add an `[[example]]` entry to `examples/Cargo.toml` pointing to the new file.
-3. Use `examples::get_funded_notarization_client()` (notarization) or `examples::get_funded_audit_trail_client()` (audit trail) from `examples/utils/utils.rs` to obtain a funded, signed client. Do not inline client construction in example files.
+3. Use `examples::get_funded_notarization_client()` (notarization) or `examples::get_funded_audit_trail_client()` (Audit Trail) from `examples/utils/utils.rs` to obtain a funded, signed client. Do not inline client construction in example files.
 
 ### Audit Trail example patterns
 
@@ -163,11 +211,13 @@ The root `Cargo.toml` defines a workspace with members: `notarization-rs`, `audi
 
 - **`notarization-rs/`** — Rust client library for notarization
 - **`notarization-move/`** — Move smart contracts for notarization
-- **`audit-trail-rs/`** — Rust client library for audit trails
-- **`audit-trail-move/`** — Move smart contracts for audit trails
+- **`audit-trail-rs/`** — Rust client library for Audit Trail
+- **`audit-trail-move/`** — Move smart contracts for Audit Trail
 - **`bindings/wasm/notarization_wasm/`** — JS/TS WASM bindings for notarization
-- **`bindings/wasm/audit_trail_wasm/`** — JS/TS WASM bindings for audit trails
+- **`bindings/wasm/audit_trail_wasm/`** — JS/TS WASM bindings for Audit Trail
 - **`examples/`** — Rust examples (basic CRUD + real-world scenarios like IoT, legal contracts)
+
+When performing checks and edits always ignore the folders and files defined in the `.gitignore` file.
 
 ## Architecture
 

@@ -74,7 +74,7 @@ where
     let now_ms = now_ms();
     let tf_components_package_id = client
         .tf_components_package_id()
-        .expect("TfComponents package ID should be present for audit trail clients");
+        .expect("TfComponents package ID should be present for Audit Trail clients");
     let capability_struct_tag: StructTag = Capability::type_tag(tf_components_package_id)
         .to_string()
         .parse()

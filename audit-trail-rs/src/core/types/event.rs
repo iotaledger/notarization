@@ -10,7 +10,7 @@ use serde_aux::field_attributes::{deserialize_number_from_string, deserialize_op
 
 use super::{Permission, PermissionSet, RoleTags};
 
-/// Generic wrapper for audit trail events.
+/// Generic wrapper for Audit Trail events.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Event<D> {
     /// Parsed event payload.

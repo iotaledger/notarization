@@ -67,12 +67,12 @@ cd notarization-move
 ./scripts/publish_package.sh
 ```
 
-The package history files [`Move.lock`](./Move.lock) and [`Move.history.json`](./Move.history.json) are used by the Rust SDK to resolve and track deployed package versions.
+The package history files [`Move.lock`](./Move.lock) and [`Move.history.json`](./Move.history.json) are used by the Rust package to resolve and track deployed package versions.
 
 ## Related Libraries
 
-- [Rust SDK](https://github.com/iotaledger/notarization/tree/main/notarization-rs/README.md)
-- [Wasm SDK](https://github.com/iotaledger/notarization/tree/main/bindings/wasm/notarization_wasm/README.md)
+- [Rust Package](https://github.com/iotaledger/notarization/tree/main/notarization-rs/README.md)
+- [Wasm Package](https://github.com/iotaledger/notarization/tree/main/bindings/wasm/notarization_wasm/README.md)
 - [Repository Root](https://github.com/iotaledger/notarization/tree/main/README.md)
 
 ## Contributing

@@ -1,18 +1,18 @@
-# IOTA Audit Trails Rust SDK
+# IOTA Audit Trail Rust Package
 
 ## Introduction
 
-The Audit Trails Rust SDK is the Rust client for structured record histories in the IOTA Notarization Suite.
+The Audit Trail Rust package provides the Rust client for structured record histories in the IOTA Notarization Toolkit.
 
-The SDK provides an `AuditTrailBuilder` that creates audit trail objects on the IOTA ledger and an `AuditTrailHandle`
+The package also provides an `AuditTrailBuilder` that creates audit trail objects on the IOTA ledger and an `AuditTrailHandle`
 that interacts with existing trails. The handle maps to one on-chain audit trail and provides typed APIs for records,
 access control, locking, tags, metadata, migration, and deletion.
 
-Use Audit Trails when you need a governed record history with sequential entries, role-based permissions, capabilities,
+Use Audit Trail when you need a governed record history with sequential entries, role-based permissions, capabilities,
 locking, and tagging. Use Single Notarization when you need one locked or dynamic notarized object for arbitrary data,
 documents, hashes, or latest-state records.
 
-You can find the full IOTA Notarization Suite documentation [here](https://docs.iota.org/developer/iota-notarization).
+You can find the full IOTA Notarization Toolkit documentation [here](https://docs.iota.org/developer/iota-notarization).
 
 ## Process Flows
 
@@ -245,22 +245,22 @@ The trail deletion process does not remove records automatically. The trail must
 
 ## Documentation And Resources
 
-- [Audit Trails Move Package](https://github.com/iotaledger/notarization/tree/main/audit-trail-move): On-chain contract package that defines the shared object model, permissions, locking, and events.
-- [Audit Trails Wasm SDK](https://github.com/iotaledger/notarization/tree/main/bindings/wasm/audit_trail_wasm): JavaScript and TypeScript bindings for browser and Node.js integrations.
-- [Audit Trails Wasm Examples](https://github.com/iotaledger/notarization/tree/main/bindings/wasm/audit_trail_wasm/examples/README.md): Runnable audit-trail examples for JS and TS consumers.
-- [Repository Examples](https://github.com/iotaledger/notarization/tree/main/examples/README.md): End-to-end examples across the Notarization Suite.
+- [Audit Trail Move Package](https://github.com/iotaledger/notarization/tree/main/audit-trail-move): On-chain contract package that defines the shared object model, permissions, locking, and events.
+- [Audit Trail Wasm Package](https://github.com/iotaledger/notarization/tree/main/bindings/wasm/audit_trail_wasm): JavaScript and TypeScript bindings for browser and Node.js integrations.
+- [Audit Trail Wasm Examples](https://github.com/iotaledger/notarization/tree/main/bindings/wasm/audit_trail_wasm/examples/README.md): Runnable audit-trail examples for JS and TS consumers.
+- [Repository Examples](https://github.com/iotaledger/notarization/tree/main/examples/README.md): End-to-end examples across the Notarization Toolkit.
 
 This README is also used as the crate-level rustdoc entry point, while the source files provide detailed API documentation for all public types and methods.
 
 ## Bindings
 
-[Foreign Function Interface (FFI)](https://en.wikipedia.org/wiki/Foreign_function_interface) bindings of this Rust SDK to other programming languages:
+[Foreign Function Interface (FFI)](https://en.wikipedia.org/wiki/Foreign_function_interface) bindings of this Rust crate to other programming languages:
 
 - [Web Assembly](https://github.com/iotaledger/notarization/tree/main/bindings/wasm/audit_trail_wasm) (JavaScript/TypeScript)
 
 ## Contributing
 
-We would love to have you help us with the development of the IOTA Notarization Suite. Each and every contribution is greatly valued.
+We would love to have you help us with the development of the IOTA Notarization Toolkit. Each and every contribution is greatly valued.
 
 Please review the [contribution](https://docs.iota.org/developer/iota-notarization/contribute) sections in the [IOTA Docs Portal](https://docs.iota.org/developer/iota-notarization/).
 

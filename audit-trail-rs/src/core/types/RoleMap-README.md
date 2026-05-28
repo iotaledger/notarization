@@ -1,4 +1,4 @@
-# Role-Based Access Control for Audit Trails
+# Role-Based Access Control for Audit Trail
 
 Audit trails provide an access control registry (a.k.a. `RoleMap`), defining who may perform which
 operations by combining two primitives:

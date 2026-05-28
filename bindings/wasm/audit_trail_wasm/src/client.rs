@@ -14,10 +14,12 @@ use crate::builder::WasmAuditTrailBuilder;
 use crate::client_read_only::{WasmAuditTrailClientReadOnly, WasmPackageOverrides};
 use crate::trail_handle::WasmAuditTrailHandle;
 
-/// Signing audit-trail client exposed to wasm consumers.
+/// Signing audit-trail client.
 ///
-/// This wraps the read-only client with a transaction signer so JS/TS consumers can build typed
-/// write transactions while keeping submission and execution outside the SDK.
+/// @remarks
+/// Wraps an {@link AuditTrailClientReadOnly} together with a transaction signer so that typed
+/// write transactions can be built. The actual transaction submission and execution remain the
+/// responsibility of the caller.
 #[derive(Clone)]
 #[wasm_bindgen(js_name = AuditTrailClient)]
 pub struct WasmAuditTrailClient(pub(crate) AuditTrailClient<WasmTransactionSigner>);
@@ -25,6 +27,13 @@ pub struct WasmAuditTrailClient(pub(crate) AuditTrailClient<WasmTransactionSigne
 #[wasm_bindgen(js_class = AuditTrailClient)]
 impl WasmAuditTrailClient {
     /// Creates a signing client from an existing read-only client and signer.
+    ///
+    /// @param client - Read-only client whose network and package configuration will be reused.
+    /// @param signer - Signer that will sign transactions built by this client.
+    ///
+    /// @returns A signing audit-trail client bound to `client`'s network and the given signer.
+    ///
+    /// @throws When the signer cannot be queried for its public key or address.
     #[wasm_bindgen(js_name = create)]
     pub async fn new(
         client: WasmAuditTrailClientReadOnly,
@@ -36,8 +45,17 @@ impl WasmAuditTrailClient {
 
     /// Creates a signing client directly from an IOTA client and signer.
     ///
-    /// Pass `package_id` when connecting to a custom deployment that is not known to the package
-    /// registry.
+    /// @remarks
+    /// Pass `packageId` when connecting to a custom deployment that is not known to the package
+    /// registry; otherwise package IDs are resolved from the connected network.
+    ///
+    /// @param iotaClient - IOTA client used to talk to the network.
+    /// @param signer - Signer that will sign transactions built by this client.
+    /// @param packageId - Optional audit-trail package ID override.
+    ///
+    /// @returns A signing audit-trail client bound to the resolved or supplied package IDs.
+    ///
+    /// @throws When package resolution fails or the supplied `packageId` is malformed.
     #[wasm_bindgen(js_name = createFromIotaClient)]
     pub async fn create_from_iota_client(
         iota_client: WasmIotaClient,
@@ -64,6 +82,14 @@ impl WasmAuditTrailClient {
     }
 
     /// Creates a signing client directly from an IOTA client, signer, and full package overrides.
+    ///
+    /// @param iotaClient - IOTA client used to talk to the network.
+    /// @param signer - Signer that will sign transactions built by this client.
+    /// @param packageOverrides - Optional explicit package IDs; when omitted the registry is used.
+    ///
+    /// @returns A signing audit-trail client bound to the resolved or supplied package IDs.
+    ///
+    /// @throws When package resolution fails or the supplied overrides are malformed.
     #[wasm_bindgen(js_name = createFromIotaClientWithPackageOverrides)]
     pub async fn create_from_iota_client_with_package_overrides(
         iota_client: WasmIotaClient,
@@ -83,43 +109,59 @@ impl WasmAuditTrailClient {
         Ok(Self(client))
     }
 
-    /// Returns the sender public key associated with the signer.
+    /// Returns the public key of the address that signs transactions built by this client.
+    ///
+    /// @returns Public key bound to the signer.
+    ///
+    /// @throws When the signer's public key cannot be converted to the expected representation.
     #[wasm_bindgen(js_name = senderPublicKey)]
     pub fn sender_public_key(&self) -> Result<WasmPublicKey> {
         self.0.public_key().try_into()
     }
 
-    /// Returns the sender address associated with the signer.
+    /// Returns the address that signs transactions built by this client.
+    ///
+    /// @returns Stringified IOTA address of the signer.
     #[wasm_bindgen(js_name = senderAddress)]
     pub fn sender_address(&self) -> String {
         self.0.address().to_string()
     }
 
-    /// Returns the connected network name.
+    /// Returns the human-readable name of the network this client is connected to.
+    ///
+    /// @returns Network name (e.g. `"mainnet"`, `"testnet"`, `"localnet"`).
     #[wasm_bindgen]
     pub fn network(&self) -> String {
         self.0.network().to_string()
     }
 
-    /// Returns the connected chain ID.
+    /// Returns the chain ID of the network this client is connected to.
+    ///
+    /// @returns Hex-encoded chain identifier.
     #[wasm_bindgen(js_name = chainId)]
     pub fn chain_id(&self) -> String {
         self.0.chain_id().to_string()
     }
 
-    /// Returns the audit-trail package ID used by this client.
+    /// Returns the audit-trail package ID currently in use.
+    ///
+    /// @returns Stringified object ID of the resolved audit-trail package.
     #[wasm_bindgen(js_name = packageId)]
     pub fn package_id(&self) -> String {
         self.0.package_id().to_string()
     }
 
-    /// Returns the `tf_components` package ID used by this client.
+    /// Returns the `tf_components` package ID currently in use.
+    ///
+    /// @returns Stringified object ID of the resolved `tf_components` package.
     #[wasm_bindgen(js_name = tfComponentsPackageId)]
     pub fn tf_components_package_id(&self) -> String {
         self.0.tf_components_package_id().to_string()
     }
 
-    /// Returns the resolved audit-trail package history as stringified object IDs.
+    /// Returns the resolved audit-trail package upgrade history.
+    ///
+    /// @returns Stringified object IDs of every published version, most recent first.
     #[wasm_bindgen(js_name = packageHistory)]
     pub fn package_history(&self) -> Vec<String> {
         self.0
@@ -129,19 +171,33 @@ impl WasmAuditTrailClient {
             .collect()
     }
 
-    /// Returns the underlying IOTA client wrapper.
+    /// Returns the underlying IOTA client used to talk to the network.
+    ///
+    /// @returns The IOTA client carried by the wrapped read-only client.
     #[wasm_bindgen(js_name = iotaClient)]
     pub fn iota_client(&self) -> WasmIotaClient {
         self.0.read_only().iota_client().clone().into_inner()
     }
 
-    /// Returns the signer used by this client.
+    /// Returns the signer attached to this client.
+    ///
+    /// @returns A clone of the configured transaction signer.
     #[wasm_bindgen]
     pub fn signer(&self) -> WasmTransactionSigner {
         self.0.signer().clone()
     }
 
-    /// Replaces the signer used by this client.
+    /// Returns a clone of this client whose transactions are signed by `signer` instead.
+    ///
+    /// @remarks
+    /// Network and package configuration are preserved. The returned client's
+    /// {@link AuditTrailClient.senderAddress} reflects the new signer.
+    ///
+    /// @param signer - Replacement transaction signer.
+    ///
+    /// @returns A new client with the signer swapped in.
+    ///
+    /// @throws When the replacement signer cannot be queried for its public key or address.
     #[wasm_bindgen(js_name = withSigner)]
     pub async fn with_signer(self, signer: WasmTransactionSigner) -> Result<WasmAuditTrailClient> {
         let client = self
@@ -154,8 +210,10 @@ impl WasmAuditTrailClient {
 
     /// Returns the read-only view of this client.
     ///
-    /// This is useful when a caller wants to pass the client into code that only needs read
-    /// capabilities.
+    /// @remarks
+    /// Useful when passing the client into code that only needs read capabilities.
+    ///
+    /// @returns A {@link AuditTrailClientReadOnly} sharing this client's network configuration.
     #[wasm_bindgen(js_name = readOnly)]
     pub fn read_only(&self) -> WasmAuditTrailClientReadOnly {
         WasmAuditTrailClientReadOnly(self.0.read_only().clone())
@@ -163,7 +221,12 @@ impl WasmAuditTrailClient {
 
     /// Creates a builder for a new audit trail.
     ///
-    /// The builder is pre-populated with the signer address as the initial admin when available.
+    /// @remarks
+    /// The builder is pre-populated with the signer address as the initial admin, so the trail's
+    /// initial-admin capability lands in the signer's wallet on execution. Override with
+    /// {@link AuditTrailBuilder.withAdmin} when a different recipient is needed.
+    ///
+    /// @returns A pre-configured {@link AuditTrailBuilder}.
     #[wasm_bindgen(js_name = createTrail)]
     pub fn create_trail(&self) -> WasmAuditTrailBuilder {
         WasmAuditTrailBuilder(self.0.create_trail())
@@ -171,8 +234,15 @@ impl WasmAuditTrailClient {
 
     /// Returns a trail-scoped handle for the given trail object ID.
     ///
+    /// @remarks
     /// Creating the handle is cheap. Network reads and transaction building happen on the returned
     /// handle and its subsystem wrappers.
+    ///
+    /// @param trailId - Object ID of the trail this handle should target.
+    ///
+    /// @returns A signing {@link AuditTrailHandle} bound to `trailId`.
+    ///
+    /// @throws When `trailId` is not a valid object ID.
     pub fn trail(&self, trail_id: WasmObjectID) -> Result<WasmAuditTrailHandle> {
         let trail_id = parse_wasm_object_id(&trail_id)?;
         Ok(WasmAuditTrailHandle::from_full(self.0.clone(), trail_id))

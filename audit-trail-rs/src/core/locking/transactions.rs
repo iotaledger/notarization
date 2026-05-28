@@ -18,7 +18,9 @@ use crate::error::Error;
 
 /// Transaction that replaces the full locking configuration.
 ///
-/// This writes the full `LockingConfig` object and therefore updates all locking dimensions in one call.
+/// Requires the `UpdateLockingConfig` permission. The new `delete_trail_lock` must not be
+/// [`TimeLock::UntilDestroyed`]; the Move package aborts otherwise. This writes the full
+/// `LockingConfig` object and therefore updates all locking dimensions in one call.
 #[derive(Debug, Clone)]
 pub struct UpdateLockingConfig {
     trail_id: ObjectID,
@@ -83,7 +85,9 @@ impl Transaction for UpdateLockingConfig {
 
 /// Transaction that updates the delete-record window.
 ///
-/// This updates only the rule that governs when individual records may be deleted.
+/// Requires the `UpdateLockingConfigForDeleteRecord` permission. Updates only the rule that governs how
+/// long after creation, or for how many trailing records, an individual record stays *locked against
+/// deletion*.
 #[derive(Debug, Clone)]
 pub struct UpdateDeleteRecordWindow {
     trail_id: ObjectID,
@@ -148,7 +152,9 @@ impl Transaction for UpdateDeleteRecordWindow {
 
 /// Transaction that updates the delete-trail lock.
 ///
-/// This updates only the time lock guarding deletion of the entire trail object.
+/// Requires the `UpdateLockingConfigForDeleteTrail` permission. The new lock must not be
+/// [`TimeLock::UntilDestroyed`]; the Move package aborts otherwise. This updates only the time lock
+/// guarding deletion of the entire trail object.
 #[derive(Debug, Clone)]
 pub struct UpdateDeleteTrailLock {
     trail_id: ObjectID,
@@ -213,7 +219,8 @@ impl Transaction for UpdateDeleteTrailLock {
 
 /// Transaction that updates the write lock.
 ///
-/// This updates only the time lock guarding future record writes.
+/// Requires the `UpdateLockingConfigForWrite` permission. Updates only the time lock guarding future
+/// record writes; while the lock is active, `add_record` aborts with `ETrailWriteLocked`.
 #[derive(Debug, Clone)]
 pub struct UpdateWriteLock {
     trail_id: ObjectID,

@@ -103,7 +103,9 @@ impl<'a, C> AuditTrailHandle<'a, C> {
 
     /// Deletes the trail object.
     ///
-    /// Deletion requires the trail to be empty and to satisfy the trail-delete lock rules.
+    /// Requires the `DeleteAuditTrail` permission. Deletion additionally requires the trail to be
+    /// empty (`ETrailNotEmpty` otherwise) and the configured `delete_trail_lock` to have elapsed
+    /// (`ETrailDeleteLocked` otherwise).
     pub fn delete_audit_trail<S>(&self) -> TransactionBuilder<DeleteAuditTrail>
     where
         C: AuditTrailFull + CoreClient<S>,

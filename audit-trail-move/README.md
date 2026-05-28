@@ -71,12 +71,12 @@ cd audit-trail-move
 
 The publish script prints `IOTA_AUDIT_TRAIL_PKG_ID` and, on `localnet`, also exports `IOTA_TF_COMPONENTS_PKG_ID`.
 
-The package history files [`Move.lock`](./Move.lock) and [`Move.history.json`](./Move.history.json) are used by the Rust SDK to resolve and track deployed package versions.
+The package history files [`Move.lock`](./Move.lock) and [`Move.history.json`](./Move.history.json) are used by the Rust crate to resolve and track deployed package versions.
 
 ## Related Libraries
 
-- [Rust SDK](https://github.com/iotaledger/notarization/tree/main/audit-trail-rs/README.md)
-- [Wasm SDK](https://github.com/iotaledger/notarization/tree/main/bindings/wasm/audit_trail_wasm/README.md)
+- [Rust Package](https://github.com/iotaledger/notarization/tree/main/audit-trail-rs/README.md)
+- [Wasm Package](https://github.com/iotaledger/notarization/tree/main/bindings/wasm/audit_trail_wasm/README.md)
 - [Repository Root](https://github.com/iotaledger/notarization/tree/main/README.md)
 
 ## Contributing

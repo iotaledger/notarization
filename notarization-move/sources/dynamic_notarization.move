@@ -1,7 +1,10 @@
 // Copyright (c) 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-/// This module provides dynamic notarization capabilities that can be freely updated by its owner
+/// Public entry surface for Dynamic-Notarizations: `Notarization<D>` objects
+/// configured with the `Dynamic` Notarization Method, whose `state` and
+/// `updatable_metadata` can be updated after creation and which may
+/// optionally carry a transfer lock.
 module iota_notarization::dynamic_notarization;
 
 use iota::{clock::Clock, event};
@@ -10,24 +13,35 @@ use std::string::String;
 use tf_components::timelock::TimeLock;
 
 // ===== Constants =====
-/// Cannot transfer a locked notarization
+/// Raised when `transfer` is called on a notarization whose `transfer_lock`
+/// is currently active.
 const ECannotTransferLocked: u64 = 0;
 
-/// Event emitted when a dynamic notarization is created
+/// Emitted by `create` after a Dynamic-Notarization is created and
+/// transferred to the sender.
 public struct DynamicNotarizationCreated has copy, drop {
-    /// ID of the `Notarization` object that was created
+    /// Id of the newly created `Notarization` object.
     notarization_id: ID,
 }
 
-/// Event emitted when a dynamic notarization is transferred
+/// Emitted by `transfer` after a Dynamic-Notarization is transferred.
 public struct DynamicNotarizationTransferred has copy, drop {
-    /// ID of the `Notarization` object that was transferred
+    /// Id of the transferred `Notarization` object.
     notarization_id: ID,
-    /// Address of the new owner
+    /// Address of the new owner.
     recipient: address,
 }
 
-/// Create a new dynamic `Notarization`
+/// Creates a new Dynamic-Notarization `Notarization<D>` without transferring
+/// it.
+///
+/// Delegates to `notarization::new_dynamic_notarization`; see that function
+/// for the full contract.
+///
+/// Aborts with:
+/// * any error documented by `notarization::new_dynamic_notarization`.
+///
+/// Returns the constructed `Notarization<D>`.
 public fun new<D: store + drop + copy>(
     state: notarization::State<D>,
     immutable_description: Option<String>,
@@ -46,7 +60,13 @@ public fun new<D: store + drop + copy>(
     )
 }
 
-/// Create and transfer a new dynamic `Notarization` to the sender
+/// Creates a new Dynamic-Notarization `Notarization<D>` and transfers it to
+/// the transaction sender.
+///
+/// Aborts with:
+/// * any error documented by `notarization::new_dynamic_notarization`.
+///
+/// Emits a `DynamicNotarizationCreated` event on success.
 public fun create<D: store + drop + copy>(
     state: notarization::State<D>,
     immutable_description: Option<String>,
@@ -71,8 +91,16 @@ public fun create<D: store + drop + copy>(
     notarization::transfer_notarization(notarization, tx_context::sender(ctx));
 }
 
-/// Transfer a dynamic notarization to a new owner
-/// Only works for dynamic notarizations that are marked as transferrable
+/// Transfers `self` to `recipient`.
+///
+/// Permitted only when `is_transferable` returns `true` against `clock`,
+/// i.e. when `self` has no `LockMetadata` or its `transfer_lock` is not
+/// currently active.
+///
+/// Aborts with:
+/// * `ECannotTransferLocked` when `is_transferable` is `false`.
+///
+/// Emits a `DynamicNotarizationTransferred` event on success.
 public fun transfer<D: store + drop + copy>(
     self: notarization::Notarization<D>,
     recipient: address,
@@ -91,7 +119,10 @@ public fun transfer<D: store + drop + copy>(
     });
 }
 
-/// Check if the notarization is transferable
+/// Checks whether `self` may currently be transferred.
+///
+/// Returns `true` when `self` has no `LockMetadata` or when its
+/// `transfer_lock` is not currently timelocked according to `clock`.
 public fun is_transferable<D: store + drop + copy>(
     self: &notarization::Notarization<D>,
     clock: &Clock,

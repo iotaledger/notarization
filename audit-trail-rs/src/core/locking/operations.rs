@@ -32,7 +32,7 @@ impl LockingOps {
     {
         let tf_components_package_id = client
             .tf_components_package_id()
-            .expect("TfComponents package ID should be present for audit trail clients");
+            .expect("TfComponents package ID should be present for Audit Trail clients");
 
         tx::build_trail_transaction(
             client,
@@ -92,7 +92,7 @@ impl LockingOps {
     {
         let tf_components_package_id = client
             .tf_components_package_id()
-            .expect("TfComponents package ID should be present for audit trail clients");
+            .expect("TfComponents package ID should be present for Audit Trail clients");
         tx::build_trail_transaction(
             client,
             trail_id,
@@ -123,7 +123,7 @@ impl LockingOps {
     {
         let tf_components_package_id = client
             .tf_components_package_id()
-            .expect("TfComponents package ID should be present for audit trail clients");
+            .expect("TfComponents package ID should be present for Audit Trail clients");
         tx::build_trail_transaction(
             client,
             trail_id,

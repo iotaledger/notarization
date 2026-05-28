@@ -1,13 +1,23 @@
 // Copyright 2020-2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-//! # Notarization
+//! # Create Notarization
 //!
-//! This module defines the notarization struct and the operations for notarizations.
+//! This module defines the create-notarization transaction.
 //!
 //! ## Overview
 //!
-//! The notarization is a struct that contains the state, metadata, and operations for a notarization.
+//! The create-notarization transaction creates a new on-chain
+//! `Notarization<D>` object and transfers it to the transaction sender. The
+//! marker type parameter `M` selects the Notarization Method and the set of
+//! per-method invariants enforced before submission:
+//! * `Dynamic`: the resulting object has no `LockMetadata` when `transfer_lock` is `TimeLock::None`; otherwise its
+//!   `LockMetadata` has `update_lock = delete_lock = TimeLock::None` and the supplied `transfer_lock`.
+//! * `Locked`: the resulting object always carries `LockMetadata` with both `update_lock` and `transfer_lock` pinned to
+//!   `TimeLock::UntilDestroyed` and `delete_lock` set to the supplied value.
+//!
+//! `state_version_count` starts at `0` and `last_state_change_at` is set to
+//! the on-chain clock timestamp at creation.
 
 use async_trait::async_trait;
 use iota_interaction::rpc_types::{
@@ -29,7 +39,13 @@ use super::super::types::{
 };
 use crate::error::Error;
 
-/// A transaction that creates a new notarization.
+/// A transaction that creates a new notarization on-chain.
+///
+/// On success the resulting `Notarization` object is transferred to the
+/// transaction sender, and the on-chain transaction emits one of:
+///
+/// - `DynamicNotarizationCreated` for `CreateNotarization<Dynamic>`
+/// - `LockedNotarizationCreated` for `CreateNotarization<Locked>`
 #[derive(Debug, Clone)]
 pub struct CreateNotarization<M> {
     builder: NotarizationBuilder<M>,

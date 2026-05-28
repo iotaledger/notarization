@@ -5,7 +5,7 @@
 
 use crate::iota_interaction_adapter::AdapterError;
 
-/// Errors that can occur when reading or mutating audit trails.
+/// Errors that can occur when reading or mutating an Audit Trail.
 #[derive(Debug, thiserror::Error, strum::IntoStaticStr)]
 #[non_exhaustive]
 pub enum Error {

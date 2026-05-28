@@ -1,7 +1,7 @@
 // Copyright (c) 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-/// Locking configuration for audit trail records
+/// Locking configuration for Audit Trail records
 module audit_trail::locking;
 
 use iota::clock::Clock;
@@ -16,6 +16,10 @@ const EUntilDestroyedNotSupportedForDeleteTrail: u64 = 0;
 const ECountWindowMustBePositive: u64 = 1;
 
 /// Defines a delete-record locking window (time-based, count-based, or none).
+///
+/// A window describes the period during which a record stays locked against
+/// deletion. Records outside the window may be deleted, subject to remaining
+/// permission and tag checks.
 public enum LockingWindow has copy, drop, store {
     None,
     TimeBased { seconds: u64 },
@@ -35,17 +39,23 @@ public struct LockingConfig has drop, store {
 
 // ===== LockingWindow Constructors =====
 
-/// Create a locking window with no restrictions
+/// Creates a locking window that imposes no time- or count-based restrictions.
+///
+/// Returns the `LockingWindow::None` variant.
 public fun window_none(): LockingWindow {
     LockingWindow::None
 }
 
-/// Create a time-based locking window
+/// Creates a time-based locking window.
+///
+/// Records that were added less than `seconds` seconds ago are considered locked.
+///
+/// Returns the `LockingWindow::TimeBased` variant.
 public fun window_time_based(seconds: u64): LockingWindow {
     LockingWindow::TimeBased { seconds }
 }
 
-/// Create a count-based locking window.
+/// Creates a count-based locking window.
 ///
 /// The trail locks the last `count` records currently present in linked-table
 /// order. To express "no deletion lock", use `window_none()` instead of
@@ -56,6 +66,8 @@ public fun window_time_based(seconds: u64): LockingWindow {
 /// * `ECountWindowMustBePositive` if `count == 0`. A zero-count window would
 ///   protect no records and is functionally identical to `window_none()`;
 ///   rejecting it at construction prevents silently misconfigured trails.
+///
+/// Returns the `LockingWindow::CountBased` variant.
 public fun window_count_based(count: u64): LockingWindow {
     assert!(count > 0, ECountWindowMustBePositive);
     LockingWindow::CountBased { count }
@@ -63,7 +75,16 @@ public fun window_count_based(count: u64): LockingWindow {
 
 // ===== LockingConfig Constructors =====
 
-/// Create a new locking configuration
+/// Creates a new locking configuration.
+///
+/// `TimeLock::UntilDestroyed` is reserved for the write lock and is not accepted as
+/// `delete_trail_lock`.
+///
+/// Aborts with:
+/// * `EUntilDestroyedNotSupportedForDeleteTrail` when `delete_trail_lock` is
+///   `TimeLock::UntilDestroyed`.
+///
+/// Returns the constructed `LockingConfig`.
 public fun new(
     delete_record_window: LockingWindow,
     delete_trail_lock: TimeLock,
@@ -83,7 +104,8 @@ public fun new(
 
 // ===== LockingWindow Getters =====
 
-/// Get the time window in seconds (if set)
+/// Returns the time window in seconds when `window` is `LockingWindow::TimeBased`,
+/// otherwise `option::none()`.
 public(package) fun time_window_seconds(window: &LockingWindow): Option<u64> {
     match (window) {
         LockingWindow::TimeBased { seconds } => option::some(*seconds),
@@ -91,7 +113,8 @@ public(package) fun time_window_seconds(window: &LockingWindow): Option<u64> {
     }
 }
 
-/// Get the count window (if set)
+/// Returns the count window when `window` is `LockingWindow::CountBased`,
+/// otherwise `option::none()`.
 public(package) fun count_window(window: &LockingWindow): Option<u64> {
     match (window) {
         LockingWindow::CountBased { count } => option::some(*count),
@@ -101,41 +124,54 @@ public(package) fun count_window(window: &LockingWindow): Option<u64> {
 
 // ===== LockingConfig Getters =====
 
-/// Get the record deletion locking window
+/// Returns a reference to the configuration's record-deletion locking window.
 public(package) fun delete_record_window(config: &LockingConfig): &LockingWindow {
     &config.delete_record_window
 }
 
-/// Get the trail deletion timelock
+/// Returns a reference to the configuration's trail-deletion timelock.
 public(package) fun delete_trail_lock(config: &LockingConfig): &TimeLock {
     &config.delete_trail_lock
 }
 
-/// Get the write timelock
+/// Returns a reference to the configuration's write timelock.
 public(package) fun write_lock(config: &LockingConfig): &TimeLock {
     &config.write_lock
 }
 
 // ===== LockingConfig Setters =====
 
-/// Set the record deletion locking window
+/// Sets the configuration's record-deletion locking window to `window`.
 public(package) fun set_delete_record_window(config: &mut LockingConfig, window: LockingWindow) {
     config.delete_record_window = window;
 }
 
-/// Set the trail deletion timelock.
+/// Sets the configuration's trail-deletion timelock to `lock`.
+///
+/// `TimeLock::UntilDestroyed` is reserved for the write lock and is not accepted here.
+///
+/// Aborts with:
+/// * `EUntilDestroyedNotSupportedForDeleteTrail` when `lock` is
+///   `TimeLock::UntilDestroyed`.
 public(package) fun set_delete_trail_lock(config: &mut LockingConfig, lock: TimeLock) {
     assert!(!timelock::is_until_destroyed(&lock), EUntilDestroyedNotSupportedForDeleteTrail);
 
     config.delete_trail_lock = lock;
 }
 
-/// Set the write timelock.
+/// Sets the configuration's write timelock to `lock`.
 public(package) fun set_write_lock(config: &mut LockingConfig, lock: TimeLock) {
     config.write_lock = lock;
 }
 
-/// Set the whole locking configuration.
+/// Replaces the entire locking configuration with `new_config`.
+///
+/// Internally applies `set_delete_record_window`, `set_delete_trail_lock` and
+/// `set_write_lock`, so the constraints documented for those setters apply.
+///
+/// Aborts with:
+/// * `EUntilDestroyedNotSupportedForDeleteTrail` when
+///   `new_config.delete_trail_lock` is `TimeLock::UntilDestroyed`.
 public(package) fun set_config(config: &mut LockingConfig, new_config: LockingConfig) {
     let LockingConfig {
         delete_record_window,
@@ -150,8 +186,10 @@ public(package) fun set_config(config: &mut LockingConfig, new_config: LockingCo
 
 // ===== Locking Logic (LockingWindow) =====
 
-/// Check if a record is locked based on time window.
-/// Returns true if the record was created within the time window.
+/// Checks whether a record is locked by the time-based window.
+///
+/// Returns `true` when `window` is `LockingWindow::TimeBased` and the record's age
+/// is below the configured number of seconds.
 public(package) fun is_time_locked(
     window: &LockingWindow,
     record_timestamp: u64,
@@ -169,12 +207,16 @@ public(package) fun is_time_locked(
 
 // ===== Locking Logic (LockingConfig) =====
 
-/// Check if trail deletion is currently locked.
+/// Checks whether trail deletion is currently blocked by `delete_trail_lock`.
+///
+/// Returns `true` while the configured timelock has not yet elapsed.
 public fun is_delete_trail_locked(config: &LockingConfig, clock: &Clock): bool {
     timelock::is_timelocked(delete_trail_lock(config), clock)
 }
 
-/// Check if writes are currently locked.
+/// Checks whether record writes are currently blocked by `write_lock`.
+///
+/// Returns `true` while the configured timelock has not yet elapsed.
 public fun is_write_locked(config: &LockingConfig, clock: &Clock): bool {
     timelock::is_timelocked(write_lock(config), clock)
 }

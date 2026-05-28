@@ -52,31 +52,28 @@ use serde::{Deserialize, Deserializer, Serialize};
 use super::super::move_utils;
 use crate::error::Error;
 
-/// Represents the state of a notarization.
+/// Versioned state of a notarization: the notarized `data` together with
+/// optional state-associated `metadata`.
 ///
-/// State encapsulates the data being notarized along with optional metadata.
-/// It serves as the primary content container for both locked and dynamic
-/// notarizations.
+/// `State` is the primary content container of every notarization regardless
+/// of the configured `NotarizationMethod`.
 ///
-/// The notarization `State` can be updated by the owner depending on the used `NotarizationMethod`:
-/// - Dynamic: `data` and `metadata` of the `State` can be updated anytime after creation
-/// - Locked: The `State` is immutable after notarization creation
-///
-/// `State` `data` and `metadata` can only be updated at once, using method
-/// `NotarizationClient::update_state()` which will increase the `state_version_count` and update the
-/// `last_state_change_at` timestamp of the notarization even if only the `metadata` are altered.
+/// Whether the `State` of an existing notarization may change depends on the
+/// Notarization Method:
+/// * `Dynamic`: `data` and `metadata` are replaced together via
+///   [`NotarizationClient::update_state`](crate::client::NotarizationClient::update_state). Every such update bumps
+///   `OnChainNotarization::state_version_count` and refreshes `OnChainNotarization::last_state_change_at`, even when
+///   only `metadata` changes.
+/// * `Locked`: the `State` is immutable after creation.
 ///
 /// ## Type Parameter
 ///
 /// - `T`: The data type, defaults to [`Data`] which can be either bytes or text
 #[derive(Debug, Clone, Deserialize, PartialEq, Serialize)]
 pub struct State<T = Data> {
-    /// The actual data being notarized
+    /// The notarized payload.
     pub data: T,
-    /// Optional metadata describing the data
-    ///
-    /// Dynamic notarizations can be updated together with state data
-    /// Locked notarizations are immutable after creation
+    /// Optional state-associated metadata, versioned together with `data`.
     #[serde(default)]
     pub metadata: Option<String>,
 }

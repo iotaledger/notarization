@@ -1,16 +1,16 @@
 # IOTA Single Notarization
 
-The Single Notarization Rust SDK is the Rust client for individual locked and dynamic notarizations in the IOTA
-Notarization Suite.
+The Single Notarization Rust package is the Rust client for individual locked and dynamic notarizations in the IOTA
+Notarization Toolkit.
 
-The SDK provides a `NotarizationBuilder` that creates notarization objects on the IOTA ledger or connects to existing
+The package provides a `NotarizationBuilder` that creates notarization objects on the IOTA ledger or connects to existing
 notarization objects. The builder returns a `Notarization` struct instance that maps to the on-chain object and provides
 typed methods for interacting with it.
 
 Use Single Notarization when you need one notarized object for arbitrary data, documents, hashes, or latest-state
-records. Use Audit Trails when you need a structured record history with roles, capabilities, locking, and tagging.
+records. Use Audit Trail when you need a structured record history with roles, capabilities, locking, and tagging.
 
-You can find the full IOTA Notarization Suite documentation [here](https://docs.iota.org/developer/iota-notarization).
+You can find the full IOTA Notarization Toolkit documentation [here](https://docs.iota.org/developer/iota-notarization).
 
 ## Process Flows
 
@@ -31,7 +31,7 @@ functions. The terms used here are defined in the [glossary below](#glossary).
 
 After a **dynamic** Notarization has been created, it can be updated using the `Notarization::update_state()` function
 and destroyed using `Notarization::destroy()`.
-**Locked** notarizations are immutable after creation.
+A **locked** Notarization is immutable after creation.
 
 #### Creating a new Dynamic Notarization on the Ledger
 
@@ -171,7 +171,7 @@ As the `Latest State` of a _Locked Notarization_ cannot be updated, the lifecycl
 - `Creation Timestamp`: Indicates when the `Ledger Object` was initially created.
 - `Immutable Metadata`: Consists of the `Immutable Description` and `Creation Timestamp`.
 - `Updatable Metadata`: An arbitrary informational String that can be updated at any time by the `Prover` independently
-  from the `Latest State` (dynamic notarizations only; locked notarizations are immutable). Can be used to provide
+  from the `Latest State` (Dynamic Notarizations only; Locked Notarizations are immutable). Can be used to provide
   additional useful information that is subject to change from time to time.
 - `State Version Count`: Numerical value incremented with each update of the `Latest State`.
 - `Last State Change Time`: Indicates when the `Latest State` was last updated.
