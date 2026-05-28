@@ -51,7 +51,7 @@ pub struct AuditTrailClientReadOnly {
     iota_client: IotaClientAdapter,
     /// The [`ObjectID`] of the deployed audit trail package (smart contract).
     audit_trail_pkg_id: ObjectID,
-    /// The [`ObjectID`] of the deployed TfComponents package used by audit trails.
+    /// The [`ObjectID`] of the deployed TfComponents package used by Audit Trail.
     pub(crate) tf_components_pkg_id: ObjectID,
     /// The name of the network this client is connected to (e.g., "mainnet", "testnet").
     network: NetworkName,

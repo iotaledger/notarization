@@ -18,7 +18,7 @@ use crate::trail_handle::WasmAuditTrailHandle;
 /// {@link AuditTrailClientReadOnly.createWithPackageOverrides} or
 /// {@link AuditTrailClient.createFromIotaClientWithPackageOverrides} when the connected network
 /// hosts the audit-trail package — and optionally the `tf_components` package — at addresses that
-/// are not part of the SDK's built-in registry. Leave a field unset to fall back to the registry
+/// are not part of the audit-trail package's built-in registry. Leave a field unset to fall back to the registry
 /// lookup for that package.
 #[derive(Clone)]
 #[wasm_bindgen(js_name = PackageOverrides, getter_with_clone, inspectable)]
@@ -103,7 +103,7 @@ impl WasmAuditTrailClientReadOnly {
     ///
     /// @remarks
     /// Prefer this when targeting a local deployment, preview environment, or any package pair
-    /// that is not yet part of the SDK's built-in registry.
+    /// that is not yet part of the package's built-in registry.
     ///
     /// @param iotaClient - IOTA client used to talk to the network.
     /// @param packageOverrides - Package IDs to use instead of registry lookups.

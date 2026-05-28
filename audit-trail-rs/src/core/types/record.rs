@@ -201,7 +201,7 @@ impl Data {
             Ok(())
         } else {
             Err(Error::InvalidArgument(format!(
-                "record data type mismatch: trail expects {:?}, SDK writes {:?}",
+                "record data type mismatch: trail expects {:?}, client writes {:?}",
                 expected, actual
             )))
         }

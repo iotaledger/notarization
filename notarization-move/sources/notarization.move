@@ -413,7 +413,7 @@ public fun destroy<D: drop + store + copy>(self: Notarization<D>, clock: &Clock)
         timelock::destroy(delete_lock, clock);
         timelock::destroy(transfer_lock, clock);
     } else {
-        // We know dynamic Notarizations have no lock metadata
+        // We know Dynamic-Notarizations have no lock metadata
         option::destroy_none(locking);
     };
 
