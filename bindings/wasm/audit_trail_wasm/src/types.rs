@@ -1135,8 +1135,8 @@ pub enum WasmLockingWindowType {
 /// @remarks
 /// A window describes the period during which a record stays *locked against deletion*: time-based
 /// windows lock a record while its age is below the configured number of seconds; count-based
-/// windows lock a record while it is among the most recent N records. Records outside the window
-/// may be deleted, subject to remaining permission and tag checks.
+/// windows lock the last `count` records currently present in trail order. Records outside the
+/// window may be deleted, subject to remaining permission and tag checks.
 #[wasm_bindgen(js_name = LockingWindow, inspectable)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WasmLockingWindow(pub(crate) LockingWindow);
@@ -1215,8 +1215,9 @@ impl From<WasmLockingWindow> for LockingWindow {
 ///
 /// @remarks
 /// Combines three independent rules: a per-record delete window, a trail-delete time lock, and a
-/// write-time lock. The trail-delete lock must not be {@link TimeLock.withUntilDestroyed}; trail
-/// creation and locking updates that violate this invariant abort on-chain.
+/// write-time lock. The trail-delete lock must not be {@link TimeLock.withUntilDestroyed}, and a
+/// count-based delete-record window must use `count > 0`; trail creation and locking updates that
+/// violate either invariant are rejected (client-side where possible, on-chain otherwise).
 #[wasm_bindgen(js_name = LockingConfig, getter_with_clone, inspectable)]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WasmLockingConfig {

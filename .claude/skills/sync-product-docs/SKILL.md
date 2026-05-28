@@ -118,11 +118,31 @@ Follow these steps:
    lines preceding the item. For `Type.field`, find the field inside the
    struct definition.
 
+   **Audit every entry in the `rust` array independently** — type-level,
+   method-level, field-level, variant-level, free-function-level. A triplet
+   whose entrypoint method is well-aligned may still have a stale struct doc
+   that omits an invariant, or a field doc that hasn't picked up a new
+   constraint. Do not collapse the per-entry audit into a single "Rust looks
+   fine" conclusion.
+
 4. **For each `wasm` entry, do the same in `<wasm-bindings-path>/`.** WASM
    types are typically prefixed `Wasm` and bound via `#[wasm_bindgen]`. Some
    WASM entries are exposed as TypeScript via tsify/jsdoc — check that the
    rendered TS doc (visible in `<wasm-docs-path>` or in the
    `#[wasm_bindgen(...)]` attribute) matches.
+
+   The same per-entry rule applies: audit every entry in the `wasm` array
+   independently.
+
+   **Audit Rust and WASM symmetrically.** Both layers are first-class
+   targets — the skill is not "sync WASM to match Rust" or vice versa.
+   For every triplet, run the audit against the Move source on the Rust
+   array AND on the WASM array, even when one of them was recently
+   touched. Recent edits often update some entries in a triplet but miss
+   others (e.g. update `Foo::some_method` but not the `Foo` struct-level
+   invariants doc, or update the validator method but not the struct's
+   field doc that constrains the input). Never assume "the commit touched
+   Rust, so Rust is done" — verify it.
 
 5. **Compare semantically, not character-by-character.** A Rust doc may
    reasonably:
@@ -148,13 +168,16 @@ Follow these steps:
    - **Field-level docs** for structs that document fields with `///` —
      the Rust struct fields and WASM getter accessors must match.
 
-6. **Report (audit mode) or edit (fix mode).** For each triplet, report one
-   of:
+6. **Report (audit mode) or edit (fix mode).** Report **per entry**, not
+   per layer or per triplet — collapsing multiple entries into one verdict
+   hides drift. For each entry under a triplet, report one of:
    - `OK` — semantically aligned, no action.
    - `MISSING <layer>` — the entity exists per the mapping but has no doc
      comment in that layer.
    - `DRIFT <layer>` — the doc exists but contradicts or omits a contract
-     point from the Move source. Quote the diverging sentence.
+     point from the Move source. Quote the diverging sentence and name
+     the specific entry (e.g. `DRIFT Rust: LockingConfig` struct-level
+     doc — not just `DRIFT Rust`).
    - `MAPPING STALE` — an entry in the TOML refers to a Rust/WASM symbol
      that does not exist in the source tree. Suggest fixing the TOML
      (via the `update-api-mapping` skill) rather than the docs.
@@ -164,8 +187,34 @@ Follow these steps:
    is the source of truth for behavior. If you believe the Move doc is
    wrong, flag it for the user instead of changing it.
 
+   **After applying fixes to one layer, re-check the other.** If you only
+   edited WASM, sweep the Rust entries once more before declaring the
+   triplet done; if you only edited Rust, do the symmetric sweep on WASM.
+
 7. **Summarize at the end:** total triplets checked, OK count, mismatches by
    category, and the list of entries skipped (if any).
+
+## Scoping by commit or diff
+
+When the user scopes the run to a specific commit or branch (e.g.
+"sync the docs regarding changes of commit `abc1234`"), the diff tells
+you **which triplets to check** — not which entries inside those triplets
+to check.
+
+For every triplet that contains a Move entity touched by the diff:
+
+- Audit **every** Rust entry in the triplet's `rust` array against the
+  current Move source, regardless of whether the entry was modified in
+  the commit. A commit may have updated `Foo::method` while leaving the
+  `Foo` struct-level doc — which constrains the same contract — stale.
+- Audit **every** WASM entry the same way.
+- Audit related triplets too: if the Move change affects a contract
+  point that appears in another module's doc (e.g. a constraint on
+  `LockingConfig` that also surfaces in `update_delete_record_window`'s
+  doc), follow the contract point across triplets.
+
+Do **not** let the diff bias the audit toward "what was touched" — that
+is exactly how drift survives a commit that "already updated the docs".
 
 ## Operating rules
 
@@ -173,12 +222,22 @@ Follow these steps:
   pattern exists, only sync pairs the file declares.
 - **Don't add documentation to entities the TOML lists with `[]`.** That
   empty list is intentional (no counterpart exists yet, by design).
+- **Audit per-entry, not per-layer.** Each item in a `rust`/`wasm` array
+  has its own doc and its own potential for drift. A triplet may be
+  "mostly OK" but still have one stale field doc or one outdated
+  struct-level invariant; the report must surface that entry by name.
+- **Audit Rust and WASM with equal rigor.** They are peer targets of this
+  skill. Never conclude "Rust looks fine" without grep-verifying each
+  `rust` entry's doc against the Move source, and likewise for WASM.
 - **Process by Move module.** Working through one `.move` file at a time
   keeps the Move source open in context and reduces churn.
 - **Group edits by file.** When fixing, batch all edits to the same Rust or
   WASM file into a single pass to minimize re-reads.
 - **Follow existing doc style guides.** Lookup possibly referenced documentation
   guidelines in `CLAUDE.md` files in the Rust crate or Move package folder.
+  For Rust, look for a `CLAUDE.md` or `DOC-STYLEGUIDE.md` at the crate
+  root; for WASM, the per-bindings `CLAUDE.md` typically points at a
+  shared `bindings/wasm/DOC-STYLEGUIDE.md`.
 - **Preserve existing doc style.** If no documentation
   guideline can be found, match the surrounding crate's tone.
 - **List Move events.** If Move events are documented with the related Move
@@ -186,6 +245,10 @@ Follow these steps:
   documentation.
 - **Don't touch generated artifacts.** Files under `<wasm-docs-path>/docs/**` are
   generated; fix the source Rust attributes instead.
+- **Verify the build after edits.** Run `cargo check -p <rust-crate>` after
+  Rust doc edits and `cargo check --target wasm32-unknown-unknown` (from
+  the WASM bindings crate) after WASM doc edits, so a typo or broken
+  intra-doc link is caught before the run ends.
 - **One product per invocation.** This skill operates on a single product.
   To sync several products' docs, invoke the skill once per product.
 

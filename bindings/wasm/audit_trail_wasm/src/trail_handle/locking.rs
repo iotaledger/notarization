@@ -44,8 +44,10 @@ impl WasmTrailLocking {
     ///
     /// @remarks
     /// Overwrites all three locking dimensions at once: delete-record window, delete-trail lock,
-    /// and write lock. `config.deleteTrailLock` must not be {@link TimeLock.withUntilDestroyed};
-    /// the on-chain call aborts otherwise.
+    /// and write lock. `config.deleteTrailLock` must not be {@link TimeLock.withUntilDestroyed},
+    /// and a count-based `config.deleteRecordWindow` must use `count > 0` —
+    /// use {@link LockingWindow.withNone} to express "no deletion lock". `config.writeLock` may
+    /// still be {@link TimeLock.withUntilDestroyed}.
     ///
     /// Requires the {@link Permission.UpdateLockingConfig} permission.
     ///
@@ -53,7 +55,8 @@ impl WasmTrailLocking {
     ///
     /// @returns A {@link TransactionBuilder} wrapping the {@link UpdateLockingConfig} transaction.
     ///
-    /// @throws When the wrapper was created from a read-only client.
+    /// @throws When the wrapper was created from a read-only client, or when `config` violates
+    /// one of the constraints above.
     #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<UpdateLockingConfig>")]
     pub fn update(&self, config: WasmLockingConfig) -> Result<WasmTransactionBuilder> {
         let tx = self
@@ -70,7 +73,8 @@ impl WasmTrailLocking {
     ///
     /// @remarks
     /// Replaces the trail's `deleteRecordWindow`. Records currently inside the new window
-    /// immediately become locked against deletion.
+    /// immediately become locked against deletion. A count-based window must use `count > 0` —
+    /// use {@link LockingWindow.withNone} to express "no deletion lock".
     ///
     /// Requires the {@link Permission.UpdateLockingConfigForDeleteRecord} permission.
     ///
@@ -79,7 +83,8 @@ impl WasmTrailLocking {
     /// @returns A {@link TransactionBuilder} wrapping the
     /// {@link UpdateDeleteRecordWindow} transaction.
     ///
-    /// @throws When the wrapper was created from a read-only client.
+    /// @throws When the wrapper was created from a read-only client, or when `window` is a
+    /// count-based window with `count == 0`.
     #[wasm_bindgen(js_name = updateDeleteRecordWindow, unchecked_return_type = "TransactionBuilder<UpdateDeleteRecordWindow>")]
     pub fn update_delete_record_window(&self, window: WasmLockingWindow) -> Result<WasmTransactionBuilder> {
         let tx = self
@@ -96,7 +101,7 @@ impl WasmTrailLocking {
     ///
     /// @remarks
     /// Replaces the trail's `deleteTrailLock`. The new lock must not be
-    /// {@link TimeLock.withUntilDestroyed}; the on-chain call aborts otherwise.
+    /// {@link TimeLock.withUntilDestroyed}; that variant is reserved for the write lock.
     ///
     /// Requires the {@link Permission.UpdateLockingConfigForDeleteTrail} permission.
     ///
@@ -105,7 +110,8 @@ impl WasmTrailLocking {
     /// @returns A {@link TransactionBuilder} wrapping the
     /// {@link UpdateDeleteTrailLock} transaction.
     ///
-    /// @throws When the wrapper was created from a read-only client.
+    /// @throws When the wrapper was created from a read-only client, or when `lock` is
+    /// {@link TimeLock.withUntilDestroyed}.
     #[wasm_bindgen(js_name = updateDeleteTrailLock, unchecked_return_type = "TransactionBuilder<UpdateDeleteTrailLock>")]
     pub fn update_delete_trail_lock(&self, lock: WasmTimeLock) -> Result<WasmTransactionBuilder> {
         let tx = self
@@ -145,8 +151,9 @@ impl WasmTrailLocking {
     /// Returns whether a record is currently locked against deletion.
     ///
     /// @remarks
-    /// Evaluates the trail's `deleteRecordWindow` against the record at `sequenceNumber` and the
-    /// current clock time.
+    /// Evaluates the trail's `deleteRecordWindow` against the record at `sequenceNumber`. For
+    /// count-based windows, the result reflects the last `count` records currently present in
+    /// trail order at call time; time-based windows are evaluated against the current clock time.
     ///
     /// @param sequenceNumber - Sequence number of the record to inspect.
     ///
