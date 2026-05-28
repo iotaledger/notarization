@@ -226,8 +226,13 @@ impl WasmTrailRecords {
     ///
     /// @remarks
     /// Walks the trail from the front and silently skips records still inside the delete-record
-    /// window, deleting up to `limit` unlocked records in trail order. Tag-aware authorization
-    /// applies to every record actually deleted.
+    /// window or whose tag the capability does not allow, deleting up to `limit` eligible records
+    /// in trail order. The set of locked records is fixed at the start of the on-chain call:
+    /// count-based windows protect the last `count` records present when the call begins, and
+    /// time-based windows are evaluated against the clock timestamp captured at that point.
+    /// Running this batch with `limit` therefore yields the same final trail state as deleting
+    /// each eligible sequence number one at a time, provided the locking configuration is not
+    /// mutated and no records are appended between calls.
     ///
     /// `limit` caps the number of records actually deleted, not the number of records inspected.
     /// Ineligible records at the front of the trail are silently walked past without counting

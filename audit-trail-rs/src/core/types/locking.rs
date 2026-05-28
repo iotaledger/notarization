@@ -13,13 +13,21 @@ use crate::error::Error;
 /// Locking configuration for the audit trail.
 ///
 /// Combines three independent rules: a per-record delete window, a trail-delete
-/// time lock, and a write time lock. The trail-delete lock must not be
-/// [`TimeLock::UntilDestroyed`]; the Move package aborts trail creation and
-/// updates that violate this invariant.
+/// time lock, and a write time lock. Two invariants apply:
+///
+/// - `delete_trail_lock` must not be [`TimeLock::UntilDestroyed`]; that variant
+///   is reserved for `write_lock`.
+/// - `delete_record_window`, when [`LockingWindow::CountBased`], must use
+///   `count > 0`; use [`LockingWindow::None`] to express "no deletion lock".
+///
+/// Public entry points that accept a `LockingConfig` call [`LockingConfig::validate`]
+/// up front, so misconfiguration is reported client-side before any transaction
+/// is built; the same invariants are enforced on-chain.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct LockingConfig {
     /// Delete-window policy applied to individual records. Records that fall
-    /// inside the window are locked against deletion.
+    /// inside the window are locked against deletion. A [`LockingWindow::CountBased`]
+    /// window must use `count > 0`.
     pub delete_record_window: LockingWindow,
     /// Time lock that gates deletion of the entire trail. Must not be
     /// [`TimeLock::UntilDestroyed`].

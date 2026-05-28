@@ -654,6 +654,7 @@ wasm = [
 rust = [
   "LockingWindow",
   "LockingWindow::to_ptb",
+  "LockingWindow::validate",
 ]
 wasm = [
   "WasmLockingWindow",
@@ -664,6 +665,8 @@ wasm = [
 rust = [
   "LockingConfig",
   "LockingConfig::to_ptb",
+  "LockingConfig::validate",
+  "TimeLock::validate_as_delete_trail_lock",
 ]
 wasm = [
   "WasmLockingConfig",
@@ -689,6 +692,7 @@ wasm = [
 [audit_trail.locking.window_count_based]
 rust = [
   "LockingWindow::CountBased",
+  "LockingWindow::validate",
 ]
 wasm = [
   "WasmLockingWindow::with_count_based",
@@ -698,17 +702,11 @@ wasm = [
 rust = [
   "LockingConfig",
   "LockingConfig::to_ptb",
+  "LockingConfig::validate",
+  "TimeLock::validate_as_delete_trail_lock",
 ]
 wasm = [
   "WasmLockingConfig::new",
-]
-
-[audit_trail.locking.is_delete_record_locked]
-rust = [
-  "TrailLocking::is_record_locked",
-]
-wasm = [
-  "WasmTrailLocking::is_record_locked",
 ]
 
 [audit_trail.locking.is_delete_trail_locked]

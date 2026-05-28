@@ -1075,7 +1075,10 @@ impl WasmDeleteRecord {
 ///
 /// @remarks
 /// Walks the trail from the front and silently skips records still inside the delete-record
-/// window. Tag-aware authorization applies to every record actually deleted.
+/// window or whose tag the capability does not allow. The set of locked records is fixed at
+/// the start of the on-chain call: count-based windows protect the last `count` records present
+/// when the call begins, and time-based windows are evaluated against the clock timestamp
+/// captured at that point.
 ///
 /// `limit` caps the number of records actually deleted, not the number of records inspected.
 /// Ineligible records at the front of the trail are silently walked past without counting
