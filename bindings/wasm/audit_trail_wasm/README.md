@@ -48,7 +48,7 @@ The bindings expose JS-friendly wrappers for the most important Rust value types
 3. Convert that transaction wrapper into programmable transaction bytes.
 4. Submit it through your surrounding JS transaction flow and feed the effects and events back into the typed `applyWithEvents(...)` helper.
 
-The bindings intentionally separate transaction construction from submission so browser apps, wallet integrations, and server-side signing flows can keep transport and execution policy outside the package.
+The package intentionally separates transaction construction from submission so browser apps, wallet integrations, and server-side signing flows can keep transport and execution policy outside the package.
 
 ## Minimal TypeScript shape
 

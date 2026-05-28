@@ -171,7 +171,7 @@ fn sorted_role_entries(roles: HashMap<String, Role>) -> Vec<WasmRolePermissionsE
     roles
 }
 
-/// Permission variants enumerated by the audit trail.
+/// Permission variants enumerated by Audit Trail.
 ///
 /// @remarks
 /// Each variant authorizes one operation on a trail. Variants are grouped by the proposed role

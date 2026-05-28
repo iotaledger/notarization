@@ -8,7 +8,9 @@ The `build` folder provides build scripts needed to build the artifacts.
 Here is an overview of the existing artifacts:
 
 - `notarization_wasm`<br>
-  Exports the NotarizationClient to TypeScript using wasm-bindgen generated wasm bindings
+  Public surface of notarization-rs exported to JS/TypeScript
+- `audit_trail_wasm`<br>
+  Public surface of audit-trail-rs exported to JS/TypeScript
 
 ## Building an Artifact
 

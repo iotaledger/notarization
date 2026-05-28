@@ -33,9 +33,9 @@ The toolkit includes:
 
 Each toolkit component is available as:
 
-- a **Move Package** for the on-chain contracts
-- a **Rust Package** for typed client access and transaction builders
-- **wasm bindings** for JavaScript and TypeScript integrations
+- **Move Package** for the on-chain contracts
+- **Rust Package** for typed client access and transaction builders
+- **TypeScript/JS Package** using wasm bindings for the above-mentioned Rust package
 
 ## Where To Start
 
@@ -62,7 +62,7 @@ Use **Audit Trail** when you need a structured record history with permissions, 
 - [Single Notarization Move](./notarization-move)
 - [Audit Trail Move](./audit-trail-move)
 
-### I want a toolkit to build an application
+### I want to build an application
 
 - [Single Notarization Rust](./notarization-rs)
 - [Audit Trail Rust](./audit-trail-rs)

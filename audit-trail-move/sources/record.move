@@ -1,7 +1,7 @@
 // Copyright (c) 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-/// Record module for audit trail entries
+/// Record module for Audit Trail entries
 ///
 /// A Record represents a single entry in an audit trail, stored in a
 /// LinkedTable and addressed by trail_id + sequence_number.

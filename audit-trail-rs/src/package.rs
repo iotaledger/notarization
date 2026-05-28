@@ -1,10 +1,10 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-//! Package management for audit trail smart contracts.
+//! Package management for Audit Trail smart contracts.
 //!
 //! This module handles package ID resolution and registry management
-//! for the audit trail Move contracts.
+//! for the Audit Trail Move Package.
 
 #![allow(dead_code)]
 
@@ -22,7 +22,7 @@ use crate::error::Error;
 type PackageRegistryLock = RwLockReadGuard<'static, PackageRegistry>;
 type PackageRegistryLockMut = RwLockWriteGuard<'static, PackageRegistry>;
 
-/// Global registry for audit trail package information.
+/// Global registry for Audit Trail Package information.
 static AUDIT_TRAIL_PACKAGE_REGISTRY: LazyLock<RwLock<PackageRegistry>> = LazyLock::new(|| {
     let package_history_json = include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),

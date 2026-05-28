@@ -11,6 +11,9 @@ IOTA Notarization enables creation of immutable, on-chain records for arbitrary 
 - Everything contained in this repository is part of the **Notarization Toolkit** - do not use synonyms like "Notarization Suite",
   "Notarization SDK" or similar labels for the Notarization Toolkit.
 - The Notarization Toolkit is part of the IOTA Trust Framework
+  - Use standard capitalization for the word `Toolkit` (includes "title case" where needed) - use "Toolkit" or "toolkit"
+    whatever suites into the context the best. In this stylguide `Toolkit` is used for referencing the term. Use "title case"
+    allways for `Notarization Toolkit` (never use `Notarization toolkit` or `notarization toolkit`).
 - The IOTA Trust Framework consist of Trust Framework Products (TF products)
 - The Notarization Toolkit contains two TF products: **Single Notarization** and **Audit Trail**
   - In the context of Notarization Toolkit documentation, Single Notarization and Audit Trail are called components
@@ -37,6 +40,8 @@ IOTA Notarization enables creation of immutable, on-chain records for arbitrary 
       - Full Name: `Locked Notarization`, `Dynamic Notarization`, ...
 - Each TF product/component provides packages for Move, Rust and WASM/TypeScript:
   - Do not use terms like `toolkit`, `SDK`, ... for the packages - only use the term `Package`
+  - Use standard capitalization for the word `Package` (includes "title case" where needed) - use "Package" or "package"
+    whatever suites into the context the best. In this stylguide `Package` is used for referencing the term.
   - Aspects regarding the use of `Package` for software development in general:
     - For Move the term `Package` is allways used
     - In Rust contexts, the term `Package` denotes a bundle of one or more crates containing a Cargo. toml file. Use the term
@@ -44,6 +49,8 @@ IOTA Notarization enables creation of immutable, on-chain records for arbitrary 
     - For WASM:
       - The term `Package` can have two meanings:
         - The WASM-Rust package containing the WASM binding code
+          -  If the documentation refers to this aspect (i.e. explaining the existence of wasm bindings in the Rust package)
+             the term "wasm bindings" instead of `Package` is OK.
         - The JS/TS package created out of the WASM-Rust binding code using wasm-bindgen
       - In most contexts this doesn't need to be distinguished, so just use the term `Package`
 
