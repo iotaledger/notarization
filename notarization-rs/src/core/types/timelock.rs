@@ -138,8 +138,8 @@ pub(super) fn new_unlock_at_ms(ptb: &mut Ptb, unlock_time_ms: u64, package_id: O
 
     Ok(ptb.programmable_move_call(
         package_id,
-        ident_str!("timelock").into(),
-        ident_str!("unlock_at").into(),
+        ident_str!("timelock").as_str().into(),
+        ident_str!("unlock_at").as_str().into(),
         vec![],
         vec![unlock_time_ms, clock],
     ))
@@ -160,8 +160,8 @@ pub(super) fn new_until_destroyed(ptb: &mut Ptb, package_id: ObjectID) -> Result
 pub(super) fn new_infinite(ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
     Ok(ptb.programmable_move_call(
         package_id,
-        ident_str!("timelock").into(),
-        ident_str!("infinite").into(),
+        ident_str!("timelock").as_str().into(),
+        ident_str!("infinite").as_str().into(),
         vec![],
         vec![],
     ))
