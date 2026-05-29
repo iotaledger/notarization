@@ -5,8 +5,7 @@ use std::collections::{BTreeMap, HashSet};
 use std::str::FromStr;
 
 use iota_interaction::ident_str;
-use iota_interaction::types::TypeTag;
-use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::base_types::{IotaAddress, ObjectID, TypeTag};
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
 use iota_interaction::types::transaction::Argument;
 use serde::{Deserialize, Serialize};
@@ -100,8 +99,8 @@ impl InitialRecord {
 
         Ok(ptb.programmable_move_call(
             package_id,
-            ident_str!("record").into(),
-            ident_str!("new_initial_record").into(),
+            ident_str!("record").as_str().into(),
+            ident_str!("new_initial_record").as_str().into(),
             vec![data_tag],
             vec![data, metadata, tag],
         ))
@@ -174,8 +173,8 @@ impl Data {
                 let bytes = tx::ptb_pure(ptb, "data_bytes", bytes)?;
                 Ok(ptb.programmable_move_call(
                     package_id,
-                    ident_str!("record").into(),
-                    ident_str!("new_bytes").into(),
+                    ident_str!("record").as_str().into(),
+                    ident_str!("new_bytes").as_str().into(),
                     vec![],
                     vec![bytes],
                 ))
@@ -184,8 +183,8 @@ impl Data {
                 let text = tx::ptb_pure(ptb, "data_text", text)?;
                 Ok(ptb.programmable_move_call(
                     package_id,
-                    ident_str!("record").into(),
-                    ident_str!("new_text").into(),
+                    ident_str!("record").as_str().into(),
+                    ident_str!("new_text").as_str().into(),
                     vec![],
                     vec![text],
                 ))

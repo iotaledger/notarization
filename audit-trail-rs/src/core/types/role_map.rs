@@ -4,8 +4,7 @@
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 
-use iota_interaction::types::TypeTag;
-use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::base_types::{IotaAddress, ObjectID, TypeTag};
 use iota_interaction::types::collection_types::LinkedTable;
 use iota_interaction::types::id::UID;
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
@@ -133,8 +132,8 @@ impl RoleTags {
 
         Ok(ptb.programmable_move_call(
             package_id,
-            ident_str!("record_tags").into(),
-            ident_str!("new_role_tags").into(),
+            ident_str!("record_tags").as_str().into(),
+            ident_str!("new_role_tags").as_str().into(),
             vec![],
             vec![tags_arg],
         ))
@@ -192,7 +191,7 @@ mod tests {
 
     #[test]
     fn capability_deserializes_string_encoded_time_constraints() {
-        let issued_to = IotaAddress::random_for_testing_only();
+        let issued_to = IotaAddress::random();
         let capability = Capability {
             id: UID::new(dbg_object_id(1)),
             target_key: dbg_object_id(2),

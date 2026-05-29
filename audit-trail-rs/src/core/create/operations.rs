@@ -92,8 +92,8 @@ impl CreateOps {
 
         let result = ptb.programmable_move_call(
             audit_trail_package_id,
-            ident_str!("main").into(),
-            ident_str!("create").into(),
+            ident_str!("main").as_str().into(),
+            ident_str!("create").as_str().into(),
             vec![data_tag],
             vec![
                 initial_record,

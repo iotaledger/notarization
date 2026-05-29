@@ -370,7 +370,7 @@ async fn issue_capability_with_constraints() -> anyhow::Result<()> {
         .create_role(trail_id, role_name, vec![Permission::AddRecord], None)
         .await?;
 
-    let issued_to = IotaAddress::random_for_testing_only();
+    let issued_to = IotaAddress::random();
     let constrained = CapabilityIssueOptions {
         issued_to: Some(issued_to),
         valid_from_ms: Some(1_700_000_000_000),
@@ -453,7 +453,7 @@ async fn destroy_initial_admin_capability_emits_expected_event() -> anyhow::Resu
     let access = client.trail(trail_id).access();
 
     let admin_cap_ref = client.get_cap(client.sender_address(), trail_id).await?;
-    let admin_cap_id = admin_cap_ref.0;
+    let admin_cap_id = admin_cap_ref.object_id;
 
     let destroyed = access
         .destroy_initial_admin_capability(admin_cap_id)
@@ -502,7 +502,7 @@ async fn regular_destroy_rejects_initial_admin_capability() -> anyhow::Result<()
     let access = client.trail(trail_id).access();
 
     let admin_cap_ref = client.get_cap(client.sender_address(), trail_id).await?;
-    let admin_cap_id = admin_cap_ref.0;
+    let admin_cap_id = admin_cap_ref.object_id;
 
     let result = access.destroy_capability(admin_cap_id).build_and_execute(&client).await;
 
@@ -521,7 +521,7 @@ async fn regular_revoke_rejects_initial_admin_capability() -> anyhow::Result<()>
     let access = client.trail(trail_id).access();
 
     let admin_cap_ref = client.get_cap(client.sender_address(), trail_id).await?;
-    let admin_cap_id = admin_cap_ref.0;
+    let admin_cap_id = admin_cap_ref.object_id;
 
     let result = access
         .revoke_capability(admin_cap_id, None)

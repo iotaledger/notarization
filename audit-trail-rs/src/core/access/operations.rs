@@ -7,7 +7,7 @@
 //! package and apply the lightweight preflight checks that are cheaper to surface before submission.
 
 use iota_interaction::types::base_types::{IotaAddress, ObjectID};
-use iota_interaction::types::transaction::{ObjectArg, ProgrammableTransaction};
+use iota_interaction::types::transaction::{CallArg, ProgrammableTransaction};
 use iota_interaction::{OptionalSync, ident_str};
 use product_common::core_client::CoreClientReadOnly;
 
@@ -54,8 +54,8 @@ impl AccessOps {
                 let perms_vec = permissions.to_move_vec(client.package_id(), ptb)?;
                 let perms = ptb.programmable_move_call(
                     client.package_id(),
-                    ident_str!("permission").into(),
-                    ident_str!("from_vec").into(),
+                    ident_str!("permission").as_str().into(),
+                    ident_str!("from_vec").as_str().into(),
                     vec![],
                     vec![perms_vec],
                 );
@@ -108,8 +108,8 @@ impl AccessOps {
 
                 let perms = ptb.programmable_move_call(
                     client.package_id(),
-                    ident_str!("permission").into(),
-                    ident_str!("from_vec").into(),
+                    ident_str!("permission").as_str().into(),
+                    ident_str!("from_vec").as_str().into(),
                     vec![],
                     vec![perms_vec],
                 );
@@ -255,7 +255,7 @@ impl AccessOps {
             "destroy_capability",
             |ptb, _| {
                 let cap_to_destroy = ptb
-                    .obj(ObjectArg::ImmOrOwnedObject(capability_ref))
+                    .obj(CallArg::ImmutableOrOwned(capability_ref))
                     .map_err(|e| Error::InvalidArgument(format!("Failed to create capability argument: {e}")))?;
                 let clock = tx::get_clock_ref(ptb);
 

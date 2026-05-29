@@ -66,8 +66,8 @@ impl LockingConfig {
 
         Ok(ptb.programmable_move_call(
             package_id,
-            ident_str!("locking").into(),
-            ident_str!("new").into(),
+            ident_str!("locking").as_str().into(),
+            ident_str!("new").as_str().into(),
             vec![],
             vec![delete_record_window, delete_trail_lock, write_lock],
         ))
@@ -115,22 +115,22 @@ impl TimeLock {
         match self {
             Self::None => Ok(ptb.programmable_move_call(
                 package_id,
-                ident_str!("timelock").into(),
-                ident_str!("none").into(),
+                ident_str!("timelock").as_str().into(),
+                ident_str!("none").as_str().into(),
                 vec![],
                 vec![],
             )),
             Self::Infinite => Ok(ptb.programmable_move_call(
                 package_id,
-                ident_str!("timelock").into(),
-                ident_str!("infinite").into(),
+                ident_str!("timelock").as_str().into(),
+                ident_str!("infinite").as_str().into(),
                 vec![],
                 vec![],
             )),
             Self::UntilDestroyed => Ok(ptb.programmable_move_call(
                 package_id,
-                ident_str!("timelock").into(),
-                ident_str!("until_destroyed").into(),
+                ident_str!("timelock").as_str().into(),
+                ident_str!("until_destroyed").as_str().into(),
                 vec![],
                 vec![],
             )),
@@ -140,8 +140,8 @@ impl TimeLock {
 
                 Ok(ptb.programmable_move_call(
                     package_id,
-                    ident_str!("timelock").into(),
-                    ident_str!("unlock_at").into(),
+                    ident_str!("timelock").as_str().into(),
+                    ident_str!("unlock_at").as_str().into(),
                     vec![],
                     vec![unix_time, clock],
                 ))
@@ -152,8 +152,8 @@ impl TimeLock {
 
                 Ok(ptb.programmable_move_call(
                     package_id,
-                    ident_str!("timelock").into(),
-                    ident_str!("unlock_at_ms").into(),
+                    ident_str!("timelock").as_str().into(),
+                    ident_str!("unlock_at_ms").as_str().into(),
                     vec![],
                     vec![unix_time_ms, clock],
                 ))
@@ -218,8 +218,8 @@ impl LockingWindow {
         match self {
             Self::None => Ok(ptb.programmable_move_call(
                 package_id,
-                ident_str!("locking").into(),
-                ident_str!("window_none").into(),
+                ident_str!("locking").as_str().into(),
+                ident_str!("window_none").as_str().into(),
                 vec![],
                 vec![],
             )),
@@ -227,8 +227,8 @@ impl LockingWindow {
                 let seconds = tx::ptb_pure(ptb, "seconds", *seconds)?;
                 Ok(ptb.programmable_move_call(
                     package_id,
-                    ident_str!("locking").into(),
-                    ident_str!("window_time_based").into(),
+                    ident_str!("locking").as_str().into(),
+                    ident_str!("window_time_based").as_str().into(),
                     vec![],
                     vec![seconds],
                 ))
@@ -237,8 +237,8 @@ impl LockingWindow {
                 let count = tx::ptb_pure(ptb, "count", *count)?;
                 Ok(ptb.programmable_move_call(
                     package_id,
-                    ident_str!("locking").into(),
-                    ident_str!("window_count_based").into(),
+                    ident_str!("locking").as_str().into(),
+                    ident_str!("window_count_based").as_str().into(),
                     vec![],
                     vec![count],
                 ))

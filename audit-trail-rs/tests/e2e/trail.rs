@@ -127,7 +127,7 @@ async fn create_trail_with_bytes_and_count_lock() -> anyhow::Result<()> {
 #[tokio::test]
 async fn create_trail_with_custom_admin_address() -> anyhow::Result<()> {
     let client = get_funded_test_client().await?;
-    let custom_admin = IotaAddress::random_for_testing_only();
+    let custom_admin = IotaAddress::random();
 
     let created = client
         .create_trail()
@@ -141,7 +141,7 @@ async fn create_trail_with_custom_admin_address() -> anyhow::Result<()> {
     let cap = client.get_cap(custom_admin, created.trail_id).await;
 
     match cap {
-        Ok(cap_ref) => println!("Found admin capability with ID: {}", cap_ref.0),
+        Ok(cap_ref) => println!("Found admin capability with ID: {}", cap_ref.object_id),
         Err(e) => println!("Error finding admin capability for custom admin: {e}"),
     }
 

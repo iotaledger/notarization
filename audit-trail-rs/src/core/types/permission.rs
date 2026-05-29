@@ -5,10 +5,9 @@ use std::collections::HashSet;
 use std::str::FromStr;
 
 use iota_interaction::ident_str;
-use iota_interaction::types::base_types::ObjectID;
+use iota_interaction::types::base_types::{Identifier, ObjectID, TypeTag};
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
-use iota_interaction::types::transaction::{Argument, Command};
-use iota_interaction::types::{Identifier, TypeTag};
+use iota_interaction::types::transaction::{Argument, Command, MakeMoveVector};
 use serde::{Deserialize, Serialize};
 
 use crate::error::Error;
@@ -96,7 +95,13 @@ impl Permission {
         let function = Identifier::from_str(self.function_name())
             .map_err(|e| Error::InvalidArgument(format!("Failed to create identifier for function: {e}")))?;
 
-        Ok(ptb.programmable_move_call(package_id, ident_str!("permission").into(), function, vec![], vec![]))
+        Ok(ptb.programmable_move_call(
+            package_id,
+            ident_str!("permission").as_str().into(),
+            function,
+            vec![],
+            vec![],
+        ))
     }
 }
 
@@ -116,7 +121,10 @@ impl PermissionSet {
             .map(|permission| (*permission).to_ptb(ptb, package_id))
             .collect::<Result<Vec<_>, _>>()?;
 
-        Ok(ptb.command(Command::MakeMoveVec(Some(permission_type.into()), permission_args)))
+        Ok(ptb.command(Command::MakeMoveVector(MakeMoveVector {
+            type_: Some(permission_type),
+            elements: permission_args,
+        })))
     }
     /// Returns the recommended permission set for the `Admin` role.
     ///

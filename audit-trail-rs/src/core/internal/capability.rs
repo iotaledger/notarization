@@ -4,12 +4,11 @@
 //! Capability discovery helpers used by internal transaction builders.
 use std::collections::HashSet;
 
-use iota_interaction::move_types::language_storage::StructTag;
 use iota_interaction::rpc_types::{
     IotaObjectDataFilter, IotaObjectDataOptions, IotaObjectResponseQuery, IotaParsedData,
 };
-use iota_interaction::types::TypeTag;
-use iota_interaction::types::base_types::{IotaAddress, ObjectID, ObjectRef};
+use iota_interaction::types::MoveTypeTagTrait;
+use iota_interaction::types::base_types::{IotaAddress, ObjectID, ObjectRef, StructTag};
 use iota_interaction::types::dynamic_field::DynamicFieldName;
 use iota_interaction::types::id::ID;
 use iota_interaction::{IotaClientTrait, OptionalSync};
@@ -142,7 +141,7 @@ where
             client,
             table.id,
             DynamicFieldName {
-                type_: TypeTag::Struct(Box::new(ID::type_())),
+                type_: ID::get_type_tag(),
                 value: serde_json::Value::String(IotaAddress::from(key).to_string()),
             },
         )
@@ -253,7 +252,7 @@ mod tests {
 
     #[test]
     fn capability_matches_skips_revoked_caps() {
-        let owner = IotaAddress::random_for_testing_only();
+        let owner = IotaAddress::random();
         let trail_id = dbg_object_id(1);
         let revoked_cap_id = dbg_object_id(2);
         let valid_cap_id = dbg_object_id(3);
@@ -271,8 +270,8 @@ mod tests {
 
     #[test]
     fn capability_matches_skips_issued_to_mismatch() {
-        let owner = IotaAddress::random_for_testing_only();
-        let other_owner = IotaAddress::random_for_testing_only();
+        let owner = IotaAddress::random();
+        let other_owner = IotaAddress::random();
         let trail_id = dbg_object_id(4);
         let valid_roles = HashSet::from(["Writer".to_string()]);
         let cap = make_capability(dbg_object_id(5), trail_id, "Writer", Some(other_owner), None, None);
@@ -284,7 +283,7 @@ mod tests {
 
     #[test]
     fn capability_matches_skips_caps_before_valid_from() {
-        let owner = IotaAddress::random_for_testing_only();
+        let owner = IotaAddress::random();
         let trail_id = dbg_object_id(6);
         let valid_roles = HashSet::from(["Writer".to_string()]);
         let cap = make_capability(dbg_object_id(7), trail_id, "Writer", None, Some(2_000), None);
@@ -299,7 +298,7 @@ mod tests {
 
     #[test]
     fn capability_matches_skips_caps_after_valid_until() {
-        let owner = IotaAddress::random_for_testing_only();
+        let owner = IotaAddress::random();
         let trail_id = dbg_object_id(8);
         let valid_roles = HashSet::from(["Writer".to_string()]);
         let cap = make_capability(dbg_object_id(9), trail_id, "Writer", None, None, Some(2_000));
@@ -314,7 +313,7 @@ mod tests {
 
     #[test]
     fn capability_matches_accepts_unbound_capability_for_matching_role() {
-        let owner = IotaAddress::random_for_testing_only();
+        let owner = IotaAddress::random();
         let trail_id = dbg_object_id(6);
         let valid_roles = HashSet::from(["Writer".to_string()]);
         let cap = make_capability(dbg_object_id(7), trail_id, "Writer", None, None, None);
@@ -326,7 +325,7 @@ mod tests {
 
     #[test]
     fn capability_matches_rejects_non_matching_role() {
-        let owner = IotaAddress::random_for_testing_only();
+        let owner = IotaAddress::random();
         let trail_id = dbg_object_id(8);
         let valid_roles = HashSet::from(["Writer".to_string()]);
         let cap = make_capability(dbg_object_id(9), trail_id, "Reader", None, None, None);
@@ -338,7 +337,7 @@ mod tests {
 
     #[test]
     fn capability_matches_honors_time_constraints() {
-        let owner = IotaAddress::random_for_testing_only();
+        let owner = IotaAddress::random();
         let trail_id = dbg_object_id(10);
         let valid_roles = HashSet::from(["Writer".to_string()]);
         let cap = make_capability(

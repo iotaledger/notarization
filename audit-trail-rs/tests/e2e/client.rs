@@ -199,7 +199,7 @@ impl TestClient {
             .get_object_ref_by_id(object_id)
             .await
             .map_err(|e| anyhow::anyhow!("Failed to get object ref for accredit cap: {e}"))?
-            .map(|owned_ref| owned_ref.reference.to_object_ref())
+            .map(|owned_ref| owned_ref.reference)
             .unwrap())
     }
 

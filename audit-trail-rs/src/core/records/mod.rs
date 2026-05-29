@@ -7,8 +7,7 @@ use std::collections::{BTreeMap, HashMap};
 
 use iota_interaction::move_core_types::annotated_value::MoveValue;
 use iota_interaction::rpc_types::IotaMoveValue;
-use iota_interaction::types::TypeTag;
-use iota_interaction::types::base_types::ObjectID;
+use iota_interaction::types::base_types::{ObjectID, TypeTag};
 use iota_interaction::types::collection_types::LinkedTable;
 use iota_interaction::types::dynamic_field::DynamicFieldName;
 use iota_interaction::{IotaKeySignature, OptionalSync};

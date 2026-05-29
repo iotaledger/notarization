@@ -6,15 +6,13 @@
 use std::str::FromStr;
 
 use iota_interaction::rpc_types::IotaObjectDataOptions;
-use iota_interaction::types::base_types::{IotaAddress, ObjectID, ObjectRef, STD_OPTION_MODULE_NAME};
+use iota_interaction::types::base_types::{Identifier, IotaAddress, ObjectID, ObjectRef, TypeTag};
 use iota_interaction::types::object::Owner;
 use iota_interaction::types::programmable_transaction_builder::{
     ProgrammableTransactionBuilder as Ptb, ProgrammableTransactionBuilder,
 };
-use iota_interaction::types::transaction::{Argument, ObjectArg, ProgrammableTransaction};
-use iota_interaction::types::{
-    IOTA_CLOCK_OBJECT_ID, IOTA_CLOCK_OBJECT_SHARED_VERSION, Identifier, MOVE_STDLIB_PACKAGE_ID, TypeTag,
-};
+use iota_interaction::types::transaction::{Argument, CallArg, ProgrammableTransaction, SharedObjectRef};
+use iota_interaction::types::{IOTA_CLOCK_OBJECT_ID, IOTA_CLOCK_OBJECT_SHARED_VERSION, MOVE_STDLIB_PACKAGE_ID};
 use iota_interaction::{IotaClientTrait, OptionalSync, ident_str};
 use product_common::core_client::CoreClientReadOnly;
 use serde::Serialize;
@@ -25,11 +23,11 @@ use crate::error::Error;
 
 /// Returns the canonical immutable clock object argument.
 pub(crate) fn get_clock_ref(ptb: &mut Ptb) -> Argument {
-    ptb.obj(ObjectArg::SharedObject {
-        id: IOTA_CLOCK_OBJECT_ID,
+    ptb.obj(CallArg::Shared(SharedObjectRef {
+        object_id: IOTA_CLOCK_OBJECT_ID,
         initial_shared_version: IOTA_CLOCK_OBJECT_SHARED_VERSION,
         mutable: false,
-    })
+    }))
     .expect("network has a singleton clock instantiated")
 }
 
@@ -55,16 +53,16 @@ pub(crate) fn option_to_move(
     let arg = if let Some(t) = option {
         ptb.programmable_move_call(
             MOVE_STDLIB_PACKAGE_ID,
-            STD_OPTION_MODULE_NAME.into(),
-            ident_str!("some").into(),
+            ident_str!("option").as_str().into(),
+            ident_str!("some").as_str().into(),
             vec![tag],
             vec![t],
         )
     } else {
         ptb.programmable_move_call(
             MOVE_STDLIB_PACKAGE_ID,
-            STD_OPTION_MODULE_NAME.into(),
-            ident_str!("none").into(),
+            ident_str!("option").as_str().into(),
+            ident_str!("none").as_str().into(),
             vec![tag],
             vec![],
         )
@@ -119,7 +117,7 @@ where
     let mut args = vec![
         ptb.obj(trail_arg)
             .map_err(|e| Error::InvalidArgument(format!("Failed to create trail argument: {e}")))?,
-        ptb.obj(ObjectArg::ImmOrOwnedObject(cap_ref))
+        ptb.obj(CallArg::ImmutableOrOwned(cap_ref))
             .map_err(|e| Error::InvalidArgument(format!("Failed to create cap argument: {e}")))?,
     ];
 
@@ -128,7 +126,13 @@ where
     let function = Identifier::from_str(method.as_ref())
         .map_err(|e| Error::InvalidArgument(format!("Invalid method name '{}': {e}", method.as_ref())))?;
 
-    ptb.programmable_move_call(client.package_id(), ident_str!("main").into(), function, tag, args);
+    ptb.programmable_move_call(
+        client.package_id(),
+        ident_str!("main").as_str().into(),
+        function,
+        tag,
+        args,
+    );
 
     Ok(ptb.finish())
 }
@@ -159,7 +163,13 @@ where
     let function = Identifier::from_str(method.as_ref())
         .map_err(|e| Error::InvalidArgument(format!("Invalid method name '{}': {e}", method.as_ref())))?;
 
-    ptb.programmable_move_call(client.package_id(), ident_str!("main").into(), function, tag, args);
+    ptb.programmable_move_call(
+        client.package_id(),
+        ident_str!("main").as_str().into(),
+        function,
+        tag,
+        args,
+    );
 
     Ok(ptb.finish())
 }
@@ -232,7 +242,7 @@ pub(crate) async fn get_shared_object_arg(
     client: &impl CoreClientReadOnly,
     object_id: &ObjectID,
     mutable: bool,
-) -> Result<ObjectArg, Error> {
+) -> Result<CallArg, Error> {
     let res = client
         .client_adapter()
         .read_api()
@@ -245,11 +255,11 @@ pub(crate) async fn get_shared_object_arg(
     };
 
     match data.owner {
-        Some(Owner::Shared { initial_shared_version }) => Ok(ObjectArg::SharedObject {
-            id: *object_id,
+        Some(Owner::Shared(initial_shared_version)) => Ok(CallArg::Shared(SharedObjectRef {
+            object_id: *object_id,
             initial_shared_version,
             mutable,
-        }),
+        })),
         _ => Err(Error::InvalidArgument("object is not shared".to_string())),
     }
 }
