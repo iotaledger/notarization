@@ -20,7 +20,7 @@
 
 ## Introduction
 
-`notarization-move` is the on-chain Move package behind IOTA Notarization.
+`notarization-move` is the on-chain Move package behind IOTA Single Notarization.
 
 It defines the core `Notarization` object and the supporting modules for:
 
