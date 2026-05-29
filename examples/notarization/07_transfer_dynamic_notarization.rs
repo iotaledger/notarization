@@ -15,8 +15,8 @@ async fn main() -> Result<()> {
     let notarization_client = get_funded_notarization_client().await?;
 
     // Generate random addresses for transfer recipients
-    let alice = IotaAddress::random_for_testing_only();
-    let bob = IotaAddress::random_for_testing_only();
+    let alice = IotaAddress::random();
+    let bob = IotaAddress::random();
 
     println!("Transfer recipients:");
     println!("Alice: {alice}");

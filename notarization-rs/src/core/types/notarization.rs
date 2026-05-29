@@ -58,8 +58,12 @@ pub struct OnChainNotarization {
     /// this notarization.
     pub method: NotarizationMethod,
     /// The owner of the notarization.
-    #[serde(skip)]
+    #[serde(skip, default = "iota_address_zero")]
     pub owner: IotaAddress,
+}
+
+fn iota_address_zero() -> IotaAddress {
+    IotaAddress::ZERO
 }
 
 #[cfg(feature = "irl")]

@@ -12,8 +12,7 @@
 use std::str::FromStr;
 use std::time::SystemTime;
 
-use iota_interaction::types::TypeTag;
-use iota_interaction::types::base_types::ObjectID;
+use iota_interaction::types::base_types::{ObjectID, TypeTag};
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
 use iota_interaction::types::transaction::Argument;
 use iota_interaction::{MoveType, ident_str};
@@ -125,8 +124,8 @@ pub(super) fn new_unlock_at(ptb: &mut Ptb, unlock_time_sec: u32, package_id: Obj
 
     Ok(ptb.programmable_move_call(
         package_id,
-        ident_str!("timelock").into(),
-        ident_str!("unlock_at").into(),
+        ident_str!("timelock").as_str().into(),
+        ident_str!("unlock_at").as_str().into(),
         vec![],
         vec![unlock_time_sec, clock],
     ))
@@ -150,8 +149,8 @@ pub(super) fn new_unlock_at_ms(ptb: &mut Ptb, unlock_time_ms: u64, package_id: O
 pub(super) fn new_until_destroyed(ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
     Ok(ptb.programmable_move_call(
         package_id,
-        ident_str!("timelock").into(),
-        ident_str!("until_destroyed").into(),
+        ident_str!("timelock").as_str().into(),
+        ident_str!("until_destroyed").as_str().into(),
         vec![],
         vec![],
     ))
@@ -172,8 +171,8 @@ pub(super) fn new_infinite(ptb: &mut Ptb, package_id: ObjectID) -> Result<Argume
 pub(super) fn new_none(ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
     Ok(ptb.programmable_move_call(
         package_id,
-        ident_str!("timelock").into(),
-        ident_str!("none").into(),
+        ident_str!("timelock").as_str().into(),
+        ident_str!("none").as_str().into(),
         vec![],
         vec![],
     ))

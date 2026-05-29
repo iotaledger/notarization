@@ -82,7 +82,7 @@ async fn test_transfer_dynamic_notarization_client_with_transfer_lock_fails() ->
     let is_transfer_locked = test_client.is_transfer_locked(*notarization_id.object_id()).await?;
 
     assert!(is_transfer_locked);
-    let alice = IotaAddress::random_for_testing_only();
+    let alice = IotaAddress::random();
 
     let transfer_notarization = test_client
         .transfer_notarization(*notarization_id.object_id(), alice)
@@ -111,7 +111,7 @@ async fn test_transfer_dynamic_notarization_client_with_no_transfer_lock_works()
     let is_transfer_locked = test_client.is_transfer_locked(*notarization_id.object_id()).await?;
     assert!(!is_transfer_locked);
 
-    let alice = IotaAddress::random_for_testing_only();
+    let alice = IotaAddress::random();
 
     let transfer_notarization = test_client
         .transfer_notarization(*notarization_id.object_id(), alice)
