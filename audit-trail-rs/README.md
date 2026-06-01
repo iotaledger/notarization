@@ -210,7 +210,7 @@ The workflow of deletion an `AuditTrail` object can be described as:
 - If not all records have been deleted:
   - if a lock is configured, wait until the `Delete Trail Lock` allows trail deletion,
   - if records are tag protected, notify a user with an appropriate role granting the needed tag access,
-    to delete the remaining records 
+    to delete the remaining records
 - Delete the trail object with `AuditTrailHandle::delete_audit_trail()`
 
 The trail deletion process does not remove records automatically. The trail must be empty before
