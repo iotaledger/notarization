@@ -1,7 +1,7 @@
 // Copyright (c) 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-/// Record tag types and helper predicates for Audit Trail.
+/// Record tag types and helper predicates for Audit Trails.
 module audit_trail::record_tags;
 
 use audit_trail::permission::Permission;

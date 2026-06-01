@@ -1,4 +1,4 @@
-# IOTA Audit Trail WASM Examples
+# IOTA Audit Trails WASM Examples
 
 The examples in this folder demonstrate how to use the `@iota/audit-trail` package.
 

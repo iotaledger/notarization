@@ -1,7 +1,7 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-//! Role and capability management APIs for Audit Trail.
+//! Role and capability management APIs for Audit Trails.
 //!
 //! This module is the Rust-facing wrapper around the access-control state integrated into each audit trail.
 //! Roles grant [`crate::core::types::PermissionSet`] values, while capability objects bind one role to one trail and

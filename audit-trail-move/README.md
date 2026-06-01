@@ -16,11 +16,11 @@
 
 ---
 
-# IOTA Audit Trail Move Package
+# IOTA Audit Trails Move Package
 
 ## Introduction
 
-`audit-trail-move` is the on-chain Move package behind IOTA Audit Trail.
+`audit-trail-move` is the on-chain Move package behind IOTA Audit Trails.
 
 It defines the shared `AuditTrail` object and the supporting types needed for:
 
@@ -81,7 +81,7 @@ The package history files [`Move.lock`](./Move.lock) and [`Move.history.json`](.
 
 ## Contributing
 
-We would love to have you help us with the development of IOTA Audit Trail. Each and every contribution is greatly valued.
+We would love to have you help us with the development of IOTA Audit Trails. Each and every contribution is greatly valued.
 
 Please review the [contribution](https://docs.iota.org/developer/iota-notarization/contribute) sections in the [IOTA Docs Portal](https://docs.iota.org/developer/iota-notarization/).
 

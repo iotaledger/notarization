@@ -1,14 +1,14 @@
-# IOTA Audit Trail Rust Package
+# IOTA Audit Trails Rust Package
 
 ## Introduction
 
-The Audit Trail Rust package provides the Rust client for structured record histories in the IOTA Notarization Toolkit.
+The Audit Trails Rust package provides the Rust client for structured record histories in the IOTA Notarization Toolkit.
 
 The package also provides an `AuditTrailBuilder` that creates audit trail objects on the IOTA ledger and an `AuditTrailHandle`
 that interacts with existing trails. The handle maps to one on-chain audit trail and provides typed APIs for records,
 access control, locking, tags, metadata, migration, and deletion.
 
-Use Audit Trail when you need a governed record history with sequential entries, role-based permissions, capabilities,
+Use Audit Trails when you need a governed record history with sequential entries, role-based permissions, capabilities,
 locking, and tagging. Use Single Notarization when you need one locked or dynamic notarized object for arbitrary data,
 documents, hashes, or latest-state records.
 
@@ -19,11 +19,11 @@ You can find the full IOTA Notarization Toolkit documentation [here](https://doc
 The following workflows demonstrate how `AuditTrailBuilder` and `AuditTrailHandle` instances create, update, govern, and
 delete audit trail objects on the ledger.
 
-### Creating an Audit Trail
+### Creating an `AuditTrail` Object
 
-An _Audit Trail_ is created on the ledger using the `AuditTrailClient::create_trail()` function. To create an _Audit
-Trail_, specify the following initial arguments with the `AuditTrailBuilder` setter functions. The terms used here are
-defined in the [glossary below](#glossary).
+An `AuditTrail` on-chain object is created on the ledger using the `AuditTrailClient::create_trail()` function. To
+create an `AuditTrail` object, specify the following initial arguments with the `AuditTrailBuilder` setter functions.
+The terms used here are defined in the [glossary below](#glossary).
 
 - Optional `Initial Record` that becomes sequence number `0`
 - Optional `Immutable Metadata`
@@ -32,14 +32,14 @@ defined in the [glossary below](#glossary).
 - Optional `Record Tag Registry`
 - Optional initial admin address
 
-After an _Audit Trail_ has been created, the creator receives an Admin capability object. This capability authorizes
+After an `AuditTrail` object has been created, the creator receives an Admin capability object. This capability authorizes
 administrative operations such as defining roles, issuing capabilities, updating locks, managing tags, and deleting the
 trail.
 
-#### Creating a new Audit Trail on the Ledger
+#### Creating a new `AuditTrail` Object on the Ledger
 
 The following sequence diagram explains the interaction between the involved technical components and the `Admin` when an
-_Audit Trail_ is created on the ledger:
+`AuditTrail` object is created on the ledger:
 
 ```mermaid
 sequenceDiagram
@@ -77,7 +77,7 @@ or `TrailRecords::list_page()`.
 To add a record, the sender must hold a capability whose role allows record writes. Tagged records must use a tag already
 defined in the trail's tag registry, and the sender's role must allow that tag.
 
-#### Appending a Record to an Existing Audit Trail
+#### Appending a Record to an Existing `AuditTrail` Object
 
 The following sequence diagram shows the component interaction when a `Record Admin` appends a new record:
 
@@ -102,7 +102,7 @@ sequenceDiagram
     Lib ->>- RecordAdmin: RecordAdded + IotaTransactionBlockResponse
 ```
 
-#### Reading Records from an Existing Audit Trail
+#### Reading Records from an Existing `AuditTrail` Object
 
 The following sequence diagram explains the component interaction for `Verifiers` or other parties fetching trail
 records:
@@ -202,12 +202,15 @@ sequenceDiagram
     Lib ->>- LockingAdmin: () + IotaTransactionBlockResponse
 ```
 
-#### Deleting an Audit Trail
+#### Deleting an `AuditTrail` Object
 
-The lifecycle of an _Audit Trail_ deletion can be described as:
+The workflow of deletion an `AuditTrail` object can be described as:
 
 - Delete all eligible unlocked records with `TrailRecords::delete()` or `TrailRecords::delete_records_batch()`
-- Wait until the `Delete Trail Lock` allows trail deletion, if a lock is configured
+- If not all records have been deleted:
+  - if a lock is configured, wait until the `Delete Trail Lock` allows trail deletion,
+  - if records are tag protected, notify a user with an appropriate role granting the needed tag access,
+    to delete the remaining records 
 - Delete the trail object with `AuditTrailHandle::delete_audit_trail()`
 
 The trail deletion process does not remove records automatically. The trail must be empty before
@@ -215,7 +218,7 @@ The trail deletion process does not remove records automatically. The trail must
 
 ## Glossary
 
-- `Audit Trail`: A shared on-chain object that stores ordered records, metadata, locking configuration, tag registry,
+- `AuditTrail` object: A shared on-chain object that stores ordered records, metadata, locking configuration, tag registry,
   roles, and capability state.
 - `Record`: A single trail entry stored at a sequence number. Records contain `Data`, optional record metadata, an
   optional tag, and creation information.
@@ -245,9 +248,9 @@ The trail deletion process does not remove records automatically. The trail must
 
 ## Documentation And Resources
 
-- [Audit Trail Move Package](https://github.com/iotaledger/notarization/tree/main/audit-trail-move): On-chain contract package that defines the shared object model, permissions, locking, and events.
-- [Audit Trail Wasm Package](https://github.com/iotaledger/notarization/tree/main/bindings/wasm/audit_trail_wasm): JavaScript and TypeScript bindings for browser and Node.js integrations.
-- [Audit Trail Wasm Examples](https://github.com/iotaledger/notarization/tree/main/bindings/wasm/audit_trail_wasm/examples/README.md): Runnable audit-trail examples for JS and TS consumers.
+- [Audit Trails Move Package](https://github.com/iotaledger/notarization/tree/main/audit-trail-move): On-chain contract package that defines the shared object model, permissions, locking, and events.
+- [Audit Trails Wasm Package](https://github.com/iotaledger/notarization/tree/main/bindings/wasm/audit_trail_wasm): JavaScript and TypeScript bindings for browser and Node.js integrations.
+- [Audit Trails Wasm Examples](https://github.com/iotaledger/notarization/tree/main/bindings/wasm/audit_trail_wasm/examples/README.md): Runnable audit-trail examples for JS and TS consumers.
 - [Repository Examples](https://github.com/iotaledger/notarization/tree/main/examples/README.md): End-to-end examples across the Notarization Toolkit.
 
 This README is also used as the crate-level rustdoc entry point, while the source files provide detailed API documentation for all public types and methods.
