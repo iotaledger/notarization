@@ -141,6 +141,7 @@ impl PermissionSet {
                 Permission::AddRoles,
                 Permission::UpdateRoles,
                 Permission::DeleteRoles,
+                Permission::Migrate,
             ]),
         }
     }
