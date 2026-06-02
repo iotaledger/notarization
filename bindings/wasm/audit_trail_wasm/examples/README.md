@@ -7,7 +7,7 @@ The examples in this folder demonstrate how to use the `@iota/audit-trails` pack
 Set the following environment variables before running the node examples:
 
 | Name                        | Required            | Description                                               |
-|-----------------------------|---------------------|-----------------------------------------------------------|
+| --------------------------- | ------------------- | --------------------------------------------------------- |
 | `IOTA_AUDIT_TRAIL_PKG_ID`   | yes                 | Package ID of the deployed `IotaAuditTrails` Move package |
 | `IOTA_TF_COMPONENTS_PKG_ID` | local/custom setups | Package ID of the deployed `TfComponents` package         |
 | `NETWORK_URL`               | yes                 | RPC URL of the IOTA node                                  |
