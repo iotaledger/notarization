@@ -254,7 +254,7 @@ is exactly how drift survives a commit that "already updated the docs".
 
 ## What "aligned" looks like — example
 
-For an entry `[audit_trail.locking.new]` (the `LockingConfig::new`
+For an entry `[audit_trails.locking.new]` (the `LockingConfig::new`
 constructor):
 
 - **Move** (`<move-sc-path>/locking.move`): "Create a new locking

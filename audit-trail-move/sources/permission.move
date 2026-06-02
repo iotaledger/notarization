@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /// Permission system for role-based access control
-module audit_trail::permission;
+module audit_trails::permission;
 
 use iota::vec_set::{Self, VecSet};
 
-/// Existing permissions for the Audit Trail object
+/// Existing permissions for the `AuditTrail` object
 public enum Permission has copy, drop, store {
     // --- Whole Audit Trail related - Proposed role: `Admin` ---
-    /// Destroy the whole Audit Trail object
+    /// Destroy the whole `AuditTrail` object
     DeleteAuditTrail,
     /// Delete records in batches for cleanup workflows
     DeleteAllRecords,
@@ -25,9 +25,9 @@ public enum Permission has copy, drop, store {
     UpdateLockingConfig,
     /// Update the delete_record_lock configuration which is part of the locking configuration
     UpdateLockingConfigForDeleteRecord,
-    /// Update the delete_lock configuration for the whole Audit Trail
+    /// Update the delete_lock configuration for the whole `AuditTrail` object
     UpdateLockingConfigForDeleteTrail,
-    /// Update the write_lock configuration for the whole Audit Trail
+    /// Update the write_lock configuration for the whole `AuditTrail` object
     UpdateLockingConfigForWrite,
     // --- Role Management - Proposed role: `RoleAdmin` ---
     /// Add new roles with associated permissions
@@ -202,7 +202,7 @@ public fun metadata_admin_permissions(): VecSet<Permission> {
 
 // ------- Constructor functions for all Permission variants -------------
 
-/// Returns a permission allowing to destroy the whole Audit Trail object
+/// Returns a permission allowing to destroy the whole `AuditTrail` object
 public fun delete_audit_trail(): Permission {
     Permission::DeleteAuditTrail
 }
@@ -237,12 +237,12 @@ public fun update_locking_config_for_delete_record(): Permission {
     Permission::UpdateLockingConfigForDeleteRecord
 }
 
-/// Returns a permission allowing to update the delete_lock configuration for the whole Audit Trail
+/// Returns a permission allowing to update the delete_lock configuration for the whole `AuditTrail` object
 public fun update_locking_config_for_delete_trail(): Permission {
     Permission::UpdateLockingConfigForDeleteTrail
 }
 
-/// Returns a permission allowing to update the write_lock configuration for the whole Audit Trail
+/// Returns a permission allowing to update the write_lock configuration for the whole `AuditTrail` object
 public fun update_locking_config_for_write(): Permission {
     Permission::UpdateLockingConfigForWrite
 }

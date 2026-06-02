@@ -37,7 +37,7 @@ import {
     LockingWindow,
     PermissionSet,
     TimeLock,
-} from "@iota/audit-trail/node";
+} from "@iota/audit-trails/node";
 import { strict as assert } from "assert";
 import { getFundedClient, issueTaggedRecordRole, TEST_GAS_BUDGET } from "../util";
 

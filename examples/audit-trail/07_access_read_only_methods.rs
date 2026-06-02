@@ -8,7 +8,7 @@
 //!   by any address — no capability required.
 
 use anyhow::{Result, ensure};
-use audit_trail::core::types::{
+use audit_trails::core::types::{
     CapabilityIssueOptions, Data, ImmutableMetadata, InitialRecord, LockingConfig, LockingWindow, PermissionSet,
     TimeLock,
 };

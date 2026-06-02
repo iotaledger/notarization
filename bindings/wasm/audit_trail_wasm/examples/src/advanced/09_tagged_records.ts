@@ -16,7 +16,7 @@
  * 4. Show that the holder can add only records matching the allowed tag.
  */
 
-import { CapabilityIssueOptions, Data, Permission, PermissionSet, RoleTags } from "@iota/audit-trail/node";
+import { CapabilityIssueOptions, Data, Permission, PermissionSet, RoleTags } from "@iota/audit-trails/node";
 import { strict as assert } from "assert";
 import { getFundedClient, TEST_GAS_BUDGET } from "../util";
 

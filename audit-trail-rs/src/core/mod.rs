@@ -1,7 +1,7 @@
 // Copyright 2020-2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-//! Core handles, builders, transactions, and domain types for Audit Trail.
+//! Core handles, builders, transactions, and domain types for Audit Trails.
 //!
 //! This namespace contains the main trail-facing Rust API:
 //!

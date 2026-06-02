@@ -8,7 +8,7 @@ notarization objects. The builder returns a `Notarization` struct instance that 
 typed methods for interacting with it.
 
 Use Single Notarization when you need one notarized object for arbitrary data, documents, hashes, or latest-state
-records. Use Audit Trail when you need a structured record history with roles, capabilities, locking, and tagging.
+records. Use Audit Trails when you need a structured record history with roles, capabilities, locking, and tagging.
 
 You can find the full IOTA Notarization Toolkit documentation [here](https://docs.iota.org/developer/iota-notarization).
 

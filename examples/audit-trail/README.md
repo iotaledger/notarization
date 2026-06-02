@@ -1,6 +1,6 @@
-# IOTA Audit Trail Examples
+# IOTA Audit Trails Examples
 
-The following code examples demonstrate how to use IOTA Audit Trail for creating structured, role-based audit logs on the IOTA network.
+The following code examples demonstrate how to use IOTA Audit Trails for creating structured, role-based audit logs on the IOTA network.
 
 ## Prerequisites
 
@@ -9,7 +9,7 @@ Examples can be run against:
 - A local IOTA node
 - An existing network, e.g., the IOTA testnet
 
-When setting up a local node, you'll need to publish an Audit Trail Package as described in the IOTA documentation. You'll also need to provide environment variables for your locally deployed Audit Trail Package to run the examples against the local node.
+When setting up a local node, you'll need to publish an Audit Trails Package as described in the IOTA documentation. You'll also need to provide environment variables for your locally deployed Audit Trails Package to run the examples against the local node.
 
 If running the examples on `testnet`, use the appropriate package IDs for the testnet deployment.
 
@@ -25,7 +25,7 @@ You'll need one or more of the following environment variables depending on your
 | IOTA_TF_COMPONENTS_PKG_ID |            x            |                      |                         |
 | API_ENDPOINT              |                         |          x           |            x            |
 
-> **Note:** On localnet both `IOTA_AUDIT_TRAIL_PKG_ID` and `IOTA_TF_COMPONENTS_PKG_ID` resolve to the same package ID because the TfComponents dependency is published together with the Audit Trail Package.
+> **Note:** On localnet both `IOTA_AUDIT_TRAIL_PKG_ID` and `IOTA_TF_COMPONENTS_PKG_ID` resolve to the same package ID because the TfComponents dependency is published together with the Audit Trails Package.
 
 ## Running Examples
 
@@ -85,7 +85,7 @@ IOTA_AUDIT_TRAIL_PKG_ID=0x... IOTA_TF_COMPONENTS_PKG_ID=0x... cargo run --releas
 
 ## Key Concepts
 
-### Audit Trail
+### Audit Trails
 
 An audit trail is an on-chain object that stores an ordered sequence of records. Each trail has:
 
@@ -169,4 +169,4 @@ Trails support three independent lock dimensions:
 - Delete-trail locks ensure data retention requirements are met
 - Revoking a capability adds it to the trail's revoked-capability registry, blocking future use
 
-For more detailed information about IOTA Audit Trail concepts and advanced usage, refer to the official IOTA documentation.
+For more detailed information about IOTA Audit Trails concepts and advanced usage, refer to the official IOTA documentation.

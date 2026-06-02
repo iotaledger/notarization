@@ -37,8 +37,8 @@
 //!   76% health score and a 1-LCC reward record
 
 use anyhow::{Result, ensure};
-use audit_trail::AuditTrailClient;
-use audit_trail::core::types::{
+use audit_trails::AuditTrailClient;
+use audit_trails::core::types::{
     CapabilityIssueOptions, Data, ImmutableMetadata, InitialRecord, PermissionSet, RoleTags,
 };
 use examples::{get_funded_audit_trail_client, issue_tagged_record_role};

@@ -1,7 +1,7 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-//! Shared serializable domain types for Audit Trail.
+//! Shared serializable domain types for Audit Trails.
 //!
 //! These types stay close to the on-chain data model so they can deserialize ledger state and events while also
 //! serving as the typed inputs and outputs of the Rust client API.

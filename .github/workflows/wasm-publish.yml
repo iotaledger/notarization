@@ -145,4 +145,4 @@ jobs:
         if: ${{ github.event.inputs.package == 'audit-trail' }}
         shell: bash
         run: |
-          npm dist-tag add @iota/audit-trail@${{ github.event.inputs.retag-version }} ${{ github.event.inputs.retag-tag }}
+          npm dist-tag add @iota/audit-trails@${{ github.event.inputs.retag-version }} ${{ github.event.inputs.retag-tag }}

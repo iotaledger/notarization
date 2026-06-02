@@ -15,6 +15,6 @@
     },
     "dependencies": {
         "@iota/iota-sdk": "^1.0.0",
-        "@iota/audit-trail": "file:../.."
+        "@iota/audit-trails": "file:../.."
     }
 }

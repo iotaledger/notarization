@@ -7,11 +7,11 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use anyhow::{Context, anyhow};
-use audit_trail::core::types::{
+use audit_trails::core::types::{
     Capability, CapabilityIssueOptions, CapabilityIssued, Data, InitialRecord, Permission, PermissionSet, RoleCreated,
     RoleTags,
 };
-use audit_trail::{AuditTrailClient, PackageOverrides};
+use audit_trails::{AuditTrailClient, PackageOverrides};
 use iota_interaction::types::base_types::{IotaAddress, ObjectID, ObjectRef};
 use iota_interaction::types::crypto::PublicKey;
 use iota_interaction::{IOTA_LOCAL_NETWORK_URL, IotaClient, IotaClientBuilder};
@@ -48,7 +48,7 @@ async fn load_cached_package_ids(chain_id: &str) -> anyhow::Result<PublishedPack
     let mut parts = cache.trim().split(';');
     let audit_trail_package_id = parts
         .next()
-        .ok_or_else(|| anyhow!("missing audit_trail package ID in cache"))?;
+        .ok_or_else(|| anyhow!("missing IotaAuditTrails package ID in cache"))?;
     let tf_components_package_id = parts.next().unwrap_or_default();
     let cached_chain_id = parts.next().ok_or_else(|| anyhow!("missing chain ID in cache"))?;
 
@@ -58,7 +58,7 @@ async fn load_cached_package_ids(chain_id: &str) -> anyhow::Result<PublishedPack
 
     Ok(PublishedPackageIds {
         audit_trail_package_id: ObjectID::from_str(audit_trail_package_id)
-            .context("failed to parse cached audit_trail package ID")?,
+            .context("failed to parse cached IotaAuditTrails package ID")?,
         tf_components_package_id: if tf_components_package_id.is_empty() {
             None
         } else {
@@ -108,7 +108,7 @@ async fn publish_package_ids(iota_client: &IotaClient) -> anyhow::Result<Publish
         match key {
             "IOTA_AUDIT_TRAIL_PKG_ID" => {
                 let package_id =
-                    ObjectID::from_str(value).context("failed to parse published audit_trail package ID")?;
+                    ObjectID::from_str(value).context("failed to parse published IotaAuditTrails package ID")?;
                 audit_trail_package_id = Some(package_id);
             }
             "IOTA_TF_COMPONENTS_PKG_ID" => {

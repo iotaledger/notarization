@@ -12,7 +12,7 @@ import {
     PermissionSet,
     RoleTags,
     TimeLock,
-} from "@iota/audit-trail/node";
+} from "@iota/audit-trails/node";
 import { Ed25519KeypairSigner } from "@iota/iota-interaction-ts/node/test_utils";
 import { IotaClient } from "@iota/iota-sdk/client";
 import { getFaucetHost, requestIotaFromFaucetV0 } from "@iota/iota-sdk/faucet";

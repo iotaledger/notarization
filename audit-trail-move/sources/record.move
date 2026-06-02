@@ -1,11 +1,11 @@
 // Copyright (c) 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-/// Record module for Audit Trail entries
+/// Record module for audit trail entries
 ///
 /// A Record represents a single entry in an audit trail, stored in a
 /// LinkedTable and addressed by trail_id + sequence_number.
-module audit_trail::record;
+module audit_trails::record;
 
 use iota::vec_set::{Self, VecSet};
 use std::string::String;
@@ -79,7 +79,7 @@ public struct InitialRecord<D: store + copy> has copy, drop, store {
 
 // ===== Constructors =====
 
-/// Creates an `InitialRecord` to be passed to `audit_trail::create`.
+/// Creates an `InitialRecord` to be passed to `audit_trails::create`.
 ///
 /// Returns the constructed `InitialRecord`.
 public fun new_initial_record<D: store + copy>(

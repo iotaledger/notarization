@@ -1,8 +1,8 @@
 #[allow(lint(abort_without_constant))]
 #[test_only]
-module audit_trail::create_audit_trail_tests;
+module audit_trails::create_audit_trail_tests;
 
-use audit_trail::{
+use audit_trails::{
     locking,
     main::{Self, AuditTrail, initial_admin_role_name},
     permission,
@@ -236,7 +236,7 @@ fun test_create_with_tagged_initial_record_tracks_tag_usage() {
     ts::end(scenario);
 }
 
-#[test, expected_failure(abort_code = audit_trail::main::ERecordTagInUse)]
+#[test, expected_failure(abort_code = audit_trails::main::ERecordTagInUse)]
 fun test_create_with_tagged_initial_record_blocks_tag_removal() {
     let admin = @0xD;
     let mut scenario = ts::begin(admin);
@@ -453,7 +453,7 @@ fun test_create_metadata_admin_role() {
         let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
         // Create the MetadataAdmin role using the admin capability
         let metadata_admin_role_name = string::utf8(b"MetadataAdmin");
-        let metadata_admin_perms = audit_trail::permission::metadata_admin_permissions();
+        let metadata_admin_perms = audit_trails::permission::metadata_admin_permissions();
 
         trail
             .access_mut()
@@ -471,16 +471,16 @@ fun test_create_metadata_admin_role() {
 
         // Verify the role has the correct permissions
         assert!(
-            audit_trail::permission::has_permission(
+            audit_trails::permission::has_permission(
                 role_perms,
-                &audit_trail::permission::update_metadata(),
+                &audit_trails::permission::update_metadata(),
             ),
             2,
         );
         assert!(
-            audit_trail::permission::has_permission(
+            audit_trails::permission::has_permission(
                 role_perms,
-                &audit_trail::permission::delete_metadata(),
+                &audit_trails::permission::delete_metadata(),
             ),
             3,
         );

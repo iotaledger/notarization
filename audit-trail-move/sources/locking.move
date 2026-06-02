@@ -1,8 +1,8 @@
 // Copyright (c) 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-/// Locking configuration for Audit Trail records
-module audit_trail::locking;
+/// Locking configuration for audit trail records
+module audit_trails::locking;
 
 use iota::clock::Clock;
 use tf_components::timelock::{Self, TimeLock};

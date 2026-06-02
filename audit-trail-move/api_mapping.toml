@@ -30,10 +30,10 @@
 # the `update-api-mapping` and `sync-product-docs` skills under `.claude/skills/`.
 
 # =============================================================================
-# Module: audit_trail::main (audit-trail-move/sources/audit_trail.move)
+# Module: audit_trails::main (audit-trail-move/sources/audit_trail.move)
 # =============================================================================
 
-[audit_trail.main.ImmutableMetadata]
+[audit_trails.main.ImmutableMetadata]
 rust = [
   "ImmutableMetadata",
   "ImmutableMetadata::new",
@@ -44,7 +44,7 @@ wasm = [
   "WasmImmutableMetadata",
 ]
 
-[audit_trail.main.AuditTrail]
+[audit_trails.main.AuditTrail]
 rust = [
   "OnChainAuditTrail",
   "AuditTrailHandle",
@@ -77,7 +77,7 @@ wasm = [
   "WasmAuditTrailHandle::tags",
 ]
 
-[audit_trail.main.AuditTrailCreated]
+[audit_trails.main.AuditTrailCreated]
 rust = [
   "AuditTrailCreated",
   "TrailCreated",
@@ -87,7 +87,7 @@ wasm = [
   "WasmAuditTrailCreated",
 ]
 
-[audit_trail.main.AuditTrailDeleted]
+[audit_trails.main.AuditTrailDeleted]
 rust = [
   "AuditTrailDeleted",
 ]
@@ -95,7 +95,7 @@ wasm = [
   "WasmAuditTrailDeleted",
 ]
 
-[audit_trail.main.RecordAdded]
+[audit_trails.main.RecordAdded]
 rust = [
   "RecordAdded",
 ]
@@ -103,7 +103,7 @@ wasm = [
   "WasmRecordAdded",
 ]
 
-[audit_trail.main.RecordDeleted]
+[audit_trails.main.RecordDeleted]
 rust = [
   "RecordDeleted",
 ]
@@ -111,7 +111,7 @@ wasm = [
   "WasmRecordDeleted",
 ]
 
-[audit_trail.main.RevokedCapabilitiesCleanedUp]
+[audit_trails.main.RevokedCapabilitiesCleanedUp]
 rust = [
   "RevokedCapabilitiesCleanedUp",
 ]
@@ -119,7 +119,7 @@ wasm = [
   "WasmRevokedCapabilitiesCleanedUp",
 ]
 
-[audit_trail.main.CapabilityIssuedReceipt]
+[audit_trails.main.CapabilityIssuedReceipt]
 rust = [
   "CapabilityIssued",
 ]
@@ -127,7 +127,7 @@ wasm = [
   "WasmCapabilityIssued",
 ]
 
-[audit_trail.main.new_trail_metadata]
+[audit_trails.main.new_trail_metadata]
 rust = [
   "ImmutableMetadata::new",
   "ImmutableMetadata::to_ptb",
@@ -139,7 +139,7 @@ wasm = [
   "WasmAuditTrailBuilder::with_trail_metadata",
 ]
 
-[audit_trail.main.create]
+[audit_trails.main.create]
 rust = [
   "AuditTrailBuilder",
   "AuditTrailBuilder::with_initial_record",
@@ -176,7 +176,7 @@ wasm = [
   "WasmAuditTrailClient::trail",
 ]
 
-[audit_trail.main.initial_admin_role_name]
+[audit_trails.main.initial_admin_role_name]
 rust = [
   "RoleMap.initial_admin_role_name",
 ]
@@ -184,7 +184,7 @@ wasm = [
   "WasmRoleMap.initial_admin_role_name",
 ]
 
-[audit_trail.main.migrate]
+[audit_trails.main.migrate]
 rust = [
   "Migrate",
   "Migrate::new",
@@ -197,7 +197,7 @@ wasm = [
   "WasmAuditTrailHandle::migrate",
 ]
 
-[audit_trail.main.add_record]
+[audit_trails.main.add_record]
 rust = [
   "AddRecord",
   "AddRecord::new",
@@ -210,7 +210,7 @@ wasm = [
   "WasmTrailRecords::add",
 ]
 
-[audit_trail.main.delete_record]
+[audit_trails.main.delete_record]
 rust = [
   "DeleteRecord",
   "DeleteRecord::new",
@@ -223,7 +223,7 @@ wasm = [
   "WasmTrailRecords::delete",
 ]
 
-[audit_trail.main.delete_records_batch]
+[audit_trails.main.delete_records_batch]
 rust = [
   "DeleteRecordsBatch",
   "DeleteRecordsBatch::new",
@@ -236,7 +236,7 @@ wasm = [
   "WasmTrailRecords::delete_batch",
 ]
 
-[audit_trail.main.delete_audit_trail]
+[audit_trails.main.delete_audit_trail]
 rust = [
   "DeleteAuditTrail",
   "DeleteAuditTrail::new",
@@ -249,7 +249,7 @@ wasm = [
   "WasmAuditTrailHandle::delete_audit_trail",
 ]
 
-[audit_trail.main.is_record_locked]
+[audit_trails.main.is_record_locked]
 rust = [
   "TrailLocking::is_record_locked",
 ]
@@ -257,7 +257,7 @@ wasm = [
   "WasmTrailLocking::is_record_locked",
 ]
 
-[audit_trail.main.update_locking_config]
+[audit_trails.main.update_locking_config]
 rust = [
   "UpdateLockingConfig",
   "UpdateLockingConfig::new",
@@ -270,7 +270,7 @@ wasm = [
   "WasmTrailLocking::update",
 ]
 
-[audit_trail.main.update_delete_record_window]
+[audit_trails.main.update_delete_record_window]
 rust = [
   "UpdateDeleteRecordWindow",
   "UpdateDeleteRecordWindow::new",
@@ -283,7 +283,7 @@ wasm = [
   "WasmTrailLocking::update_delete_record_window",
 ]
 
-[audit_trail.main.update_delete_trail_lock]
+[audit_trails.main.update_delete_trail_lock]
 rust = [
   "UpdateDeleteTrailLock",
   "UpdateDeleteTrailLock::new",
@@ -296,7 +296,7 @@ wasm = [
   "WasmTrailLocking::update_delete_trail_lock",
 ]
 
-[audit_trail.main.update_write_lock]
+[audit_trails.main.update_write_lock]
 rust = [
   "UpdateWriteLock",
   "UpdateWriteLock::new",
@@ -309,7 +309,7 @@ wasm = [
   "WasmTrailLocking::update_write_lock",
 ]
 
-[audit_trail.main.update_metadata]
+[audit_trails.main.update_metadata]
 rust = [
   "UpdateMetadata",
   "UpdateMetadata::new",
@@ -322,7 +322,7 @@ wasm = [
   "WasmAuditTrailHandle::update_metadata",
 ]
 
-[audit_trail.main.add_record_tag]
+[audit_trails.main.add_record_tag]
 rust = [
   "AddRecordTag",
   "AddRecordTag::new",
@@ -335,7 +335,7 @@ wasm = [
   "WasmTrailTags::add",
 ]
 
-[audit_trail.main.remove_record_tag]
+[audit_trails.main.remove_record_tag]
 rust = [
   "RemoveRecordTag",
   "RemoveRecordTag::new",
@@ -348,7 +348,7 @@ wasm = [
   "WasmTrailTags::remove",
 ]
 
-[audit_trail.main.create_role]
+[audit_trails.main.create_role]
 rust = [
   "CreateRole",
   "CreateRole::new",
@@ -363,7 +363,7 @@ wasm = [
   "WasmTrailAccess::for_role",
 ]
 
-[audit_trail.main.update_role_permissions]
+[audit_trails.main.update_role_permissions]
 rust = [
   "UpdateRole",
   "UpdateRole::new",
@@ -376,7 +376,7 @@ wasm = [
   "WasmRoleHandle::update_permissions",
 ]
 
-[audit_trail.main.delete_role]
+[audit_trails.main.delete_role]
 rust = [
   "DeleteRole",
   "DeleteRole::new",
@@ -389,7 +389,7 @@ wasm = [
   "WasmRoleHandle::delete",
 ]
 
-[audit_trail.main.new_capability]
+[audit_trails.main.new_capability]
 rust = [
   "IssueCapability",
   "IssueCapability::new",
@@ -406,7 +406,7 @@ wasm = [
   "WasmCapabilityIssued",
 ]
 
-[audit_trail.main.revoke_capability]
+[audit_trails.main.revoke_capability]
 rust = [
   "RevokeCapability",
   "RevokeCapability::new",
@@ -421,7 +421,7 @@ wasm = [
   "WasmCapabilityRevoked",
 ]
 
-[audit_trail.main.destroy_capability]
+[audit_trails.main.destroy_capability]
 rust = [
   "DestroyCapability",
   "DestroyCapability::new",
@@ -436,7 +436,7 @@ wasm = [
   "WasmCapabilityDestroyed",
 ]
 
-[audit_trail.main.destroy_initial_admin_capability]
+[audit_trails.main.destroy_initial_admin_capability]
 rust = [
   "DestroyInitialAdminCapability",
   "DestroyInitialAdminCapability::new",
@@ -449,7 +449,7 @@ wasm = [
   "WasmTrailAccess::destroy_initial_admin_capability",
 ]
 
-[audit_trail.main.revoke_initial_admin_capability]
+[audit_trails.main.revoke_initial_admin_capability]
 rust = [
   "RevokeInitialAdminCapability",
   "RevokeInitialAdminCapability::new",
@@ -462,7 +462,7 @@ wasm = [
   "WasmTrailAccess::revoke_initial_admin_capability",
 ]
 
-[audit_trail.main.cleanup_revoked_capabilities]
+[audit_trails.main.cleanup_revoked_capabilities]
 rust = [
   "CleanupRevokedCapabilities",
   "CleanupRevokedCapabilities::new",
@@ -475,7 +475,7 @@ wasm = [
   "WasmTrailAccess::cleanup_revoked_capabilities",
 ]
 
-[audit_trail.main.record_count]
+[audit_trails.main.record_count]
 rust = [
   "TrailRecords::record_count",
 ]
@@ -483,7 +483,7 @@ wasm = [
   "WasmTrailRecords::record_count",
 ]
 
-[audit_trail.main.sequence_number]
+[audit_trails.main.sequence_number]
 rust = [
   "OnChainAuditTrail.sequence_number",
 ]
@@ -491,7 +491,7 @@ wasm = [
   "WasmOnChainAuditTrail::sequence_number",
 ]
 
-[audit_trail.main.creator]
+[audit_trails.main.creator]
 rust = [
   "OnChainAuditTrail.creator",
 ]
@@ -499,7 +499,7 @@ wasm = [
   "WasmOnChainAuditTrail::creator",
 ]
 
-[audit_trail.main.created_at]
+[audit_trails.main.created_at]
 rust = [
   "OnChainAuditTrail.created_at",
 ]
@@ -507,7 +507,7 @@ wasm = [
   "WasmOnChainAuditTrail::created_at",
 ]
 
-[audit_trail.main.id]
+[audit_trails.main.id]
 rust = [
   "OnChainAuditTrail.id",
 ]
@@ -515,7 +515,7 @@ wasm = [
   "WasmOnChainAuditTrail::id",
 ]
 
-[audit_trail.main.name]
+[audit_trails.main.name]
 rust = [
   "OnChainAuditTrail.immutable_metadata",
   "ImmutableMetadata.name",
@@ -525,7 +525,7 @@ wasm = [
   "WasmImmutableMetadata.name",
 ]
 
-[audit_trail.main.description]
+[audit_trails.main.description]
 rust = [
   "OnChainAuditTrail.immutable_metadata",
   "ImmutableMetadata.description",
@@ -535,7 +535,7 @@ wasm = [
   "WasmImmutableMetadata.description",
 ]
 
-[audit_trail.main.metadata]
+[audit_trails.main.metadata]
 rust = [
   "OnChainAuditTrail.updatable_metadata",
 ]
@@ -543,7 +543,7 @@ wasm = [
   "WasmOnChainAuditTrail::updatable_metadata",
 ]
 
-[audit_trail.main.locking_config]
+[audit_trails.main.locking_config]
 rust = [
   "OnChainAuditTrail.locking_config",
   "TrailLocking",
@@ -553,7 +553,7 @@ wasm = [
   "WasmTrailLocking",
 ]
 
-[audit_trail.main.tags]
+[audit_trails.main.tags]
 rust = [
   "OnChainAuditTrail.tags",
   "TagRegistry",
@@ -564,7 +564,7 @@ wasm = [
   "WasmRecordTagEntry",
 ]
 
-[audit_trail.main.is_empty]
+[audit_trails.main.is_empty]
 rust = [
   "OnChainAuditTrail.records",
   "TrailRecords::record_count",
@@ -573,7 +573,7 @@ wasm = [
   "WasmTrailRecords::record_count",
 ]
 
-[audit_trail.main.first_sequence]
+[audit_trails.main.first_sequence]
 rust = [
   "OnChainAuditTrail.records",
 ]
@@ -581,7 +581,7 @@ wasm = [
   "WasmLinkedTable.head",
 ]
 
-[audit_trail.main.last_sequence]
+[audit_trails.main.last_sequence]
 rust = [
   "OnChainAuditTrail.records",
 ]
@@ -589,7 +589,7 @@ wasm = [
   "WasmLinkedTable.tail",
 ]
 
-[audit_trail.main.get_record]
+[audit_trails.main.get_record]
 rust = [
   "TrailRecords::get",
 ]
@@ -597,7 +597,7 @@ wasm = [
   "WasmTrailRecords::get",
 ]
 
-[audit_trail.main.has_record]
+[audit_trails.main.has_record]
 rust = [
   "TrailRecords::get",
 ]
@@ -605,7 +605,7 @@ wasm = [
   "WasmTrailRecords::get",
 ]
 
-[audit_trail.main.records]
+[audit_trails.main.records]
 rust = [
   "OnChainAuditTrail.records",
   "TrailRecords",
@@ -624,7 +624,7 @@ wasm = [
   "WasmPaginatedRecord",
 ]
 
-[audit_trail.main.access]
+[audit_trails.main.access]
 rust = [
   "OnChainAuditTrail.roles",
   "RoleMap",
@@ -638,7 +638,7 @@ wasm = [
   "WasmAuditTrailHandle::access",
 ]
 
-[audit_trail.main.access_mut]
+[audit_trails.main.access_mut]
 rust = [
   "TrailAccess",
 ]
@@ -647,10 +647,10 @@ wasm = [
 ]
 
 # =============================================================================
-# Module: audit_trail::locking (audit-trail-move/sources/locking.move)
+# Module: audit_trails::locking (audit-trail-move/sources/locking.move)
 # =============================================================================
 
-[audit_trail.locking.LockingWindow]
+[audit_trails.locking.LockingWindow]
 rust = [
   "LockingWindow",
   "LockingWindow::to_ptb",
@@ -661,7 +661,7 @@ wasm = [
   "WasmLockingWindowType",
 ]
 
-[audit_trail.locking.LockingConfig]
+[audit_trails.locking.LockingConfig]
 rust = [
   "LockingConfig",
   "LockingConfig::to_ptb",
@@ -673,7 +673,7 @@ wasm = [
   "WasmLockingConfig::new",
 ]
 
-[audit_trail.locking.window_none]
+[audit_trails.locking.window_none]
 rust = [
   "LockingWindow::None",
 ]
@@ -681,7 +681,7 @@ wasm = [
   "WasmLockingWindow::with_none",
 ]
 
-[audit_trail.locking.window_time_based]
+[audit_trails.locking.window_time_based]
 rust = [
   "LockingWindow::TimeBased",
 ]
@@ -689,7 +689,7 @@ wasm = [
   "WasmLockingWindow::with_time_based",
 ]
 
-[audit_trail.locking.window_count_based]
+[audit_trails.locking.window_count_based]
 rust = [
   "LockingWindow::CountBased",
   "LockingWindow::validate",
@@ -698,7 +698,7 @@ wasm = [
   "WasmLockingWindow::with_count_based",
 ]
 
-[audit_trail.locking.new]
+[audit_trails.locking.new]
 rust = [
   "LockingConfig",
   "LockingConfig::to_ptb",
@@ -709,19 +709,19 @@ wasm = [
   "WasmLockingConfig::new",
 ]
 
-[audit_trail.locking.is_delete_trail_locked]
+[audit_trails.locking.is_delete_trail_locked]
 rust = []
 wasm = []
 
-[audit_trail.locking.is_write_locked]
+[audit_trails.locking.is_write_locked]
 rust = []
 wasm = []
 
 # =============================================================================
-# Module: audit_trail::permission (audit-trail-move/sources/permission.move)
+# Module: audit_trails::permission (audit-trail-move/sources/permission.move)
 # =============================================================================
 
-[audit_trail.permission.Permission]
+[audit_trails.permission.Permission]
 rust = [
   "Permission",
   "Permission::function_name",
@@ -732,7 +732,7 @@ wasm = [
   "WasmPermission",
 ]
 
-[audit_trail.permission.empty]
+[audit_trails.permission.empty]
 rust = [
   "PermissionSet",
   "PermissionSet::default",
@@ -741,7 +741,7 @@ wasm = [
   "WasmPermissionSet::new",
 ]
 
-[audit_trail.permission.add]
+[audit_trails.permission.add]
 rust = [
   "PermissionSet.permissions",
 ]
@@ -749,7 +749,7 @@ wasm = [
   "WasmPermissionSet.permissions",
 ]
 
-[audit_trail.permission.from_vec]
+[audit_trails.permission.from_vec]
 rust = [
   "PermissionSet",
   "PermissionSet::to_move_vec",
@@ -759,7 +759,7 @@ wasm = [
   "WasmPermissionSet::new",
 ]
 
-[audit_trail.permission.has_permission]
+[audit_trails.permission.has_permission]
 rust = [
   "PermissionSet.permissions",
 ]
@@ -767,7 +767,7 @@ wasm = [
   "WasmPermissionSet.permissions",
 ]
 
-[audit_trail.permission.admin_permissions]
+[audit_trails.permission.admin_permissions]
 rust = [
   "PermissionSet::admin_permissions",
 ]
@@ -775,7 +775,7 @@ wasm = [
   "WasmPermissionSet::admin_permissions",
 ]
 
-[audit_trail.permission.record_admin_permissions]
+[audit_trails.permission.record_admin_permissions]
 rust = [
   "PermissionSet::record_admin_permissions",
 ]
@@ -783,7 +783,7 @@ wasm = [
   "WasmPermissionSet::record_admin_permissions",
 ]
 
-[audit_trail.permission.locking_admin_permissions]
+[audit_trails.permission.locking_admin_permissions]
 rust = [
   "PermissionSet::locking_admin_permissions",
 ]
@@ -791,7 +791,7 @@ wasm = [
   "WasmPermissionSet::locking_admin_permissions",
 ]
 
-[audit_trail.permission.role_admin_permissions]
+[audit_trails.permission.role_admin_permissions]
 rust = [
   "PermissionSet::role_admin_permissions",
   "RoleAdminPermissions",
@@ -801,7 +801,7 @@ wasm = [
   "WasmRoleAdminPermissions",
 ]
 
-[audit_trail.permission.tag_admin_permissions]
+[audit_trails.permission.tag_admin_permissions]
 rust = [
   "PermissionSet::tag_admin_permissions",
 ]
@@ -809,7 +809,7 @@ wasm = [
   "WasmPermissionSet::tag_admin_permissions",
 ]
 
-[audit_trail.permission.cap_admin_permissions]
+[audit_trails.permission.cap_admin_permissions]
 rust = [
   "PermissionSet::cap_admin_permissions",
   "CapabilityAdminPermissions",
@@ -819,7 +819,7 @@ wasm = [
   "WasmCapabilityAdminPermissions",
 ]
 
-[audit_trail.permission.metadata_admin_permissions]
+[audit_trails.permission.metadata_admin_permissions]
 rust = [
   "PermissionSet::metadata_admin_permissions",
 ]
@@ -827,7 +827,7 @@ wasm = [
   "WasmPermissionSet::metadata_admin_permissions",
 ]
 
-[audit_trail.permission.delete_audit_trail]
+[audit_trails.permission.delete_audit_trail]
 rust = [
   "Permission::DeleteAuditTrail",
 ]
@@ -835,7 +835,7 @@ wasm = [
   "WasmPermission::DeleteAuditTrail",
 ]
 
-[audit_trail.permission.delete_all_records]
+[audit_trails.permission.delete_all_records]
 rust = [
   "Permission::DeleteAllRecords",
 ]
@@ -843,7 +843,7 @@ wasm = [
   "WasmPermission::DeleteAllRecords",
 ]
 
-[audit_trail.permission.add_record]
+[audit_trails.permission.add_record]
 rust = [
   "Permission::AddRecord",
 ]
@@ -851,7 +851,7 @@ wasm = [
   "WasmPermission::AddRecord",
 ]
 
-[audit_trail.permission.delete_record]
+[audit_trails.permission.delete_record]
 rust = [
   "Permission::DeleteRecord",
 ]
@@ -859,7 +859,7 @@ wasm = [
   "WasmPermission::DeleteRecord",
 ]
 
-[audit_trail.permission.correct_record]
+[audit_trails.permission.correct_record]
 rust = [
   "Permission::CorrectRecord",
 ]
@@ -867,7 +867,7 @@ wasm = [
   "WasmPermission::CorrectRecord",
 ]
 
-[audit_trail.permission.update_locking_config]
+[audit_trails.permission.update_locking_config]
 rust = [
   "Permission::UpdateLockingConfig",
 ]
@@ -875,7 +875,7 @@ wasm = [
   "WasmPermission::UpdateLockingConfig",
 ]
 
-[audit_trail.permission.update_locking_config_for_delete_record]
+[audit_trails.permission.update_locking_config_for_delete_record]
 rust = [
   "Permission::UpdateLockingConfigForDeleteRecord",
 ]
@@ -883,7 +883,7 @@ wasm = [
   "WasmPermission::UpdateLockingConfigForDeleteRecord",
 ]
 
-[audit_trail.permission.update_locking_config_for_delete_trail]
+[audit_trails.permission.update_locking_config_for_delete_trail]
 rust = [
   "Permission::UpdateLockingConfigForDeleteTrail",
 ]
@@ -891,7 +891,7 @@ wasm = [
   "WasmPermission::UpdateLockingConfigForDeleteTrail",
 ]
 
-[audit_trail.permission.update_locking_config_for_write]
+[audit_trails.permission.update_locking_config_for_write]
 rust = [
   "Permission::UpdateLockingConfigForWrite",
 ]
@@ -899,7 +899,7 @@ wasm = [
   "WasmPermission::UpdateLockingConfigForWrite",
 ]
 
-[audit_trail.permission.add_record_tags]
+[audit_trails.permission.add_record_tags]
 rust = [
   "Permission::AddRecordTags",
 ]
@@ -907,7 +907,7 @@ wasm = [
   "WasmPermission::AddRecordTags",
 ]
 
-[audit_trail.permission.delete_record_tags]
+[audit_trails.permission.delete_record_tags]
 rust = [
   "Permission::DeleteRecordTags",
 ]
@@ -915,7 +915,7 @@ wasm = [
   "WasmPermission::DeleteRecordTags",
 ]
 
-[audit_trail.permission.add_roles]
+[audit_trails.permission.add_roles]
 rust = [
   "Permission::AddRoles",
 ]
@@ -923,7 +923,7 @@ wasm = [
   "WasmPermission::AddRoles",
 ]
 
-[audit_trail.permission.update_roles]
+[audit_trails.permission.update_roles]
 rust = [
   "Permission::UpdateRoles",
 ]
@@ -931,7 +931,7 @@ wasm = [
   "WasmPermission::UpdateRoles",
 ]
 
-[audit_trail.permission.delete_roles]
+[audit_trails.permission.delete_roles]
 rust = [
   "Permission::DeleteRoles",
 ]
@@ -939,7 +939,7 @@ wasm = [
   "WasmPermission::DeleteRoles",
 ]
 
-[audit_trail.permission.add_capabilities]
+[audit_trails.permission.add_capabilities]
 rust = [
   "Permission::AddCapabilities",
 ]
@@ -947,7 +947,7 @@ wasm = [
   "WasmPermission::AddCapabilities",
 ]
 
-[audit_trail.permission.revoke_capabilities]
+[audit_trails.permission.revoke_capabilities]
 rust = [
   "Permission::RevokeCapabilities",
 ]
@@ -955,7 +955,7 @@ wasm = [
   "WasmPermission::RevokeCapabilities",
 ]
 
-[audit_trail.permission.update_metadata]
+[audit_trails.permission.update_metadata]
 rust = [
   "Permission::UpdateMetadata",
 ]
@@ -963,7 +963,7 @@ wasm = [
   "WasmPermission::UpdateMetadata",
 ]
 
-[audit_trail.permission.delete_metadata]
+[audit_trails.permission.delete_metadata]
 rust = [
   "Permission::DeleteMetadata",
 ]
@@ -971,7 +971,7 @@ wasm = [
   "WasmPermission::DeleteMetadata",
 ]
 
-[audit_trail.permission.migrate_audit_trail]
+[audit_trails.permission.migrate_audit_trail]
 rust = [
   "Permission::Migrate",
 ]
@@ -980,10 +980,10 @@ wasm = [
 ]
 
 # =============================================================================
-# Module: audit_trail::record (audit-trail-move/sources/record.move)
+# Module: audit_trails::record (audit-trail-move/sources/record.move)
 # =============================================================================
 
-[audit_trail.record.Data]
+[audit_trails.record.Data]
 rust = [
   "Data",
   "Data::tag",
@@ -999,7 +999,7 @@ wasm = [
   "WasmData::to_bytes",
 ]
 
-[audit_trail.record.new_bytes]
+[audit_trails.record.new_bytes]
 rust = [
   "Data::bytes",
   "Data::Bytes",
@@ -1008,7 +1008,7 @@ wasm = [
   "WasmData::from_bytes",
 ]
 
-[audit_trail.record.new_text]
+[audit_trails.record.new_text]
 rust = [
   "Data::text",
   "Data::Text",
@@ -1017,7 +1017,7 @@ wasm = [
   "WasmData::from_string",
 ]
 
-[audit_trail.record.bytes]
+[audit_trails.record.bytes]
 rust = [
   "Data::as_bytes",
   "Data::Bytes",
@@ -1026,7 +1026,7 @@ wasm = [
   "WasmData::to_bytes",
 ]
 
-[audit_trail.record.text]
+[audit_trails.record.text]
 rust = [
   "Data::as_text",
   "Data::Text",
@@ -1035,7 +1035,7 @@ wasm = [
   "WasmData::to_string",
 ]
 
-[audit_trail.record.Record]
+[audit_trails.record.Record]
 rust = [
   "Record",
 ]
@@ -1043,7 +1043,7 @@ wasm = [
   "WasmRecord",
 ]
 
-[audit_trail.record.InitialRecord]
+[audit_trails.record.InitialRecord]
 rust = [
   "InitialRecord",
   "InitialRecord::new",
@@ -1057,7 +1057,7 @@ wasm = [
   "WasmAuditTrailBuilder::with_initial_record_bytes",
 ]
 
-[audit_trail.record.new_initial_record]
+[audit_trails.record.new_initial_record]
 rust = [
   "InitialRecord::new",
   "InitialRecord::into_ptb",
@@ -1069,7 +1069,7 @@ wasm = [
   "WasmAuditTrailBuilder::with_initial_record_bytes",
 ]
 
-[audit_trail.record.data]
+[audit_trails.record.data]
 rust = [
   "Record.data",
 ]
@@ -1077,7 +1077,7 @@ wasm = [
   "WasmRecord.data",
 ]
 
-[audit_trail.record.metadata]
+[audit_trails.record.metadata]
 rust = [
   "Record.metadata",
 ]
@@ -1085,7 +1085,7 @@ wasm = [
   "WasmRecord.metadata",
 ]
 
-[audit_trail.record.tag]
+[audit_trails.record.tag]
 rust = [
   "Record.tag",
 ]
@@ -1093,7 +1093,7 @@ wasm = [
   "WasmRecord.tag",
 ]
 
-[audit_trail.record.sequence_number]
+[audit_trails.record.sequence_number]
 rust = [
   "Record.sequence_number",
 ]
@@ -1101,7 +1101,7 @@ wasm = [
   "WasmRecord.sequence_number",
 ]
 
-[audit_trail.record.added_by]
+[audit_trails.record.added_by]
 rust = [
   "Record.added_by",
 ]
@@ -1109,7 +1109,7 @@ wasm = [
   "WasmRecord.added_by",
 ]
 
-[audit_trail.record.added_at]
+[audit_trails.record.added_at]
 rust = [
   "Record.added_at",
 ]
@@ -1117,7 +1117,7 @@ wasm = [
   "WasmRecord.added_at",
 ]
 
-[audit_trail.record.correction]
+[audit_trails.record.correction]
 rust = [
   "Record.correction",
 ]
@@ -1125,7 +1125,7 @@ wasm = [
   "WasmRecord.correction",
 ]
 
-[audit_trail.record.RecordCorrection]
+[audit_trails.record.RecordCorrection]
 rust = [
   "RecordCorrection",
   "RecordCorrection::with_replaces",
@@ -1136,7 +1136,7 @@ wasm = [
   "WasmRecordCorrection",
 ]
 
-[audit_trail.record.empty]
+[audit_trails.record.empty]
 rust = [
   "RecordCorrection::default",
 ]
@@ -1144,7 +1144,7 @@ wasm = [
   "WasmRecordCorrection",
 ]
 
-[audit_trail.record.with_replaces]
+[audit_trails.record.with_replaces]
 rust = [
   "RecordCorrection::with_replaces",
 ]
@@ -1152,7 +1152,7 @@ wasm = [
   "WasmRecordCorrection.replaces",
 ]
 
-[audit_trail.record.replaces]
+[audit_trails.record.replaces]
 rust = [
   "RecordCorrection.replaces",
 ]
@@ -1160,7 +1160,7 @@ wasm = [
   "WasmRecordCorrection.replaces",
 ]
 
-[audit_trail.record.is_replaced_by]
+[audit_trails.record.is_replaced_by]
 rust = [
   "RecordCorrection.is_replaced_by",
 ]
@@ -1168,23 +1168,23 @@ wasm = [
   "WasmRecordCorrection.is_replaced_by",
 ]
 
-[audit_trail.record.is_correction]
+[audit_trails.record.is_correction]
 rust = [
   "RecordCorrection::is_correction",
 ]
 wasm = []
 
-[audit_trail.record.is_replaced]
+[audit_trails.record.is_replaced]
 rust = [
   "RecordCorrection::is_replaced",
 ]
 wasm = []
 
 # =============================================================================
-# Module: audit_trail::record_tags (audit-trail-move/sources/record_tags.move)
+# Module: audit_trails::record_tags (audit-trail-move/sources/record_tags.move)
 # =============================================================================
 
-[audit_trail.record_tags.RoleTags]
+[audit_trails.record_tags.RoleTags]
 rust = [
   "RoleTags",
   "RoleTags::new",
@@ -1197,7 +1197,7 @@ wasm = [
   "WasmRoleTags::new",
 ]
 
-[audit_trail.record_tags.new_role_tags]
+[audit_trails.record_tags.new_role_tags]
 rust = [
   "RoleTags::new",
   "RoleTags::to_ptb",
@@ -1206,7 +1206,7 @@ wasm = [
   "WasmRoleTags::new",
 ]
 
-[audit_trail.record_tags.tags]
+[audit_trails.record_tags.tags]
 rust = [
   "RoleTags.tags",
 ]
@@ -1214,7 +1214,7 @@ wasm = [
   "WasmRoleTags.tags",
 ]
 
-[audit_trail.record_tags.TagRegistry]
+[audit_trails.record_tags.TagRegistry]
 rust = [
   "TagRegistry",
   "TagRegistry::len",
@@ -1231,7 +1231,7 @@ wasm = [
   "WasmOnChainAuditTrail::tags",
 ]
 
-[audit_trail.record_tags.tag_map]
+[audit_trails.record_tags.tag_map]
 rust = [
   "TagRegistry.tag_map",
 ]

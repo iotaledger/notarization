@@ -1,7 +1,7 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-//! # Audit Trail Client
+//! # Audit Trails Client
 //!
 //! The full client extends [`AuditTrailClientReadOnly`] with signing support and write
 //! transaction builders.
@@ -12,8 +12,8 @@
 //! that you can configure before signing and submitting:
 //!
 //! ```rust,no_run
-//! # use audit_trail::AuditTrailClient;
-//! # use audit_trail::core::types::Data;
+//! # use audit_trails::AuditTrailClient;
+//! # use audit_trails::core::types::Data;
 //! # async fn example(
 //! #     client: &AuditTrailClient<
 //! #         impl secret_storage::Signer<iota_interaction::IotaKeySignature> + iota_interaction::OptionalSync,
@@ -42,8 +42,8 @@
 //! ## Example Workflow
 //!
 //! ```rust,no_run
-//! # use audit_trail::AuditTrailClient;
-//! # use audit_trail::core::types::{Data, PermissionSet, RoleTags};
+//! # use audit_trails::AuditTrailClient;
+//! # use audit_trails::core::types::{Data, PermissionSet, RoleTags};
 //! # async fn example(
 //! #     client: &AuditTrailClient<
 //! #         impl secret_storage::Signer<iota_interaction::IotaKeySignature> + iota_interaction::OptionalSync,
@@ -166,7 +166,7 @@ impl AuditTrailClient<NoSigner> {
     ///
     /// # Examples
     /// ```rust,ignore
-    /// # use audit_trail::client::AuditTrailClient;
+    /// # use audit_trails::client::AuditTrailClient;
     ///
     /// # #[tokio::main]
     /// # async fn main() -> anyhow::Result<()> {

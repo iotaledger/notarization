@@ -1,8 +1,8 @@
 #[allow(lint(abort_without_constant))]
 #[test_only]
-module audit_trail::role_tests;
+module audit_trails::role_tests;
 
-use audit_trail::{
+use audit_trails::{
     locking,
     main::{initial_admin_role_name, AuditTrail},
     permission,
@@ -220,7 +220,7 @@ fun test_role_based_permission_delegation() {
 }
 
 #[test]
-#[expected_failure(abort_code = audit_trail::main::ERecordTagNotDefined)]
+#[expected_failure(abort_code = audit_trails::main::ERecordTagNotDefined)]
 fun test_create_role_rejects_undefined_record_tags() {
     let admin_user = @0xAD;
     let mut scenario = ts::begin(admin_user);
@@ -325,7 +325,7 @@ fun test_delete_role_success() {
 }
 
 #[test]
-#[expected_failure(abort_code = audit_trail::main::ERecordTagInUse)]
+#[expected_failure(abort_code = audit_trails::main::ERecordTagInUse)]
 fun test_remove_record_tag_rejects_role_only_usage() {
     let admin_user = @0xAD;
     let mut scenario = ts::begin(admin_user);
@@ -375,7 +375,7 @@ fun test_remove_record_tag_rejects_role_only_usage() {
 // ===== Error Case Tests =====
 
 #[test]
-#[expected_failure(abort_code = audit_trail::role_map::ECapabilityPermissionDenied)]
+#[expected_failure(abort_code = audit_trails::role_map::ECapabilityPermissionDenied)]
 fun test_create_role_permission_denied() {
     let admin_user = @0xAD;
     let user = @0xB0B;
@@ -453,7 +453,7 @@ fun test_create_role_permission_denied() {
 }
 
 #[test]
-#[expected_failure(abort_code = audit_trail::role_map::ECapabilityPermissionDenied)]
+#[expected_failure(abort_code = audit_trails::role_map::ECapabilityPermissionDenied)]
 fun test_delete_role_permission_denied() {
     let admin_user = @0xAD;
     let user = @0xB0B;
@@ -535,7 +535,7 @@ fun test_delete_role_permission_denied() {
 }
 
 #[test]
-#[expected_failure(abort_code = audit_trail::role_map::ECapabilityPermissionDenied)]
+#[expected_failure(abort_code = audit_trails::role_map::ECapabilityPermissionDenied)]
 fun test_update_role_permissions_permission_denied() {
     let admin_user = @0xAD;
     let user = @0xB0B;
@@ -626,7 +626,7 @@ fun test_update_role_permissions_permission_denied() {
 }
 
 #[test]
-#[expected_failure(abort_code = audit_trail::role_map::ERoleDoesNotExist)]
+#[expected_failure(abort_code = audit_trails::role_map::ERoleDoesNotExist)]
 fun test_get_role_permissions_nonexistent() {
     let admin_user = @0xAD;
 
@@ -726,7 +726,7 @@ fun test_update_role_permissions_success() {
 }
 
 #[test]
-#[expected_failure(abort_code = audit_trail::main::ERecordTagNotDefined)]
+#[expected_failure(abort_code = audit_trails::main::ERecordTagNotDefined)]
 fun test_update_role_permissions_rejects_undefined_record_tags() {
     let admin_user = @0xAD;
     let mut scenario = ts::begin(admin_user);
@@ -775,7 +775,7 @@ fun test_update_role_permissions_rejects_undefined_record_tags() {
 }
 
 #[test]
-#[expected_failure(abort_code = audit_trail::role_map::ERoleDoesNotExist)]
+#[expected_failure(abort_code = audit_trails::role_map::ERoleDoesNotExist)]
 fun test_update_role_permissions_nonexistent() {
     let admin_user = @0xAD;
 

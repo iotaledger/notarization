@@ -1,8 +1,8 @@
 #[allow(lint(abort_without_constant))]
 #[test_only]
-module audit_trail::record_tests;
+module audit_trails::record_tests;
 
-use audit_trail::{
+use audit_trails::{
     locking,
     main::{Self, AuditTrail},
     permission,
@@ -320,7 +320,7 @@ fun test_delete_records_batch_with_matching_role_tags() {
 }
 
 #[test]
-#[expected_failure(abort_code = audit_trail::main::ERecordTagNotAllowed)]
+#[expected_failure(abort_code = audit_trails::main::ERecordTagNotAllowed)]
 fun test_add_tagged_record_requires_matching_role_tags() {
     let admin = @0xAD;
     let mut scenario = ts::begin(admin);
@@ -389,7 +389,7 @@ fun test_add_tagged_record_requires_matching_role_tags() {
 }
 
 #[test]
-#[expected_failure(abort_code = audit_trail::main::ERecordTagNotAllowed)]
+#[expected_failure(abort_code = audit_trails::main::ERecordTagNotAllowed)]
 fun test_delete_tagged_record_requires_matching_role_tags() {
     let admin = @0xAD;
     let mut scenario = ts::begin(admin);
@@ -612,7 +612,7 @@ fun test_delete_records_batch_skips_records_without_matching_role_tags() {
 }
 
 #[test]
-#[expected_failure(abort_code = audit_trail::main::ERecordTagNotDefined)]
+#[expected_failure(abort_code = audit_trails::main::ERecordTagNotDefined)]
 fun test_add_tagged_record_requires_trail_defined_tag() {
     let admin = @0xAD;
     let mut scenario = ts::begin(admin);
@@ -679,7 +679,7 @@ fun test_add_tagged_record_requires_trail_defined_tag() {
 }
 
 #[test]
-#[expected_failure(abort_code = audit_trail::main::ERecordTagInUse)]
+#[expected_failure(abort_code = audit_trails::main::ERecordTagInUse)]
 fun test_remove_record_tag_rejects_in_use_tag() {
     let admin = @0xAD;
     let writer = @0xB0B;
@@ -845,7 +845,7 @@ fun test_add_multiple_records() {
 }
 
 #[test]
-#[expected_failure(abort_code = audit_trail::role_map::ECapabilityPermissionDenied)]
+#[expected_failure(abort_code = audit_trails::role_map::ECapabilityPermissionDenied)]
 fun test_add_record_permission_denied() {
     let admin = @0xAD;
     let mut scenario = ts::begin(admin);
@@ -993,7 +993,7 @@ fun test_delete_record_success() {
 }
 
 #[test]
-#[expected_failure(abort_code = audit_trail::role_map::ECapabilityPermissionDenied)]
+#[expected_failure(abort_code = audit_trails::role_map::ECapabilityPermissionDenied)]
 fun test_delete_record_permission_denied() {
     let admin = @0xAD;
     let mut scenario = ts::begin(admin);
@@ -1339,7 +1339,7 @@ fun test_delete_record_after_time_lock_expires() {
 // ===== Delete Records Batch Tests =====
 
 #[test]
-#[expected_failure(abort_code = audit_trail::role_map::ECapabilityPermissionDenied)]
+#[expected_failure(abort_code = audit_trails::role_map::ECapabilityPermissionDenied)]
 fun test_delete_records_batch_requires_delete_all_records_permission() {
     let admin = @0xAD;
     let mut scenario = ts::begin(admin);
@@ -1432,7 +1432,7 @@ fun test_get_record() {
         let trail = ts::take_shared<AuditTrail<Data>>(&scenario);
 
         let record = trail.get_record(0);
-        let data = audit_trail::record::data(record);
+        let data = audit_trails::record::data(record);
 
         assert!(record::bytes(data) == option::some(b"Test data"), 0);
 

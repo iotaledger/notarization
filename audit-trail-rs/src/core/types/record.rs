@@ -63,7 +63,7 @@ impl InitialRecord {
     /// # Examples
     ///
     /// ```rust
-    /// use audit_trail::core::types::{Data, InitialRecord};
+    /// use audit_trails::core::types::{Data, InitialRecord};
     ///
     /// let record = InitialRecord::new(
     ///     Data::text("hello"),
@@ -135,7 +135,7 @@ impl RecordCorrection {
     /// ```rust
     /// use std::collections::HashSet;
     ///
-    /// use audit_trail::core::types::RecordCorrection;
+    /// use audit_trails::core::types::RecordCorrection;
     ///
     /// let correction = RecordCorrection::with_replaces(HashSet::from([1, 2]));
     ///
@@ -211,7 +211,7 @@ impl Data {
     /// # Examples
     ///
     /// ```rust
-    /// use audit_trail::core::types::Data;
+    /// use audit_trails::core::types::Data;
     ///
     /// assert_eq!(Data::bytes([1_u8, 2, 3]), Data::Bytes(vec![1, 2, 3]));
     /// ```
@@ -224,7 +224,7 @@ impl Data {
     /// # Examples
     ///
     /// ```rust
-    /// use audit_trail::core::types::Data;
+    /// use audit_trails::core::types::Data;
     ///
     /// assert_eq!(Data::text("hello"), Data::Text("hello".to_string()));
     /// ```

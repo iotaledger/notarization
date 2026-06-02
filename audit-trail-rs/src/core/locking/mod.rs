@@ -1,7 +1,7 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-//! Locking configuration APIs for Audit Trail.
+//! Locking configuration APIs for Audit Trails.
 
 use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::{IotaKeySignature, OptionalSync};

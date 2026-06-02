@@ -7,7 +7,7 @@
 //! - **Record admin client**: Receives a RecordAdmin capability bound to their address so it can write records.
 
 use anyhow::Result;
-use audit_trail::core::types::{CapabilityIssueOptions, Data, ImmutableMetadata, InitialRecord, PermissionSet};
+use audit_trails::core::types::{CapabilityIssueOptions, Data, ImmutableMetadata, InitialRecord, PermissionSet};
 use examples::get_funded_audit_trail_client;
 use product_common::core_client::CoreClient;
 

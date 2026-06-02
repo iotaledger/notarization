@@ -1,6 +1,6 @@
 # `audit_trail_wasm`
 
-`audit_trail_wasm` exposes the `audit_trail` Rust crate to JavaScript and TypeScript consumers through `wasm-bindgen`.
+`audit_trail_wasm` exposes the `audit_trails` Rust crate to JavaScript and TypeScript consumers through `wasm-bindgen`.
 
 It is designed for browser and other `wasm32` environments that need:
 
@@ -53,7 +53,7 @@ The package intentionally separates transaction construction from submission so 
 ## Minimal TypeScript shape
 
 ```ts
-import { AuditTrailClientReadOnly } from "@iota/audit-trail-wasm";
+import { AuditTrailClientReadOnly } from "@iota/audit-trails";
 
 const client = await AuditTrailClientReadOnly.create(iotaClient);
 const trail = client.trail(trailId);

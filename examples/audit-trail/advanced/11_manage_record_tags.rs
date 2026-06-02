@@ -9,7 +9,7 @@
 //!   keeps the `finance` tag in use and therefore unremovable.
 
 use anyhow::{Result, ensure};
-use audit_trail::core::types::{CapabilityIssueOptions, Data, InitialRecord, PermissionSet, RoleTags};
+use audit_trails::core::types::{CapabilityIssueOptions, Data, InitialRecord, PermissionSet, RoleTags};
 use examples::get_funded_audit_trail_client;
 use product_common::core_client::CoreClient;
 

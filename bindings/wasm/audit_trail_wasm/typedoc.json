@@ -1,5 +1,5 @@
 {
-  "name": "@iota/audit-trail API documentation",
+  "name": "@iota/audit-trails API documentation",
   "extends": [
     "../typedoc.json"
   ],

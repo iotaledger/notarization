@@ -44,7 +44,7 @@
  *   1-LCC reward record
  */
 
-import { AuditTrailClient, CapabilityIssueOptions, Data, PermissionSet, RoleTags } from "@iota/audit-trail/node";
+import { AuditTrailClient, CapabilityIssueOptions, Data, PermissionSet, RoleTags } from "@iota/audit-trails/node";
 import { strict as assert } from "assert";
 import { getFundedClient, issueTaggedRecordRole, TEST_GAS_BUDGET } from "../util";
 

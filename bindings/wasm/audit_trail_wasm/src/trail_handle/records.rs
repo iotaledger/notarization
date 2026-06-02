@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::anyhow;
-use audit_trail::core::types::Data as AuditTrailData;
-use audit_trail::{AuditTrailClient, AuditTrailClientReadOnly};
+use audit_trails::core::types::Data as AuditTrailData;
+use audit_trails::{AuditTrailClient, AuditTrailClientReadOnly};
 use iota_interaction::types::base_types::ObjectID;
 use iota_interaction_ts::bindings::WasmTransactionSigner;
 use iota_interaction_ts::wasm_error::{wasm_error, Result, WasmResult};
@@ -126,12 +126,12 @@ impl WasmTrailRecords {
     /// @param cursor - Sequence-number cursor for the page boundary; pass `null` for the first
     /// page and reuse {@link PaginatedRecord.nextCursor} for subsequent pages.
     /// @param limit - Maximum number of records to return; may not exceed the maximum page size defined in the
-    /// Audit Trail Rust crate.
+    /// Audit Trails Rust crate.
     ///
     /// @returns A {@link PaginatedRecord} carrying the loaded records and pagination metadata.
     ///
     /// @throws When the trail object cannot be fetched, a record cannot be deserialized, or
-    /// `limit` exceeds the maximum page size defined in the Audit Trail Rust crate.
+    /// `limit` exceeds the maximum page size defined in the Audit Trails Rust crate.
     #[wasm_bindgen(js_name = listPage)]
     pub async fn list_page(&self, cursor: Option<u64>, limit: usize) -> Result<WasmPaginatedRecord> {
         let page = self

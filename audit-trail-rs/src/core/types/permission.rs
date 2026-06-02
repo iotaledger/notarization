@@ -138,7 +138,7 @@ impl PermissionSet {
     /// - [`Permission::DeleteRoles`]
     /// - [`Permission::Migrate`]
     ///
-    /// Mirrors `audit_trail::permission::admin_permissions` in the Move
+    /// Mirrors `audit_trails::permission::admin_permissions` in the Move
     /// package. This is the same set the package seeds when a trail is
     /// created and the initial-admin capability is minted.
     pub fn admin_permissions() -> Self {
@@ -151,6 +151,7 @@ impl PermissionSet {
                 Permission::AddRoles,
                 Permission::UpdateRoles,
                 Permission::DeleteRoles,
+                Permission::Migrate,
             ]),
         }
     }

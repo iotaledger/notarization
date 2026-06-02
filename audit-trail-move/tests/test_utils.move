@@ -1,7 +1,7 @@
 #[test_only]
-module audit_trail::test_utils;
+module audit_trails::test_utils;
 
-use audit_trail::{locking, main::{Self, AuditTrail}, record::{Self, Data}};
+use audit_trails::{locking, main::{Self, AuditTrail}, record::{Self, Data}};
 use iota::{clock::{Self, Clock}, test_scenario::{Self as ts, Scenario}};
 use std::string;
 use tf_components::{capability::Capability, role_map::RoleMap};

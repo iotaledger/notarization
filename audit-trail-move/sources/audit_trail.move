@@ -1,13 +1,13 @@
 // Copyright (c) 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-/// Audit Trail with role-based access control and timelock
+/// Audit Trails with role-based access control and timelock
 /// A trail is a tamper-proof, sequential chain of notarized records where each
 /// entry references its predecessor, ensuring verifiable continuity and
 /// integrity.
-module audit_trail::main;
+module audit_trails::main;
 
-use audit_trail::{
+use audit_trails::{
     locking::{
         Self,
         LockingConfig,
@@ -971,7 +971,7 @@ public fun remove_record_tag<D: store + copy>(
 /// * `ERecordTagNotDefined` when any tag listed in `role_tags` is not in the
 ///   trail's tag registry.
 ///
-/// Emits a `RoleCreated` event on success.
+/// Emits a `tf_components::role_map::RoleCreated` event on success.
 public fun create_role<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -1018,14 +1018,15 @@ public fun create_role<D: store + copy>(
 /// * `EPackageVersionMismatch` when the trail is at a different package version.
 /// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
 ///   authorization checks.
-/// * `ERoleDoesNotExist` when `role` is not defined on the trail.
-/// * `EInitialAdminPermissionsInconsistent` when updating the initial-admin role
-///   with `new_permissions` that does not include every permission configured in
-///   the trail's role- and capability-admin permission sets.
+/// * `tf_components::role_map::ERoleDoesNotExist` when `role` is not defined on
+///   the trail.
+/// * `tf_components::role_map::EInitialAdminPermissionsInconsistent` when updating
+///   the initial-admin role with `new_permissions` that does not include every
+///   permission configured in the trail's role- and capability-admin permission sets.
 /// * `ERecordTagNotDefined` when any tag in the new `role_tags` is not in the
 ///   trail's tag registry.
 ///
-/// Emits a `RoleUpdated` event on success.
+/// Emits a `tf_components::role_map::RoleUpdated` event on success.
 public fun update_role_permissions<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -1084,11 +1085,12 @@ public fun update_role_permissions<D: store + copy>(
 /// * `EPackageVersionMismatch` when the trail is at a different package version.
 /// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
 ///   authorization checks.
-/// * `ERoleDoesNotExist` when `role` is not defined on the trail.
-/// * `EInitialAdminRoleCannotBeDeleted` when targeting the reserved initial-admin
-///   role.
+/// * `tf_components::role_map::ERoleDoesNotExist` when `role` is not defined on
+///   the trail.
+/// * `tf_components::role_map::EInitialAdminRoleCannotBeDeleted` when targeting the
+///   reserved initial-admin role.
 ///
-/// Emits a `RoleDeleted` event on success.
+/// Emits a `tf_components::role_map::RoleDeleted` event on success.
 public fun delete_role<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -1125,13 +1127,14 @@ public fun delete_role<D: store + copy>(
 /// * `EPackageVersionMismatch` when the trail is at a different package version.
 /// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
 ///   authorization checks.
-/// * `ERoleDoesNotExist` when `role` is not defined on the trail.
+/// * `tf_components::role_map::ERoleDoesNotExist` when `role` is not defined on
+///   the trail.
 /// * `tf_components::capability::EValidityPeriodInconsistent` when `valid_from`
 ///   and `valid_until` are not consistent.
 ///
-/// Emits a `CapabilityIssued` event on success.
+/// Emits a `tf_components::role_map::CapabilityIssued` event on success.
 ///
-/// Returns the same receipt that is emitted as the `CapabilityIssued` event.
+/// Returns the same receipt that is emitted as the `tf_components::role_map::CapabilityIssued` event.
 public fun new_capability<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -1195,12 +1198,12 @@ public fun new_capability<D: store + copy>(
 /// * `EPackageVersionMismatch` when the trail is at a different package version.
 /// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
 ///   authorization checks.
-/// * `ECapabilityToRevokeHasAlreadyBeenRevoked` when `cap_to_revoke` is already on
-///   the denylist.
-/// * `EInitialAdminCapabilityMustBeExplicitlyDestroyed` when `cap_to_revoke`
-///   identifies an initial admin capability.
+/// * `tf_components::role_map::ECapabilityToRevokeHasAlreadyBeenRevoked` when
+///   `cap_to_revoke` is already on the denylist.
+/// * `tf_components::role_map::EInitialAdminCapabilityMustBeExplicitlyDestroyed`
+///   when `cap_to_revoke` identifies an initial admin capability.
 ///
-/// Emits a `CapabilityRevoked` event on success.
+/// Emits a `tf_components::role_map::CapabilityRevoked` event on success.
 public fun revoke_capability<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -1232,12 +1235,12 @@ public fun revoke_capability<D: store + copy>(
 /// * `EPackageVersionMismatch` when the trail is at a different package version.
 /// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
 ///   authorization checks.
-/// * `ECapabilityTargetKeyMismatch` when `cap_to_destroy` was not issued for this
-///   trail.
-/// * `EInitialAdminCapabilityMustBeExplicitlyDestroyed` when `cap_to_destroy` is
-///   an initial admin capability.
+/// * `tf_components::role_map::ECapabilityTargetKeyMismatch` when `cap_to_destroy`
+///   was not issued for this trail.
+/// * `tf_components::role_map::EInitialAdminCapabilityMustBeExplicitlyDestroyed`
+///   when `cap_to_destroy` is an initial admin capability.
 ///
-/// Emits a `CapabilityDestroyed` event on success.
+/// Emits a `tf_components::role_map::CapabilityDestroyed` event on success.
 public fun destroy_capability<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -1269,12 +1272,12 @@ public fun destroy_capability<D: store + copy>(
 ///
 /// Aborts with:
 /// * `EPackageVersionMismatch` when the trail is at a different package version.
-/// * `ECapabilityTargetKeyMismatch` when `cap_to_destroy` was not issued for this
-///   trail.
-/// * `ECapabilityIsNotInitialAdmin` when `cap_to_destroy` is not an initial admin
-///   capability.
+/// * `tf_components::role_map::ECapabilityTargetKeyMismatch` when `cap_to_destroy`
+///   was not issued for this trail.
+/// * `tf_components::role_map::ECapabilityIsNotInitialAdmin` when `cap_to_destroy`
+///   is not an initial admin capability.
 ///
-/// Emits a `CapabilityDestroyed` event on success.
+/// Emits a `tf_components::role_map::CapabilityDestroyed` event on success.
 public fun destroy_initial_admin_capability<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap_to_destroy: Capability,
@@ -1298,12 +1301,12 @@ public fun destroy_initial_admin_capability<D: store + copy>(
 /// * `EPackageVersionMismatch` when the trail is at a different package version.
 /// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
 ///   authorization checks.
-/// * `ECapabilityIsNotInitialAdmin` when `cap_to_revoke` does not identify an
-///   initial admin capability.
-/// * `ECapabilityToRevokeHasAlreadyBeenRevoked` when it is already on the
-///   denylist.
+/// * `tf_components::role_map::ECapabilityIsNotInitialAdmin` when `cap_to_revoke`
+///   does not identify an initial admin capability.
+/// * `tf_components::role_map::ECapabilityToRevokeHasAlreadyBeenRevoked` when it is
+///   already on the denylist.
 ///
-/// Emits a `CapabilityRevoked` event on success.
+/// Emits a `tf_components::role_map::CapabilityRevoked` event on success.
 public fun revoke_initial_admin_capability<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,

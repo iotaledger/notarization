@@ -15,7 +15,7 @@
  * 3. Define a RecordAdmin role and issue a capability for it.
  */
 
-import { CapabilityIssueOptions, PermissionSet } from "@iota/audit-trail/node";
+import { CapabilityIssueOptions, PermissionSet } from "@iota/audit-trails/node";
 import { strict as assert } from "assert";
 import { createTrailWithSeedRecord, getFundedClient, TEST_GAS_BUDGET } from "./util";
 

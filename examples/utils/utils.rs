@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Context;
-use audit_trail::core::types::{CapabilityIssueOptions, PermissionSet, RoleTags};
-use audit_trail::{AuditTrailClient, PackageOverrides};
+use audit_trails::core::types::{CapabilityIssueOptions, PermissionSet, RoleTags};
+use audit_trails::{AuditTrailClient, PackageOverrides};
 use iota_sdk::types::base_types::{IotaAddress, ObjectID};
 use iota_sdk::{IOTA_LOCAL_NETWORK_URL, IotaClientBuilder};
 use notarization::client::{NotarizationClient, NotarizationClientReadOnly};

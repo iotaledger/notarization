@@ -11,7 +11,7 @@
 //!   attempts are rejected by the Move contract.
 
 use anyhow::{Result, ensure};
-use audit_trail::core::types::{CapabilityIssueOptions, Data, InitialRecord, PermissionSet};
+use audit_trails::core::types::{CapabilityIssueOptions, Data, InitialRecord, PermissionSet};
 use examples::get_funded_audit_trail_client;
 use product_common::core_client::CoreClient;
 

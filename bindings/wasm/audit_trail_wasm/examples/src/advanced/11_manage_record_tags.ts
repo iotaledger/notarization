@@ -16,7 +16,7 @@
  * 3. Show that tags still in use by roles or records cannot be removed.
  */
 
-import { CapabilityIssueOptions, Data, PermissionSet, RoleTags } from "@iota/audit-trail/node";
+import { CapabilityIssueOptions, Data, PermissionSet, RoleTags } from "@iota/audit-trails/node";
 import { strict as assert } from "assert";
 import { getFundedClient, TEST_GAS_BUDGET } from "../util";
 

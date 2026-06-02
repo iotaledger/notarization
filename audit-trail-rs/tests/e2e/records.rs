@@ -3,10 +3,10 @@
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use audit_trail::core::types::{
+use audit_trails::core::types::{
     CapabilityIssueOptions, Data, InitialRecord, LockingConfig, LockingWindow, Permission, RoleTags, TimeLock,
 };
-use audit_trail::error::Error;
+use audit_trails::error::Error;
 use iota_interaction::types::base_types::ObjectID;
 use product_common::core_client::CoreClient;
 use tokio::time::{Duration, sleep};

@@ -11,7 +11,7 @@
 use std::collections::HashSet;
 
 use anyhow::{Result, ensure};
-use audit_trail::core::types::{CapabilityIssueOptions, Data, Permission, PermissionSet};
+use audit_trails::core::types::{CapabilityIssueOptions, Data, Permission, PermissionSet};
 use examples::get_funded_audit_trail_client;
 use product_common::core_client::CoreClient;
 
@@ -30,7 +30,7 @@ async fn main() -> Result<()> {
 
     let created_trail = admin_client
         .create_trail()
-        .with_initial_record(audit_trail::core::types::InitialRecord::new(
+        .with_initial_record(audit_trails::core::types::InitialRecord::new(
             Data::text("Trail created"),
             None,
             None,

@@ -1,8 +1,8 @@
 #[allow(lint(abort_without_constant))]
 #[test_only]
-module audit_trail::locking_tests;
+module audit_trails::locking_tests;
 
-use audit_trail::{
+use audit_trails::{
     locking,
     main::{Self, AuditTrail},
     permission,
@@ -348,7 +348,7 @@ fun test_update_locking_config() {
 }
 
 #[test]
-#[expected_failure(abort_code = audit_trail::role_map::ECapabilityPermissionDenied)]
+#[expected_failure(abort_code = audit_trails::role_map::ECapabilityPermissionDenied)]
 fun test_update_locking_config_permission_denied() {
     let admin = @0xAD;
     let mut scenario = ts::begin(admin);
@@ -495,7 +495,7 @@ fun test_update_delete_record_window() {
 }
 
 #[test]
-#[expected_failure(abort_code = audit_trail::role_map::ECapabilityPermissionDenied)]
+#[expected_failure(abort_code = audit_trails::role_map::ECapabilityPermissionDenied)]
 fun test_update_delete_record_window_permission_denied() {
     let admin = @0xAD;
     let mut scenario = ts::begin(admin);
@@ -1117,7 +1117,7 @@ fun test_delete_records_batch_skips_locked_records() {
 }
 
 #[test]
-#[expected_failure(abort_code = audit_trail::main::ETrailNotEmpty)]
+#[expected_failure(abort_code = audit_trails::main::ETrailNotEmpty)]
 fun test_delete_audit_trail_fails_while_not_empty() {
     let admin = @0xAD;
     let mut scenario = ts::begin(admin);

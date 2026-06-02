@@ -14,7 +14,7 @@
  * 3. Delete the trail once its records are gone.
  */
 
-import { CapabilityIssueOptions, Data, Permission, PermissionSet } from "@iota/audit-trail/node";
+import { CapabilityIssueOptions, Data, Permission, PermissionSet } from "@iota/audit-trails/node";
 import { strict as assert } from "assert";
 import { getFundedClient, TEST_GAS_BUDGET } from "./util";
 

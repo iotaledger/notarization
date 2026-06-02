@@ -16,11 +16,11 @@
 
 ---
 
-# IOTA Audit Trail Move Package
+# IOTA Audit Trails Move Package
 
 ## Introduction
 
-`audit-trail-move` is the on-chain Move package behind IOTA Audit Trail.
+`IotaAuditTrails` is the on-chain Move package behind IOTA Audit Trails.
 
 It defines the shared `AuditTrail` object and the supporting types needed for:
 
@@ -35,15 +35,15 @@ The package depends on `TfComponents` for reusable capability, role-map, and tim
 
 ## Modules
 
-- `audit_trail::main`
+- `audit_trails::main`
   Core shared object, events, trail lifecycle, record mutation, metadata updates, roles, and capabilities.
-- `audit_trail::record`
+- `audit_trails::record`
   Record payloads, initial records, and correction metadata.
-- `audit_trail::locking`
+- `audit_trails::locking`
   Locking configuration and lock evaluation helpers.
-- `audit_trail::permission`
+- `audit_trails::permission`
   Permission constructors and admin permission presets.
-- `audit_trail::record_tags`
+- `audit_trails::record_tags`
   Tag registry and role tag helpers.
 
 ## Development And Testing
@@ -81,7 +81,7 @@ The package history files [`Move.lock`](./Move.lock) and [`Move.history.json`](.
 
 ## Contributing
 
-We would love to have you help us with the development of IOTA Audit Trail. Each and every contribution is greatly valued.
+We would love to have you help us with the development of IOTA Audit Trails. Each and every contribution is greatly valued.
 
 Please review the [contribution](https://docs.iota.org/developer/iota-notarization/contribute) sections in the [IOTA Docs Portal](https://docs.iota.org/developer/iota-notarization/).
 
