@@ -42,4 +42,4 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_NOTARIZATION_TOKEN }}
         run: |
-          npm dist-tag add @iota/audit-trail@${{ github.event.inputs.version }} ${{ github.event.inputs.tag }}
+          npm dist-tag add @iota/audit-trails@${{ github.event.inputs.version }} ${{ github.event.inputs.tag }}
