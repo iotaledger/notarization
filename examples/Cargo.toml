@@ -106,7 +106,7 @@ path = "audit-trail/real-world/03_digital_product_passport.rs"
 
 [dependencies]
 anyhow.workspace = true
-audit_trail = { path = "../audit-trail-rs" }
+audit_trails = { path = "../audit-trail-rs" }
 chrono = { workspace = true }
 iota-sdk = { workspace = true }
 notarization = { path = "../notarization-rs" }

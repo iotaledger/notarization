@@ -9,7 +9,7 @@
 //!   from writing `legal`-tagged records.
 
 use anyhow::{Result, ensure};
-use audit_trail::core::types::{CapabilityIssueOptions, Data, InitialRecord, Permission, RoleTags};
+use audit_trails::core::types::{CapabilityIssueOptions, Data, InitialRecord, Permission, RoleTags};
 use examples::get_funded_audit_trail_client;
 use product_common::core_client::CoreClient;
 
@@ -47,7 +47,7 @@ async fn main() -> Result<()> {
         .access()
         .for_role(finance_writer_role)
         .create(
-            audit_trail::core::types::PermissionSet {
+            audit_trails::core::types::PermissionSet {
                 permissions: [Permission::AddRecord].into_iter().collect(),
             },
             Some(RoleTags::new(["finance"])),

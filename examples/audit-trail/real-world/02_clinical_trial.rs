@@ -32,7 +32,7 @@
 //! - read-only verification: a regulator inspects the trail without write access
 
 use anyhow::{Result, ensure};
-use audit_trail::core::types::{
+use audit_trails::core::types::{
     CapabilityIssueOptions, Data, ImmutableMetadata, InitialRecord, LockingConfig, LockingWindow, PermissionSet,
     TimeLock,
 };

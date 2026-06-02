@@ -9,7 +9,7 @@
 //!   checked by the admin.
 
 use anyhow::{Result, ensure};
-use audit_trail::core::types::{CapabilityIssueOptions, Data, InitialRecord, LockingWindow, PermissionSet, TimeLock};
+use audit_trails::core::types::{CapabilityIssueOptions, Data, InitialRecord, LockingWindow, PermissionSet, TimeLock};
 use examples::get_funded_audit_trail_client;
 use product_common::core_client::CoreClient;
 

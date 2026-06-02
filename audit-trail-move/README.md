@@ -20,7 +20,7 @@
 
 ## Introduction
 
-`audit-trail-move` is the on-chain Move package behind IOTA Audit Trails.
+`IotaAuditTrails` is the on-chain Move package behind IOTA Audit Trails.
 
 It defines the shared `AuditTrail` object and the supporting types needed for:
 

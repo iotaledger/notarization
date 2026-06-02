@@ -8,7 +8,7 @@
 //!   the example focused on one trail handle after delegation.
 
 use anyhow::{Result, ensure};
-use audit_trail::core::types::{CapabilityIssueOptions, Data, InitialRecord, PermissionSet};
+use audit_trails::core::types::{CapabilityIssueOptions, Data, InitialRecord, PermissionSet};
 use examples::get_funded_audit_trail_client;
 use product_common::core_client::CoreClient;
 

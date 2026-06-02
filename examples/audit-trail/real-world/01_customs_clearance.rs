@@ -28,7 +28,7 @@
 //! - locking: writes are frozen once the shipment is fully cleared
 
 use anyhow::{Result, ensure};
-use audit_trail::core::types::{
+use audit_trails::core::types::{
     CapabilityIssueOptions, Data, ImmutableMetadata, InitialRecord, LockingConfig, LockingWindow, PermissionSet,
     TimeLock,
 };

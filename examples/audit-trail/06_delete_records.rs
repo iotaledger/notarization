@@ -10,7 +10,7 @@
 use std::collections::HashSet;
 
 use anyhow::{Result, ensure};
-use audit_trail::core::types::{CapabilityIssueOptions, Data, InitialRecord, Permission, PermissionSet};
+use audit_trails::core::types::{CapabilityIssueOptions, Data, InitialRecord, Permission, PermissionSet};
 use examples::get_funded_audit_trail_client;
 use product_common::core_client::CoreClient;
 

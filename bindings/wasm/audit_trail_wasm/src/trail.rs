@@ -1,18 +1,18 @@
 // Copyright 2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use audit_trail::core::access::{
+use audit_trails::core::access::{
     CleanupRevokedCapabilities, CreateRole, DeleteRole, DestroyCapability, DestroyInitialAdminCapability,
     IssueCapability, RevokeCapability, RevokeInitialAdminCapability, UpdateRole,
 };
-use audit_trail::core::create::{CreateTrail, TrailCreated};
-use audit_trail::core::locking::{
+use audit_trails::core::create::{CreateTrail, TrailCreated};
+use audit_trails::core::locking::{
     UpdateDeleteRecordWindow, UpdateDeleteTrailLock, UpdateLockingConfig, UpdateWriteLock,
 };
-use audit_trail::core::records::{AddRecord, DeleteRecord, DeleteRecordsBatch};
-use audit_trail::core::tags::{AddRecordTag, RemoveRecordTag};
-use audit_trail::core::trail::{DeleteAuditTrail, Migrate, UpdateMetadata};
-use audit_trail::core::types::{
+use audit_trails::core::records::{AddRecord, DeleteRecord, DeleteRecordsBatch};
+use audit_trails::core::tags::{AddRecordTag, RemoveRecordTag};
+use audit_trails::core::trail::{DeleteAuditTrail, Migrate, UpdateMetadata};
+use audit_trails::core::types::{
     AuditTrailDeleted, CapabilityDestroyed, CapabilityIssued, CapabilityRevoked, OnChainAuditTrail, RecordAdded,
     RecordDeleted, RevokedCapabilitiesCleanedUp, RoleCreated, RoleDeleted, RoleUpdated,
 };
