@@ -204,7 +204,7 @@ let cap = client
 
 Use `CapabilityIssueOptions { issued_to, valid_from_ms, valid_until_ms }` to restrict who may use the capability or set a validity window.
 
-**Key types** (from `audit_trail::core::types`): `Data`, `InitialRecord`, `ImmutableMetadata`, `LockingConfig`, `LockingWindow`, `TimeLock`, `Permission`, `PermissionSet`, `CapabilityIssueOptions`, `RoleTags`.
+**Key types** (from `audit_trails::core::types`): `Data`, `InitialRecord`, `ImmutableMetadata`, `LockingConfig`, `LockingWindow`, `TimeLock`, `Permission`, `PermissionSet`, `CapabilityIssueOptions`, `RoleTags`.
 
 ### Notarization example patterns
 

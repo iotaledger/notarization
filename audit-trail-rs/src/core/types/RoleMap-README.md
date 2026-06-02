@@ -122,7 +122,7 @@ Please note: Revoked capability objects still exist on-chain but will be rejecte
 ### Creating a trail and obtaining the Admin capability
 
 ```rust
-use audit_trail::core::types::{Data, InitialRecord, ImmutableMetadata};
+use audit_trails::core::types::{Data, InitialRecord, ImmutableMetadata};
 
 let created = client
     .create_trail()
@@ -139,7 +139,7 @@ let created = client
 ### Defining a new role
 
 ```rust
-use audit_trail::core::types::PermissionSet;
+use audit_trails::core::types::PermissionSet;
 
 client
     .trail(created.trail_id)
@@ -153,7 +153,7 @@ client
 ### Issuing a capability
 
 ```rust
-use audit_trail::core::types::CapabilityIssueOptions;
+use audit_trails::core::types::CapabilityIssueOptions;
 
 // Unrestricted — any holder may use this capability
 let cap = client
@@ -206,7 +206,7 @@ client
 ### Updating a role's permissions
 
 ```rust
-use audit_trail::core::types::{Permission, PermissionSet};
+use audit_trails::core::types::{Permission, PermissionSet};
 use std::collections::HashSet;
 
 client
@@ -286,7 +286,7 @@ let created = client
     .output;
 
 // 2. Create a role that may only write "finance" tagged records
-use audit_trail::core::types::RoleTags;
+use audit_trails::core::types::RoleTags;
 
 client
     .trail(created.trail_id)
