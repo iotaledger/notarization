@@ -94,9 +94,19 @@ public fun has_permission(set: &VecSet<Permission>, perm: &Permission): bool {
     vec_set::contains(set, perm)
 }
 
-// ------Functions creating permission sets for often used roles ---------
+// ------ Functions creating permission sets for often used roles ---------
 
-/// Create permissions typically used for the `Admin` role
+/// Creates the permission set typically used for the `Admin` role.
+///
+/// Includes the following permissions:
+/// * `AddCapabilities`
+/// * `RevokeCapabilities`
+/// * `AddRecordTags`
+/// * `DeleteRecordTags`
+/// * `AddRoles`
+/// * `UpdateRoles`
+/// * `DeleteRoles`
+/// * `Migrate`
 public fun admin_permissions(): VecSet<Permission> {
     let mut perms = vec_set::empty();
     perms.insert(add_capabilities());
@@ -110,7 +120,12 @@ public fun admin_permissions(): VecSet<Permission> {
     perms
 }
 
-/// Create permissions typical used for the `RecordAdmin` role
+/// Creates the permission set typically used for the `RecordAdmin` role.
+///
+/// Includes the following permissions:
+/// * `AddRecord`
+/// * `DeleteRecord`
+/// * `CorrectRecord`
 public fun record_admin_permissions(): VecSet<Permission> {
     let mut perms = vec_set::empty();
     perms.insert(add_record());
@@ -119,7 +134,13 @@ public fun record_admin_permissions(): VecSet<Permission> {
     perms
 }
 
-/// Create permissions typical used for the `LockingAdmin` role
+/// Creates the permission set typically used for the `LockingAdmin` role.
+///
+/// Includes the following permissions:
+/// * `UpdateLockingConfig`
+/// * `UpdateLockingConfigForDeleteTrail`
+/// * `UpdateLockingConfigForDeleteRecord`
+/// * `UpdateLockingConfigForWrite`
 public fun locking_admin_permissions(): VecSet<Permission> {
     let mut perms = vec_set::empty();
     perms.insert(update_locking_config());
@@ -129,7 +150,12 @@ public fun locking_admin_permissions(): VecSet<Permission> {
     perms
 }
 
-/// Create permissions typical used for the `RoleAdmin` role
+/// Creates the permission set typically used for the `RoleAdmin` role.
+///
+/// Includes the following permissions:
+/// * `AddRoles`
+/// * `UpdateRoles`
+/// * `DeleteRoles`
 public fun role_admin_permissions(): VecSet<Permission> {
     let mut perms = vec_set::empty();
     perms.insert(add_roles());
@@ -138,7 +164,11 @@ public fun role_admin_permissions(): VecSet<Permission> {
     perms
 }
 
-/// Create permissions typically used for the `TagAdmin` role
+/// Creates the permission set typically used for the `TagAdmin` role.
+///
+/// Includes the following permissions:
+/// * `AddRecordTags`
+/// * `DeleteRecordTags`
 public fun tag_admin_permissions(): VecSet<Permission> {
     let mut perms = vec_set::empty();
     perms.insert(add_record_tags());
@@ -146,7 +176,11 @@ public fun tag_admin_permissions(): VecSet<Permission> {
     perms
 }
 
-/// Create permissions typical used for the `CapAdmin` role
+/// Creates the permission set typically used for the `CapAdmin` role.
+///
+/// Includes the following permissions:
+/// * `AddCapabilities`
+/// * `RevokeCapabilities`
 public fun cap_admin_permissions(): VecSet<Permission> {
     let mut perms = vec_set::empty();
     perms.insert(add_capabilities());
@@ -154,7 +188,11 @@ public fun cap_admin_permissions(): VecSet<Permission> {
     perms
 }
 
-/// Create permissions typical used for the `MetadataAdmin` role
+/// Creates the permission set typically used for the `MetadataAdmin` role.
+///
+/// Includes the following permissions:
+/// * `UpdateMetadata`
+/// * `DeleteMetadata`
 public fun metadata_admin_permissions(): VecSet<Permission> {
     let mut perms = vec_set::empty();
     perms.insert(update_metadata());
