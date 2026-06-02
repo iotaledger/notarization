@@ -118,9 +118,10 @@ impl AuditTrailBuilder {
     /// Finalizes the builder and creates the trail-creation transaction builder.
     ///
     /// Validates the configured [`LockingConfig`] before returning the transaction. Currently this rejects:
-    /// - [`LockingWindow::CountBased`] with `count == 0` (mirrors the Move `ECountWindowMustBePositive` abort).
-    /// - [`TimeLock::UntilDestroyed`] used as `delete_trail_lock` (mirrors the Move
-    ///   `EUntilDestroyedNotSupportedForDeleteTrail` abort). `write_lock` may still be `UntilDestroyed`.
+    /// - [`LockingWindow::CountBased`](super::types::LockingWindow::CountBased) with `count == 0` (mirrors the Move
+    ///   `ECountWindowMustBePositive` abort).
+    /// - [`TimeLock::UntilDestroyed`](super::types::TimeLock::UntilDestroyed) used as `delete_trail_lock` (mirrors the
+    ///   Move `EUntilDestroyedNotSupportedForDeleteTrail` abort). `write_lock` may still be `UntilDestroyed`.
     ///
     /// # Errors
     ///

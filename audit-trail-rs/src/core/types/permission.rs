@@ -128,6 +128,16 @@ impl PermissionSet {
     }
     /// Returns the recommended permission set for the `Admin` role.
     ///
+    /// Includes the following permissions:
+    /// - [`Permission::AddCapabilities`]
+    /// - [`Permission::RevokeCapabilities`]
+    /// - [`Permission::AddRecordTags`]
+    /// - [`Permission::DeleteRecordTags`]
+    /// - [`Permission::AddRoles`]
+    /// - [`Permission::UpdateRoles`]
+    /// - [`Permission::DeleteRoles`]
+    /// - [`Permission::Migrate`]
+    ///
     /// Mirrors `audit_trail::permission::admin_permissions` in the Move
     /// package. This is the same set the package seeds when a trail is
     /// created and the initial-admin capability is minted.
@@ -146,6 +156,11 @@ impl PermissionSet {
     }
 
     /// Returns the permissions needed to administer records.
+    ///
+    /// Includes the following permissions:
+    /// - [`Permission::AddRecord`]
+    /// - [`Permission::DeleteRecord`]
+    /// - [`Permission::CorrectRecord`]
     pub fn record_admin_permissions() -> Self {
         Self {
             permissions: HashSet::from([
@@ -157,6 +172,12 @@ impl PermissionSet {
     }
 
     /// Returns the permissions needed to administer locking rules.
+    ///
+    /// Includes the following permissions:
+    /// - [`Permission::UpdateLockingConfig`]
+    /// - [`Permission::UpdateLockingConfigForDeleteTrail`]
+    /// - [`Permission::UpdateLockingConfigForDeleteRecord`]
+    /// - [`Permission::UpdateLockingConfigForWrite`]
     pub fn locking_admin_permissions() -> Self {
         Self {
             permissions: HashSet::from([
@@ -169,6 +190,11 @@ impl PermissionSet {
     }
 
     /// Returns the permissions needed to administer roles.
+    ///
+    /// Includes the following permissions:
+    /// - [`Permission::AddRoles`]
+    /// - [`Permission::UpdateRoles`]
+    /// - [`Permission::DeleteRoles`]
     pub fn role_admin_permissions() -> Self {
         Self {
             permissions: HashSet::from([Permission::AddRoles, Permission::UpdateRoles, Permission::DeleteRoles]),
@@ -176,6 +202,10 @@ impl PermissionSet {
     }
 
     /// Returns the permissions needed to administer record tags.
+    ///
+    /// Includes the following permissions:
+    /// - [`Permission::AddRecordTags`]
+    /// - [`Permission::DeleteRecordTags`]
     pub fn tag_admin_permissions() -> Self {
         Self {
             permissions: HashSet::from([Permission::AddRecordTags, Permission::DeleteRecordTags]),
@@ -183,6 +213,10 @@ impl PermissionSet {
     }
 
     /// Returns the permissions needed to issue and revoke capabilities.
+    ///
+    /// Includes the following permissions:
+    /// - [`Permission::AddCapabilities`]
+    /// - [`Permission::RevokeCapabilities`]
     pub fn cap_admin_permissions() -> Self {
         Self {
             permissions: HashSet::from_iter(vec![Permission::AddCapabilities, Permission::RevokeCapabilities]),
@@ -190,6 +224,10 @@ impl PermissionSet {
     }
 
     /// Returns the permissions needed to administer mutable metadata.
+    ///
+    /// Includes the following permissions:
+    /// - [`Permission::UpdateMetadata`]
+    /// - [`Permission::DeleteMetadata`]
     pub fn metadata_admin_permissions() -> Self {
         Self {
             permissions: HashSet::from_iter(vec![Permission::UpdateMetadata, Permission::DeleteMetadata]),

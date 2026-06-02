@@ -180,7 +180,7 @@ client
     .await?;
 ```
 
-`PermissionSet` convenience constructors: `admin_permissions()`, `record_admin_permissions()`, `locking_admin_permissions()`, `tag_admin_permissions()`, `cap_admin_permissions()`, `metadata_admin_permissions()`.
+`PermissionSet` convenience constructors: `admin_permissions()`, `record_admin_permissions()`, `role_admin_permissions()`, `locking_admin_permissions()`, `tag_admin_permissions()`, `cap_admin_permissions()`, `metadata_admin_permissions()`.
 
 **Issuing a capability** — mint a capability object for a role:
 

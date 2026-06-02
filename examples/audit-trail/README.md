@@ -99,22 +99,24 @@ An audit trail is an on-chain object that stores an ordered sequence of records.
 
 Access to trail operations is controlled via roles and capabilities:
 
-- **Roles** define a named set of permissions (e.g., `RecordAdmin` with `AddRecord`, `DeleteRecord`, `CorrectRecord`)
+- **Roles** define a named set of permissions (e.g., a `RecordAdmin` role granting the permissions from `record_admin_permissions()`)
 - **Capabilities** are on-chain objects issued for a role and held in a wallet — possession of a capability grants the associated permissions on a specific trail
 - The trail creator automatically receives an **Admin** capability granting full administrative control (role management, capability issuance, tag management, etc.)
 
 ### Permission Sets
 
-`PermissionSet` convenience constructors cover common role configurations:
+`PermissionSet` convenience constructors cover common role configurations. Each constructor's
+API documentation lists the exact permissions it grants (the source of truth):
 
-| Constructor                    | Permissions granted                                                                                      |
-| :----------------------------- | :------------------------------------------------------------------------------------------------------- |
-| `admin_permissions()`          | AddRoles, UpdateRoles, DeleteRoles, AddCapabilities, RevokeCapabilities, AddRecordTags, DeleteRecordTags |
-| `record_admin_permissions()`   | AddRecord, DeleteRecord, CorrectRecord                                                                   |
-| `locking_admin_permissions()`  | UpdateLockingConfig (and all sub-variants)                                                               |
-| `cap_admin_permissions()`      | AddCapabilities, RevokeCapabilities                                                                      |
-| `tag_admin_permissions()`      | AddRecordTags, DeleteRecordTags                                                                          |
-| `metadata_admin_permissions()` | UpdateMetadata, DeleteMetadata                                                                           |
+| Constructor                    | Intended role                               |
+| :----------------------------- | :------------------------------------------ |
+| `admin_permissions()`          | `Admin` — full trail administration         |
+| `record_admin_permissions()`   | record management (add, delete, correct)    |
+| `role_admin_permissions()`     | role management (add, update, delete roles) |
+| `locking_admin_permissions()`  | locking-configuration management            |
+| `cap_admin_permissions()`      | capability management (issue, revoke)       |
+| `tag_admin_permissions()`      | record-tag registry management              |
+| `metadata_admin_permissions()` | updatable-metadata management               |
 
 ### Capability Constraints
 
