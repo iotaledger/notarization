@@ -15,9 +15,8 @@ use crate::types::WasmLockingConfig;
 ///
 /// @remarks
 /// The resulting transaction publishes the trail as a *shared* object, seeds the reserved
-/// {@link RoleMap.initialAdminRoleName | Admin} role with the permission set returned by
-/// {@link PermissionSet.adminPermissions}, and transfers a freshly minted initial-admin
-/// {@link Capability} to the configured admin address. An
+/// {@link RoleMap.initialAdminRoleName | Admin} role with the recommended admin permissions, and
+/// transfers a freshly minted initial-admin {@link Capability} to the configured admin address. An
 /// admin address must be set (either through {@link AuditTrailBuilder.withAdmin} or by constructing
 /// the builder via {@link AuditTrailClient.createTrail}, which seeds it with the signer); otherwise
 /// {@link AuditTrailBuilder.finish} produces a transaction that fails to build. When an initial
@@ -131,9 +130,8 @@ impl WasmAuditTrailBuilder {
     ///
     /// @remarks
     /// On execution the trail's role map is seeded with a single role named `"Admin"` carrying the
-    /// permission set returned by {@link PermissionSet.adminPermissions}, and a freshly minted
-    /// initial-admin capability is transferred to this address. Setting an admin is required before
-    /// {@link AuditTrailBuilder.finish} can
+    /// recommended admin permissions, and a freshly minted initial-admin capability is transferred
+    /// to this address. Setting an admin is required before {@link AuditTrailBuilder.finish} can
     /// produce a viable transaction; constructing the builder via
     /// {@link AuditTrailClient.createTrail} already seeds it with the signer address.
     ///
@@ -152,9 +150,8 @@ impl WasmAuditTrailBuilder {
     ///
     /// @remarks
     /// On execution the audit-trail package shares the new trail object, seeds the reserved
-    /// {@link RoleMap.initialAdminRoleName | Admin} role with the permission set returned by
-    /// {@link PermissionSet.adminPermissions}, transfers an initial-admin capability to the
-    /// configured admin address, and optionally stores the initial record at sequence number
+    /// {@link RoleMap.initialAdminRoleName | Admin} role, transfers an initial-admin capability to
+    /// the configured admin address, and optionally stores the initial record at sequence number
     /// `0`.
     ///
     /// @returns A {@link TransactionBuilder} wrapping the {@link CreateTrail} transaction.

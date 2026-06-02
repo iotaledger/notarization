@@ -182,8 +182,7 @@ async fn apply_trail_created(
 ///
 /// @remarks
 /// On execution the audit-trail package shares the new trail object, seeds the reserved
-/// {@link RoleMap.initialAdminRoleName | Admin} role with the permission set returned by
-/// {@link PermissionSet.adminPermissions}, transfers a fresh initial-admin capability to
+/// {@link RoleMap.initialAdminRoleName | Admin} role, transfers a fresh initial-admin capability to
 /// the admin address, and optionally stores the initial record at sequence number `0`, validating
 /// its tag against the registry.
 ///
