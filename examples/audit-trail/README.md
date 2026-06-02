@@ -109,7 +109,7 @@ Access to trail operations is controlled via roles and capabilities:
 API documentation lists the exact permissions it grants (the source of truth):
 
 | Constructor                    | Intended role                               |
-|:-------------------------------|:--------------------------------------------|
+| :----------------------------- | :------------------------------------------ |
 | `admin_permissions()`          | `Admin` — full trail administration         |
 | `record_admin_permissions()`   | record management (add, delete, correct)    |
 | `role_admin_permissions()`     | role management (add, update, delete roles) |

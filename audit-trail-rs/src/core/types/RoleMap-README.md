@@ -19,7 +19,7 @@ validates the capability before allowing the operation.
 A role is a named and configurable set of `Permission` values, for example:
 
 | Role name      | Permissions                                       |
-|:---------------|:--------------------------------------------------|
+| :------------- | :------------------------------------------------ |
 | `Admin`        | the set returned by `admin_permissions()`         |
 | `RecordAdmin`  | the set returned by `record_admin_permissions()`  |
 | `LockingAdmin` | the set returned by `locking_admin_permissions()` |
@@ -514,7 +514,7 @@ permissions each one grants are documented on the function itself (the source of
 table below only summarizes the role each profile targets:
 
 | Constructor                    | Intended role                               |
-|:-------------------------------|:--------------------------------------------|
+| :----------------------------- | :------------------------------------------ |
 | `admin_permissions()`          | `Admin` — full trail administration         |
 | `record_admin_permissions()`   | record management (add, delete, correct)    |
 | `role_admin_permissions()`     | role management (add, update, delete roles) |
