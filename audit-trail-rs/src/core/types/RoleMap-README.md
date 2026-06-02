@@ -18,12 +18,12 @@ validates the capability before allowing the operation.
 
 A role is a named and configurable set of `Permission` values, for example:
 
-| Role name      | Permissions                                                                                              |
-| :------------- | :------------------------------------------------------------------------------------------------------- |
-| `Admin`        | AddRoles, UpdateRoles, DeleteRoles, AddCapabilities, RevokeCapabilities, AddRecordTags, DeleteRecordTags |
-| `RecordAdmin`  | AddRecord, DeleteRecord, CorrectRecord                                                                   |
-| `LockingAdmin` | UpdateLockingConfig (and sub-variants)                                                                   |
-| `Auditor`      | _(read-only — no write permissions needed)_                                                              |
+| Role name      | Permissions                                       |
+|:---------------|:--------------------------------------------------|
+| `Admin`        | the set returned by `admin_permissions()`         |
+| `RecordAdmin`  | the set returned by `record_admin_permissions()`  |
+| `LockingAdmin` | the set returned by `locking_admin_permissions()` |
+| `Auditor`      | _(read-only — no write permissions needed)_       |
 
 Roles are identified by a unique string name within the trail. Multiple
 capabilities can be issued for the same role, to allow users or services to share
@@ -56,10 +56,10 @@ supplied via `with_admin`).
 The Admin role is protected by two invariants:
 
 1. It can **never be deleted**.
-2. Although its permission set can be updated, it needs to include a minimum set of
-   permissions to manage the trail's access control (AddRoles, UpdateRoles, DeleteRoles,
-   AddCapabilities, RevokeCapabilities). Removing any of these permissions from the Admin
-   role will fail.
+2. Although its permission set can be updated, it must always retain the permissions required
+   to manage the trail's access control — those returned by `role_admin_permissions()` (role
+   management) together with those returned by `cap_admin_permissions()` (capability
+   management). Removing any of these permissions from the Admin role will fail.
 
 Initial admin capabilities are tracked in `initial_admin_cap_ids` and must be
 managed through dedicated entry-points (`revoke_initial_admin_capability`,
@@ -75,7 +75,7 @@ managed through dedicated entry-points (`revoke_initial_admin_capability`,
 Trail creator  ──create_trail()──►  AuditTrail (shared object)
                                          │
                                          └── RoleMap
-                                               ├── roles: { "Admin" → [AddRoles, …] }
+                                               ├── roles: { "Admin" → admin_permissions() }
                                                ├── initial_admin_role_name: "Admin"
                                                └── initial_admin_cap_ids: { cap_id }
                     ◄── Admin Capability (owned object, transferred to creator)
@@ -86,8 +86,8 @@ Trail creator  ──create_trail()──►  AuditTrail (shared object)
 The trail creator (Admin capability holder) defines a `RecordAdmin` role:
 
 ```
-Admin Capability + create_role("RecordAdmin", [AddRecord, DeleteRecord, CorrectRecord])
-    ──►  RoleMap.roles: { "Admin" → […], "RecordAdmin" → [AddRecord, DeleteRecord, CorrectRecord] }
+Admin Capability + create_role("RecordAdmin", record_admin_permissions())
+    ──►  RoleMap.roles: { "Admin" → admin_permissions(), "RecordAdmin" → record_admin_permissions() }
 ```
 
 ### 3 — Admin issues capabilities to operators
@@ -509,16 +509,19 @@ permission.
 
 ## Permission Sets
 
-`PermissionSet` provides convenience constructors for common role profiles:
+`PermissionSet` provides convenience constructors for common role profiles. The exact
+permissions each one grants are documented on the function itself (the source of truth); the
+table below only summarizes the role each profile targets:
 
-| Constructor                    | Permissions                                                                                              |
-| :----------------------------- | :------------------------------------------------------------------------------------------------------- |
-| `admin_permissions()`          | AddRoles, UpdateRoles, DeleteRoles, AddCapabilities, RevokeCapabilities, AddRecordTags, DeleteRecordTags |
-| `record_admin_permissions()`   | AddRecord, DeleteRecord, CorrectRecord                                                                   |
-| `locking_admin_permissions()`  | UpdateLockingConfig (and all sub-variants)                                                               |
-| `cap_admin_permissions()`      | AddCapabilities, RevokeCapabilities                                                                      |
-| `tag_admin_permissions()`      | AddRecordTags, DeleteRecordTags                                                                          |
-| `metadata_admin_permissions()` | UpdateMetadata, DeleteMetadata                                                                           |
+| Constructor                    | Intended role                               |
+|:-------------------------------|:--------------------------------------------|
+| `admin_permissions()`          | `Admin` — full trail administration         |
+| `record_admin_permissions()`   | record management (add, delete, correct)    |
+| `role_admin_permissions()`     | role management (add, update, delete roles) |
+| `locking_admin_permissions()`  | locking-configuration management            |
+| `cap_admin_permissions()`      | capability management (issue, revoke)       |
+| `tag_admin_permissions()`      | record-tag registry management              |
+| `metadata_admin_permissions()` | updatable-metadata management               |
 
 Please note:
 
