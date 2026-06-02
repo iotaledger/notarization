@@ -35,15 +35,15 @@ The package depends on `TfComponents` for reusable capability, role-map, and tim
 
 ## Modules
 
-- `audit_trail::main`
+- `audit_trails::main`
   Core shared object, events, trail lifecycle, record mutation, metadata updates, roles, and capabilities.
-- `audit_trail::record`
+- `audit_trails::record`
   Record payloads, initial records, and correction metadata.
-- `audit_trail::locking`
+- `audit_trails::locking`
   Locking configuration and lock evaluation helpers.
-- `audit_trail::permission`
+- `audit_trails::permission`
   Permission constructors and admin permission presets.
-- `audit_trail::record_tags`
+- `audit_trails::record_tags`
   Tag registry and role tag helpers.
 
 ## Development And Testing

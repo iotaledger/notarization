@@ -255,7 +255,7 @@ Expected behavior:
 3. Find e.g. an added `public fun pause_trail` in `audit_trail.move`, an
    added `PauseTrail` struct + `PauseTrail::new` in `audit-trail-rs/src`,
    and `WasmPauseTrail` with the usual two methods in the WASM crate.
-4. Propose a new `[audit_trail.main.pause_trail]` section with both arrays
+4. Propose a new `[audit_trails.main.pause_trail]` section with both arrays
    prefilled.
 5. Find e.g. that `delete_records_batch`'s removed Rust helper
    `TrailRecords::delete_batch_legacy` should be dropped from the existing

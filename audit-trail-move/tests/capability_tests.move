@@ -1,8 +1,8 @@
 #[allow(lint(abort_without_constant))]
 #[test_only]
-module audit_trail::capability_tests;
+module audit_trails::capability_tests;
 
-use audit_trail::{
+use audit_trails::{
     locking,
     main::AuditTrail,
     permission,
@@ -512,7 +512,7 @@ fun test_capability_lifecycle() {
     ts::end(scenario);
 }
 
-#[test, expected_failure(abort_code = audit_trail::role_map::ECapabilityIssuedToMismatch)]
+#[test, expected_failure(abort_code = audit_trails::role_map::ECapabilityIssuedToMismatch)]
 fun test_capability_issued_to_only() {
     let admin_user = @0xAD;
     let authorized_user = @0xB0B;
@@ -594,7 +594,7 @@ fun test_capability_issued_to_only() {
 // ===== Error Case Tests =====
 
 #[test]
-#[expected_failure(abort_code = audit_trail::role_map::ECapabilityHasBeenRevoked)]
+#[expected_failure(abort_code = audit_trails::role_map::ECapabilityHasBeenRevoked)]
 fun test_revoked_capability_cannot_be_used() {
     let admin_user = @0xAD;
     let user = @0xB0B;
@@ -686,7 +686,7 @@ fun test_revoked_capability_cannot_be_used() {
 }
 
 #[test]
-#[expected_failure(abort_code = audit_trail::role_map::ERoleDoesNotExist)]
+#[expected_failure(abort_code = audit_trails::role_map::ERoleDoesNotExist)]
 fun test_new_capability_for_nonexistent_role() {
     let admin_user = @0xAD;
 
@@ -726,7 +726,7 @@ fun test_new_capability_for_nonexistent_role() {
 }
 
 #[test]
-#[expected_failure(abort_code = audit_trail::role_map::ECapabilityPermissionDenied)]
+#[expected_failure(abort_code = audit_trails::role_map::ECapabilityPermissionDenied)]
 fun test_revoke_capability_permission_denied() {
     let admin_user = @0xAD;
     let user1 = @0xB0B;
@@ -825,7 +825,7 @@ fun test_revoke_capability_permission_denied() {
 }
 
 #[test]
-#[expected_failure(abort_code = audit_trail::role_map::ECapabilityPermissionDenied)]
+#[expected_failure(abort_code = audit_trails::role_map::ECapabilityPermissionDenied)]
 fun test_new_capability_permission_denied() {
     let admin_user = @0xAD;
     let user = @0xB0B;
@@ -912,7 +912,7 @@ fun test_new_capability_permission_denied() {
 /// - Capability can be used after valid_from timestamp
 /// - Capability is not restricted by address or end time
 /// - Capability cannot be used before valid_from timestamp
-#[test, expected_failure(abort_code = audit_trail::role_map::ECapabilityTimeConstraintsNotMet)]
+#[test, expected_failure(abort_code = audit_trails::role_map::ECapabilityTimeConstraintsNotMet)]
 fun test_capability_valid_from_only() {
     let admin_user = @0xAD;
     let user = @0xB0B;
@@ -998,7 +998,7 @@ fun test_capability_valid_from_only() {
 /// - Capability can be used before valid_until timestamp
 /// - Capability is not restricted by address or start time
 /// - Capability cannot be used after valid_until timestamp
-#[test, expected_failure(abort_code = audit_trail::role_map::ECapabilityTimeConstraintsNotMet)]
+#[test, expected_failure(abort_code = audit_trails::role_map::ECapabilityTimeConstraintsNotMet)]
 fun test_capability_valid_until_only() {
     let admin_user = @0xAD;
     let user = @0xB0B;
@@ -1125,7 +1125,7 @@ fun test_capability_time_window() {
 ///
 /// This test validates:
 /// - Capability cannot be used before valid_from
-#[test, expected_failure(abort_code = audit_trail::role_map::ECapabilityTimeConstraintsNotMet)]
+#[test, expected_failure(abort_code = audit_trails::role_map::ECapabilityTimeConstraintsNotMet)]
 fun test_capability_time_window_before_valid_from() {
     let admin_user = @0xAD;
     let user = @0xB0B;
@@ -1170,7 +1170,7 @@ fun test_capability_time_window_before_valid_from() {
 ///
 /// This test validates:
 /// - Capability cannot be used after valid_until
-#[test, expected_failure(abort_code = audit_trail::role_map::ECapabilityTimeConstraintsNotMet)]
+#[test, expected_failure(abort_code = audit_trails::role_map::ECapabilityTimeConstraintsNotMet)]
 fun test_capability_time_window_after_valid_until() {
     let admin_user = @0xAD;
     let user = @0xB0B;

@@ -5,9 +5,9 @@
 /// A trail is a tamper-proof, sequential chain of notarized records where each
 /// entry references its predecessor, ensuring verifiable continuity and
 /// integrity.
-module audit_trail::main;
+module audit_trails::main;
 
-use audit_trail::{
+use audit_trails::{
     locking::{
         Self,
         LockingConfig,

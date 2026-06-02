@@ -128,7 +128,7 @@ impl PermissionSet {
     }
     /// Returns the recommended permission set for the `Admin` role.
     ///
-    /// Mirrors `audit_trail::permission::admin_permissions` in the Move
+    /// Mirrors `audit_trails::permission::admin_permissions` in the Move
     /// package. This is the same set the package seeds when a trail is
     /// created and the initial-admin capability is minted.
     pub fn admin_permissions() -> Self {

@@ -172,7 +172,7 @@ For `Option<T>` returns, document both branches:
   abort list. The reader can follow the reference; we don't drift out of
   sync.
 - Inside the same module, omit the module prefix
-  (`` `add_record` `` rather than `` `audit_trail::main::add_record` ``).
+  (`` `add_record` `` rather than `` `audit_trails::main::add_record` ``).
 - Refer to permission variants by their bare enum name in backticks
   (`` `AddFoo` `` rather than `` `Permission::AddFoo` ``) — the
   context makes the type unambiguous and matches the permission constants
@@ -199,7 +199,7 @@ For `Option<T>` returns, document both branches:
   Field docs follow the same brevity rules as function summaries.
 - Error constants (`#[error] const E…`) carry the user-facing abort message;
   no separate doc comment is required when the message is self-explanatory.
-- Module-level docs (the `///` block above `module audit_trail::…;`) must
+- Module-level docs (the `///` block above `module audit_trails::…;`) must
   describe the module's purpose in one or two sentences.
 
 ## Don'ts

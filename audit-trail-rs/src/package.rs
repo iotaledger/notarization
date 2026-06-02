@@ -81,7 +81,7 @@ pub(crate) async fn resolve_package_ids(
         .or_else(|| package_registry.package_id(network))
         .ok_or_else(|| {
             Error::InvalidConfig(format!(
-                "no information for a published `audit_trail` package on network {network}; try to use `AuditTrailClientReadOnly::new_with_package_overrides`"
+                "no information for a published `IotaAuditTrails` package on network {network}; try to use `AuditTrailClientReadOnly::new_with_package_overrides`"
             ))
         })?;
     let resolved_network = match chain_id.as_str() {

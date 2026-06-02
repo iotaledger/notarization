@@ -33,7 +33,7 @@ audit_trail_package_id=$(
 
 if [[ -z "$audit_trail_package_id" || "$audit_trail_package_id" == "null" ]]; then
     echo "$response" >&2
-    echo "failed to extract audit_trail package ID from publish response" >&2
+    echo "failed to extract IotaAuditTrails package ID from publish response" >&2
     exit 1
 fi
 

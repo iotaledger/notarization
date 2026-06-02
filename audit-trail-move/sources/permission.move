@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /// Permission system for role-based access control
-module audit_trail::permission;
+module audit_trails::permission;
 
 use iota::vec_set::{Self, VecSet};
 

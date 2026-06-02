@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /// Locking configuration for audit trail records
-module audit_trail::locking;
+module audit_trails::locking;
 
 use iota::clock::Clock;
 use tf_components::timelock::{Self, TimeLock};

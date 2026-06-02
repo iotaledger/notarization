@@ -1,8 +1,8 @@
 #[allow(lint(abort_without_constant))]
 #[test_only]
-module audit_trail::metadata_tests;
+module audit_trails::metadata_tests;
 
-use audit_trail::{
+use audit_trails::{
     locking,
     permission,
     test_utils::{
@@ -141,7 +141,7 @@ fun test_update_metadata_success() {
 // ===== Error Case Tests =====
 
 #[test]
-#[expected_failure(abort_code = audit_trail::role_map::ECapabilityPermissionDenied)]
+#[expected_failure(abort_code = audit_trails::role_map::ECapabilityPermissionDenied)]
 fun test_update_metadata_permission_denied() {
     let admin_user = @0xAD;
     let user = @0xB0B;
@@ -213,7 +213,7 @@ fun test_update_metadata_permission_denied() {
 }
 
 #[test]
-#[expected_failure(abort_code = audit_trail::role_map::ECapabilityHasBeenRevoked)]
+#[expected_failure(abort_code = audit_trails::role_map::ECapabilityHasBeenRevoked)]
 fun test_update_metadata_revoked_capability() {
     let admin_user = @0xAD;
     let metadata_admin_user = @0xB0B;

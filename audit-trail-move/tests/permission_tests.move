@@ -1,8 +1,8 @@
 #[allow(lint(abort_without_constant))]
 #[test_only]
-module audit_trail::permission_tests;
+module audit_trails::permission_tests;
 
-use audit_trail::permission;
+use audit_trails::permission;
 use iota::vec_set;
 
 #[test]

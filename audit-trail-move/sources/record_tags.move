@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /// Record tag types and helper predicates for Audit Trails.
-module audit_trail::record_tags;
+module audit_trails::record_tags;
 
-use audit_trail::permission::Permission;
+use audit_trails::permission::Permission;
 use iota::{vec_map::{Self, VecMap}, vec_set::{Self, VecSet}};
 use std::string::String;
 use tf_components::{capability::Capability, role_map::{Self, RoleMap}};
