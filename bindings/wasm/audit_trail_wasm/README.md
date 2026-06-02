@@ -53,7 +53,7 @@ The package intentionally separates transaction construction from submission so 
 ## Minimal TypeScript shape
 
 ```ts
-import { AuditTrailClientReadOnly } from "@iota/audit-trail-wasm";
+import { AuditTrailClientReadOnly } from "@iota/audit-trails-wasm";
 
 const client = await AuditTrailClientReadOnly.create(iotaClient);
 const trail = client.trail(trailId);

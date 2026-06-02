@@ -1,5 +1,5 @@
 {
-  "name": "@iota/audit-trail",
+  "name": "@iota/audit-trails",
   "author": "IOTA Foundation <info@iota.org>",
   "description": "WASM bindings for IOTA Audit Trail. To be used in JavaScript/TypeScript.",
   "homepage": "https://www.iota.org",

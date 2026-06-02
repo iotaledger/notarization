@@ -16,7 +16,7 @@
  * 4. Remove the role after its capabilities are no longer needed.
  */
 
-import { CapabilityIssueOptions, Permission, PermissionSet } from "@iota/audit-trail/node";
+import { CapabilityIssueOptions, Permission, PermissionSet } from "@iota/audit-trails/node";
 import { strict as assert } from "assert";
 import { createTrailWithSeedRecord, getFundedClient, TEST_GAS_BUDGET } from "./util";
 

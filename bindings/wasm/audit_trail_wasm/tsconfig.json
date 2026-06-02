@@ -3,7 +3,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@iota/audit-trail/*": [
+      "@iota/audit-trails/*": [
         "./*"
       ]
     }

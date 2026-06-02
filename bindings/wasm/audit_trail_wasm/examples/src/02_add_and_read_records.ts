@@ -14,7 +14,7 @@
  * 3. Paginate through records.
  */
 
-import { CapabilityIssueOptions, Data, PermissionSet } from "@iota/audit-trail/node";
+import { CapabilityIssueOptions, Data, PermissionSet } from "@iota/audit-trails/node";
 import { strict as assert } from "assert";
 import { createTrailWithSeedRecord, getFundedClient, TEST_GAS_BUDGET } from "./util";
 

@@ -1,6 +1,6 @@
-import url from "@iota/audit-trail/web/audit_trail_wasm_bg.wasm?url";
+import url from "@iota/audit-trails/web/audit_trail_wasm_bg.wasm?url";
 
-import { init } from "@iota/audit-trail/web";
+import { init } from "@iota/audit-trails/web";
 import { main } from "../../../examples/dist/web/web-main";
 
 export const runTest = async (example: string) => {

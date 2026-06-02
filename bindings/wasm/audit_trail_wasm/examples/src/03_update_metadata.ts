@@ -15,7 +15,7 @@
  * 4. Verify that immutable metadata never changes.
  */
 
-import { CapabilityIssueOptions, PermissionSet } from "@iota/audit-trail/node";
+import { CapabilityIssueOptions, PermissionSet } from "@iota/audit-trails/node";
 import { strict as assert } from "assert";
 import { getFundedClient, TEST_GAS_BUDGET } from "./util";
 
