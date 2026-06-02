@@ -160,10 +160,9 @@ public fun new_trail_metadata(name: String, description: Option<String>): Immuta
 /// Creates a new audit trail with an optional initial record and shares it on-chain.
 ///
 /// Initialises the trail's role map with a single role named "Admin" associated with
-/// the permissions `DeleteAuditTrail`, `AddCapabilities`, `RevokeCapabilities`,
-/// `AddRoles`, `UpdateRoles` and `DeleteRoles`. The creator receives an initial admin
-/// capability that may be used to define further roles and to issue capabilities to
-/// other users.
+/// the permission set defined by the `permission::admin_permissions()` function. The
+/// creator receives an initial admin capability that may be used to define further
+/// roles and to issue capabilities to other users.
 ///
 /// When `initial_record` is provided it is stored at sequence number `0`; otherwise
 /// the trail is created empty. If the initial record carries a tag, that tag must
