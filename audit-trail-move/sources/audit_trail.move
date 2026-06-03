@@ -112,6 +112,27 @@ public struct AuditTrailDeleted has copy, drop {
     timestamp: u64,
 }
 
+/// Emitted when a trail is migrated to the current package version
+public struct AuditTrailMigrated has copy, drop {
+    trail_id: ID,
+    migrated_by: address,
+    timestamp: u64,
+}
+
+/// Emitted when mutable trail metadata is updated
+public struct MetadataUpdated has copy, drop {
+    trail_id: ID,
+    updated_by: address,
+    timestamp: u64,
+}
+
+/// Emitted when the trail's locking configuration is updated
+public struct LockingConfigUpdated has copy, drop {
+    trail_id: ID,
+    updated_by: address,
+    timestamp: u64,
+}
+
 /// Emitted when a record is added to the trail
 public struct RecordAdded has copy, drop {
     trail_id: ID,
@@ -125,6 +146,20 @@ public struct RecordDeleted has copy, drop {
     trail_id: ID,
     sequence_number: u64,
     deleted_by: address,
+    timestamp: u64,
+}
+
+/// Emitted when a record tag is added to the trail's registry
+public struct RecordTagAdded has copy, drop {
+    trail_id: ID,
+    added_by: address,
+    timestamp: u64,
+}
+
+/// Emitted when a record tag is removed from the trail's registry
+public struct RecordTagRemoved has copy, drop {
+    trail_id: ID,
+    removed_by: address,
     timestamp: u64,
 }
 
@@ -293,7 +328,23 @@ entry fun migrate<D: store + copy>(
             clock,
             ctx,
         );
+    let trail_id = self.id();
+    let timestamp = clock::timestamp_ms(clock);
     self.version = PACKAGE_VERSION;
+
+    event::emit(AuditTrailMigrated {
+        trail_id,
+        migrated_by: ctx.sender(),
+        timestamp,
+    });
+}
+
+fun emit_locking_config_updated(trail_id: ID, updated_by: address, timestamp: u64) {
+    event::emit(LockingConfigUpdated {
+        trail_id,
+        updated_by,
+        timestamp,
+    });
 }
 
 fun is_record_tag_allowed<D: store + copy>(
@@ -783,6 +834,8 @@ public fun update_locking_config<D: store + copy>(
             ctx,
         );
     set_config(&mut self.locking_config, new_config);
+
+    emit_locking_config_updated(self.id(), ctx.sender(), clock::timestamp_ms(clock));
 }
 
 /// Replaces the trail's `delete_record_window` configuration.
@@ -810,6 +863,8 @@ public fun update_delete_record_window<D: store + copy>(
             ctx,
         );
     set_delete_record_window(&mut self.locking_config, new_delete_record_lock);
+
+    emit_locking_config_updated(self.id(), ctx.sender(), clock::timestamp_ms(clock));
 }
 
 /// Replaces the trail's `delete_trail_lock` timelock.
@@ -839,6 +894,8 @@ public fun update_delete_trail_lock<D: store + copy>(
             ctx,
         );
     set_delete_trail_lock(&mut self.locking_config, new_delete_trail_lock);
+
+    emit_locking_config_updated(self.id(), ctx.sender(), clock::timestamp_ms(clock));
 }
 
 /// Replaces the trail's `write_lock` timelock.
@@ -868,6 +925,8 @@ public fun update_write_lock<D: store + copy>(
             ctx,
         );
     set_write_lock(&mut self.locking_config, new_write_lock);
+
+    emit_locking_config_updated(self.id(), ctx.sender(), clock::timestamp_ms(clock));
 }
 
 /// Replaces or clears the trail's mutable metadata field.
@@ -897,6 +956,12 @@ public fun update_metadata<D: store + copy>(
             ctx,
         );
     self.updatable_metadata = new_metadata;
+
+    event::emit(MetadataUpdated {
+        trail_id: self.id(),
+        updated_by: ctx.sender(),
+        timestamp: clock::timestamp_ms(clock),
+    });
 }
 
 /// Adds a new record tag to the trail's tag registry.
@@ -923,6 +988,12 @@ public fun add_record_tag<D: store + copy>(
 
     assert!(!self.tags.contains(&tag), ERecordTagAlreadyDefined);
     self.tags.insert_tag(tag, 0);
+
+    event::emit(RecordTagAdded {
+        trail_id: self.id(),
+        added_by: ctx.sender(),
+        timestamp: clock::timestamp_ms(clock),
+    });
 }
 
 /// Removes a record tag from the trail's tag registry.
@@ -953,6 +1024,12 @@ public fun remove_record_tag<D: store + copy>(
     assert!(!self.tags.is_in_use(&tag), ERecordTagInUse);
 
     self.tags.remove_tag(&tag);
+
+    event::emit(RecordTagRemoved {
+        trail_id: self.id(),
+        removed_by: ctx.sender(),
+        timestamp: clock::timestamp_ms(clock),
+    });
 }
 
 // ===== Role and Capability Administration =====
