@@ -92,13 +92,6 @@ impl WasmNotarizationClient {
             .collect()
     }
 
-    /// The TF-Components package ID for the current network, when available;
-    /// `undefined` otherwise.
-    #[wasm_bindgen(js_name = tfComponentsPackageId)]
-    pub fn tf_components_package_id(&self) -> Option<String> {
-        None
-    }
-
     /// The underlying IOTA client used for ledger queries.
     #[wasm_bindgen(js_name = iotaClient)]
     pub fn iota_client(&self) -> WasmIotaClient {
@@ -211,12 +204,11 @@ impl WasmNotarizationClient {
     /// releases its object ID.
     ///
     /// @remarks
-    /// All component {@link TimeLock}s of the attached {@link LockMetadata}
+    /// All package-local {@link TimeLock}s of the attached {@link LockMetadata}
     /// are destroyed in the process. The notarization must currently be
     /// destroy-allowed (see
     /// {@link NotarizationClientReadOnly.isDestroyAllowed}); otherwise the
-    /// on-chain transaction aborts. A {@link TimeLockType.Infinite} lock is
-    /// not destructible and therefore always blocks destruction.
+    /// on-chain transaction aborts.
     ///
     /// @param notarizationId - The notarization object's ID.
     ///

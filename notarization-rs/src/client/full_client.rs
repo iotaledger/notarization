@@ -274,12 +274,11 @@ where
 
     /// Destroys a notarization permanently and releases its object ID.
     ///
-    /// All component `TimeLock`s of the attached `LockMetadata` are
+    /// All package-local `TimeLock`s of the attached `LockMetadata` are
     /// destroyed in the process. The notarization must currently be
     /// destroy-allowed (see
     /// [`NotarizationClientReadOnly::is_destroy_allowed`]); otherwise the
-    /// on-chain transaction aborts. A `TimeLock::Infinite` lock is not
-    /// destructible and therefore always blocks destruction.
+    /// on-chain transaction aborts.
     ///
     /// On success the on-chain transaction emits a `NotarizationDestroyed`
     /// event.

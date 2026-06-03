@@ -381,10 +381,6 @@ impl NotarizationClientReadOnly {
     /// * `Locked`: destruction is gated on all of `update_lock`, `delete_lock`, and `transfer_lock` — the object is
     ///   destroy-allowed only when none of them is currently `UnlockAt`-locked.
     ///
-    /// `TimeLock::Infinite` is treated as not currently `UnlockAt` for this
-    /// check but will still abort `destroy`, because such locks are not
-    /// destructible.
-    ///
     /// # Arguments
     ///
     /// * `notarized_object_id`: The [`ObjectID`] of the notarized object.

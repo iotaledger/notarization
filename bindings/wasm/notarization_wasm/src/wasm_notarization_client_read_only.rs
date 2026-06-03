@@ -91,13 +91,6 @@ impl WasmNotarizationClientReadOnly {
             .collect()
     }
 
-    /// The TF-Components package ID for the current network, when available;
-    /// `undefined` otherwise.
-    #[wasm_bindgen(js_name = tfComponentsPackageId)]
-    pub fn tf_components_package_id(&self) -> Option<String> {
-        None
-    }
-
     /// The underlying IOTA client used for ledger queries.
     #[wasm_bindgen(js_name = iotaClient)]
     pub fn iota_client(&self) -> WasmIotaClient {
