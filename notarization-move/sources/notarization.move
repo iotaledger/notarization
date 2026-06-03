@@ -10,7 +10,7 @@ module iota_notarization::notarization;
 use iota::{clock::{Self, Clock}, event};
 use iota_notarization::{
     method::{NotarizationMethod, new_dynamic, new_locked},
-    timelock::{Self, TimeLock},
+    timelock::{Self, TimeLock}
 };
 use std::string::String;
 
