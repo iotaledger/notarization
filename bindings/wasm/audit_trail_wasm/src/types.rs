@@ -293,10 +293,16 @@ impl WasmPermissionSet {
     /// Returns the recommended permission set for the reserved initial-admin role.
     ///
     /// @remarks
-    /// Includes the {@link Permission.AddCapabilities}, {@link Permission.RevokeCapabilities},
-    /// {@link Permission.AddRecordTags}, {@link Permission.DeleteRecordTags},
-    /// {@link Permission.AddRoles}, {@link Permission.UpdateRoles}, {@link Permission.DeleteRoles}
-    /// and {@link Permission.Migrate} permissions.
+    /// Includes the following permissions:
+    ///
+    /// - {@link Permission.AddCapabilities}
+    /// - {@link Permission.RevokeCapabilities}
+    /// - {@link Permission.AddRecordTags}
+    /// - {@link Permission.DeleteRecordTags}
+    /// - {@link Permission.AddRoles}
+    /// - {@link Permission.UpdateRoles}
+    /// - {@link Permission.DeleteRoles}
+    /// - {@link Permission.Migrate}
     ///
     /// @returns A {@link PermissionSet} that authorizes role and capability administration.
     #[wasm_bindgen(js_name = adminPermissions)]
@@ -307,8 +313,11 @@ impl WasmPermissionSet {
     /// Returns the permissions needed to administer records.
     ///
     /// @remarks
-    /// Includes the {@link Permission.AddRecord}, {@link Permission.DeleteRecord} and
-    /// {@link Permission.CorrectRecord} permissions.
+    /// Includes the following permissions:
+    ///
+    /// - {@link Permission.AddRecord}
+    /// - {@link Permission.DeleteRecord}
+    /// - {@link Permission.CorrectRecord}
     ///
     /// @returns A {@link PermissionSet} that authorizes record reads, writes, and deletions.
     #[wasm_bindgen(js_name = recordAdminPermissions)]
@@ -319,10 +328,12 @@ impl WasmPermissionSet {
     /// Returns the permissions needed to administer locking rules.
     ///
     /// @remarks
-    /// Includes the {@link Permission.UpdateLockingConfig},
-    /// {@link Permission.UpdateLockingConfigForDeleteTrail},
-    /// {@link Permission.UpdateLockingConfigForDeleteRecord} and
-    /// {@link Permission.UpdateLockingConfigForWrite} permissions.
+    /// Includes the following permissions:
+    ///
+    /// - {@link Permission.UpdateLockingConfig}
+    /// - {@link Permission.UpdateLockingConfigForDeleteTrail}
+    /// - {@link Permission.UpdateLockingConfigForDeleteRecord}
+    /// - {@link Permission.UpdateLockingConfigForWrite}
     ///
     /// @returns A {@link PermissionSet} that authorizes updates to all locking dimensions.
     #[wasm_bindgen(js_name = lockingAdminPermissions)]
@@ -333,8 +344,11 @@ impl WasmPermissionSet {
     /// Returns the permissions needed to administer roles.
     ///
     /// @remarks
-    /// Includes the {@link Permission.AddRoles}, {@link Permission.UpdateRoles} and
-    /// {@link Permission.DeleteRoles} permissions.
+    /// Includes the following permissions:
+    ///
+    /// - {@link Permission.AddRoles}
+    /// - {@link Permission.UpdateRoles}
+    /// - {@link Permission.DeleteRoles}
     ///
     /// @returns A {@link PermissionSet} that authorizes adding, updating, and deleting roles.
     #[wasm_bindgen(js_name = roleAdminPermissions)]
@@ -345,8 +359,10 @@ impl WasmPermissionSet {
     /// Returns the permissions needed to issue and revoke capabilities.
     ///
     /// @remarks
-    /// Includes the {@link Permission.AddCapabilities} and {@link Permission.RevokeCapabilities}
-    /// permissions.
+    /// Includes the following permissions:
+    ///
+    /// - {@link Permission.AddCapabilities}
+    /// - {@link Permission.RevokeCapabilities}
     ///
     /// @returns A {@link PermissionSet} that authorizes the capability lifecycle.
     #[wasm_bindgen(js_name = capAdminPermissions)]
@@ -357,8 +373,10 @@ impl WasmPermissionSet {
     /// Returns the permissions needed to administer mutable metadata.
     ///
     /// @remarks
-    /// Includes the {@link Permission.UpdateMetadata} and {@link Permission.DeleteMetadata}
-    /// permissions.
+    /// Includes the following permissions:
+    ///
+    /// - {@link Permission.UpdateMetadata}
+    /// - {@link Permission.DeleteMetadata}
     ///
     /// @returns A {@link PermissionSet} that authorizes updating and clearing
     /// `updatableMetadata`.
@@ -370,8 +388,10 @@ impl WasmPermissionSet {
     /// Returns the permissions needed to administer record tags.
     ///
     /// @remarks
-    /// Includes the {@link Permission.AddRecordTags} and {@link Permission.DeleteRecordTags}
-    /// permissions.
+    /// Includes the following permissions:
+    ///
+    /// - {@link Permission.AddRecordTags}
+    /// - {@link Permission.DeleteRecordTags}
     ///
     /// @returns A {@link PermissionSet} that authorizes adding and removing entries from the
     /// trail's record-tag registry.
