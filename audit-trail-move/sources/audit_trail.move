@@ -313,6 +313,8 @@ public fun initial_admin_role_name(): String {
 /// * `EPackageVersionMismatch` when the trail is already at `PACKAGE_VERSION`.
 /// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
 ///   authorization checks.
+///
+/// Emits an `AuditTrailMigrated` event on success.
 entry fun migrate<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -817,6 +819,8 @@ public fun is_record_locked<D: store + copy>(
 ///   authorization checks.
 /// * `EUntilDestroyedNotSupportedForDeleteTrail` when
 ///   `new_config.delete_trail_lock` is `TimeLock::UntilDestroyed`.
+///
+/// Emits a `LockingConfigUpdated` event on success.
 public fun update_locking_config<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -846,6 +850,8 @@ public fun update_locking_config<D: store + copy>(
 /// * `EPackageVersionMismatch` when the trail is at a different package version.
 /// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
 ///   authorization checks.
+///
+/// Emits a `LockingConfigUpdated` event on success.
 public fun update_delete_record_window<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -877,6 +883,8 @@ public fun update_delete_record_window<D: store + copy>(
 ///   authorization checks.
 /// * `EUntilDestroyedNotSupportedForDeleteTrail` when `new_delete_trail_lock` is
 ///   `TimeLock::UntilDestroyed`.
+///
+/// Emits a `LockingConfigUpdated` event on success.
 public fun update_delete_trail_lock<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -908,6 +916,8 @@ public fun update_delete_trail_lock<D: store + copy>(
 /// * `EPackageVersionMismatch` when the trail is at a different package version.
 /// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
 ///   authorization checks.
+///
+/// Emits a `LockingConfigUpdated` event on success.
 public fun update_write_lock<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -939,6 +949,8 @@ public fun update_write_lock<D: store + copy>(
 /// * `EPackageVersionMismatch` when the trail is at a different package version.
 /// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
 ///   authorization checks.
+///
+/// Emits a `MetadataUpdated` event on success.
 public fun update_metadata<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -975,6 +987,8 @@ public fun update_metadata<D: store + copy>(
 /// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
 ///   authorization checks.
 /// * `ERecordTagAlreadyDefined` when `tag` is already in the registry.
+///
+/// Emits a `RecordTagAdded` event on success.
 public fun add_record_tag<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
@@ -1009,6 +1023,8 @@ public fun add_record_tag<D: store + copy>(
 /// * `ERecordTagNotDefined` when `tag` is not in the registry.
 /// * `ERecordTagInUse` when it is still referenced by an existing record or
 ///   role-tag restriction.
+///
+/// Emits a `RecordTagRemoved` event on success.
 public fun remove_record_tag<D: store + copy>(
     self: &mut AuditTrail<D>,
     cap: &Capability,
