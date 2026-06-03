@@ -19,7 +19,7 @@ use crate::error::Error;
 ///
 /// Requires the `AddRecordTags` permission. The Move package aborts with `ERecordTagAlreadyDefined` if
 /// the tag is already in the registry. The new tag is inserted with a usage count of zero.
-/// 
+///
 /// On success a `RecordTagAdded` event is emitted.
 #[derive(Debug, Clone)]
 pub struct AddRecordTag {
@@ -83,7 +83,7 @@ impl Transaction for AddRecordTag {
 /// Requires the `DeleteRecordTags` permission. The Move package aborts with `ERecordTagNotDefined` if
 /// the tag is not present and with `ERecordTagInUse` while it is still referenced by any existing
 /// record or role-tag restriction.
-/// 
+///
 /// On success a `RecordTagRemoved` event is emitted.
 #[derive(Debug, Clone)]
 pub struct RemoveRecordTag {

@@ -21,7 +21,7 @@ use crate::error::Error;
 /// This requires the `Migrate` permission on the supplied capability and succeeds only when the on-chain
 /// package version is *strictly less* than the current supported version. Otherwise the Move package aborts
 /// with `EPackageVersionMismatch`.
-/// 
+///
 /// On success an `AuditTrailMigrated` event is emitted.
 #[derive(Debug, Clone)]
 pub struct Migrate {
@@ -75,7 +75,7 @@ impl Transaction for Migrate {
 ///
 /// Requires the `UpdateMetadata` permission on the supplied capability. Passing `None` clears the mutable
 /// metadata field on-chain.
-/// 
+///
 /// On success a `MetadataUpdated` event is emitted.
 #[derive(Debug, Clone)]
 pub struct UpdateMetadata {
@@ -144,7 +144,7 @@ impl Transaction for UpdateMetadata {
 /// Requires the `DeleteAuditTrail` permission. The Move package additionally aborts with
 /// `ETrailNotEmpty` while any records remain in the trail and with `ETrailDeleteLocked` while the
 /// configured `delete_trail_lock` is still active.
-/// 
+///
 /// On success an `AuditTrailDeleted` event is emitted.
 #[derive(Debug, Clone)]
 pub struct DeleteAuditTrail {

@@ -131,7 +131,7 @@ impl Transaction for AddRecord {
 /// exists at `sequence_number` and with `ERecordLocked` while the configured delete-record window still
 /// protects the record. Tag-aware authorization additionally applies: if the record carries a tag, the
 /// supplied capability's role must allow that tag.
-/// 
+///
 /// On success a `RecordDeleted` event is emitted.
 #[derive(Debug, Clone)]
 pub struct DeleteRecord {
@@ -223,8 +223,8 @@ impl Transaction for DeleteRecord {
 ///
 /// Requires the `DeleteAllRecords` permission. The Move entry point walks the trail from the front,
 /// silently skips records still inside the delete-record window or outside the capability's allowed tag set,
-/// and deletes up to `limit` eligible records in trail order. 
-/// 
+/// and deletes up to `limit` eligible records in trail order.
+///
 /// On success a `RecordDeleted` event is emitted per deletion.
 ///
 /// `limit` caps the number of records actually deleted, not the number of records inspected. Ineligible
