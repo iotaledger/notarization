@@ -9,7 +9,6 @@ dependencies = [
   { id = "IotaSystem", name = "IotaSystem" },
   { id = "MoveStdlib", name = "MoveStdlib" },
   { id = "Stardust", name = "Stardust" },
-  { id = "TfComponents", name = "TfComponents" },
 ]
 
 [[move.package]]
@@ -40,17 +39,6 @@ source = { git = "https://github.com/iotaledger/iota.git", rev = "e694e2ee8f2f9f
 dependencies = [
   { id = "Iota", name = "Iota" },
   { id = "MoveStdlib", name = "MoveStdlib" },
-]
-
-[[move.package]]
-id = "TfComponents"
-source = { git = "https://github.com/iotaledger/product-core.git", rev = "main", subdir = "components_move" }
-
-dependencies = [
-  { id = "Iota", name = "Iota" },
-  { id = "IotaSystem", name = "IotaSystem" },
-  { id = "MoveStdlib", name = "MoveStdlib" },
-  { id = "Stardust", name = "Stardust" },
 ]
 
 [move.toolchain-version]
