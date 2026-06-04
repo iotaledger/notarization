@@ -21,6 +21,8 @@ use crate::error::Error;
 /// Requires the `UpdateLockingConfig` permission. The new `delete_trail_lock` must not be
 /// [`TimeLock::UntilDestroyed`]; the Move package aborts otherwise. This writes the full
 /// `LockingConfig` object and therefore updates all locking dimensions in one call.
+///
+/// On success a `LockingConfigUpdated` event is emitted.
 #[derive(Debug, Clone)]
 pub struct UpdateLockingConfig {
     trail_id: ObjectID,
@@ -88,6 +90,8 @@ impl Transaction for UpdateLockingConfig {
 /// Requires the `UpdateLockingConfigForDeleteRecord` permission. Updates only the rule that governs how
 /// long after creation, or for how many trailing records, an individual record stays *locked against
 /// deletion*.
+///
+/// On success a `LockingConfigUpdated` event is emitted.
 #[derive(Debug, Clone)]
 pub struct UpdateDeleteRecordWindow {
     trail_id: ObjectID,
@@ -155,6 +159,8 @@ impl Transaction for UpdateDeleteRecordWindow {
 /// Requires the `UpdateLockingConfigForDeleteTrail` permission. The new lock must not be
 /// [`TimeLock::UntilDestroyed`]; the Move package aborts otherwise. This updates only the time lock
 /// guarding deletion of the entire trail object.
+///
+/// On success a `LockingConfigUpdated` event is emitted.
 #[derive(Debug, Clone)]
 pub struct UpdateDeleteTrailLock {
     trail_id: ObjectID,
@@ -221,6 +227,8 @@ impl Transaction for UpdateDeleteTrailLock {
 ///
 /// Requires the `UpdateLockingConfigForWrite` permission. Updates only the time lock guarding future
 /// record writes; while the lock is active, `add_record` aborts with `ETrailWriteLocked`.
+///
+/// On success a `LockingConfigUpdated` event is emitted.
 #[derive(Debug, Clone)]
 pub struct UpdateWriteLock {
     trail_id: ObjectID,

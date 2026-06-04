@@ -254,6 +254,40 @@ Notarization creation uses a `NotarizationBuilder<T>` with phantom type states t
 
 Code uses `#[cfg(target_arch = "wasm32")]` guards to conditionally compile for WASM. Features `send-sync`, `gas-station`, `default-http-client`, and `irl` control optional capabilities.
 
+### Derived Permission Sets (Audit Trails)
+
+The permission-set convenience constructors (`admin_permissions()`, `record_admin_permissions()`,
+`role_admin_permissions()`, …) exist in all three layers and each layer's doc comment enumerates
+the permissions the set contains. The Move and Rust implementations are **independent** and must
+return the same set; the WASM implementation delegates to Rust, but its doc list does not follow
+automatically. When adding a `Permission` variant or changing any `*_permissions()` set:
+
+1. Update the Move constructor implementation **and** its doc bullet list (`permission.move`).
+2. Mirror the change in the Rust `PermissionSet` constructor implementation **and** its doc list.
+3. Update the enumerated doc list of the matching `WasmPermissionSet` constructor.
+
+Doc lists must always be verified against the implementation of their own layer, not copied
+doc-to-doc — doc lists can agree across layers and still all be stale.
+
+### Event Types Across Layers
+
+Every public Move event struct (`public struct <Event> has copy, drop`) must have counterparts in
+the other two layers of the same product:
+
+1. A Rust deserialization struct in `<product>-rs/src/core/types/event.rs` with matching field
+   names, following the existing patterns there (e.g. `deserialize_number_from_string` for
+   string-encoded `u64` timestamps in Audit Trails).
+2. A WASM payload type (`Wasm<Event>` with `#[wasm_bindgen]`) plus a `From<<Event>>` impl in the
+   bindings' `types.rs`.
+3. A section in the product's `api_mapping.toml` mapping the Move event to both counterparts
+   (use the `update-api-mapping` skill).
+
+Every function that emits the event must document the emission in all three layers: the
+``Emits a `<Event>` event on success.`` paragraph in Move (see `MOVE-DOC-STYLEGUIDE.md`), prose in
+the Rust transaction-type doc ("On success a `<Event>` event is emitted."), and the
+`Emits a {@link <Event>} event on success.` line in WASM (see `bindings/wasm/DOC-STYLEGUIDE.md`)
+on both the transaction wrapper type and the handle method.
+
 ### Key External Dependencies
 
 - `iota-sdk` (v1.19.1, from IOTA git) — on-chain interaction

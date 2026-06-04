@@ -68,6 +68,8 @@ impl WasmTrailTags {
     /// @returns A {@link TransactionBuilder} wrapping the {@link AddRecordTag} transaction.
     ///
     /// @throws When the wrapper was created from a read-only client.
+    ///
+    /// Emits a {@link RecordTagAdded} event on success.
     #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<AddRecordTag>")]
     pub fn add(&self, tag: String) -> Result<WasmTransactionBuilder> {
         let tx = self.require_write()?.trail(self.trail_id).tags().add(tag).into_inner();
@@ -87,6 +89,8 @@ impl WasmTrailTags {
     /// @returns A {@link TransactionBuilder} wrapping the {@link RemoveRecordTag} transaction.
     ///
     /// @throws When the wrapper was created from a read-only client.
+    ///
+    /// Emits a {@link RecordTagRemoved} event on success.
     #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<RemoveRecordTag>")]
     pub fn remove(&self, tag: String) -> Result<WasmTransactionBuilder> {
         let tx = self

@@ -240,6 +240,8 @@ impl WasmCreateTrail {
 /// Passing `null`/`undefined` for the new metadata clears the `updatableMetadata` field on-chain.
 ///
 /// Requires the {@link Permission.UpdateMetadata} permission.
+///
+/// Emits a {@link MetadataUpdated} event on success.
 #[wasm_bindgen(js_name = UpdateMetadata, inspectable)]
 pub struct WasmUpdateMetadata(pub(crate) UpdateMetadata);
 
@@ -283,6 +285,8 @@ impl WasmUpdateMetadata {
 /// version this binding targets.
 ///
 /// Requires the {@link Permission.Migrate} permission.
+///
+/// Emits an {@link AuditTrailMigrated} event on success.
 #[wasm_bindgen(js_name = Migrate, inspectable)]
 pub struct WasmMigrate(pub(crate) Migrate);
 
@@ -374,6 +378,8 @@ impl WasmDeleteAuditTrail {
 /// the call aborts on-chain otherwise.
 ///
 /// Requires the {@link Permission.UpdateLockingConfig} permission.
+///
+/// Emits a {@link LockingConfigUpdated} event on success.
 #[wasm_bindgen(js_name = UpdateLockingConfig, inspectable)]
 pub struct WasmUpdateLockingConfig(pub(crate) UpdateLockingConfig);
 
@@ -417,6 +423,8 @@ impl WasmUpdateLockingConfig {
 /// count-based).
 ///
 /// Requires the {@link Permission.UpdateLockingConfigForDeleteRecord} permission.
+///
+/// Emits a {@link LockingConfigUpdated} event on success.
 #[wasm_bindgen(js_name = UpdateDeleteRecordWindow, inspectable)]
 pub struct WasmUpdateDeleteRecordWindow(pub(crate) UpdateDeleteRecordWindow);
 
@@ -459,6 +467,8 @@ impl WasmUpdateDeleteRecordWindow {
 /// The new lock must not be {@link TimeLock.withUntilDestroyed}.
 ///
 /// Requires the {@link Permission.UpdateLockingConfigForDeleteTrail} permission.
+///
+/// Emits a {@link LockingConfigUpdated} event on success.
 #[wasm_bindgen(js_name = UpdateDeleteTrailLock, inspectable)]
 pub struct WasmUpdateDeleteTrailLock(pub(crate) UpdateDeleteTrailLock);
 
@@ -501,6 +511,8 @@ impl WasmUpdateDeleteTrailLock {
 /// While the new lock is active, {@link TrailRecords.add} aborts on-chain.
 ///
 /// Requires the {@link Permission.UpdateLockingConfigForWrite} permission.
+///
+/// Emits a {@link LockingConfigUpdated} event on success.
 #[wasm_bindgen(js_name = UpdateWriteLock, inspectable)]
 pub struct WasmUpdateWriteLock(pub(crate) UpdateWriteLock);
 
@@ -1134,6 +1146,8 @@ impl WasmDeleteRecordsBatch {
 /// Aborts on-chain if the tag is already in the registry.
 ///
 /// Requires the {@link Permission.AddRecordTags} permission.
+///
+/// Emits a {@link RecordTagAdded} event on success.
 #[wasm_bindgen(js_name = AddRecordTag, inspectable)]
 pub struct WasmAddRecordTag(pub(crate) AddRecordTag);
 
@@ -1177,6 +1191,8 @@ impl WasmAddRecordTag {
 /// existing record or role-tag restriction.
 ///
 /// Requires the {@link Permission.DeleteRecordTags} permission.
+///
+/// Emits a {@link RecordTagRemoved} event on success.
 #[wasm_bindgen(js_name = RemoveRecordTag, inspectable)]
 pub struct WasmRemoveRecordTag(pub(crate) RemoveRecordTag);
 

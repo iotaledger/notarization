@@ -91,6 +91,8 @@ impl WasmAuditTrailHandle {
     /// @returns A {@link TransactionBuilder} wrapping the {@link Migrate} transaction.
     ///
     /// @throws When the handle was created from a read-only client.
+    ///
+    /// Emits an {@link AuditTrailMigrated} event on success.
     #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<Migrate>")]
     pub fn migrate(&self) -> Result<WasmTransactionBuilder> {
         let tx = self.require_write()?.trail(self.trail_id).migrate().into_inner();
@@ -133,6 +135,8 @@ impl WasmAuditTrailHandle {
     /// @returns A {@link TransactionBuilder} wrapping the {@link UpdateMetadata} transaction.
     ///
     /// @throws When the handle was created from a read-only client.
+    ///
+    /// Emits a {@link MetadataUpdated} event on success.
     #[wasm_bindgen(js_name = updateMetadata, unchecked_return_type = "TransactionBuilder<UpdateMetadata>")]
     pub fn update_metadata(&self, metadata: Option<String>) -> Result<WasmTransactionBuilder> {
         let tx = self
