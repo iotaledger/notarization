@@ -1,6 +1,8 @@
-# IOTA Notarization Examples
+# IOTA Single Notarization Examples
 
-The following code examples demonstrate how to use IOTA Notarization for creating, managing, and interacting with notarized documents on the IOTA network.
+The following code examples demonstrate how to use IOTA Single Notarization for creating, managing, and interacting with notarized documents on the IOTA network.
+
+The folder [audit-trail](./audit-trail) contains examples for IOTA Audit Trails. See there if you want to experiment with Audit Trails examples.
 
 ## Prerequisites
 
@@ -156,4 +158,4 @@ The examples demonstrate proper error handling for common scenarios:
 - Transfer locks prevent unauthorized ownership changes
 - Delete locks ensure data retention requirements
 
-For more detailed information about IOTA Notarization concepts and advanced usage, refer to the official IOTA documentation.
+For more detailed information about IOTA Single Notarization concepts and advanced usage, refer to the official IOTA documentation.
