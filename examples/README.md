@@ -1,6 +1,8 @@
-# IOTA Notarization Examples
+# IOTA Single Notarization Examples
 
-The following code examples demonstrate how to use IOTA Notarization for creating, managing, and interacting with notarized documents on the IOTA network.
+The following code examples demonstrate how to use IOTA Single Notarization for creating, managing, and interacting with notarized documents on the IOTA network.
+
+The folder [audit-trail](./audit-trail) contains examples for IOTA Audit Trails. See there if you want to experiment with Audit Trails examples.
 
 ## Prerequisites
 
@@ -43,7 +45,7 @@ IOTA_NOTARIZATION_PKG_ID=0x... cargo run --release --example 01_create_locked_no
 The following basic CRUD (Create, Read, Update, Delete) examples are available:
 
 | Name                                                                                                                                               | Information                                                                       |
-| :------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------- |
+|:---------------------------------------------------------------------------------------------------------------------------------------------------|:----------------------------------------------------------------------------------|
 | [01_create_locked_notarization](https://github.com/iotaledger/notarization/tree/main/examples/notarization/01_create_locked_notarization.rs)       | Demonstrates how to create a locked notarization with delete locks.               |
 | [02_create_dynamic_notarization](https://github.com/iotaledger/notarization/tree/main/examples/notarization/02_create_dynamic_notarization.rs)     | Demonstrates how to create dynamic notarizations with and without transfer locks. |
 | [03_update_dynamic_notarization](https://github.com/iotaledger/notarization/tree/main/examples/notarization/03_update_dynamic_notarization.rs)     | Demonstrates that dynamic notarizations can be updated                            |
@@ -156,4 +158,4 @@ The examples demonstrate proper error handling for common scenarios:
 - Transfer locks prevent unauthorized ownership changes
 - Delete locks ensure data retention requirements
 
-For more detailed information about IOTA Notarization concepts and advanced usage, refer to the official IOTA documentation.
+For more detailed information about IOTA Single Notarization concepts and advanced usage, refer to the official IOTA documentation.
