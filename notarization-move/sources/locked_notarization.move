@@ -8,9 +8,8 @@
 module iota_notarization::locked_notarization;
 
 use iota::{clock::Clock, event};
-use iota_notarization::notarization;
+use iota_notarization::{notarization, timelock::TimeLock};
 use std::string::String;
-use tf_components::timelock::TimeLock;
 
 /// Emitted by `create` after a Locked-Notarization is created and
 /// transferred to the sender.

@@ -91,8 +91,10 @@ impl WasmNotarizationClientReadOnly {
             .collect()
     }
 
-    /// The TF-Components package ID for the current network, when available;
-    /// `undefined` otherwise.
+    /// The TF-Components package ID for product_common compatibility.
+    ///
+    /// Notarization uses the package-local `timelock` module, so this is
+    /// always `undefined`.
     #[wasm_bindgen(js_name = tfComponentsPackageId)]
     pub fn tf_components_package_id(&self) -> Option<String> {
         None

@@ -124,15 +124,12 @@ rust = [
   "LockMetadata",
   "TimeLock",
   "TimeLock::new_with_ts",
-  "TimeLock::new_with_ts_ms",
 ]
 wasm = [
   "WasmLockMetadata",
   "WasmTimeLock",
   "WasmTimeLock::with_unlock_at",
-  "WasmTimeLock::with_unlock_at_ms",
   "WasmTimeLock::with_until_destroyed",
-  "WasmTimeLock::with_infinite",
   "WasmTimeLock::with_none",
   "WasmTimeLockType",
 ]
