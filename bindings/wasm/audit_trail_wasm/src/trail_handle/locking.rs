@@ -57,6 +57,8 @@ impl WasmTrailLocking {
     ///
     /// @throws When the wrapper was created from a read-only client, or when `config` violates
     /// one of the constraints above.
+    ///
+    /// Emits a {@link LockingConfigUpdated} event on success.
     #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<UpdateLockingConfig>")]
     pub fn update(&self, config: WasmLockingConfig) -> Result<WasmTransactionBuilder> {
         let tx = self
@@ -85,6 +87,8 @@ impl WasmTrailLocking {
     ///
     /// @throws When the wrapper was created from a read-only client, or when `window` is a
     /// count-based window with `count == 0`.
+    ///
+    /// Emits a {@link LockingConfigUpdated} event on success.
     #[wasm_bindgen(js_name = updateDeleteRecordWindow, unchecked_return_type = "TransactionBuilder<UpdateDeleteRecordWindow>")]
     pub fn update_delete_record_window(&self, window: WasmLockingWindow) -> Result<WasmTransactionBuilder> {
         let tx = self
@@ -112,6 +116,8 @@ impl WasmTrailLocking {
     ///
     /// @throws When the wrapper was created from a read-only client, or when `lock` is
     /// {@link TimeLock.withUntilDestroyed}.
+    ///
+    /// Emits a {@link LockingConfigUpdated} event on success.
     #[wasm_bindgen(js_name = updateDeleteTrailLock, unchecked_return_type = "TransactionBuilder<UpdateDeleteTrailLock>")]
     pub fn update_delete_trail_lock(&self, lock: WasmTimeLock) -> Result<WasmTransactionBuilder> {
         let tx = self
@@ -137,6 +143,8 @@ impl WasmTrailLocking {
     /// @returns A {@link TransactionBuilder} wrapping the {@link UpdateWriteLock} transaction.
     ///
     /// @throws When the wrapper was created from a read-only client.
+    ///
+    /// Emits a {@link LockingConfigUpdated} event on success.
     #[wasm_bindgen(js_name = updateWriteLock, unchecked_return_type = "TransactionBuilder<UpdateWriteLock>")]
     pub fn update_write_lock(&self, lock: WasmTimeLock) -> Result<WasmTransactionBuilder> {
         let tx = self

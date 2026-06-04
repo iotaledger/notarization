@@ -17,21 +17,16 @@ pub enum WasmTimeLockType {
     None = "None",
     /// Unlocks at a specific timestamp expressed in seconds since the Unix epoch.
     UnlockAt = "UnlockAt",
-    /// Unlocks at a specific timestamp expressed in milliseconds since the Unix epoch.
-    UnlockAtMs = "UnlockAtMs",
     /// Stays locked until the notarization is destroyed.
     /// Cannot be used for the `deleteLock` field of {@link LockMetadata}.
     UntilDestroyed = "UntilDestroyed",
-    /// Permanently locked — never unlocks.
-    Infinite = "Infinite",
 }
 
 /// A time-based lock applied to one of the lock fields of a notarization.
 ///
 /// @remarks
 /// Construct one with the static factory methods ({@link TimeLock.withUnlockAt},
-/// {@link TimeLock.withUnlockAtMs}, {@link TimeLock.withUntilDestroyed},
-/// {@link TimeLock.withInfinite}, {@link TimeLock.withNone}) and inspect it via
+/// {@link TimeLock.withUntilDestroyed}, {@link TimeLock.withNone}) and inspect it via
 /// the {@link TimeLock.type} and {@link TimeLock.args} getters.
 #[wasm_bindgen(js_name = TimeLock, inspectable)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -49,16 +44,6 @@ impl WasmTimeLock {
         Self(TimeLock::UnlockAt(time_sec))
     }
 
-    /// Creates a lock that releases at a specific timestamp in milliseconds.
-    ///
-    /// @param timeMs - Unlock time, in milliseconds since the Unix epoch.
-    ///
-    /// @returns A {@link TimeLock} of type {@link TimeLockType.UnlockAtMs}.
-    #[wasm_bindgen(js_name = withUnlockAtMs)]
-    pub fn with_unlock_at_ms(time_ms: u64) -> Self {
-        Self(TimeLock::UnlockAtMs(time_ms))
-    }
-
     /// Creates a lock that stays engaged until the notarization is destroyed.
     ///
     /// @remarks
@@ -70,14 +55,6 @@ impl WasmTimeLock {
     #[wasm_bindgen(js_name = withUntilDestroyed)]
     pub fn with_until_destroyed() -> Self {
         Self(TimeLock::UntilDestroyed)
-    }
-
-    /// Creates a permanent lock that never releases.
-    ///
-    /// @returns A {@link TimeLock} of type {@link TimeLockType.Infinite}.
-    #[wasm_bindgen(js_name = withInfinite)]
-    pub fn with_infinite() -> Self {
-        Self(TimeLock::Infinite)
     }
 
     /// Creates an absent lock — semantically "no restriction".
@@ -93,23 +70,19 @@ impl WasmTimeLock {
     pub fn lock_type(&self) -> WasmTimeLockType {
         match &self.0 {
             TimeLock::UnlockAt(_) => WasmTimeLockType::UnlockAt,
-            TimeLock::UnlockAtMs(_) => WasmTimeLockType::UnlockAtMs,
             TimeLock::UntilDestroyed => WasmTimeLockType::UntilDestroyed,
-            TimeLock::Infinite => WasmTimeLockType::Infinite,
             TimeLock::None => WasmTimeLockType::None,
         }
     }
 
     /// The argument carried by the lock variant, if any.
     ///
-    /// @returns The unlock timestamp (`number`) for `UnlockAt` (seconds) and
-    /// `UnlockAtMs` (milliseconds); `undefined` for `None`, `UntilDestroyed`,
-    /// and `Infinite`.
+    /// @returns The unlock timestamp (`number`) for `UnlockAt` (seconds);
+    /// `undefined` for `None` and `UntilDestroyed`.
     #[wasm_bindgen(js_name = "args", getter)]
     pub fn args(&self) -> JsValue {
         match &self.0 {
             TimeLock::UnlockAt(u) => JsValue::from(*u),
-            TimeLock::UnlockAtMs(u) => JsValue::from(*u),
             _ => JsValue::UNDEFINED,
         }
     }

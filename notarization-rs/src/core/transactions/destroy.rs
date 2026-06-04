@@ -8,12 +8,10 @@
 //! ## Overview
 //!
 //! The destroy-notarization transaction permanently destroys a notarization
-//! and releases its object ID. All component [`TimeLock`](super::super::types::TimeLock)s
+//! and releases its object ID. All package-local [`TimeLock`](super::super::types::TimeLock)s
 //! of the attached [`LockMetadata`](super::super::types::LockMetadata) are
 //! destroyed in the process. The on-chain gating check `is_destroy_allowed`
-//! ensures that no `UnlockAt`/`UnlockAtMs` lock is still active.
-//! `TimeLock::Infinite` is not destructible and therefore always blocks
-//! destruction.
+//! ensures that no `UnlockAt` lock is still active.
 
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
@@ -30,13 +28,12 @@ use crate::error::Error;
 /// A transaction that destroys a notarization on-chain and releases its
 /// object ID.
 ///
-/// All component [`TimeLock`](super::super::types::TimeLock)s of the
+/// All package-local [`TimeLock`](super::super::types::TimeLock)s of the
 /// attached [`LockMetadata`](super::super::types::LockMetadata) are
 /// destroyed in the process. The notarization must currently be
 /// destroy-allowed (see
 /// [`NotarizationClientReadOnly::is_destroy_allowed`](crate::client::NotarizationClientReadOnly::is_destroy_allowed));
-/// otherwise the on-chain transaction aborts. A `TimeLock::Infinite` lock is
-/// not destructible and therefore always blocks destruction.
+/// otherwise the on-chain transaction aborts.
 ///
 /// Emits a `NotarizationDestroyed` event on success.
 pub struct DestroyNotarization {

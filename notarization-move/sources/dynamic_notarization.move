@@ -8,9 +8,8 @@
 module iota_notarization::dynamic_notarization;
 
 use iota::{clock::Clock, event};
-use iota_notarization::notarization;
+use iota_notarization::{notarization, timelock::TimeLock};
 use std::string::String;
-use tf_components::timelock::TimeLock;
 
 // ===== Constants =====
 /// Raised when `transfer` is called on a notarization whose `transfer_lock`

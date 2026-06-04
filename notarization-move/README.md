@@ -31,12 +31,12 @@ It defines the core `Notarization` object and the supporting modules for:
 - state updates, transfer rules, and destruction checks
 - emitted events for notarization lifecycle changes
 
-The package depends on `TfComponents` for shared timelock primitives.
-
 ## Modules
 
 - `iota_notarization::notarization`
   Core object, state model, metadata, lock metadata, updates, and destruction logic.
+- `iota_notarization::timelock`
+  Package-local timelock primitives used by notarization lock metadata.
 - `iota_notarization::dynamic_notarization`
   Dynamic notarization creation and transfer flows.
 - `iota_notarization::locked_notarization`

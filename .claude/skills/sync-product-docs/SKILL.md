@@ -167,6 +167,17 @@ Follow these steps:
      must be consistent across all three layers.
    - **Field-level docs** for structs that document fields with `///` —
      the Rust struct fields and WASM getter accessors must match.
+   - **Derived-set constructors** (e.g. the `*_permissions()` permission-set
+     presets, and any future constructor whose doc enumerates the members of
+     a set it builds) → verify each layer's enumerated doc list against that
+     layer's **implementation**, not just against the Move doc. Doc-vs-doc
+     comparison can be consistent and still wrong when the Move
+     implementation changed without its doc list. The Move implementation is
+     the behavioral truth: if the Move doc list disagrees with the Move code,
+     flag it to the user (offer to fix it) before propagating; if the Rust
+     implementation disagrees with the Move implementation, report that as a
+     code (not doc) divergence — WASM delegates to Rust and only needs its
+     doc list checked.
 
 6. **Report (audit mode) or edit (fix mode).** Report **per entry**, not
    per layer or per triplet — collapsing multiple entries into one verdict

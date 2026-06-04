@@ -447,10 +447,8 @@ impl WasmUpdateMetadata {
 /// @remarks
 /// The notarization must currently be destroy-allowed (see
 /// {@link NotarizationClientReadOnly.isDestroyAllowed}); otherwise the
-/// on-chain transaction aborts. All component {@link TimeLock}s of the
+/// on-chain transaction aborts. All package-local {@link TimeLock}s of the
 /// attached {@link LockMetadata} are destroyed in the process.
-/// A {@link TimeLockType.Infinite} lock is not
-/// destructible and therefore always blocks destruction.
 ///
 /// Emits a `NotarizationDestroyed` event on success.
 #[wasm_bindgen(js_name = DestroyNotarization, inspectable)]

@@ -6,9 +6,8 @@
 module iota_notarization::notarization_tests;
 
 use iota::{clock, test_scenario as ts};
-use iota_notarization::notarization;
+use iota_notarization::{notarization, timelock};
 use std::string;
-use tf_components::timelock;
 
 const ADMIN_ADDRESS: address = @0x1;
 

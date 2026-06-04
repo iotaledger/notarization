@@ -95,6 +95,30 @@ wasm = [
   "WasmAuditTrailDeleted",
 ]
 
+[audit_trails.main.AuditTrailMigrated]
+rust = [
+  "AuditTrailMigrated",
+]
+wasm = [
+  "WasmAuditTrailMigrated",
+]
+
+[audit_trails.main.MetadataUpdated]
+rust = [
+  "MetadataUpdated",
+]
+wasm = [
+  "WasmMetadataUpdated",
+]
+
+[audit_trails.main.LockingConfigUpdated]
+rust = [
+  "LockingConfigUpdated",
+]
+wasm = [
+  "WasmLockingConfigUpdated",
+]
+
 [audit_trails.main.RecordAdded]
 rust = [
   "RecordAdded",
@@ -109,6 +133,22 @@ rust = [
 ]
 wasm = [
   "WasmRecordDeleted",
+]
+
+[audit_trails.main.RecordTagAdded]
+rust = [
+  "RecordTagAdded",
+]
+wasm = [
+  "WasmRecordTagAdded",
+]
+
+[audit_trails.main.RecordTagRemoved]
+rust = [
+  "RecordTagRemoved",
+]
+wasm = [
+  "WasmRecordTagRemoved",
 ]
 
 [audit_trails.main.RevokedCapabilitiesCleanedUp]

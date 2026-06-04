@@ -8,9 +8,11 @@
 module iota_notarization::notarization;
 
 use iota::{clock::{Self, Clock}, event};
-use iota_notarization::method::{NotarizationMethod, new_dynamic, new_locked};
+use iota_notarization::{
+    method::{NotarizationMethod, new_dynamic, new_locked},
+    timelock::{Self, TimeLock}
+};
 use std::string::String;
-use tf_components::timelock::{Self, TimeLock};
 
 // ===== Constants =====
 /// Raised when `state` or `updatable_metadata` is updated while the update lock is active.
@@ -150,13 +152,12 @@ public fun new_state_from_generic<D: store + drop + copy>(
     State { data, metadata }
 }
 
-/// Constructs a `LockMetadata` from the three component `TimeLock`s.
+/// Constructs a `LockMetadata` from the three package-local `TimeLock`s.
 ///
 /// Rejects combinations that would let the object be destroyed before its
-/// update or transfer locks expire. When `delete_lock` is a `TimeLock::UnlockAt`
-/// (or `UnlockAtMs`), its unlock time must be greater than or equal to the
-/// unlock time of any `UnlockAt` (or `UnlockAtMs`) `update_lock` or
-/// `transfer_lock`.
+/// update or transfer locks expire. When `delete_lock` is a `TimeLock::UnlockAt`,
+/// its unlock time must be greater than or equal to the unlock time of any
+/// `UnlockAt` `update_lock` or `transfer_lock`.
 ///
 /// In the current implementation the legal combinations are further narrowed
 /// by the method-specific invariants enforced in `new_dynamic_notarization`
@@ -166,9 +167,8 @@ public fun new_state_from_generic<D: store + drop + copy>(
 ///
 /// Aborts with:
 /// * `EUntilDestroyedLockNotAllowed` when `delete_lock` is `TimeLock::UntilDestroyed`.
-/// * `ELockTimeNotSatisfied` when `delete_lock` is `UnlockAt`/`UnlockAtMs` and
-///   its unlock time is earlier than the unlock time of `update_lock` or
-///   `transfer_lock`.
+/// * `ELockTimeNotSatisfied` when `delete_lock` is `UnlockAt` and its unlock
+///   time is earlier than the unlock time of `update_lock` or `transfer_lock`.
 ///
 /// Returns the constructed `LockMetadata`.
 public fun new_lock_metadata(
@@ -375,15 +375,14 @@ public fun update_state<D: store + drop + copy>(
 
 /// Destroys `self` and releases the underlying object id.
 ///
-/// All component `TimeLock`s of the optional `LockMetadata` are destroyed in
+/// All package-local `TimeLock`s of the optional `LockMetadata` are destroyed in
 /// the process; the gating check `is_destroy_allowed` ensures that no
-/// `UnlockAt`/`UnlockAtMs` lock is still active. `TimeLock::Infinite` is not
-/// destructible and therefore always blocks destruction.
+/// `UnlockAt` lock is still active.
 ///
 /// Aborts with:
 /// * `EDestroyWhileLocked` when `is_destroy_allowed` is `false`.
-/// * `tf_components::timelock::ETimelockNotExpired` when any component
-///   `TimeLock` is `TimeLock::Infinite`.
+/// * `iota_notarization::timelock::ETimelockNotExpired` when any `UnlockAt`
+///   lock is destroyed before it expires.
 ///
 /// Emits a `NotarizationDestroyed` event on success.
 public fun destroy<D: drop + store + copy>(self: Notarization<D>, clock: &Clock) {
@@ -563,15 +562,10 @@ public fun is_transfer_locked<D: store + drop + copy>(self: &Notarization<D>, cl
 /// Checks whether `self` is currently eligible for destruction.
 ///
 /// The result depends on the Notarization Method:
-/// * `Dynamic`: returns `false` when an `UnlockAt`/`UnlockAtMs`
+/// * `Dynamic`: returns `false` when an `UnlockAt`
 ///   `transfer_lock` has not yet expired, and `true` otherwise.
 /// * `Locked`: returns `true` only when none of `update_lock`, `delete_lock`,
-///   or `transfer_lock` is currently an unexpired `UnlockAt`/`UnlockAtMs`
-///   lock.
-///
-/// `TimeLock::Infinite` is treated as not currently `UnlockAt` for this
-/// check but will still abort `destroy`, because such locks are not
-/// destructible.
+///   or `transfer_lock` is currently an unexpired `UnlockAt` lock.
 public fun is_destroy_allowed<D: store + drop + copy>(self: &Notarization<D>, clock: &Clock): bool {
     if (self.method.is_dynamic()) {
         !option::is_some_and!(
