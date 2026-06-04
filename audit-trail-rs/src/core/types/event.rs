@@ -40,6 +40,42 @@ pub struct AuditTrailDeleted {
     pub timestamp: u64,
 }
 
+/// Event emitted when a trail is migrated to the current package version.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AuditTrailMigrated {
+    /// Migrated trail object ID.
+    pub trail_id: ObjectID,
+    /// Address that migrated the trail.
+    pub migrated_by: IotaAddress,
+    /// Millisecond event timestamp.
+    #[serde(deserialize_with = "deserialize_number_from_string")]
+    pub timestamp: u64,
+}
+
+/// Event emitted when mutable trail metadata is updated.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MetadataUpdated {
+    /// Trail object ID whose metadata changed.
+    pub trail_id: ObjectID,
+    /// Address that updated the metadata.
+    pub updated_by: IotaAddress,
+    /// Millisecond event timestamp.
+    #[serde(deserialize_with = "deserialize_number_from_string")]
+    pub timestamp: u64,
+}
+
+/// Event emitted when the trail's locking configuration is updated.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LockingConfigUpdated {
+    /// Trail object ID whose locking configuration changed.
+    pub trail_id: ObjectID,
+    /// Address that updated the locking configuration.
+    pub updated_by: IotaAddress,
+    /// Millisecond event timestamp.
+    #[serde(deserialize_with = "deserialize_number_from_string")]
+    pub timestamp: u64,
+}
+
 /// Event emitted when a record is added.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RecordAdded {
@@ -65,6 +101,30 @@ pub struct RecordDeleted {
     pub sequence_number: u64,
     /// Address that deleted the record.
     pub deleted_by: IotaAddress,
+    /// Millisecond event timestamp.
+    #[serde(deserialize_with = "deserialize_number_from_string")]
+    pub timestamp: u64,
+}
+
+/// Event emitted when a record tag is added to the trail registry.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RecordTagAdded {
+    /// Trail object ID whose registry changed.
+    pub trail_id: ObjectID,
+    /// Address that added the tag.
+    pub added_by: IotaAddress,
+    /// Millisecond event timestamp.
+    #[serde(deserialize_with = "deserialize_number_from_string")]
+    pub timestamp: u64,
+}
+
+/// Event emitted when a record tag is removed from the trail registry.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RecordTagRemoved {
+    /// Trail object ID whose registry changed.
+    pub trail_id: ObjectID,
+    /// Address that removed the tag.
+    pub removed_by: IotaAddress,
     /// Millisecond event timestamp.
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub timestamp: u64,
@@ -265,5 +325,89 @@ impl From<RawRoleDeleted> for RoleDeleted {
             deleted_by: value.deleted_by,
             timestamp: value.timestamp,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+    use serde_json::json;
+
+    use super::*;
+    #[test]
+    fn metadata_updated_event_deserializes_string_encoded_timestamp() {
+        let trail_id = ObjectID::random();
+        let updated_by = IotaAddress::random();
+
+        let event: Event<MetadataUpdated> = serde_json::from_value(json!({
+            "trail_id": trail_id,
+            "updated_by": updated_by,
+            "timestamp": "42",
+        }))
+        .expect("metadata event deserializes");
+
+        assert_eq!(event.data.trail_id, trail_id);
+        assert_eq!(event.data.updated_by, updated_by);
+        assert_eq!(event.data.timestamp, 42);
+    }
+
+    #[test]
+    fn locking_config_updated_event_deserializes_string_encoded_timestamp() {
+        let trail_id = ObjectID::random();
+        let updated_by = IotaAddress::random();
+
+        let event: Event<LockingConfigUpdated> = serde_json::from_value(json!({
+            "trail_id": trail_id,
+            "updated_by": updated_by,
+            "timestamp": "77",
+        }))
+        .expect("locking config event deserializes");
+
+        assert_eq!(event.data.trail_id, trail_id);
+        assert_eq!(event.data.updated_by, updated_by);
+        assert_eq!(event.data.timestamp, 77);
+    }
+
+    #[test]
+    fn record_tag_events_deserialize_string_encoded_timestamps() {
+        let trail_id = ObjectID::random();
+        let actor = IotaAddress::random();
+
+        let added: Event<RecordTagAdded> = serde_json::from_value(json!({
+            "trail_id": trail_id,
+            "added_by": actor,
+            "timestamp": "11",
+        }))
+        .expect("tag-added event deserializes");
+        let removed: Event<RecordTagRemoved> = serde_json::from_value(json!({
+            "trail_id": trail_id,
+            "removed_by": actor,
+            "timestamp": "12",
+        }))
+        .expect("tag-removed event deserializes");
+
+        assert_eq!(added.data.trail_id, trail_id);
+        assert_eq!(added.data.added_by, actor);
+        assert_eq!(added.data.timestamp, 11);
+        assert_eq!(removed.data.trail_id, trail_id);
+        assert_eq!(removed.data.removed_by, actor);
+        assert_eq!(removed.data.timestamp, 12);
+    }
+
+    #[test]
+    fn audit_trail_migrated_event_deserializes_string_encoded_timestamp() {
+        let trail_id = ObjectID::random();
+        let migrated_by = IotaAddress::random();
+
+        let event: Event<AuditTrailMigrated> = serde_json::from_value(json!({
+            "trail_id": trail_id,
+            "migrated_by": migrated_by,
+            "timestamp": "88",
+        }))
+        .expect("migrated event deserializes");
+
+        assert_eq!(event.data.trail_id, trail_id);
+        assert_eq!(event.data.migrated_by, migrated_by);
+        assert_eq!(event.data.timestamp, 88);
     }
 }

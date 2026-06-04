@@ -4,9 +4,10 @@
 use std::collections::{HashMap, HashSet};
 
 use audit_trails::core::types::{
-    AuditTrailCreated, AuditTrailDeleted, Capability, CapabilityAdminPermissions, CapabilityDestroyed,
-    CapabilityIssueOptions, CapabilityIssued, CapabilityRevoked, Data, ImmutableMetadata, LockingConfig, LockingWindow,
-    PaginatedRecord, Permission, PermissionSet, Record, RecordAdded, RecordCorrection, RecordDeleted,
+    AuditTrailCreated, AuditTrailDeleted, AuditTrailMigrated, Capability, CapabilityAdminPermissions,
+    CapabilityDestroyed, CapabilityIssueOptions, CapabilityIssued, CapabilityRevoked, Data, ImmutableMetadata,
+    LockingConfig, LockingConfigUpdated, LockingWindow, MetadataUpdated, PaginatedRecord, Permission, PermissionSet,
+    Record, RecordAdded, RecordCorrection, RecordDeleted, RecordTagAdded, RecordTagRemoved,
     RevokedCapabilitiesCleanedUp, Role, RoleAdminPermissions, RoleCreated, RoleDeleted, RoleMap, RoleTags, RoleUpdated,
     TimeLock,
 };
@@ -774,6 +775,78 @@ impl From<AuditTrailDeleted> for WasmAuditTrailDeleted {
     }
 }
 
+/// Event payload emitted when a trail is migrated.
+#[wasm_bindgen(js_name = AuditTrailMigrated, getter_with_clone, inspectable)]
+#[derive(Clone)]
+pub struct WasmAuditTrailMigrated {
+    /// Migrated trail object ID.
+    #[wasm_bindgen(js_name = trailId)]
+    pub trail_id: String,
+    /// Address that migrated the trail.
+    #[wasm_bindgen(js_name = migratedBy)]
+    pub migrated_by: WasmIotaAddress,
+    /// Millisecond event timestamp.
+    pub timestamp: u64,
+}
+
+impl From<AuditTrailMigrated> for WasmAuditTrailMigrated {
+    fn from(value: AuditTrailMigrated) -> Self {
+        Self {
+            trail_id: value.trail_id.to_string(),
+            migrated_by: value.migrated_by.to_string(),
+            timestamp: value.timestamp,
+        }
+    }
+}
+
+/// Event payload emitted when mutable trail metadata is updated.
+#[wasm_bindgen(js_name = MetadataUpdated, getter_with_clone, inspectable)]
+#[derive(Clone)]
+pub struct WasmMetadataUpdated {
+    /// Trail object ID whose metadata changed.
+    #[wasm_bindgen(js_name = trailId)]
+    pub trail_id: String,
+    /// Address that updated the metadata.
+    #[wasm_bindgen(js_name = updatedBy)]
+    pub updated_by: WasmIotaAddress,
+    /// Millisecond event timestamp.
+    pub timestamp: u64,
+}
+
+impl From<MetadataUpdated> for WasmMetadataUpdated {
+    fn from(value: MetadataUpdated) -> Self {
+        Self {
+            trail_id: value.trail_id.to_string(),
+            updated_by: value.updated_by.to_string(),
+            timestamp: value.timestamp,
+        }
+    }
+}
+
+/// Event payload emitted when the trail locking configuration is updated.
+#[wasm_bindgen(js_name = LockingConfigUpdated, getter_with_clone, inspectable)]
+#[derive(Clone)]
+pub struct WasmLockingConfigUpdated {
+    /// Trail object ID whose locking configuration changed.
+    #[wasm_bindgen(js_name = trailId)]
+    pub trail_id: String,
+    /// Address that updated the locking configuration.
+    #[wasm_bindgen(js_name = updatedBy)]
+    pub updated_by: WasmIotaAddress,
+    /// Millisecond event timestamp.
+    pub timestamp: u64,
+}
+
+impl From<LockingConfigUpdated> for WasmLockingConfigUpdated {
+    fn from(value: LockingConfigUpdated) -> Self {
+        Self {
+            trail_id: value.trail_id.to_string(),
+            updated_by: value.updated_by.to_string(),
+            timestamp: value.timestamp,
+        }
+    }
+}
+
 /// Event payload emitted when a record is added.
 #[wasm_bindgen(js_name = RecordAdded, getter_with_clone, inspectable)]
 #[derive(Clone)]
@@ -825,6 +898,54 @@ impl From<RecordDeleted> for WasmRecordDeleted {
             trail_id: value.trail_id.to_string(),
             sequence_number: value.sequence_number,
             deleted_by: value.deleted_by.to_string(),
+            timestamp: value.timestamp,
+        }
+    }
+}
+
+/// Event payload emitted when a record tag is added to the trail registry.
+#[wasm_bindgen(js_name = RecordTagAdded, getter_with_clone, inspectable)]
+#[derive(Clone)]
+pub struct WasmRecordTagAdded {
+    /// Trail object ID whose registry changed.
+    #[wasm_bindgen(js_name = trailId)]
+    pub trail_id: String,
+    /// Address that added the tag.
+    #[wasm_bindgen(js_name = addedBy)]
+    pub added_by: WasmIotaAddress,
+    /// Millisecond event timestamp.
+    pub timestamp: u64,
+}
+
+impl From<RecordTagAdded> for WasmRecordTagAdded {
+    fn from(value: RecordTagAdded) -> Self {
+        Self {
+            trail_id: value.trail_id.to_string(),
+            added_by: value.added_by.to_string(),
+            timestamp: value.timestamp,
+        }
+    }
+}
+
+/// Event payload emitted when a record tag is removed from the trail registry.
+#[wasm_bindgen(js_name = RecordTagRemoved, getter_with_clone, inspectable)]
+#[derive(Clone)]
+pub struct WasmRecordTagRemoved {
+    /// Trail object ID whose registry changed.
+    #[wasm_bindgen(js_name = trailId)]
+    pub trail_id: String,
+    /// Address that removed the tag.
+    #[wasm_bindgen(js_name = removedBy)]
+    pub removed_by: WasmIotaAddress,
+    /// Millisecond event timestamp.
+    pub timestamp: u64,
+}
+
+impl From<RecordTagRemoved> for WasmRecordTagRemoved {
+    fn from(value: RecordTagRemoved) -> Self {
+        Self {
+            trail_id: value.trail_id.to_string(),
+            removed_by: value.removed_by.to_string(),
             timestamp: value.timestamp,
         }
     }
