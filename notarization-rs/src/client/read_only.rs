@@ -251,10 +251,11 @@ impl NotarizationClientReadOnly {
 
     /// Retrieves the `updatable_metadata` of a notarization object by its `object_id`.
     ///
-    /// This metadata is an optional string.
-    ///
-    /// Dynamic notarizations can be updated anytime after creation
-    /// Locked notarizations are immutable after creation
+    /// This metadata is an optional string. Whether it can be modified after
+    /// creation depends on the Notarization Method:
+    /// * `Dynamic`: updatable via
+    ///   [`NotarizationClient::update_metadata`](crate::client::NotarizationClient::update_metadata).
+    /// * `Locked`: immutable after creation.
     ///
     /// # Arguments
     ///
@@ -268,9 +269,10 @@ impl NotarizationClientReadOnly {
         self.execute_read_only_transaction(tx).await
     }
 
-    /// Retrieves the `notarization_method` of a notarization object by its `object_id`.
+    /// Retrieves the [`NotarizationMethod`] of a notarization object by its `object_id`.
     ///
-    /// This indicates the method used for notarizing the object's state changes.
+    /// The Notarization Method is fixed at creation and determines which
+    /// operations are permitted on the notarization afterwards.
     ///
     /// # Arguments
     ///
@@ -352,7 +354,12 @@ impl NotarizationClientReadOnly {
         self.execute_read_only_transaction(tx).await
     }
 
-    /// Checks if the notarized object is currently locked against state updates.
+    /// Checks if the notarized object is currently locked against `state`
+    /// and `updatable_metadata` updates.
+    ///
+    /// Result depends on the Notarization Method:
+    /// * `Dynamic`: always returns `false`.
+    /// * `Locked`: returns whether the configured `update_lock` is currently timelocked.
     ///
     /// # Arguments
     ///
@@ -368,6 +375,12 @@ impl NotarizationClientReadOnly {
 
     /// Checks if the notarized object is currently allowed to be destroyed.
     ///
+    /// Behaviour depends on the Notarization Method:
+    /// * `Dynamic`: destruction is gated only on the `transfer_lock` — the object is destroy-allowed unless
+    ///   `transfer_lock` is currently `UnlockAt`-locked.
+    /// * `Locked`: destruction is gated on all of `update_lock`, `delete_lock`, and `transfer_lock` — the object is
+    ///   destroy-allowed only when none of them is currently `UnlockAt`-locked.
+    ///
     /// # Arguments
     ///
     /// * `notarized_object_id`: The [`ObjectID`] of the notarized object.
@@ -381,6 +394,11 @@ impl NotarizationClientReadOnly {
     }
 
     /// Checks if the notarized object is currently locked against transfer.
+    ///
+    /// Returns `false` when the object has no `LockMetadata`. Otherwise
+    /// returns whether the configured `transfer_lock` is currently
+    /// timelocked. Locked-Notarizations always return `true` because their
+    /// `transfer_lock` is pinned to `TimeLock::UntilDestroyed`.
     ///
     /// # Arguments
     ///

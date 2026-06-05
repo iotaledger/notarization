@@ -8,10 +8,12 @@
 //! ## Overview
 //!
 //! A notarization is a blockchain-based attestation that creates tamper-proof records with timestamps
-//! and version tracking. This module supports two types of notarizations:
+//! and version tracking. The Notarization Method selected at builder construction time fixes the
+//! mutation and destruction rules of the resulting object:
 //!
-//! - **Locked**: Immutable records that cannot be modified after creation
-//! - **Dynamic**: Updatable records that can evolve over time
+//! - `Locked` — state and updatable metadata are immutable after creation; destruction is gated by a `delete_lock`.
+//! - `Dynamic` — state and updatable metadata can be updated after creation; ownership may optionally be
+//!   transfer-locked.
 //!
 //! ## Examples
 //!
@@ -49,44 +51,49 @@ use super::transactions::CreateNotarization;
 use super::types::{NotarizationMethod, State, TimeLock};
 use crate::error::Error;
 
-/// Marker type for locked notarizations.
+/// Marker type for the `Locked` Notarization Method.
 #[derive(Clone)]
 pub struct Locked;
 
-/// Marker type for dynamic notarizations.
+/// Marker type for the `Dynamic` Notarization Method.
 #[derive(Clone)]
 pub struct Dynamic;
 
 /// A builder for constructing notarization transactions.
 ///
-/// This builder uses the type parameter `M` to enforce method-specific
-/// constraints at compile time.
-/// The two supported types are [`NotarizationMethod::Locked`] and [`NotarizationMethod::Dynamic`].
+/// The type parameter `M` selects the Notarization Method and enforces the
+/// associated configuration constraints at compile time. The two supported
+/// markers are [`Locked`] and [`Dynamic`].
 #[derive(Debug, Clone)]
 pub struct NotarizationBuilder<M> {
-    /// The data to be notarized
+    /// The notarized payload and its optional state-associated metadata.
     pub state: Option<State>,
-    /// A permanent description set at creation
+    /// A permanent description set at creation.
     pub immutable_description: Option<String>,
-    /// Metadata that can be updated
+    /// Initial updatable metadata.
     ///
-    /// Dynamic notarizations can be updated anytime after creation
-    /// Locked notarizations are immutable after creation
+    /// Mutability after creation depends on the Notarization Method:
+    /// * `Dynamic`: updatable after creation via
+    ///   [`NotarizationClient::update_metadata`](crate::client::NotarizationClient::update_metadata).
+    /// * `Locked`: immutable after creation.
     pub updatable_metadata: Option<String>,
-    /// Time restriction for deletion (Locked only)
+    /// Time restriction for destruction. Only configurable for the `Locked`
+    /// Notarization Method.
     pub delete_lock: Option<TimeLock>,
-    /// Time restriction for transfers (Dynamic only)
+    /// Time restriction for ownership transfer. Only configurable for the
+    /// `Dynamic` Notarization Method.
     pub transfer_lock: Option<TimeLock>,
-    /// The notarization method
+    /// The Notarization Method.
     pub method: NotarizationMethod,
     _marker: PhantomData<M>,
 }
 
 impl NotarizationBuilder<Locked> {
-    /// Creates a new builder for a locked notarization.
+    /// Creates a new builder for a Locked-Notarization.
     ///
-    /// Locked notarizations are immutable after creation. They cannot be updated
-    /// or transferred. Optionally, they can only be destroyed after a specified time period.
+    /// Locked-Notarizations are immutable after creation. They cannot be
+    /// updated or transferred. Optionally, their destruction can be gated by
+    /// a `delete_lock` set via [`Self::with_delete_lock`].
     ///
     /// ## Example
     ///
@@ -110,7 +117,7 @@ impl NotarizationBuilder<Locked> {
 
     /// Sets when the notarization can be destroyed.
     ///
-    /// By default, locked notarizations can be destroyed freely. Use this
+    /// By default, Locked-Notarizations can be destroyed freely. Use this
     /// to add time-based restrictions.
     ///
     /// ## Parameters
@@ -153,11 +160,11 @@ impl NotarizationBuilder<Locked> {
 }
 
 impl NotarizationBuilder<Dynamic> {
-    /// Creates a new builder for a dynamic notarization.
+    /// Creates a new builder for a Dynamic-Notarization.
     ///
-    /// Dynamic notarizations can be updated after creation and optionally
+    /// Dynamic-Notarizations can be updated after creation and optionally
     /// transferred to other owners. They maintain a version counter that
-    /// increments with each update.
+    /// increments with each `state` update.
     ///
     /// ## Example
     ///
@@ -180,8 +187,10 @@ impl NotarizationBuilder<Dynamic> {
 
     /// Sets restrictions on when the notarization can be transferred.
     ///
-    /// By default, dynamic notarizations can be transferred freely. Use this
-    /// to add time-based restrictions.
+    /// By default, Dynamic-Notarizations can be transferred freely. Use this
+    /// to add time-based restrictions. When the lock is `TimeLock::None`,
+    /// the resulting notarization carries no `LockMetadata` at all and is
+    /// freely transferable.
     ///
     /// ## Parameters
     ///
@@ -206,8 +215,8 @@ impl NotarizationBuilder<Dynamic> {
 
     /// Finalizes the builder and creates a transaction builder.
     ///
-    /// Unlike locked notarizations, dynamic notarizations have no required fields
-    /// beyond the method type.
+    /// Unlike Locked-Notarizations, Dynamic-Notarizations have no required
+    /// fields beyond the method type.
     ///
     /// ## Example
     ///
@@ -310,8 +319,10 @@ impl<M> NotarizationBuilder<M> {
 
     /// Sets initial updatable metadata.
     ///
-    /// Unlike the immutable description, this metadata can be updated later
-    /// (for dynamic notarizations only).
+    /// Mutability after creation depends on the Notarization Method:
+    /// * `Dynamic`: updatable via
+    ///   [`NotarizationClient::update_metadata`](crate::client::NotarizationClient::update_metadata).
+    /// * `Locked`: fixed at creation alongside `state`.
     ///
     /// ## Example
     ///

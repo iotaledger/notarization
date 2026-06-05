@@ -10,47 +10,58 @@ use wasm_bindgen::prelude::*;
 use crate::wasm_notarization::{WasmCreateNotarizationDynamic, WasmCreateNotarizationLocked};
 use crate::wasm_time_lock::WasmTimeLock;
 
-/// Represents a builder for constructing locked notarization transactions.
+/// Builder for a "create Locked-Notarization" transaction.
 ///
-/// Locked notarizations are immutable records (the notarization state) that cannot be modified
-/// after creation.
+/// @remarks
+/// A Locked-Notarization is immutable after creation: its state and
+/// updatable metadata are fixed for the lifetime of the object. Use this
+/// builder to configure the initial state, immutable description, updatable
+/// metadata, and optional `deleteLock`, then call
+/// {@link NotarizationBuilderLocked.finish} to obtain a transaction builder.
+///
+/// On execution the transaction transfers the new notarization object to
+/// the sender.
+///
+/// Emits a `LockedNotarizationCreated` event on success.
 #[wasm_bindgen(js_name = NotarizationBuilderLocked, inspectable)]
 pub struct WasmNotarizationBuilderLocked(pub(crate) NotarizationBuilder<Locked>);
 
-/// Converts a `NotarizationBuilder<Locked>` into a `WasmNotarizationBuilderLocked`.
 impl From<NotarizationBuilder<Locked>> for WasmNotarizationBuilderLocked {
     fn from(val: NotarizationBuilder<Locked>) -> Self {
         WasmNotarizationBuilderLocked(val)
     }
 }
 
-/// Provides methods for building locked notarization transactions.
 #[wasm_bindgen(js_class = NotarizationBuilderLocked)]
 impl WasmNotarizationBuilderLocked {
-    /// Adds a state to the notarization using binary data.
+    /// Sets the initial state from a binary payload.
     ///
-    /// # Arguments
-    /// * `data` - Binary data representing the state.
-    /// * `metadata` - Optional metadata associated with the state.
+    /// @param data - The bytes to notarize.
+    /// @param metadata - Optional metadata associated with this initial state.
+    ///
+    /// @returns The same builder, with the initial state configured.
     #[wasm_bindgen(js_name = withBytesState)]
     pub fn with_bytes_state(self, data: Uint8Array, metadata: Option<String>) -> Self {
         self.0.with_bytes_state(data.to_vec(), metadata).into()
     }
 
-    /// Adds a state to the notarization using a string.
+    /// Sets the initial state from a text payload.
     ///
-    /// # Arguments
-    /// * `data` - String data representing the state.
-    /// * `metadata` - Optional metadata associated with the state.
+    /// @param data - The string to notarize.
+    /// @param metadata - Optional metadata associated with this initial state.
+    ///
+    /// @returns The same builder, with the initial state configured.
     #[wasm_bindgen(js_name = withStringState)]
     pub fn with_string_state(self, data: String, metadata: Option<String>) -> Self {
         self.0.with_string_state(data, metadata).into()
     }
 
-    /// Adds an immutable description to the notarization.
+    /// Sets the immutable description.
     ///
-    /// # Arguments
-    /// * `description` - A string describing the notarization, or null to skip.
+    /// @param description - Human-readable description fixed at creation. Pass
+    /// `null` or `undefined` to leave the description unset.
+    ///
+    /// @returns The same builder, with the description configured.
     #[wasm_bindgen(js_name = withImmutableDescription)]
     pub fn with_immutable_description(self, description: Option<String>) -> Self {
         match description {
@@ -59,10 +70,17 @@ impl WasmNotarizationBuilderLocked {
         }
     }
 
-    /// Adds updatable metadata to the notarization.
+    /// Sets the updatable metadata.
     ///
-    /// # Arguments
-    /// * `metadata` - A string representing the metadata, or null to skip.
+    /// @remarks
+    /// On a Locked-Notarization the updatable metadata is fixed at creation
+    /// just like the state — there is no client method that can change it
+    /// afterwards.
+    ///
+    /// @param metadata - Updatable metadata string. Pass `null` or
+    /// `undefined` to leave it unset.
+    ///
+    /// @returns The same builder, with the updatable metadata configured.
     #[wasm_bindgen(js_name = withUpdatableMetadata)]
     pub fn with_updatable_metadata(self, metadata: Option<String>) -> Self {
         match metadata {
@@ -71,26 +89,36 @@ impl WasmNotarizationBuilderLocked {
         }
     }
 
-    /// Creates a new locked notarization builder.
+    /// Returns a fresh, unconfigured Locked-Notarization builder.
+    ///
+    /// @returns An empty {@link NotarizationBuilderLocked}.
     #[wasm_bindgen()]
     pub fn locked() -> Self {
         NotarizationBuilder::<Locked>::locked().into()
     }
 
-    /// Adds a delete lock to the notarization.
+    /// Sets the delete lock for the notarization.
     ///
-    /// # Arguments
-    /// * `lock` - A `TimeLock` specifying the delete lock.
+    /// @remarks
+    /// `deleteLock` cannot be {@link TimeLockType.UntilDestroyed} — submitting
+    /// such a configuration aborts on-chain.
+    ///
+    /// @param lock - The {@link TimeLock} controlling when destruction is
+    /// permitted.
+    ///
+    /// @returns The same builder, with the delete lock configured.
     #[wasm_bindgen(js_name = withDeleteLock)]
     pub fn with_delete_lock(self, lock: WasmTimeLock) -> Self {
         self.0.with_delete_lock(lock.0).into()
     }
 
-    /// Finalizes the notarization builder and returns a transaction builder
-    /// that can be used to build and execute the final transaction on the ledger.
+    /// Finalizes the configuration and produces the transaction builder.
     ///
-    /// # Returns
-    /// A `TransactionBuilder` to build and execute the transaction.
+    /// @returns A {@link TransactionBuilder} wrapping the
+    /// {@link CreateNotarizationLocked} transaction.
+    ///
+    /// @throws When the configured state, metadata, or lock combination is
+    /// invalid for a Locked-Notarization.
     #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<CreateNotarizationLocked>")]
     pub fn finish(self) -> Result<WasmTransactionBuilder> {
         let js_value: JsValue = WasmCreateNotarizationLocked::new(self).into();
@@ -98,9 +126,19 @@ impl WasmNotarizationBuilderLocked {
     }
 }
 
-/// Represents a builder for constructing dynamic notarization transactions.
+/// Builder for a "create Dynamic-Notarization" transaction.
 ///
-/// Dynamic notarizations are updatable records that can evolve over time.
+/// @remarks
+/// A Dynamic-Notarization can be updated after creation: state and updatable
+/// metadata can be replaced via {@link NotarizationClient.updateState} and
+/// {@link NotarizationClient.updateMetadata}, and ownership can be
+/// transferred via {@link NotarizationClient.transferNotarization} when the
+/// configured `transferLock` permits it.
+///
+/// On execution the transaction transfers the new notarization object to
+/// the sender.
+///
+/// Emits a `DynamicNotarizationCreated` event on success.
 #[wasm_bindgen(js_name = NotarizationBuilderDynamic)]
 pub struct WasmNotarizationBuilderDynamic(pub(crate) NotarizationBuilder<Dynamic>);
 
@@ -110,33 +148,36 @@ impl From<NotarizationBuilder<Dynamic>> for WasmNotarizationBuilderDynamic {
     }
 }
 
-/// Provides methods for building dynamic notarization transactions.
 #[wasm_bindgen(js_class = NotarizationBuilderDynamic)]
 impl WasmNotarizationBuilderDynamic {
-    /// Adds a state to the notarization using binary data.
+    /// Sets the initial state from a binary payload.
     ///
-    /// # Arguments
-    /// * `data` - Binary data representing the state.
-    /// * `metadata` - Optional metadata associated with the state.
+    /// @param data - The bytes to notarize.
+    /// @param metadata - Optional metadata associated with this initial state.
+    ///
+    /// @returns The same builder, with the initial state configured.
     #[wasm_bindgen(js_name = withBytesState)]
     pub fn with_bytes_state(self, data: Uint8Array, metadata: Option<String>) -> Self {
         self.0.with_bytes_state(data.to_vec(), metadata).into()
     }
 
-    /// Adds a state to the notarization using a string.
+    /// Sets the initial state from a text payload.
     ///
-    /// # Arguments
-    /// * `data` - String data representing the state.
-    /// * `metadata` - Optional metadata associated with the state.
+    /// @param data - The string to notarize.
+    /// @param metadata - Optional metadata associated with this initial state.
+    ///
+    /// @returns The same builder, with the initial state configured.
     #[wasm_bindgen(js_name = withStringState)]
     pub fn with_string_state(self, data: String, metadata: Option<String>) -> Self {
         self.0.with_string_state(data, metadata).into()
     }
 
-    /// Adds an immutable description to the notarization.
+    /// Sets the immutable description.
     ///
-    /// # Arguments
-    /// * `description` - A string describing the notarization, or null to skip.
+    /// @param description - Human-readable description fixed at creation. Pass
+    /// `null` or `undefined` to leave the description unset.
+    ///
+    /// @returns The same builder, with the description configured.
     #[wasm_bindgen(js_name = withImmutableDescription)]
     pub fn with_immutable_description(self, description: Option<String>) -> Self {
         match description {
@@ -145,10 +186,13 @@ impl WasmNotarizationBuilderDynamic {
         }
     }
 
-    /// Adds updatable metadata to the notarization.
+    /// Sets the initial updatable metadata.
     ///
-    /// # Arguments
-    /// * `metadata` - A string representing the metadata, or null to skip.
+    /// @param metadata - Updatable metadata string. Pass `null` or
+    /// `undefined` to leave it unset; it can still be updated later via
+    /// {@link NotarizationClient.updateMetadata}.
+    ///
+    /// @returns The same builder, with the updatable metadata configured.
     #[wasm_bindgen(js_name = withUpdatableMetadata)]
     pub fn with_updatable_metadata(self, metadata: Option<String>) -> Self {
         match metadata {
@@ -157,26 +201,38 @@ impl WasmNotarizationBuilderDynamic {
         }
     }
 
-    /// Creates a new dynamic notarization builder.
+    /// Returns a fresh, unconfigured Dynamic-Notarization builder.
+    ///
+    /// @returns An empty {@link NotarizationBuilderDynamic}.
     #[wasm_bindgen()]
     pub fn dynamic() -> Self {
         NotarizationBuilder::<Dynamic>::dynamic().into()
     }
 
-    /// Adds a transfer lock to the notarization.
+    /// Sets the transfer lock for the notarization.
     ///
-    /// # Arguments
-    /// * `lock` - A `TimeLock` specifying the transfer lock.
+    /// @remarks
+    /// While the transfer lock is active,
+    /// {@link NotarizationClient.transferNotarization} aborts on-chain. When
+    /// the lock is {@link TimeLockType.None}, the resulting notarization
+    /// carries no {@link LockMetadata} and is freely transferable.
+    ///
+    /// @param lock - The {@link TimeLock} controlling when ownership can be
+    /// transferred.
+    ///
+    /// @returns The same builder, with the transfer lock configured.
     #[wasm_bindgen(js_name = withTransferLock)]
     pub fn with_transfer_lock(self, lock: WasmTimeLock) -> Self {
         self.0.with_transfer_lock(lock.0).into()
     }
 
-    /// Finalizes the notarization builder and returns a transaction builder
-    /// that can be used to build and execute the final transaction on the ledger.
+    /// Finalizes the configuration and produces the transaction builder.
     ///
-    /// # Returns
-    /// A `TransactionBuilder` to build and execute the transaction.
+    /// @returns A {@link TransactionBuilder} wrapping the
+    /// {@link CreateNotarizationDynamic} transaction.
+    ///
+    /// @throws When the configured state, metadata, or lock combination is
+    /// invalid for a Dynamic-Notarization.
     #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<CreateNotarizationDynamic>")]
     pub fn finish(self) -> Result<WasmTransactionBuilder> {
         let js_value: JsValue = WasmCreateNotarizationDynamic::new(self).into();

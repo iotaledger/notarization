@@ -4,7 +4,7 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
-use examples::get_funded_client;
+use examples::get_funded_notarization_client;
 use notarization::core::types::{State, TimeLock};
 
 #[tokio::main]
@@ -12,7 +12,7 @@ async fn main() -> Result<()> {
     println!("Demonstrating notarization destruction scenarios");
 
     // Create a notarization client
-    let notarization_client = get_funded_client().await?;
+    let notarization_client = get_funded_notarization_client().await?;
 
     // Scenario 1: Destroy an unlocked dynamic notarization (should succeed)
     println!("📝 Scenario 1: Creating and destroying an unlocked dynamic notarization...");

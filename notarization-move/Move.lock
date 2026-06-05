@@ -2,56 +2,35 @@
 
 [move]
 version = 3
-manifest_digest = "2E3FF0C8C2529AC5F5521920800D3385F4B722FF03E524F5AF757E81CA710024"
-deps_digest = "F9B494B64F0615AED0E98FC12A85B85ECD2BC5185C22D30E7F67786BB52E507C"
+manifest_digest = "F6A54EEF62E080B67E4ACC8AFED64941661C020EFF00A8D68A404001EC85DD35"
+deps_digest = "F8BBB0CCB2491CA29A3DF03D6F92277A4F3574266507ACD77214D37ECA3F3082"
 dependencies = [
   { id = "Iota", name = "Iota" },
-  { id = "IotaSystem", name = "IotaSystem" },
-  { id = "MoveStdlib", name = "MoveStdlib" },
-  { id = "Stardust", name = "Stardust" },
 ]
 
 [[move.package]]
 id = "Iota"
-source = { git = "https://github.com/iotaledger/iota.git", rev = "431ab686e6f1d4abd83b16dd7c671712002ecac8", subdir = "crates/iota-framework/packages/iota-framework" }
+source = { git = "https://github.com/iotaledger/iota.git", rev = "e694e2ee8f2f9f0b9b03b843a24ff0f7bcff2930", subdir = "crates/iota-framework/packages/iota-framework" }
 
 dependencies = [
-  { id = "MoveStdlib", name = "MoveStdlib" },
-]
-
-[[move.package]]
-id = "IotaSystem"
-source = { git = "https://github.com/iotaledger/iota.git", rev = "431ab686e6f1d4abd83b16dd7c671712002ecac8", subdir = "crates/iota-framework/packages/iota-system" }
-
-dependencies = [
-  { id = "Iota", name = "Iota" },
   { id = "MoveStdlib", name = "MoveStdlib" },
 ]
 
 [[move.package]]
 id = "MoveStdlib"
-source = { git = "https://github.com/iotaledger/iota.git", rev = "431ab686e6f1d4abd83b16dd7c671712002ecac8", subdir = "crates/iota-framework/packages/move-stdlib" }
-
-[[move.package]]
-id = "Stardust"
-source = { git = "https://github.com/iotaledger/iota.git", rev = "431ab686e6f1d4abd83b16dd7c671712002ecac8", subdir = "crates/iota-framework/packages/stardust" }
-
-dependencies = [
-  { id = "Iota", name = "Iota" },
-  { id = "MoveStdlib", name = "MoveStdlib" },
-]
+source = { git = "https://github.com/iotaledger/iota.git", rev = "e694e2ee8f2f9f0b9b03b843a24ff0f7bcff2930", subdir = "crates/iota-framework/packages/move-stdlib" }
 
 [move.toolchain-version]
-compiler-version = "1.18.0-beta"
+compiler-version = "1.16.2-rc"
 edition = "2024.beta"
 flavor = "iota"
 
 [env]
 
 [env.localnet]
-chain-id = "ecc0606a"
-original-published-id = "0xfbddb4631d027b2c4f0b4b90c020713d258ed32bdb342b5397f4da71edb7478a"
-latest-published-id = "0xfbddb4631d027b2c4f0b4b90c020713d258ed32bdb342b5397f4da71edb7478a"
+chain-id = "4991e514"
+original-published-id = "0x8d9e2e2f04101e66c778cfeef09a9fdc945b172cb9f550ace1d36b23ac536735"
+latest-published-id = "0x8d9e2e2f04101e66c778cfeef09a9fdc945b172cb9f550ace1d36b23ac536735"
 published-version = "1"
 
 [env.devnet]

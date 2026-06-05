@@ -3,11 +3,15 @@
 
 //! # Destroy Notarization
 //!
-//! This module defines the destroy notarization transaction.
+//! This module defines the destroy-notarization transaction.
 //!
 //! ## Overview
 //!
-//! The destroy notarization transaction is used to destroy a notarization.
+//! The destroy-notarization transaction permanently destroys a notarization
+//! and releases its object ID. All package-local [`TimeLock`](super::super::types::TimeLock)s
+//! of the attached [`LockMetadata`](super::super::types::LockMetadata) are
+//! destroyed in the process. The on-chain gating check `is_destroy_allowed`
+//! ensures that no `UnlockAt` lock is still active.
 
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
@@ -21,7 +25,17 @@ use tokio::sync::OnceCell;
 use super::super::operations::{NotarizationImpl, NotarizationOperations};
 use crate::error::Error;
 
-/// A transaction that destroys a notarization
+/// A transaction that destroys a notarization on-chain and releases its
+/// object ID.
+///
+/// All package-local [`TimeLock`](super::super::types::TimeLock)s of the
+/// attached [`LockMetadata`](super::super::types::LockMetadata) are
+/// destroyed in the process. The notarization must currently be
+/// destroy-allowed (see
+/// [`NotarizationClientReadOnly::is_destroy_allowed`](crate::client::NotarizationClientReadOnly::is_destroy_allowed));
+/// otherwise the on-chain transaction aborts.
+///
+/// Emits a `NotarizationDestroyed` event on success.
 pub struct DestroyNotarization {
     notarization_id: ObjectID,
     cached_ptb: OnceCell<ProgrammableTransaction>,

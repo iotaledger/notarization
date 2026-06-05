@@ -1,5 +1,22 @@
 #!/bin/bash
 
+# Script to run all examples contained in this directory
+# Usage: ./run.sh
+# Make sure to set the following environment variables:
+# - IOTA_NOTARIZATION_PKG_ID: The package ID of the notarization module
+# - IOTA_AUDIT_TRAIL_PKG_ID: The package ID of the audit trail module
+# - IOTA_TF_COMPONENTS_PKG_ID: The package ID of the tf components module
+
+./examples/audit-trail/run.sh
+printf "\n================================\n"
+printf "================================\n\n"
+
+# At the moment the `examples` folder contains all single notarization (SN) examples.
+# After a `notarization` folder has been introduced to contain the SN examples,
+# uncomment the following line, update the paths in Cargo.toml and move the bash code below that line into `./examples/notarization/run.sh`.
+
+# ./examples/notarization/run.sh
+
 # Script to run all notarization examples
 # Usage: ./run.sh
 # Make sure to set IOTA_NOTARIZATION_PKG_ID environment variable
@@ -10,7 +27,7 @@ if [ -z "$IOTA_NOTARIZATION_PKG_ID" ]; then
     exit 1
 fi
 
-echo "Running all notarization examples..."
+echo "Running all Notarization examples..."
 echo "Package ID: $IOTA_NOTARIZATION_PKG_ID"
 echo "================================"
 
@@ -29,7 +46,7 @@ examples=(
 
 for example in "${examples[@]}"; do
     echo ""
-    echo "Running: $example"
+    echo "Running Notarization Example: $example"
     echo "------------------------"
     cargo run --release --example "$example"
     if [ $? -ne 0 ]; then
@@ -39,4 +56,4 @@ for example in "${examples[@]}"; do
 done
 
 echo ""
-echo "All examples completed successfully!"
+echo "All Notarization examples completed successfully!"

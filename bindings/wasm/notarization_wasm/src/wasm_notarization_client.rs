@@ -17,25 +17,35 @@ use crate::wasm_notarization_builder::{WasmNotarizationBuilderDynamic, WasmNotar
 use crate::wasm_notarization_client_read_only::WasmNotarizationClientReadOnly;
 use crate::wasm_types::WasmState;
 
-/// A client to interact with Notarization objects on the IOTA ledger.
+/// Read-write client for creating and modifying notarizations on the IOTA
+/// ledger.
 ///
-/// This client is used for read and write operations. For read-only capabilities,
-/// you can use {@link NotarizationClientReadOnly}, which does not require an account or signing capabilities.
+/// @remarks
+/// Wraps a {@link NotarizationClientReadOnly} together with a transaction
+/// signer. Use the builder methods ({@link NotarizationClient.createDynamic},
+/// {@link NotarizationClient.createLocked}) to create new notarizations and
+/// the mutation methods ({@link NotarizationClient.updateState},
+/// {@link NotarizationClient.updateMetadata},
+/// {@link NotarizationClient.destroy},
+/// {@link NotarizationClient.transferNotarization}) to operate on existing
+/// ones. For pure read access, prefer {@link NotarizationClientReadOnly}.
 #[derive(Clone)]
 #[wasm_bindgen(js_name = NotarizationClient)]
 pub struct WasmNotarizationClient(pub(crate) NotarizationClient<WasmTransactionSigner>);
 
-// builder related functions
 #[wasm_bindgen(js_class = NotarizationClient)]
 impl WasmNotarizationClient {
-    /// Creates a new notarization client.
+    /// Constructs a read-write client by attaching a signer to a read-only
+    /// client.
     ///
-    /// # Arguments
-    /// * `client` - A read-only notarization client.
-    /// * `signer` - A transaction signer for signing operations.
+    /// @param client - A {@link NotarizationClientReadOnly} connected to the
+    /// target network.
+    /// @param signer - A {@link TransactionSigner} responsible for signing
+    /// outgoing transactions.
     ///
-    /// # Returns
-    /// A `TransactionBuilder` to build and execute the transaction.
+    /// @returns A connected {@link NotarizationClient}.
+    ///
+    /// @throws When the signer's public key cannot be retrieved.
     #[wasm_bindgen(js_name = create)]
     pub async fn new(
         client: WasmNotarizationClientReadOnly,
@@ -45,46 +55,34 @@ impl WasmNotarizationClient {
         Ok(WasmNotarizationClient(inner_client))
     }
 
-    /// Retrieves the sender's public key.
+    /// The signer's public key.
     ///
-    /// # Returns
-    /// The sender's public key as `PublicKey`.
+    /// @throws When the signer fails to provide its public key.
     #[wasm_bindgen(js_name = senderPublicKey)]
     pub fn sender_public_key(&self) -> Result<WasmPublicKey> {
         self.0.sender_public_key().try_into()
     }
 
-    /// Retrieves the sender's address.
-    ///
-    /// # Returns
-    /// The sender's address as an `IotaAddress`.
+    /// The IOTA address transactions will be sent from.
     #[wasm_bindgen(js_name = senderAddress)]
     pub fn sender_address(&self) -> WasmIotaAddress {
         self.0.sender_address().to_string()
     }
 
-    /// Retrieves the network identifier.
-    ///
-    /// # Returns
-    /// The network identifier as a `string`.
+    /// The network identifier this client is connected to.
     #[wasm_bindgen(js_name = network)]
     pub fn network(&self) -> String {
         self.0.network().to_string()
     }
 
-    /// Retrieves the package ID.
-    ///
-    /// # Returns
-    /// The package ID as a `string`.
+    /// The notarization package ID this client is using.
     #[wasm_bindgen(js_name = packageId)]
     pub fn package_id(&self) -> String {
         self.0.package_id().to_string()
     }
 
-    /// Retrieves the package history.
-    ///
-    /// # Returns
-    /// An `Array<string>` containing the package history.
+    /// The full history of notarization package IDs known on this network,
+    /// most recent first.
     #[wasm_bindgen(js_name = packageHistory)]
     pub fn package_history(&self) -> Vec<String> {
         self.0
@@ -94,70 +92,86 @@ impl WasmNotarizationClient {
             .collect()
     }
 
-    /// Retrieves the IOTA client instance.
+    /// The TF-Components package ID for product_common compatibility.
     ///
-    /// # Returns
-    /// The `IotaClient` instance.
+    /// Notarization uses the package-local `timelock` module, so this is
+    /// always `undefined`.
+    #[wasm_bindgen(js_name = tfComponentsPackageId)]
+    pub fn tf_components_package_id(&self) -> Option<String> {
+        None
+    }
+
+    /// The underlying IOTA client used for ledger queries.
     #[wasm_bindgen(js_name = iotaClient)]
     pub fn iota_client(&self) -> WasmIotaClient {
         (**self.0).clone().into_inner()
     }
 
-    /// Retrieves the transaction signer.
-    ///
-    /// # Returns
-    /// The `TransactionSigner` instance.
+    /// The transaction signer attached to this client.
     #[wasm_bindgen]
     pub fn signer(&self) -> WasmTransactionSigner {
         self.0.signer().clone()
     }
 
-    /// Retrieves a read-only version of the notarization client.
+    /// Returns a read-only view of this client.
     ///
-    /// # Returns
-    /// A `NotarizationClientReadOnly` instance.
+    /// @returns A {@link NotarizationClientReadOnly} sharing the same network
+    /// connection.
     #[wasm_bindgen(js_name = readOnly)]
     pub fn read_only(&self) -> WasmNotarizationClientReadOnly {
         WasmNotarizationClientReadOnly((*self.0).clone())
     }
 
-    /// Creates a notarization builder which can be used to create a dynamic notarization.
+    /// Starts building a Dynamic-Notarization.
     ///
-    /// # Returns
-    /// A `NotarizationBuilderDynamic` instance.
+    /// @remarks
+    /// On execution the resulting transaction transfers the new notarization
+    /// object to the sender.
+    ///
+    /// @returns A fresh {@link NotarizationBuilderDynamic}.
+    ///
+    /// Emits a `DynamicNotarizationCreated` event on success.
     #[wasm_bindgen(js_name = createDynamic)]
     pub fn create_dynamic(&self) -> WasmNotarizationBuilderDynamic {
         WasmNotarizationBuilderDynamic(self.0.create_dynamic_notarization())
     }
 
-    /// Creates a notarization builder which can be used to create a locked notarization.
+    /// Starts building a Locked-Notarization.
     ///
-    /// # Returns
-    /// A `NotarizationBuilderLocked` instance.
+    /// @remarks
+    /// On execution the resulting transaction transfers the new notarization
+    /// object to the sender.
+    ///
+    /// @returns A fresh {@link NotarizationBuilderLocked}.
+    ///
+    /// Emits a `LockedNotarizationCreated` event on success.
     #[wasm_bindgen(js_name = createLocked)]
     pub fn create_locked(&self) -> WasmNotarizationBuilderLocked {
         WasmNotarizationBuilderLocked(self.0.create_locked_notarization())
     }
 
-    /// Creates a transaction to update the `state` of a notarization.
+    /// Builds a transaction that replaces the state of a notarization.
     ///
-    /// **Important**: The `state` can only  be updated depending on the used `NotarizationMethod`:
-    /// - Dynamic: Can be updated anytime after notarization creation
-    /// - Locked: Immutable after notarization creation
+    /// @remarks
+    /// On success the on-chain transaction replaces `state` with `newState`,
+    /// increments `stateVersionCount` by `1`, and refreshes
+    /// `lastStateChangeAt` to the on-chain clock (in milliseconds since the
+    /// Unix epoch).
     ///
-    /// Using this function will:
-    /// - set the `state` to the `new_state`
-    /// - increase the `stateVersionCount` by 1
-    /// - set the `lastStateChangeAt` timestamp to the current clock  timestamp in milliseconds
-    /// - emits a `NotarizationUpdated` Move event in case of success
-    /// - fail if the notarization uses `NotarizationMethod` `Locked`
+    /// Behaviour depends on the Notarization Method:
+    /// * `Dynamic`: always permitted — the underlying `updateLock` is fixed to {@link TimeLockType.None}.
+    /// * `Locked`: always aborts on-chain, because the underlying `updateLock` is pinned to {@link
+    ///   TimeLockType.UntilDestroyed}.
     ///
-    /// # Arguments
-    /// * `new_state` - The new state to replace the current one.
-    /// * `notarization_id` - The ID of the notarization object.
+    /// @param newState - The replacement {@link State}.
+    /// @param notarizationId - The notarization object's ID.
     ///
-    /// # Returns
-    /// A `TransactionBuilder` to build and execute the transaction.
+    /// @returns A {@link TransactionBuilder} wrapping the
+    /// {@link UpdateState} transaction.
+    ///
+    /// @throws When the ID is malformed.
+    ///
+    /// Emits a `NotarizationUpdated` event on success.
     #[wasm_bindgen(js_name = updateState)]
     pub fn update_state(&self, new_state: WasmState, notarization_id: WasmObjectID) -> Result<WasmTransactionBuilder> {
         let notarization_id = parse_wasm_object_id(&notarization_id)?;
@@ -165,23 +179,25 @@ impl WasmNotarizationClient {
         Ok(into_transaction_builder(WasmUpdateState(tx)))
     }
 
-    /// Creates a transaction to update the metadata of a notarization.
+    /// Builds a transaction that replaces the updatable metadata of a
+    /// notarization.
     ///
-    /// **Important**: The `updatableMetadata` can only be updated depending on the used
-    /// `NotarizationMethod`:
-    /// - Dynamic: Can be updated anytime after notarization creation
-    /// - Locked: Immutable after notarization creation
+    /// @remarks
+    /// Does not affect the `state`, `stateVersionCount`,
+    /// `lastStateChangeAt`, or the immutable description.
     ///
-    /// NOTE:
-    /// - does not affect the `stateVersionCount` or the `lastStateChangeAt` timestamp
-    /// - will fail if the notarization uses the `NotarizationMethod::Locked`
-    /// - Only the `updatableMetadata` can be changed; the `immutableMetadata::description` remains fixed
-    /// # Arguments
-    /// * `metadata` - The new metadata to update (optional).
-    /// * `notarization_id` - The ID of the notarization object.
+    /// Behaviour depends on the Notarization Method:
+    /// * `Dynamic`: always permitted — the underlying `updateLock` is fixed to {@link TimeLockType.None}.
+    /// * `Locked`: always aborts on-chain, because the underlying `updateLock` is pinned to {@link
+    ///   TimeLockType.UntilDestroyed}.
     ///
-    /// # Returns
-    /// A `TransactionBuilder` to build and execute the transaction.
+    /// @param metadata - The replacement metadata, or `null` to clear it.
+    /// @param notarizationId - The notarization object's ID.
+    ///
+    /// @returns A {@link TransactionBuilder} wrapping the
+    /// {@link UpdateMetadata} transaction.
+    ///
+    /// @throws When the ID is malformed.
     #[wasm_bindgen(js_name = updateMetadata)]
     pub fn update_metadata(
         &self,
@@ -193,13 +209,24 @@ impl WasmNotarizationClient {
         Ok(into_transaction_builder(WasmUpdateMetadata(tx)))
     }
 
-    /// Creates a transaction to destroy a notarization object on the ledger.
+    /// Builds a transaction that destroys a notarization permanently and
+    /// releases its object ID.
     ///
-    /// # Arguments
-    /// * `notarization_id` - The ID of the notarization object to destroy.
+    /// @remarks
+    /// All package-local {@link TimeLock}s of the attached {@link LockMetadata}
+    /// are destroyed in the process. The notarization must currently be
+    /// destroy-allowed (see
+    /// {@link NotarizationClientReadOnly.isDestroyAllowed}); otherwise the
+    /// on-chain transaction aborts.
     ///
-    /// # Returns
-    /// A `TransactionBuilder` to build and execute the transaction.
+    /// @param notarizationId - The notarization object's ID.
+    ///
+    /// @returns A {@link TransactionBuilder} wrapping the
+    /// {@link DestroyNotarization} transaction.
+    ///
+    /// @throws When the ID is malformed.
+    ///
+    /// Emits a `NotarizationDestroyed` event on success.
     #[wasm_bindgen(js_name = destroy)]
     pub fn destroy_notarization(&self, notarization_id: WasmObjectID) -> Result<WasmTransactionBuilder> {
         let notarization_id = parse_wasm_object_id(&notarization_id)?;
@@ -207,14 +234,28 @@ impl WasmNotarizationClient {
         Ok(into_transaction_builder(WasmDestroyNotarization(tx)))
     }
 
-    /// Creates a transaction to transfer a notarization object to a new owner.
+    /// Builds a transaction that transfers ownership of a notarization to
+    /// another address.
     ///
-    /// # Arguments
-    /// * `notarization_id` - The ID of the notarization object to transfer.
-    /// * `recipient` - The recipient's IOTA address.
+    /// @remarks
+    /// Permitted only when the notarization has no {@link LockMetadata} or
+    /// when its `transferLock` is not currently active.
     ///
-    /// # Returns
-    /// A `TransactionBuilder` to build and execute the transaction.
+    /// Behaviour depends on the Notarization Method:
+    /// * `Dynamic`: on success the notarization is transferred to `recipient`. Submitting while the configured
+    ///   `transferLock` is currently engaged aborts on-chain.
+    /// * `Locked`: always aborts on-chain — Locked-Notarizations have their `transferLock` pinned to {@link
+    ///   TimeLockType.UntilDestroyed} and are therefore non-transferable.
+    ///
+    /// @param notarizationId - The notarization object's ID.
+    /// @param recipient - The new owner's IOTA address.
+    ///
+    /// @returns A {@link TransactionBuilder} wrapping the
+    /// {@link TransferNotarization} transaction.
+    ///
+    /// @throws When the ID or address is malformed.
+    ///
+    /// Emits a `DynamicNotarizationTransferred` event on success.
     #[wasm_bindgen(js_name = transferNotarization)]
     pub fn transfer_notarization(
         &self,
