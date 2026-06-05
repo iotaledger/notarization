@@ -101,15 +101,6 @@ impl WasmNotarizationClient {
             .collect()
     }
 
-    /// The TF-Components package ID for product_common compatibility.
-    ///
-    /// Notarization uses the package-local `timelock` module, so this is
-    /// always `undefined`.
-    #[wasm_bindgen(js_name = tfComponentsPackageId)]
-    pub fn tf_components_package_id(&self) -> Option<String> {
-        None
-    }
-
     /// The underlying IOTA client used for ledger queries.
     #[wasm_bindgen(js_name = iotaClient)]
     pub fn iota_client(&self) -> WasmIotaClient {
