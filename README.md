@@ -10,7 +10,6 @@
 <p align="center">
   <a href="#introduction">Introduction</a> ◈
   <a href="#where-to-start">Where To Start</a> ◈
-  <a href="#toolkit-components">Toolkit Components</a> ◈
   <a href="#documentation-and-resources">Documentation & Resources</a> ◈
   <a href="#bindings">Bindings</a> ◈
   <a href="#contributing">Contributing</a>
@@ -41,66 +40,52 @@ Each toolkit component is available as:
 
 ### I want a single notarized record
 
-Use **Single Notarization** when your main need is proving the existence, integrity, or latest state of one notarized object on-chain.
+Choose this path for one on-chain proof object, such as a document hash, immutable record, or dynamic latest-state record.
 
-- [Single Notarization Rust Package](./notarization-rs)
-- [Single Notarization Move Package](./notarization-move)
-- [Single Notarization Wasm Package](./bindings/wasm/notarization_wasm)
-- [Single Notarization examples](./bindings/wasm/notarization_wasm/examples/README.md)
+- [Rust client](./notarization-rs)
+- [Move contracts](./notarization-move)
+- [Wasm bindings](./bindings/wasm/notarization_wasm)
+- [Examples](./bindings/wasm/notarization_wasm/examples/README.md)
 
 ### I want an audit trail
 
-Use **Audit Trails** when you need a structured record history with permissions, capabilities, tagging, and write or delete controls.
+Choose this path for structured record histories with permissions, capabilities, tagging, and write or delete controls.
 
-- [Audit Trails Rust Package](./audit-trail-rs)
-- [Audit Trails Move Package](./audit-trail-move)
-- [Audit Trails Wasm Package](./bindings/wasm/audit_trail_wasm)
-- [Audit Trails examples](./bindings/wasm/audit_trail_wasm/examples/README.md)
+- [Rust client](./audit-trail-rs)
+- [Move contracts](./audit-trail-move)
+- [Wasm bindings](./bindings/wasm/audit_trail_wasm)
+- [Examples](./bindings/wasm/audit_trail_wasm/examples/README.md)
 
 ### I want the on-chain contracts
 
-- [Single Notarization Move](./notarization-move)
-- [Audit Trails Move](./audit-trail-move)
+- [Notarization contracts](./notarization-move)
+- [Audit trail contracts](./audit-trail-move)
 
 ### I want to build an application
 
-- [Single Notarization Rust](./notarization-rs)
-- [Audit Trails Rust](./audit-trail-rs)
-- [Single Notarization Wasm](./bindings/wasm/notarization_wasm)
-- [Audit Trails Wasm](./bindings/wasm/audit_trail_wasm)
+- [Rust client for notarized records](./notarization-rs)
+- [Rust client for audit trails](./audit-trail-rs)
+- [Wasm bindings for notarized records](./bindings/wasm/notarization_wasm)
+- [Wasm bindings for audit trails](./bindings/wasm/audit_trail_wasm)
 
-## Toolkit Components
-
-| Component           | Best for                                                                    | Move Package                               | Rust Package                           | Wasm Package                                             |
-| ------------------- | --------------------------------------------------------------------------- | ------------------------------------------ | -------------------------------------- | -------------------------------------------------------- |
-| Single Notarization | Individual locked or dynamic notarizations for documents, hashes, and state | [`notarization-move`](./notarization-move) | [`notarization-rs`](./notarization-rs) | [`notarization_wasm`](./bindings/wasm/notarization_wasm) |
-| Audit Trails        | Shared sequential records with roles, capabilities, tagging, and locking    | [`audit-trail-move`](./audit-trail-move)   | [`audit-trail-rs`](./audit-trail-rs)   | [`audit_trail_wasm`](./bindings/wasm/audit_trail_wasm)   |
-
-### Which one should I use?
-
-| Need                                                                      | Best fit            |
-| ------------------------------------------------------------------------- | ------------------- |
-| Locked proof object for arbitrary data                                    | Single Notarization |
-| Dynamic latest-state notarization flow                                    | Single Notarization |
-| Shared sequential records with roles, capabilities, and record tag policy | Audit Trails        |
-| Team or system audit log with governance and operational controls         | Audit Trails        |
-
-## Documentation And Resources
+## Documentation and Resources
 
 ### Single Notarization
 
-- [Single Notarization Rust Package README](./notarization-rs/README.md)
-- [Single Notarization Move Package README](./notarization-move/README.md)
-- [Single Notarization Wasm Package README](./bindings/wasm/notarization_wasm/README.md)
-- [Single Notarization examples](./bindings/wasm/notarization_wasm/examples/README.md)
-- [IOTA Notarization Docs Portal](https://docs.iota.org/developer/iota-notarization)
+- [Rust package README](./notarization-rs/README.md)
+- [Rust API documentation](https://iotaledger.github.io/notarization/notarization/index.html)
+- [Move package README](./notarization-move/README.md)
+- [Wasm package README](./bindings/wasm/notarization_wasm/README.md)
+- [Examples](./bindings/wasm/notarization_wasm/examples/README.md)
+- [Docs portal](https://docs.iota.org/developer/iota-notarization)
 
 ### Audit Trails
 
-- [Audit Trails Rust Package README](./audit-trail-rs/README.md)
-- [Audit Trails Move Package README](./audit-trail-move/README.md)
-- [Audit Trails Wasm Package README](./bindings/wasm/audit_trail_wasm/README.md)
-- [Audit Trails examples](./bindings/wasm/audit_trail_wasm/examples/README.md)
+- [Rust package README](./audit-trail-rs/README.md)
+- [Rust API documentation](https://iotaledger.github.io/notarization/audit_trails/index.html)
+- [Move package README](./audit-trail-move/README.md)
+- [Wasm package README](./bindings/wasm/audit_trail_wasm/README.md)
+- [Examples](./bindings/wasm/audit_trail_wasm/examples/README.md)
 
 ### Shared
 
