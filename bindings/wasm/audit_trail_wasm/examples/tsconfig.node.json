@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "baseUrl": "./",
+    "lib": [
+      "ES6",
+      "dom"
+    ],
+    "esModuleInterop": true,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "paths": {
+      "@iota/audit-trails/node": [
+        "../node"
+      ]
+    }
+  },
+  "include": [
+    "./src/**/*.ts"
+  ]
+}

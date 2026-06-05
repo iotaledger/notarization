@@ -3,7 +3,7 @@
 
 use crate::iota_interaction_adapter::AdapterError;
 
-/// Errors that can occur when managing Notarizations
+/// Errors that can occur when managing notarizations
 #[derive(Debug, thiserror::Error, strum::IntoStaticStr)]
 #[non_exhaustive]
 pub enum Error {

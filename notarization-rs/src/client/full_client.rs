@@ -160,7 +160,14 @@ where
 }
 
 impl<S> NotarizationClient<S> {
-    /// Creates a builder for a locked notarization.
+    /// Creates a builder for a Locked-Notarization.
+    ///
+    /// A Locked-Notarization is immutable after creation: its `state` and
+    /// `updatable_metadata` are fixed for the lifetime of the object. Its
+    /// destruction can be gated by a `delete_lock`.
+    ///
+    /// On execution the resulting transaction transfers the new `Notarization`
+    /// object to the sender and emits a `LockedNotarizationCreated` event.
     ///
     /// ## Example
     ///
@@ -185,7 +192,16 @@ impl<S> NotarizationClient<S> {
         NotarizationBuilder::locked()
     }
 
-    /// Creates a builder for a dynamic notarization.
+    /// Creates a builder for a Dynamic-Notarization.
+    ///
+    /// A Dynamic-Notarization can be updated after creation: `state` and
+    /// `updatable_metadata` can be replaced via
+    /// [`Self::update_state`] and [`Self::update_metadata`], and ownership
+    /// can be transferred via [`Self::transfer_notarization`] when the
+    /// configured `transfer_lock` permits it.
+    ///
+    /// On execution the resulting transaction transfers the new `Notarization`
+    /// object to the sender and emits a `DynamicNotarizationCreated` event.
     ///
     /// ## Example
     ///
@@ -217,16 +233,16 @@ where
 {
     /// Updates the state of a notarization.
     ///
-    /// **Important**: The `state` can only  be updated depending on the used `NotarizationMethod`:
-    /// - Dynamic: Can be updated anytime after notarization creation
-    /// - Locked: Immutable after notarization creation
+    /// On success the on-chain transaction replaces `state` with `new_state`,
+    /// increments `state_version_count` by one, refreshes
+    /// `last_state_change_at` to the on-chain clock timestamp (in
+    /// milliseconds since the Unix epoch), and emits a `NotarizationUpdated`
+    /// Move event.
     ///
-    /// Using this function will:
-    /// - set the `state` to the `new_state`
-    /// - increase the `state_version_count` by 1
-    /// - set the `last_state_change_at` timestamp to the current clock timestamp in milliseconds
-    /// - emits a `NotarizationUpdated` Move event in case of success
-    /// - fail if the notarization uses `NotarizationMethod::Locked`
+    /// Behaviour depends on the Notarization Method:
+    /// * `Dynamic`: always permitted — the underlying `update_lock` is fixed to `TimeLock::None`.
+    /// * `Locked`: always aborts on-chain, because the underlying `update_lock` is pinned to
+    ///   `TimeLock::UntilDestroyed`.
     ///
     /// ## Parameters
     ///
@@ -256,9 +272,16 @@ where
         TransactionBuilder::new(UpdateState::new(new_state, notarization_id))
     }
 
-    /// Destroys a notarization permanently.
+    /// Destroys a notarization permanently and releases its object ID.
     ///
-    /// The notarization must not have active time locks preventing deletion.
+    /// All package-local `TimeLock`s of the attached `LockMetadata` are
+    /// destroyed in the process. The notarization must currently be
+    /// destroy-allowed (see
+    /// [`NotarizationClientReadOnly::is_destroy_allowed`]); otherwise the
+    /// on-chain transaction aborts.
+    ///
+    /// On success the on-chain transaction emits a `NotarizationDestroyed`
+    /// event.
     ///
     /// ## Parameters
     ///
@@ -283,17 +306,16 @@ where
         TransactionBuilder::new(DestroyNotarization::new(notarization_id))
     }
 
-    /// Updates the metadata of a notarization.
+    /// Updates the `updatable_metadata` of a notarization.
     ///
-    /// **Important**: The `updatable_metadata` can only be updated depending on the used
-    /// `NotarizationMethod`:
-    /// - Dynamic: Can be updated anytime after notarization creation
-    /// - Locked: Immutable after notarization creation
+    /// Does not affect `state`, `state_version_count`,
+    /// `last_state_change_at`, or the immutable description in
+    /// `immutable_metadata`.
     ///
-    /// NOTE:
-    /// - does not affect the `state_version_count` or the `last_state_change_at` timestamp
-    /// - will fail if the notarization uses the `NotarizationMethod::Locked`
-    /// - Only the `updatable_metadata` can be changed; the `immutable_metadata::description` remains fixed
+    /// Behaviour depends on the Notarization Method:
+    /// * `Dynamic`: always permitted — the underlying `update_lock` is fixed to `TimeLock::None`.
+    /// * `Locked`: always aborts on-chain, because the underlying `update_lock` is pinned to
+    ///   `TimeLock::UntilDestroyed`.
     ///
     /// ## Parameters
     ///
@@ -326,11 +348,19 @@ where
         TransactionBuilder::new(UpdateMetadata::new(metadata, notarization_id))
     }
 
-    /// Transfers ownership of a dynamic notarization.
+    /// Transfers ownership of a notarization to another address.
     ///
-    /// The notarization must not have active transfer locks.
+    /// Permitted only when the notarization has no `LockMetadata` or when
+    /// its `transfer_lock` is not currently active.
     ///
-    /// **Important**: Only works on dynamic notarizations.
+    /// Behaviour depends on the Notarization Method:
+    /// * `Dynamic`: on success the notarization is transferred to `recipient`. Submitting while the configured
+    ///   `transfer_lock` is engaged aborts on-chain.
+    /// * `Locked`: always aborts on-chain — Locked-Notarizations have their `transfer_lock` pinned to
+    ///   `TimeLock::UntilDestroyed` and are therefore non-transferable.
+    ///
+    /// On success the on-chain transaction emits a
+    /// `DynamicNotarizationTransferred` event.
     ///
     /// ## Parameters
     ///

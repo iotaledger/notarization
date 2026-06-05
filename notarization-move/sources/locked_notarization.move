@@ -1,20 +1,33 @@
 // Copyright (c) 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-/// This module provides locked notarization capabilities with timelock controls for updates and deletion
+/// Public entry surface for Locked-Notarizations: `Notarization<D>` objects
+/// configured with the `Locked` Notarization Method, whose `state` and
+/// `updatable_metadata` are immutable after creation and whose destruction
+/// is gated by a `delete_lock`.
 module iota_notarization::locked_notarization;
 
 use iota::{clock::Clock, event};
 use iota_notarization::{notarization, timelock::TimeLock};
 use std::string::String;
 
-/// Event emitted when a locked notarization is created
+/// Emitted by `create` after a Locked-Notarization is created and
+/// transferred to the sender.
 public struct LockedNotarizationCreated has copy, drop {
-    /// ID of the `Notarization` object that was created
+    /// Id of the newly created `Notarization` object.
     notarization_id: ID,
 }
 
-/// Create a new locked `Notarization`
+/// Creates a new Locked-Notarization `Notarization<D>` without transferring
+/// it.
+///
+/// Delegates to `notarization::new_locked_notarization`; see that function
+/// for the full contract.
+///
+/// Aborts with:
+/// * any error documented by `notarization::new_locked_notarization`.
+///
+/// Returns the constructed `Notarization<D>`.
 public fun new<D: store + drop + copy>(
     state: notarization::State<D>,
     immutable_description: Option<String>,
@@ -33,7 +46,13 @@ public fun new<D: store + drop + copy>(
     )
 }
 
-/// Create and transfer a new locked notarization to the sender
+/// Creates a new Locked-Notarization `Notarization<D>` and transfers it to
+/// the transaction sender.
+///
+/// Aborts with:
+/// * any error documented by `notarization::new_locked_notarization`.
+///
+/// Emits a `LockedNotarizationCreated` event on success.
 public fun create<D: store + drop + copy>(
     state: notarization::State<D>,
     immutable_description: Option<String>,

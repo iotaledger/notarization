@@ -10,6 +10,9 @@ inputs:
   working-directory:
     description: "Directory to publish from"
     required: true
+  artifact-download-path:
+    description: "Directory to download artifacts to (defaults to working-directory)"
+    required: false
   dry-run:
     description: "'true' = only log potential result; 'false' = publish'"
     required: true
@@ -27,7 +30,7 @@ runs:
       uses: actions/download-artifact@v4
       with:
         name: ${{ inputs.input-artifact-name }}
-        path: bindings/wasm/notarization_wasm
+        path: ${{ inputs.artifact-download-path || inputs.working-directory }}
 
     - name: Publish WASM bindings to NPM
       shell: sh

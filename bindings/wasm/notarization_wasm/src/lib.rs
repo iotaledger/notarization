@@ -23,7 +23,10 @@ pub(crate) mod wasm_types;
 // Export all product_common's bindings (e.g. Transaction, CoreClient, gas-station stuff, etc).
 pub use product_common::bindings::*;
 
-/// Initializes the console error panic hook for better error messages
+/// Module entry point — installs an error hook so that internal panics
+/// surface as readable error messages in the browser console. Invoked
+/// automatically when the module is loaded; not intended to be called from
+/// user code.
 #[wasm_bindgen(start)]
 pub fn start() -> Result<(), JsValue> {
     console_error_panic_hook::set_once();

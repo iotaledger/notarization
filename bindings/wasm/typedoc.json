@@ -5,6 +5,11 @@
   "excludeInternal": true,
   "excludeNotDocumented": true,
   "excludeExternals": true,
+  "externalSymbolLinkMappings": {
+    "@iota/iota-interaction-ts": {
+      "TransactionBuilder": "#"
+    }
+  },
   "entryPointStrategy": "expand",
   "plugin": [
     "typedoc-plugin-markdown"

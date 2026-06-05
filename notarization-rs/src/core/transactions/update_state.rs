@@ -3,13 +3,14 @@
 
 //! # Update State
 //!
-//! This module defines the update state transaction.
+//! This module defines the update-state transaction.
 //!
 //! ## Overview
 //!
-//! The update state transaction is used to update the state of a notarization.
-//!
-//! Note that this transaction is only available for dynamic notarizations.
+//! The update-state transaction replaces the `state` of an existing
+//! notarization. Behaviour depends on the Notarization Method:
+//! * `Dynamic`: always permitted — the underlying `update_lock` is fixed to `TimeLock::None`.
+//! * `Locked`: always aborts on-chain, because the underlying `update_lock` is pinned to `TimeLock::UntilDestroyed`.
 
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
@@ -24,10 +25,18 @@ use super::super::operations::{NotarizationImpl, NotarizationOperations};
 use super::super::types::State;
 use crate::error::Error;
 
-/// A transaction that updates the state of an existing notarization.
+/// A transaction that replaces the `state` of an existing notarization.
 ///
-/// This transaction can only be used with dynamic notarizations, as locked
-/// notarizations are immutable after creation.
+/// On success the on-chain transaction bumps
+/// `OnChainNotarization::state_version_count` by one and refreshes
+/// `OnChainNotarization::last_state_change_at` to the on-chain clock
+/// timestamp (in milliseconds since the Unix epoch).
+///
+/// Behaviour depends on the Notarization Method:
+/// * `Dynamic`: always permitted — the underlying `update_lock` is fixed to `TimeLock::None`.
+/// * `Locked`: always aborts on-chain, because the underlying `update_lock` is pinned to `TimeLock::UntilDestroyed`.
+///
+/// Emits a `NotarizationUpdated` event on success.
 ///
 /// ## Example
 ///

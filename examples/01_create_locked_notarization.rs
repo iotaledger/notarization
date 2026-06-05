@@ -4,7 +4,7 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
-use examples::get_funded_client;
+use examples::get_funded_notarization_client;
 use notarization::core::types::{NotarizationMethod, OnChainNotarization, State, TimeLock};
 use product_common::transaction::TransactionOutput;
 
@@ -13,7 +13,7 @@ async fn main() -> Result<()> {
     println!("Creating a locked notarization example");
 
     // Create a notarization client
-    let notarization_client = get_funded_client().await?;
+    let notarization_client = get_funded_notarization_client().await?;
 
     // Calculate unlock time (24 hours from now)
     let now_ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();

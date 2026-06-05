@@ -17,11 +17,13 @@ on:
       - ".github/workflows/shared-build-wasm.yml"
       - ".github/actions/**"
       - "**.rs"
+      - "**.move"
       - "**.toml"
       - "**.lock"
       - "bindings/**"
       - "!bindings/**.md"
       - "bindings/wasm/notarization_wasm/README.md" # the Readme contain txm tests
+      - "bindings/wasm/audit_trail_wasm/README.md"
 
   schedule:
     # * is a special character in YAML so you have to quote this string
@@ -165,16 +167,26 @@ jobs:
 
       - name: test Notarization Move package
         if: matrix.os != 'windows-latest'
-        # publish the package and set the IOTA_NOTARIZATION_PKG_ID env variable
-        run: |
-          iota move test
+        run: iota move test
         working-directory: notarization-move
+
+      - name: test Audit Trail Move package
+        if: matrix.os != 'windows-latest'
+        run: iota move test
+        working-directory: audit-trail-move
 
       - name: publish Notarization Move package
         if: matrix.os != 'windows-latest'
-        # publish the package and set the IOTA_NOTARIZATION_PKG_ID env variable
         run: echo "IOTA_NOTARIZATION_PKG_ID=$(./publish_package.sh)" >> "$GITHUB_ENV"
         working-directory: notarization-move/scripts/
+
+      - name: publish Audit Trail Move package
+        if: matrix.os != 'windows-latest'
+        run: |
+          eval "$(./publish_package.sh)"
+          echo "IOTA_AUDIT_TRAIL_PKG_ID=$IOTA_AUDIT_TRAIL_PKG_ID" >> "$GITHUB_ENV"
+          echo "IOTA_TF_COMPONENTS_PKG_ID=$IOTA_TF_COMPONENTS_PKG_ID" >> "$GITHUB_ENV"
+        working-directory: audit-trail-move/scripts/
 
       - name: Run tests
         if: matrix.os != 'windows-latest'
@@ -210,7 +222,7 @@ jobs:
         uses: "./.github/actions/rust/sccache/stop"
         with:
           os: ${{matrix.os}}
-  build-wasm:
+  build-wasm-notarization:
     needs: check-for-run-condition
     if: ${{ needs.check-for-run-condition.outputs.should-run == 'true' }}
     uses: "./.github/workflows/shared-build-wasm.yml"
@@ -218,8 +230,18 @@ jobs:
       run-unit-tests: false
       output-artifact-name: notarization-wasm-bindings-build
 
-  test-wasm:
-    needs: build-wasm
+  build-wasm-audit-trail:
+    needs: check-for-run-condition
+    if: ${{ needs.check-for-run-condition.outputs.should-run == 'true' }}
+    uses: "./.github/workflows/shared-build-wasm.yml"
+    with:
+      run-unit-tests: false
+      output-artifact-name: audit-trail-wasm-bindings-build
+      wasm-package-dir: bindings/wasm/audit_trail_wasm
+      wasm-crate-name: audit_trail_wasm
+
+  test-wasm-notarization:
+    needs: [build-wasm-notarization, check-for-run-condition]
     if: ${{ needs.check-for-run-condition.outputs.should-run == 'true' }}
     runs-on: ubuntu-24.04
     strategy:
@@ -253,21 +275,53 @@ jobs:
           iota-version: ${{ env.IOTA_VERSION }}
 
       - name: publish Notarization Move package
-        if: matrix.os != 'windows-latest'
-        # publish the package and set the IOTA_NOTARIZATION_PKG_ID env variable
         run: echo "IOTA_NOTARIZATION_PKG_ID=$(./publish_package.sh)" >> "$GITHUB_ENV"
         working-directory: notarization-move/scripts/
 
-      - name: Install JS dependencies
-        run: npm ci
-        working-directory: bindings/wasm/notarization_wasm
-
       - name: Run Wasm examples
-        #run: npm run test:readme && npm run test:node
         run: npm run test:node
         working-directory: bindings/wasm/notarization_wasm
-  test-wasm-browser:
-    needs: build-wasm
+
+  test-wasm-audit-trail:
+    needs: [build-wasm-audit-trail, check-for-run-condition]
+    if: ${{ needs.check-for-run-condition.outputs.should-run == 'true' }}
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 20.x
+
+      - name: Install JS dependencies
+        run: npm ci
+        working-directory: bindings/wasm/audit_trail_wasm
+
+      - name: Download bindings/wasm/audit_trail_wasm artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: audit-trail-wasm-bindings-build
+          path: bindings/wasm/audit_trail_wasm
+
+      - name: Start iota sandbox
+        uses: "./.github/actions/iota/setup"
+        with:
+          iota-version: ${{ env.IOTA_VERSION }}
+
+      - name: publish Audit Trail Move package
+        run: |
+          eval "$(./publish_package.sh)"
+          echo "IOTA_AUDIT_TRAIL_PKG_ID=$IOTA_AUDIT_TRAIL_PKG_ID" >> "$GITHUB_ENV"
+          echo "IOTA_TF_COMPONENTS_PKG_ID=$IOTA_TF_COMPONENTS_PKG_ID" >> "$GITHUB_ENV"
+        working-directory: audit-trail-move/scripts/
+
+      - name: Run Wasm examples
+        run: npm run test:node
+        working-directory: bindings/wasm/audit_trail_wasm
+  test-wasm-browser-notarization:
+    needs: [build-wasm-notarization, check-for-run-condition]
     if: ${{ needs.check-for-run-condition.outputs.should-run == 'true' }}
     runs-on: ubuntu-24.04
     strategy:
@@ -316,3 +370,57 @@ jobs:
 
       - name: Run cypress
         run: docker run --network host cypress-test test:browser:${{ matrix.browser }}
+
+  test-wasm-browser-audit-trail:
+    needs: [build-wasm-audit-trail, check-for-run-condition]
+    if: ${{ needs.check-for-run-condition.outputs.should-run == 'true' }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chrome, firefox]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 20.x
+
+      - name: Install JS dependencies
+        run: npm ci
+        working-directory: bindings/wasm/audit_trail_wasm
+
+      - name: Download bindings/wasm/audit_trail_wasm artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: audit-trail-wasm-bindings-build
+          path: bindings/wasm/audit_trail_wasm
+
+      - name: Start iota sandbox
+        uses: "./.github/actions/iota/setup"
+        with:
+          iota-version: ${{ env.IOTA_VERSION }}
+
+      - name: publish Audit Trail Move package
+        run: |
+          eval "$(./publish_package.sh)"
+          echo "IOTA_AUDIT_TRAIL_PKG_ID=$IOTA_AUDIT_TRAIL_PKG_ID" >> "$GITHUB_ENV"
+          echo "IOTA_TF_COMPONENTS_PKG_ID=$IOTA_TF_COMPONENTS_PKG_ID" >> "$GITHUB_ENV"
+        working-directory: audit-trail-move/scripts/
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6.2.0
+        with:
+          context: bindings/wasm/
+          file: bindings/wasm/audit_trail_wasm/cypress/Dockerfile
+          push: false
+          tags: cypress-audit-trail:latest
+          load: true
+          build-args: |
+            IOTA_AUDIT_TRAIL_PKG_ID=${{ env.IOTA_AUDIT_TRAIL_PKG_ID }}
+            IOTA_TF_COMPONENTS_PKG_ID=${{ env.IOTA_TF_COMPONENTS_PKG_ID }}
+
+      - name: Run cypress
+        run: docker run --network host cypress-audit-trail test:browser:${{ matrix.browser }}

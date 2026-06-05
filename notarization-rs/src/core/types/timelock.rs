@@ -27,11 +27,34 @@ use serde::{Deserialize, Serialize};
 use super::super::move_utils;
 use crate::error::Error;
 
-/// Metadata containing time-based access restrictions for a notarization.
+/// Bundle of three [`TimeLock`]s controlling whether a notarization can be
+/// updated, destroyed, or transferred.
+///
+/// `delete_lock` cannot be `TimeLock::UntilDestroyed` — that variant is
+/// reserved for the other locks. The `delete_lock`'s unlock time must be
+/// no earlier than the `update_lock` and `transfer_lock` unlock times;
+/// the on-chain constructor aborts otherwise.
+///
+/// Permitted lock configurations depend on the Notarization Method:
+/// * `Dynamic`: `update_lock` is fixed to `TimeLock::None`; `transfer_lock` may carry any [`TimeLock`] variant.
+/// * `Locked`: both `update_lock` and `transfer_lock` are pinned to `TimeLock::UntilDestroyed` — Locked-Notarizations
+///   are non-transferable and their state is immutable.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct LockMetadata {
+    /// Lock guarding `update_state` and `update_metadata`.
+    ///
+    /// Value depends on the Notarization Method:
+    /// * `Dynamic`: fixed to `TimeLock::None`.
+    /// * `Locked`: fixed to `TimeLock::UntilDestroyed`.
     pub update_lock: TimeLock,
+    /// Lock guarding destruction. Must not be `TimeLock::UntilDestroyed`;
+    /// its unlock time must be ≥ both other locks' unlock times.
     pub delete_lock: TimeLock,
+    /// Lock guarding ownership transfer.
+    ///
+    /// Role depends on the Notarization Method:
+    /// * `Dynamic`: gates `NotarizationClient::transfer_notarization`.
+    /// * `Locked`: pinned to `TimeLock::UntilDestroyed` — Locked-Notarizations are non-transferable.
     pub transfer_lock: TimeLock,
 }
 
@@ -39,20 +62,21 @@ pub struct LockMetadata {
 /// notarizations.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum TimeLock {
-    /// A lock that is unlocked at a specific time.
+    /// A lock that unlocks at a specific Unix timestamp (seconds since Unix epoch)
     UnlockAt(u32),
-    /// A lock that is unlocked when the notarization is destroyed.
+    /// A permanent lock that never unlocks until the locked object is destroyed (can't be used for `delete_lock`)
     UntilDestroyed,
+    /// No lock applied
     None,
 }
 
 impl TimeLock {
-    /// Creates a new `TimeLock` with a specified unlock time.\
+    /// Creates a new `TimeLock::UnlockAt` with a specified unlock time.\
     ///
     /// The unlock time is the time in seconds since the Unix epoch and
     /// must be in the future.
-    pub fn new_with_ts(unlock_time: u32) -> Result<Self, Error> {
-        if unlock_time
+    pub fn new_with_ts(unlock_time_sec: u32) -> Result<Self, Error> {
+        if unlock_time_sec
             <= SystemTime::now()
                 .duration_since(SystemTime::UNIX_EPOCH)
                 .expect("system time is before the Unix epoch")
@@ -61,7 +85,7 @@ impl TimeLock {
             return Err(Error::InvalidArgument("unlock time must be in the future".to_string()));
         }
 
-        Ok(TimeLock::UnlockAt(unlock_time))
+        Ok(TimeLock::UnlockAt(unlock_time_sec))
     }
 
     /// Creates a new `Argument` from the `TimeLock`.
@@ -77,16 +101,16 @@ impl TimeLock {
 }
 
 /// Creates a new `Argument` for the `unlock_at` function.
-pub(super) fn new_unlock_at(ptb: &mut Ptb, unlock_time: u32, package_id: ObjectID) -> Result<Argument, Error> {
+pub(super) fn new_unlock_at(ptb: &mut Ptb, unlock_time_sec: u32, package_id: ObjectID) -> Result<Argument, Error> {
     let clock = move_utils::get_clock_ref(ptb);
-    let unlock_time = move_utils::ptb_pure(ptb, "unlock_time", unlock_time)?;
+    let unlock_time_sec = move_utils::ptb_pure(ptb, "unlock_time", unlock_time_sec)?;
 
     Ok(ptb.programmable_move_call(
         package_id,
         ident_str!("timelock").as_str().into(),
         ident_str!("unlock_at").as_str().into(),
         vec![],
-        vec![unlock_time, clock],
+        vec![unlock_time_sec, clock],
     ))
 }
 
