@@ -186,9 +186,9 @@ pub struct WasmLockMetadata {
     /// Lock gating state and metadata updates.
     ///
     /// Value depends on the Notarization Method:
-    /// * `Dynamic`: fixed to {@link TimeLockType.None} — state and updatable metadata are always replaceable via
-    ///   {@link NotarizationClient.updateState} and
-    ///   {@link NotarizationClient.updateMetadata}.
+    /// * `Dynamic`: fixed to {@link TimeLockType.None} — state and updatable metadata are always replaceable via:
+    ///   * {@link NotarizationClient.updateState}
+    ///   * {@link NotarizationClient.updateMetadata}
     /// * `Locked`: fixed to {@link TimeLockType.UntilDestroyed}.
     #[wasm_bindgen(js_name = updateLock)]
     pub update_lock: WasmTimeLock,
