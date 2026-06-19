@@ -4,8 +4,9 @@
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::{IotaTransactionBlockEffects, IotaTransactionBlockEvents};
-use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::transaction::ProgrammableTransaction;
+use iota_sdk_types::ObjectId;
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;
@@ -20,7 +21,7 @@ use crate::error::Error;
 #[derive(Debug, Clone)]
 pub struct TrailCreated {
     /// Newly created trail object ID.
-    pub trail_id: ObjectID,
+    pub trail_id: ObjectId,
     /// Address that created the trail.
     pub creator: IotaAddress,
     /// Millisecond timestamp emitted by the creation event.

@@ -9,8 +9,9 @@
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::{IotaTransactionBlockEffects, IotaTransactionBlockEvents};
-use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::transaction::ProgrammableTransaction;
+use iota_sdk_types::ObjectId;
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;
@@ -32,7 +33,7 @@ use crate::error::Error;
 #[derive(Debug, Clone)]
 pub struct AddRecord {
     /// Trail object ID that will receive the record.
-    pub trail_id: ObjectID,
+    pub trail_id: ObjectId,
     /// Address authorizing the write.
     pub owner: IotaAddress,
     /// Record payload to append.
@@ -42,19 +43,19 @@ pub struct AddRecord {
     /// Optional trail-owned tag to attach to the record.
     pub tag: Option<String>,
     /// Explicit capability to use instead of auto-selecting one from the owner's wallet.
-    pub selected_capability_id: Option<ObjectID>,
+    pub selected_capability_id: Option<ObjectId>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl AddRecord {
     /// Creates an `AddRecord` transaction builder payload.
     pub fn new(
-        trail_id: ObjectID,
+        trail_id: ObjectId,
         owner: IotaAddress,
         data: Data,
         metadata: Option<String>,
         tag: Option<String>,
-        selected_capability_id: Option<ObjectID>,
+        selected_capability_id: Option<ObjectId>,
     ) -> Self {
         Self {
             trail_id,
@@ -136,23 +137,23 @@ impl Transaction for AddRecord {
 #[derive(Debug, Clone)]
 pub struct DeleteRecord {
     /// Trail object ID containing the record.
-    pub trail_id: ObjectID,
+    pub trail_id: ObjectId,
     /// Address authorizing the deletion.
     pub owner: IotaAddress,
     /// Sequence number of the record to delete.
     pub sequence_number: u64,
     /// Explicit capability to use instead of auto-selecting one from the owner's wallet.
-    pub selected_capability_id: Option<ObjectID>,
+    pub selected_capability_id: Option<ObjectId>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl DeleteRecord {
     /// Creates a `DeleteRecord` transaction builder payload.
     pub fn new(
-        trail_id: ObjectID,
+        trail_id: ObjectId,
         owner: IotaAddress,
         sequence_number: u64,
-        selected_capability_id: Option<ObjectID>,
+        selected_capability_id: Option<ObjectId>,
     ) -> Self {
         Self {
             trail_id,
@@ -239,19 +240,19 @@ impl Transaction for DeleteRecord {
 #[derive(Debug, Clone)]
 pub struct DeleteRecordsBatch {
     /// Trail object ID containing the records.
-    pub trail_id: ObjectID,
+    pub trail_id: ObjectId,
     /// Address authorizing the deletion.
     pub owner: IotaAddress,
     /// Maximum number of records to delete in this batch.
     pub limit: u64,
     /// Explicit capability to use instead of auto-selecting one from the owner's wallet.
-    pub selected_capability_id: Option<ObjectID>,
+    pub selected_capability_id: Option<ObjectId>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl DeleteRecordsBatch {
     /// Creates a `DeleteRecordsBatch` transaction builder payload.
-    pub fn new(trail_id: ObjectID, owner: IotaAddress, limit: u64, selected_capability_id: Option<ObjectID>) -> Self {
+    pub fn new(trail_id: ObjectId, owner: IotaAddress, limit: u64, selected_capability_id: Option<ObjectId>) -> Self {
         Self {
             trail_id,
             owner,

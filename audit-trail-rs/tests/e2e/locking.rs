@@ -4,13 +4,13 @@
 use audit_trails::core::types::{
     CapabilityIssueOptions, Data, InitialRecord, LockingConfig, LockingWindow, Permission, TimeLock,
 };
-use iota_interaction::types::base_types::ObjectID;
+use iota_sdk_types::ObjectId;
 
 use crate::client::{TestClient, get_funded_test_client};
 
 async fn grant_role_capability(
     client: &TestClient,
-    trail_id: ObjectID,
+    trail_id: ObjectId,
     role_name: &str,
     permissions: impl IntoIterator<Item = Permission>,
 ) -> anyhow::Result<()> {

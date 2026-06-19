@@ -4,11 +4,12 @@
 use std::str::FromStr;
 
 use iota_interaction::rpc_types::IotaObjectDataOptions;
-use iota_interaction::types::base_types::{ObjectID, ObjectRef, TypeTag};
+use iota_interaction::types::base_types::ObjectRef;
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
-use iota_interaction::types::transaction::{Argument, CallArg, SharedObjectRef};
+use iota_interaction::types::transaction::{CallArg, SharedObjectRef};
 use iota_interaction::types::{IOTA_CLOCK_OBJECT_ID, IOTA_CLOCK_OBJECT_SHARED_VERSION};
 use iota_interaction::{IotaClientTrait, OptionalSync};
+use iota_sdk_types::{Argument, ObjectId, TypeTag};
 use product_common::core_client::CoreClientReadOnly;
 use serde::Serialize;
 
@@ -36,7 +37,7 @@ where
 }
 
 /// Get the type tag of an object
-pub(crate) async fn get_type_tag<C>(client: &C, object_id: &ObjectID) -> Result<TypeTag, Error>
+pub(crate) async fn get_type_tag<C>(client: &C, object_id: &ObjectId) -> Result<TypeTag, Error>
 where
     C: CoreClientReadOnly + OptionalSync,
 {
@@ -85,7 +86,7 @@ pub(crate) fn parse_type(full_type: &str) -> Result<String, Error> {
 
 pub(crate) async fn get_object_ref_by_id(
     iota_client: &impl CoreClientReadOnly,
-    obj: &ObjectID,
+    obj: &ObjectId,
 ) -> Result<ObjectRef, Error> {
     let res = iota_client
         .client_adapter()

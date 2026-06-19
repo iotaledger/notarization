@@ -12,10 +12,11 @@ use audit_trails::core::types::{
     RoleTags,
 };
 use audit_trails::{AuditTrailClient, PackageOverrides};
-use iota_interaction::types::base_types::{IotaAddress, ObjectID, ObjectRef};
+use iota_interaction::types::base_types::{IotaAddress, ObjectRef};
 use iota_interaction::types::crypto::PublicKey;
 use iota_interaction::{IOTA_LOCAL_NETWORK_URL, IotaClient, IotaClientBuilder};
 use iota_interaction_rust::IotaClientAdapter;
+use iota_sdk_types::ObjectId;
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use product_common::network_name::NetworkName;
 use product_common::test_utils::{InMemSigner, request_funds};
@@ -35,8 +36,8 @@ const CACHED_PKG_FILE: &str = "/tmp/audit_trail_pkg_ids.txt";
 
 #[derive(Clone, Copy)]
 struct PublishedPackageIds {
-    audit_trail_package_id: ObjectID,
-    tf_components_package_id: Option<ObjectID>,
+    audit_trail_package_id: ObjectId,
+    tf_components_package_id: Option<ObjectId>,
 }
 
 pub async fn get_funded_test_client() -> anyhow::Result<TestClient> {
@@ -57,13 +58,13 @@ async fn load_cached_package_ids(chain_id: &str) -> anyhow::Result<PublishedPack
     }
 
     Ok(PublishedPackageIds {
-        audit_trail_package_id: ObjectID::from_str(audit_trail_package_id)
+        audit_trail_package_id: ObjectId::from_str(audit_trail_package_id)
             .context("failed to parse cached IotaAuditTrails package ID")?,
         tf_components_package_id: if tf_components_package_id.is_empty() {
             None
         } else {
             Some(
-                ObjectID::from_str(tf_components_package_id)
+                ObjectId::from_str(tf_components_package_id)
                     .context("failed to parse cached TfComponents package ID")?,
             )
         },
@@ -108,12 +109,12 @@ async fn publish_package_ids(iota_client: &IotaClient) -> anyhow::Result<Publish
         match key {
             "IOTA_AUDIT_TRAIL_PKG_ID" => {
                 let package_id =
-                    ObjectID::from_str(value).context("failed to parse published IotaAuditTrails package ID")?;
+                    ObjectId::from_str(value).context("failed to parse published IotaAuditTrails package ID")?;
                 audit_trail_package_id = Some(package_id);
             }
             "IOTA_TF_COMPONENTS_PKG_ID" => {
                 let package_id =
-                    ObjectID::from_str(value).context("failed to parse published TfComponents package ID")?;
+                    ObjectId::from_str(value).context("failed to parse published TfComponents package ID")?;
                 tf_components_package_id = Some(package_id);
             }
             _ => {}
@@ -184,7 +185,7 @@ impl TestClient {
         })
     }
 
-    pub(crate) async fn get_cap(&self, owner: IotaAddress, trail_id: ObjectID) -> anyhow::Result<ObjectRef> {
+    pub(crate) async fn get_cap(&self, owner: IotaAddress, trail_id: ObjectId) -> anyhow::Result<ObjectRef> {
         let cap: Capability = self
             .client
             .find_object_for_address(owner, |cap: &Capability| cap.target_key == trail_id)
@@ -203,14 +204,14 @@ impl TestClient {
             .unwrap())
     }
 
-    /// Creates a trail with the given initial record data and returns its ObjectID.
-    pub(crate) async fn create_test_trail(&self, data: Data) -> anyhow::Result<ObjectID> {
+    /// Creates a trail with the given initial record data and returns its ObjectId.
+    pub(crate) async fn create_test_trail(&self, data: Data) -> anyhow::Result<ObjectId> {
         self.create_test_trail_with_tags(data, std::iter::empty::<String>())
             .await
     }
 
     /// Creates a trail with the given initial record data and available tags.
-    pub(crate) async fn create_test_trail_with_tags<I, S>(&self, data: Data, tags: I) -> anyhow::Result<ObjectID>
+    pub(crate) async fn create_test_trail_with_tags<I, S>(&self, data: Data, tags: I) -> anyhow::Result<ObjectId>
     where
         I: IntoIterator<Item = S>,
         S: Into<String>,
@@ -229,7 +230,7 @@ impl TestClient {
     /// Creates a role on the given trail with the specified permissions and optional role tags.
     pub(crate) async fn create_role(
         &self,
-        trail_id: ObjectID,
+        trail_id: ObjectId,
         role_name: &str,
         permissions: impl IntoIterator<Item = Permission>,
         role_tags: Option<RoleTags>,
@@ -253,7 +254,7 @@ impl TestClient {
     /// Issues a capability for the given role on the trail.
     pub(crate) async fn issue_cap(
         &self,
-        trail_id: ObjectID,
+        trail_id: ObjectId,
         role_name: &str,
         options: CapabilityIssueOptions,
     ) -> anyhow::Result<CapabilityIssued> {
@@ -270,11 +271,11 @@ impl TestClient {
 }
 
 impl CoreClientReadOnly for TestClient {
-    fn package_id(&self) -> ObjectID {
+    fn package_id(&self) -> ObjectId {
         self.client.package_id()
     }
 
-    fn tf_components_package_id(&self) -> Option<ObjectID> {
+    fn tf_components_package_id(&self) -> Option<ObjectId> {
         Some(self.client.tf_components_package_id())
     }
 

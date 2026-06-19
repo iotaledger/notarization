@@ -12,10 +12,11 @@
 use std::str::FromStr;
 
 use async_trait::async_trait;
-use iota_interaction::types::base_types::{Identifier, IotaAddress, ObjectID};
+use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use iota_interaction::types::transaction::{Argument, CallArg, ProgrammableTransaction};
+use iota_interaction::types::transaction::{CallArg, ProgrammableTransaction};
 use iota_interaction::{OptionalSync, ident_str};
+use iota_sdk_types::{Argument, Identifier, ObjectId};
 use product_common::core_client::CoreClientReadOnly;
 
 use super::move_utils;
@@ -48,7 +49,7 @@ impl NotarizationImpl {
     /// * Method name is invalid
     async fn build_transaction<C, F>(
         client: &C,
-        object_id: ObjectID,
+        object_id: ObjectId,
         method: impl AsRef<str>,
         additional_args: F,
     ) -> Result<ProgrammableTransaction, Error>
@@ -100,7 +101,7 @@ impl NotarizationImpl {
 pub(crate) trait NotarizationOperations {
     /// Build a transaction that creates a new locked notarization
     fn new_locked(
-        package_id: ObjectID,
+        package_id: ObjectId,
         state: State,
         immutable_description: Option<String>,
         updatable_metadata: Option<String>,
@@ -128,7 +129,7 @@ pub(crate) trait NotarizationOperations {
 
     /// Build a transaction that creates a new dynamic notarization
     fn new_dynamic(
-        package_id: ObjectID,
+        package_id: ObjectId,
         state: State,
         immutable_description: Option<String>,
         updatable_metadata: Option<String>,
@@ -163,7 +164,7 @@ pub(crate) trait NotarizationOperations {
     /// Build a transaction that updates the state of a notarization
     async fn update_state<C>(
         client: &C,
-        object_id: ObjectID,
+        object_id: ObjectId,
         new_state: State,
     ) -> Result<ProgrammableTransaction, Error>
     where
@@ -179,7 +180,7 @@ pub(crate) trait NotarizationOperations {
     }
 
     /// Build a transaction that destroys a notarization
-    async fn destroy<C>(client: &C, object_id: ObjectID) -> Result<ProgrammableTransaction, Error>
+    async fn destroy<C>(client: &C, object_id: ObjectId) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
@@ -192,7 +193,7 @@ pub(crate) trait NotarizationOperations {
     /// Build a transaction that updates the metadata of a notarization
     async fn update_metadata<C>(
         client: &C,
-        object_id: ObjectID,
+        object_id: ObjectId,
         new_metadata: Option<String>,
     ) -> Result<ProgrammableTransaction, Error>
     where
@@ -208,7 +209,7 @@ pub(crate) trait NotarizationOperations {
     }
 
     /// Build a transaction that returns the notarization method
-    async fn notarization_method<C>(object_id: ObjectID, client: &C) -> Result<ProgrammableTransaction, Error>
+    async fn notarization_method<C>(object_id: ObjectId, client: &C) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
@@ -216,7 +217,7 @@ pub(crate) trait NotarizationOperations {
     }
 
     /// Build a transaction that checks if the notarization is locked for update
-    async fn is_update_locked<C>(object_id: ObjectID, client: &C) -> Result<ProgrammableTransaction, Error>
+    async fn is_update_locked<C>(object_id: ObjectId, client: &C) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
@@ -227,7 +228,7 @@ pub(crate) trait NotarizationOperations {
     }
 
     /// Build a transaction that checks if the notarization is allowed to be destroyed
-    async fn is_destroy_allowed<C>(object_id: ObjectID, client: &C) -> Result<ProgrammableTransaction, Error>
+    async fn is_destroy_allowed<C>(object_id: ObjectId, client: &C) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
@@ -238,7 +239,7 @@ pub(crate) trait NotarizationOperations {
     }
 
     /// Build a transaction that checks if the notarization is locked for transfer
-    async fn is_transfer_locked<C>(object_id: ObjectID, client: &C) -> Result<ProgrammableTransaction, Error>
+    async fn is_transfer_locked<C>(object_id: ObjectId, client: &C) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
@@ -249,7 +250,7 @@ pub(crate) trait NotarizationOperations {
     }
 
     /// Last change timestamp
-    async fn last_change_ts<C>(object_id: ObjectID, client: &C) -> Result<ProgrammableTransaction, Error>
+    async fn last_change_ts<C>(object_id: ObjectId, client: &C) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
@@ -257,7 +258,7 @@ pub(crate) trait NotarizationOperations {
     }
 
     /// Version count
-    async fn version_count<C>(object_id: ObjectID, client: &C) -> Result<ProgrammableTransaction, Error>
+    async fn version_count<C>(object_id: ObjectId, client: &C) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
@@ -265,7 +266,7 @@ pub(crate) trait NotarizationOperations {
     }
 
     /// Created at timestamp
-    async fn created_at<C>(object_id: ObjectID, client: &C) -> Result<ProgrammableTransaction, Error>
+    async fn created_at<C>(object_id: ObjectId, client: &C) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
@@ -273,7 +274,7 @@ pub(crate) trait NotarizationOperations {
     }
 
     /// Description
-    async fn description<C>(object_id: ObjectID, client: &C) -> Result<ProgrammableTransaction, Error>
+    async fn description<C>(object_id: ObjectId, client: &C) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
@@ -281,7 +282,7 @@ pub(crate) trait NotarizationOperations {
     }
 
     /// Updatable metadata
-    async fn updatable_metadata<C>(object_id: ObjectID, client: &C) -> Result<ProgrammableTransaction, Error>
+    async fn updatable_metadata<C>(object_id: ObjectId, client: &C) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
@@ -289,14 +290,14 @@ pub(crate) trait NotarizationOperations {
     }
 
     /// Lock metadata
-    async fn lock_metadata<C>(object_id: ObjectID, client: &C) -> Result<ProgrammableTransaction, Error>
+    async fn lock_metadata<C>(object_id: ObjectId, client: &C) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
         NotarizationImpl::build_transaction(client, object_id, "lock_metadata", |_| Ok(vec![])).await
     }
 
-    async fn state<C>(object_id: ObjectID, client: &C) -> Result<ProgrammableTransaction, Error>
+    async fn state<C>(object_id: ObjectId, client: &C) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
@@ -304,7 +305,7 @@ pub(crate) trait NotarizationOperations {
     }
 
     async fn transfer_notarization<C>(
-        object_id: ObjectID,
+        object_id: ObjectId,
         recipient: IotaAddress,
         client: &C,
     ) -> Result<ProgrammableTransaction, Error>

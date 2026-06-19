@@ -6,9 +6,10 @@
 //! These helpers encode Rust-side access inputs into the exact Move call shapes expected by the audit-trail
 //! package and apply the lightweight preflight checks that are cheaper to surface before submission.
 
-use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::transaction::{CallArg, ProgrammableTransaction};
 use iota_interaction::{OptionalSync, ident_str};
+use iota_sdk_types::ObjectId;
 use product_common::core_client::CoreClientReadOnly;
 
 use crate::core::internal::{trail as trail_reader, tx};
@@ -30,12 +31,12 @@ impl AccessOps {
     /// Rust side fails early with `Error::InvalidArgument` instead of relying on a later Move abort.
     pub(super) async fn create_role<C>(
         client: &C,
-        trail_id: ObjectID,
+        trail_id: ObjectId,
         owner: IotaAddress,
         name: String,
         permissions: PermissionSet,
         role_tags: Option<RoleTags>,
-        selected_capability_id: Option<ObjectID>,
+        selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -83,12 +84,12 @@ impl AccessOps {
     /// on-chain as part of the role definition.
     pub(super) async fn update_role<C>(
         client: &C,
-        trail_id: ObjectID,
+        trail_id: ObjectId,
         owner: IotaAddress,
         name: String,
         permissions: PermissionSet,
         role_tags: Option<RoleTags>,
-        selected_capability_id: Option<ObjectID>,
+        selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -137,10 +138,10 @@ impl AccessOps {
     /// access-control invariant enforced by the Move package.
     pub(super) async fn delete_role<C>(
         client: &C,
-        trail_id: ObjectID,
+        trail_id: ObjectId,
         owner: IotaAddress,
         name: String,
-        selected_capability_id: Option<ObjectID>,
+        selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -168,11 +169,11 @@ impl AccessOps {
     /// `valid_until` semantics remains on-chain.
     pub(super) async fn issue_capability<C>(
         client: &C,
-        trail_id: ObjectID,
+        trail_id: ObjectId,
         owner: IotaAddress,
         role_name: String,
         options: CapabilityIssueOptions,
-        selected_capability_id: Option<ObjectID>,
+        selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -203,11 +204,11 @@ impl AccessOps {
     /// losing the capability's original expiry boundary.
     pub(super) async fn revoke_capability<C>(
         client: &C,
-        trail_id: ObjectID,
+        trail_id: ObjectId,
         owner: IotaAddress,
-        capability_id: ObjectID,
+        capability_id: ObjectId,
         capability_valid_until: Option<u64>,
-        selected_capability_id: Option<ObjectID>,
+        selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -236,10 +237,10 @@ impl AccessOps {
     /// capability object rather than only its ID.
     pub(super) async fn destroy_capability<C>(
         client: &C,
-        trail_id: ObjectID,
+        trail_id: ObjectId,
         owner: IotaAddress,
-        capability_id: ObjectID,
-        selected_capability_id: Option<ObjectID>,
+        capability_id: ObjectId,
+        selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -271,8 +272,8 @@ impl AccessOps {
     /// capability path.
     pub(super) async fn destroy_initial_admin_capability<C>(
         client: &C,
-        trail_id: ObjectID,
-        capability_id: ObjectID,
+        trail_id: ObjectId,
+        capability_id: ObjectId,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -294,11 +295,11 @@ impl AccessOps {
     /// separate Move entry point reserved for tracked initial-admin IDs.
     pub(super) async fn revoke_initial_admin_capability<C>(
         client: &C,
-        trail_id: ObjectID,
+        trail_id: ObjectId,
         owner: IotaAddress,
-        capability_id: ObjectID,
+        capability_id: ObjectId,
         capability_valid_until: Option<u64>,
-        selected_capability_id: Option<ObjectID>,
+        selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -327,9 +328,9 @@ impl AccessOps {
     /// objects and does not revoke any additional IDs.
     pub(super) async fn cleanup_revoked_capabilities<C>(
         client: &C,
-        trail_id: ObjectID,
+        trail_id: ObjectId,
         owner: IotaAddress,
-        selected_capability_id: Option<ObjectID>,
+        selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -354,7 +355,7 @@ impl AccessOps {
 ///
 /// Roles may only reference tags that are defined on the trail itself so later record-tag checks
 /// stay consistent with the registry stored on-chain.
-async fn assert_role_tags_defined<C>(client: &C, trail_id: ObjectID, role_tags: &Option<RoleTags>) -> Result<(), Error>
+async fn assert_role_tags_defined<C>(client: &C, trail_id: ObjectId, role_tags: &Option<RoleTags>) -> Result<(), Error>
 where
     C: CoreClientReadOnly + OptionalSync,
 {

@@ -12,10 +12,11 @@ use std::ops::Deref;
 #[cfg(not(target_arch = "wasm32"))]
 use iota_interaction::IotaClient;
 use iota_interaction::IotaClientTrait;
-use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::transaction::{ProgrammableTransaction, TransactionKind};
 #[cfg(target_arch = "wasm32")]
 use iota_interaction_ts::bindings::WasmIotaClient;
+use iota_sdk_types::ObjectId;
 use product_common::core_client::CoreClientReadOnly;
 use product_common::network_name::NetworkName;
 use serde::de::DeserializeOwned;
@@ -33,9 +34,9 @@ use crate::package;
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct PackageOverrides {
     /// Override for the audit-trail package itself.
-    pub audit_trail: Option<ObjectID>,
+    pub audit_trail: Option<ObjectId>,
     /// Override for the `tf_components` package used by time locks and capabilities.
-    pub tf_component: Option<ObjectID>,
+    pub tf_component: Option<ObjectId>,
 }
 
 /// A read-only client for interacting with audit-trail objects on a specific network.
@@ -49,10 +50,10 @@ pub struct PackageOverrides {
 pub struct AuditTrailClientReadOnly {
     /// The underlying IOTA client adapter used for communication.
     iota_client: IotaClientAdapter,
-    /// The [`ObjectID`] of the deployed Audit Trail Package (smart contract).
-    audit_trail_pkg_id: ObjectID,
-    /// The [`ObjectID`] of the deployed TfComponents package used by Audit Trail.
-    pub(crate) tf_components_pkg_id: ObjectID,
+    /// The [`ObjectId`] of the deployed Audit Trail Package (smart contract).
+    audit_trail_pkg_id: ObjectId,
+    /// The [`ObjectId`] of the deployed TfComponents package used by Audit Trail.
+    pub(crate) tf_components_pkg_id: ObjectId,
     /// The name of the network this client is connected to (e.g., "mainnet", "testnet").
     network: NetworkName,
     /// Raw chain identifier returned by the IOTA node.
@@ -80,12 +81,12 @@ impl AuditTrailClientReadOnly {
     /// Returns the package ID used by this client.
     ///
     /// This is the deployed audit-trail Move package ID, not a trail object ID.
-    pub fn package_id(&self) -> ObjectID {
+    pub fn package_id(&self) -> ObjectId {
         self.audit_trail_pkg_id
     }
 
     /// Returns the TfComponents package ID used by this client.
-    pub fn tf_components_package_id(&self) -> ObjectID {
+    pub fn tf_components_package_id(&self) -> ObjectId {
         self.tf_components_pkg_id
     }
 
@@ -98,7 +99,7 @@ impl AuditTrailClientReadOnly {
     ///
     /// Creating the handle is cheap. Reads only happen when you call methods on the returned
     /// [`AuditTrailHandle`], such as [`AuditTrailHandle::get`].
-    pub fn trail<'a>(&'a self, trail_id: ObjectID) -> AuditTrailHandle<'a, Self> {
+    pub fn trail<'a>(&'a self, trail_id: ObjectId) -> AuditTrailHandle<'a, Self> {
         AuditTrailHandle::new(self, trail_id)
     }
 
@@ -164,11 +165,11 @@ impl AuditTrailClientReadOnly {
 #[cfg_attr(not(feature = "send-sync"), async_trait::async_trait(?Send))]
 #[cfg_attr(feature = "send-sync", async_trait::async_trait)]
 impl CoreClientReadOnly for AuditTrailClientReadOnly {
-    fn package_id(&self) -> ObjectID {
+    fn package_id(&self) -> ObjectId {
         self.audit_trail_pkg_id
     }
 
-    fn tf_components_package_id(&self) -> Option<ObjectID> {
+    fn tf_components_package_id(&self) -> Option<ObjectId> {
         Some(self.tf_components_pkg_id)
     }
 

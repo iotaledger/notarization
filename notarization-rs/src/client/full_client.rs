@@ -17,9 +17,9 @@
 //! ```rust,ignore
 //! # use notarization::client::full_client::NotarizationClient;
 //! # use notarization::core::types::State;
-//! # use iota_interaction::types::base_types::ObjectID;
+//! # use iota_sdk_types::ObjectId;
 //! # async fn example(client: &NotarizationClient<impl secret_storage::Signer<iota_interaction::IotaKeySignature>>) -> Result<(), Box<dyn std::error::Error>> {
-//! # let notarization_id = ObjectID::ZERO;
+//! # let notarization_id = ObjectId::ZERO;
 //! // 1. Create the transaction
 //! let result = client
 //!     .update_state(State::from_string("New data".to_string(), None), notarization_id)
@@ -79,9 +79,10 @@
 
 use std::ops::Deref;
 
-use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::crypto::PublicKey;
 use iota_interaction::{IotaKeySignature, OptionalSync};
+use iota_sdk_types::ObjectId;
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use product_common::network_name::NetworkName;
 use product_common::transaction::transaction_builder::TransactionBuilder;
@@ -254,8 +255,8 @@ where
     /// ```rust,ignore
     /// # use notarization::client::full_client::NotarizationClient;
     /// # use notarization::core::types::State;
-    /// # use iota_interaction::types::base_types::ObjectID;
-    /// # async fn example(client: &NotarizationClient<impl secret_storage::Signer<iota_interaction::IotaKeySignature>>, notarization_id: ObjectID) -> Result<(), Box<dyn std::error::Error>> {
+    /// # use iota_sdk_types::ObjectId;
+    /// # async fn example(client: &NotarizationClient<impl secret_storage::Signer<iota_interaction::IotaKeySignature>>, notarization_id: ObjectId) -> Result<(), Box<dyn std::error::Error>> {
     /// client
     ///     .update_state(
     ///         State::from_string("Status: Completed", Some("Final version")),
@@ -268,7 +269,7 @@ where
     /// ```
     ///
     /// Returns a [`TransactionBuilder`]. See [module docs](self) for transaction flow.
-    pub fn update_state(&self, new_state: State, notarization_id: ObjectID) -> TransactionBuilder<UpdateState> {
+    pub fn update_state(&self, new_state: State, notarization_id: ObjectId) -> TransactionBuilder<UpdateState> {
         TransactionBuilder::new(UpdateState::new(new_state, notarization_id))
     }
 
@@ -291,8 +292,8 @@ where
     ///
     /// ```rust,ignore
     /// # use notarization::client::full_client::NotarizationClient;
-    /// # use iota_interaction::types::base_types::ObjectID;
-    /// # async fn example(client: &NotarizationClient<impl secret_storage::Signer<iota_interaction::IotaKeySignature>>, notarization_id: ObjectID) -> Result<(), Box<dyn std::error::Error>> {
+    /// # use iota_sdk_types::ObjectId;
+    /// # async fn example(client: &NotarizationClient<impl secret_storage::Signer<iota_interaction::IotaKeySignature>>, notarization_id: ObjectId) -> Result<(), Box<dyn std::error::Error>> {
     /// client
     ///     .destroy(notarization_id)
     ///     .build_and_execute(&client)
@@ -302,7 +303,7 @@ where
     /// ```
     ///
     /// Returns a [`TransactionBuilder`]. See [module docs](self) for transaction flow.
-    pub fn destroy(&self, notarization_id: ObjectID) -> TransactionBuilder<DestroyNotarization> {
+    pub fn destroy(&self, notarization_id: ObjectId) -> TransactionBuilder<DestroyNotarization> {
         TransactionBuilder::new(DestroyNotarization::new(notarization_id))
     }
 
@@ -326,8 +327,8 @@ where
     ///
     /// ```rust,ignore
     /// # use notarization::NotarizationClient;
-    /// # use iota_interaction::types::base_types::ObjectID;
-    /// # async fn example(client: &NotarizationClient<impl secret_storage::Signer<iota_interaction::IotaKeySignature>>, notarization_id: ObjectID) -> Result<(), Box<dyn std::error::Error>> {
+    /// # use iota_sdk_types::ObjectId;
+    /// # async fn example(client: &NotarizationClient<impl secret_storage::Signer<iota_interaction::IotaKeySignature>>, notarization_id: ObjectId) -> Result<(), Box<dyn std::error::Error>> {
     /// client
     ///     .update_metadata(
     ///         Some("Reviewed by legal team".to_string()),
@@ -343,7 +344,7 @@ where
     pub fn update_metadata(
         &self,
         metadata: Option<String>,
-        notarization_id: ObjectID,
+        notarization_id: ObjectId,
     ) -> TransactionBuilder<UpdateMetadata> {
         TransactionBuilder::new(UpdateMetadata::new(metadata, notarization_id))
     }
@@ -371,8 +372,8 @@ where
     ///
     /// ```rust,ignore
     /// # use notarization::client::full_client::NotarizationClient;
-    /// # use iota_interaction::types::base_types::{ObjectID, IotaAddress};
-    /// # async fn example(client: &NotarizationClient<impl secret_storage::Signer<iota_interaction::IotaKeySignature>>, notarization_id: ObjectID, recipient: IotaAddress) -> Result<(), Box<dyn std::error::Error>> {
+    /// # use iota_interaction::types::base_types::{ObjectId, IotaAddress};
+    /// # async fn example(client: &NotarizationClient<impl secret_storage::Signer<iota_interaction::IotaKeySignature>>, notarization_id: ObjectId, recipient: IotaAddress) -> Result<(), Box<dyn std::error::Error>> {
     /// client
     ///     .transfer_notarization(notarization_id, recipient)
     ///     .build_and_execute(&client)
@@ -384,7 +385,7 @@ where
     /// Returns a [`TransactionBuilder`]. See [module docs](self) for transaction flow.
     pub fn transfer_notarization(
         &self,
-        notarization_id: ObjectID,
+        notarization_id: ObjectId,
         recipient: IotaAddress,
     ) -> TransactionBuilder<TransferNotarization> {
         TransactionBuilder::new(TransferNotarization::new(recipient, notarization_id))
@@ -399,7 +400,7 @@ where
         &self.read_client
     }
 
-    fn package_id(&self) -> ObjectID {
+    fn package_id(&self) -> ObjectId {
         self.read_client.package_id()
     }
 

@@ -10,7 +10,7 @@
 
 use std::sync::LazyLock;
 
-use iota_interaction::types::base_types::ObjectID;
+use iota_sdk_types::ObjectId;
 use product_common::network_name::NetworkName;
 use product_common::package_registry::{Env, PackageRegistry};
 use product_common::tf_components_registry;
@@ -66,8 +66,8 @@ pub(crate) fn blocking_audit_trail_registry_mut() -> PackageRegistryLockMut {
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct ResolvedPackageIds {
-    pub audit_trail_package_id: ObjectID,
-    pub tf_components_package_id: ObjectID,
+    pub audit_trail_package_id: ObjectId,
+    pub tf_components_package_id: ObjectId,
 }
 
 pub(crate) async fn resolve_package_ids(
@@ -130,7 +130,7 @@ mod tests {
         let network = NetworkName::try_from("testnet").expect("valid network");
         let registry_package_id = tf_components_registry::tf_components_package_id("testnet")
             .expect("testnet TfComponents package is in the registry");
-        let override_package_id = ObjectID::random();
+        let override_package_id = ObjectId::random();
 
         let (_, registry_resolved_package_ids) = resolve_package_ids(&network, &PackageOverrides::default())
             .await
@@ -144,7 +144,7 @@ mod tests {
         let (_, resolved_package_ids) = resolve_package_ids(
             &network,
             &PackageOverrides {
-                audit_trail: Some(ObjectID::random()),
+                audit_trail: Some(ObjectId::random()),
                 tf_component: Some(override_package_id),
             },
         )

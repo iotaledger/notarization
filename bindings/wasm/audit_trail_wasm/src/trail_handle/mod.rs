@@ -11,9 +11,9 @@ mod tags;
 pub(crate) use access::WasmTrailAccess;
 use anyhow::anyhow;
 use audit_trails::{AuditTrailClient, AuditTrailClientReadOnly};
-use iota_interaction::types::base_types::ObjectID;
 use iota_interaction_ts::bindings::WasmTransactionSigner;
 use iota_interaction_ts::wasm_error::{wasm_error, Result, WasmResult};
+use iota_sdk_types::ObjectId;
 pub(crate) use locking::WasmTrailLocking;
 use product_common::bindings::transaction::WasmTransactionBuilder;
 use product_common::bindings::utils::into_transaction_builder;
@@ -36,11 +36,11 @@ use crate::trail::{WasmDeleteAuditTrail, WasmMigrate, WasmOnChainAuditTrail, Was
 pub struct WasmAuditTrailHandle {
     pub(crate) read_only: AuditTrailClientReadOnly,
     pub(crate) full: Option<AuditTrailClient<WasmTransactionSigner>>,
-    pub(crate) trail_id: ObjectID,
+    pub(crate) trail_id: ObjectId,
 }
 
 impl WasmAuditTrailHandle {
-    pub(crate) fn from_read_only(read_only: AuditTrailClientReadOnly, trail_id: ObjectID) -> Self {
+    pub(crate) fn from_read_only(read_only: AuditTrailClientReadOnly, trail_id: ObjectId) -> Self {
         Self {
             read_only,
             full: None,
@@ -48,7 +48,7 @@ impl WasmAuditTrailHandle {
         }
     }
 
-    pub(crate) fn from_full(full: AuditTrailClient<WasmTransactionSigner>, trail_id: ObjectID) -> Self {
+    pub(crate) fn from_full(full: AuditTrailClient<WasmTransactionSigner>, trail_id: ObjectId) -> Self {
         Self {
             read_only: full.read_only().clone(),
             full: Some(full),

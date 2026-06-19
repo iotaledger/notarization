@@ -4,10 +4,11 @@
 use std::ops::Deref;
 use std::sync::Arc;
 
-use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::crypto::PublicKey;
 use iota_interaction::{IOTA_LOCAL_NETWORK_URL, IotaClientBuilder, KeytoolSigner};
 use iota_interaction_rust::IotaClientAdapter;
+use iota_sdk_types::ObjectId;
 use notarization::client::{NotarizationClient, NotarizationClientReadOnly};
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use product_common::network_name::NetworkName;
@@ -22,7 +23,7 @@ pub const PUBLISH_SCRIPT_FILE: &str = concat!(
     "/../notarization-move/scripts/publish_package.sh"
 );
 
-static PACKAGE_ID: OnceCell<ObjectID> = OnceCell::const_new();
+static PACKAGE_ID: OnceCell<ObjectId> = OnceCell::const_new();
 
 pub async fn get_funded_test_client() -> anyhow::Result<TestClient> {
     TestClient::new().await
@@ -69,7 +70,7 @@ impl TestClient {
 }
 
 impl CoreClientReadOnly for TestClient {
-    fn package_id(&self) -> ObjectID {
+    fn package_id(&self) -> ObjectId {
         self.client.package_id()
     }
 

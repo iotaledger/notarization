@@ -5,11 +5,11 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use iota_interaction::ident_str;
-use iota_interaction::types::base_types::{IotaAddress, ObjectID, TypeTag};
+use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::collection_types::LinkedTable;
 use iota_interaction::types::id::UID;
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
-use iota_interaction::types::transaction::Argument;
+use iota_sdk_types::{Argument, ObjectId, TypeTag};
 use serde::{Deserialize, Serialize};
 
 use super::locking::LockingConfig;
@@ -105,7 +105,7 @@ impl ImmutableMetadata {
         Self { name, description }
     }
 
-    pub(in crate::core) fn tag(package_id: ObjectID) -> TypeTag {
+    pub(in crate::core) fn tag(package_id: ObjectId) -> TypeTag {
         TypeTag::from_str(&format!("{package_id}::main::ImmutableMetadata"))
             .expect("invalid TypeTag for ImmutableMetadata")
     }
@@ -113,7 +113,7 @@ impl ImmutableMetadata {
     /// Creates a new `Argument` from the `ImmutableMetadata`.
     ///
     /// To be used when creating a new `ImmutableMetadata` object on the ledger.
-    pub(in crate::core) fn to_ptb(&self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
+    pub(in crate::core) fn to_ptb(&self, ptb: &mut Ptb, package_id: ObjectId) -> Result<Argument, Error> {
         let name = tx::ptb_pure(ptb, "name", &self.name)?;
         let description = tx::ptb_pure(ptb, "description", &self.description)?;
 

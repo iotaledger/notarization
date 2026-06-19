@@ -23,10 +23,10 @@ use async_trait::async_trait;
 use iota_interaction::rpc_types::{
     IotaData as _, IotaObjectDataOptions, IotaTransactionBlockEffects, IotaTransactionBlockEvents,
 };
-use iota_interaction::types::base_types::{IotaAddress, ObjectID};
-use iota_interaction::types::object::Owner;
+use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::transaction::ProgrammableTransaction;
 use iota_interaction::{IotaClientTrait, OptionalSend, OptionalSync};
+use iota_sdk_types::{ObjectId, Owner};
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;
@@ -234,7 +234,7 @@ impl<M: Clone + OptionalSend + OptionalSync> Transaction for CreateNotarization<
 /// A helper function to get the notarization with the owner.
 pub(crate) async fn get_notarization_with_owner(
     client: &impl CoreClientReadOnly,
-    object_id: &ObjectID,
+    object_id: &ObjectId,
 ) -> Result<(OnChainNotarization, IotaAddress), Error> {
     let data = client
         .client_adapter()

@@ -82,12 +82,13 @@ use std::ops::Deref;
 use async_trait::async_trait;
 #[cfg(not(target_arch = "wasm32"))]
 use iota_interaction::IotaClient;
-use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::crypto::PublicKey;
 use iota_interaction::types::transaction::ProgrammableTransaction;
 use iota_interaction::{IotaKeySignature, OptionalSync};
 #[cfg(target_arch = "wasm32")]
 use iota_interaction_ts::bindings::WasmIotaClient as IotaClient;
+use iota_sdk_types::ObjectId;
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use product_common::network_name::NetworkName;
 use secret_storage::Signer;
@@ -249,12 +250,12 @@ impl<S> AuditTrailClient<S> {
     }
 
     /// Returns a typed handle bound to a specific trail object ID.
-    pub fn trail<'a>(&'a self, trail_id: ObjectID) -> AuditTrailHandle<'a, Self> {
+    pub fn trail<'a>(&'a self, trail_id: ObjectId) -> AuditTrailHandle<'a, Self> {
         AuditTrailHandle::new(self, trail_id)
     }
 
     /// Returns the TfComponents package ID used by this client.
-    pub fn tf_components_package_id(&self) -> ObjectID {
+    pub fn tf_components_package_id(&self) -> ObjectId {
         self.read_client.tf_components_package_id()
     }
 
@@ -289,11 +290,11 @@ where
 #[cfg_attr(feature = "send-sync", async_trait)]
 #[cfg_attr(not(feature = "send-sync"), async_trait(?Send))]
 impl<S> CoreClientReadOnly for AuditTrailClient<S> {
-    fn package_id(&self) -> ObjectID {
+    fn package_id(&self) -> ObjectId {
         self.read_client.package_id()
     }
 
-    fn tf_components_package_id(&self) -> Option<ObjectID> {
+    fn tf_components_package_id(&self) -> Option<ObjectId> {
         Some(self.read_client.tf_components_package_id())
     }
 

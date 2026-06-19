@@ -18,10 +18,9 @@
 use std::str::FromStr;
 use std::time::SystemTime;
 
-use iota_interaction::types::base_types::{ObjectID, TypeTag};
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
-use iota_interaction::types::transaction::Argument;
 use iota_interaction::{MoveType, ident_str};
+use iota_sdk_types::{Argument, ObjectId, TypeTag};
 use serde::{Deserialize, Serialize};
 
 use super::super::move_utils;
@@ -91,7 +90,7 @@ impl TimeLock {
     /// Creates a new `Argument` from the `TimeLock`.
     ///
     /// To be used when creating a new `Notarization` object on the ledger.
-    pub(in crate::core) fn to_ptb(&self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
+    pub(in crate::core) fn to_ptb(&self, ptb: &mut Ptb, package_id: ObjectId) -> Result<Argument, Error> {
         match self {
             TimeLock::UnlockAt(unlock_time) => new_unlock_at(ptb, *unlock_time, package_id),
             TimeLock::UntilDestroyed => new_until_destroyed(ptb, package_id),
@@ -101,7 +100,7 @@ impl TimeLock {
 }
 
 /// Creates a new `Argument` for the `unlock_at` function.
-pub(super) fn new_unlock_at(ptb: &mut Ptb, unlock_time_sec: u32, package_id: ObjectID) -> Result<Argument, Error> {
+pub(super) fn new_unlock_at(ptb: &mut Ptb, unlock_time_sec: u32, package_id: ObjectId) -> Result<Argument, Error> {
     let clock = move_utils::get_clock_ref(ptb);
     let unlock_time_sec = move_utils::ptb_pure(ptb, "unlock_time", unlock_time_sec)?;
 
@@ -115,7 +114,7 @@ pub(super) fn new_unlock_at(ptb: &mut Ptb, unlock_time_sec: u32, package_id: Obj
 }
 
 /// Creates a new `Argument` for the `until_destroyed` function.
-pub(super) fn new_until_destroyed(ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
+pub(super) fn new_until_destroyed(ptb: &mut Ptb, package_id: ObjectId) -> Result<Argument, Error> {
     Ok(ptb.programmable_move_call(
         package_id,
         ident_str!("timelock").as_str().into(),
@@ -126,7 +125,7 @@ pub(super) fn new_until_destroyed(ptb: &mut Ptb, package_id: ObjectID) -> Result
 }
 
 /// Creates a new `Argument` for the `none` function.
-pub(super) fn new_none(ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
+pub(super) fn new_none(ptb: &mut Ptb, package_id: ObjectId) -> Result<Argument, Error> {
     Ok(ptb.programmable_move_call(
         package_id,
         ident_str!("timelock").as_str().into(),
@@ -137,7 +136,7 @@ pub(super) fn new_none(ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, 
 }
 
 impl MoveType for TimeLock {
-    fn move_type(package: ObjectID) -> TypeTag {
+    fn move_type(package: ObjectId) -> TypeTag {
         TypeTag::from_str(format!("{package}::timelock::TimeLock").as_str()).expect("failed to create type tag")
     }
 }

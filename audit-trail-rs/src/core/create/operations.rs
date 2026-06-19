@@ -6,9 +6,10 @@
 use std::collections::HashSet;
 
 use iota_interaction::ident_str;
-use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use iota_interaction::types::transaction::{Argument, ProgrammableTransaction};
+use iota_interaction::types::transaction::ProgrammableTransaction;
+use iota_sdk_types::{Argument, ObjectId};
 
 use crate::core::internal::tx;
 use crate::core::types::{Data, ImmutableMetadata, InitialRecord, LockingConfig};
@@ -22,9 +23,9 @@ pub(super) struct CreateOps;
 /// This keeps the public builder layer separate from the low-level PTB encoding logic.
 pub(super) struct CreateTrailArgs {
     /// Audit-trail package used for generic type tags and Move calls.
-    pub audit_trail_package_id: ObjectID,
+    pub audit_trail_package_id: ObjectId,
     /// TfComponents package used by locking and capability-related values.
-    pub tf_components_package_id: ObjectID,
+    pub tf_components_package_id: ObjectId,
     /// Address that should receive the initial admin capability.
     pub admin: IotaAddress,
     /// Optional first record inserted into the newly created trail.
