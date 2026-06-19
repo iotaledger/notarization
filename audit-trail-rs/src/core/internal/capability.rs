@@ -245,8 +245,9 @@ pub(crate) fn now_ms() -> u64 {
 mod tests {
     use std::collections::HashSet;
 
-    use iota_interaction::types::base_types::{IotaAddress, ObjectId, dbg_object_id};
+    use iota_interaction::types::base_types::{IotaAddress, dbg_object_id};
     use iota_interaction::types::id::UID;
+    use iota_sdk_types::ObjectId;
 
     use super::capability_matches;
     use crate::core::types::Capability;

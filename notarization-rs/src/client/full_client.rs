@@ -372,7 +372,8 @@ where
     ///
     /// ```rust,ignore
     /// # use notarization::client::full_client::NotarizationClient;
-    /// # use iota_interaction::types::base_types::{ObjectId, IotaAddress};
+    /// # use iota_interaction::types::base_types::IotaAddress;
+    /// # use iota_sdk_types::ObjectId;
     /// # async fn example(client: &NotarizationClient<impl secret_storage::Signer<iota_interaction::IotaKeySignature>>, notarization_id: ObjectId, recipient: IotaAddress) -> Result<(), Box<dyn std::error::Error>> {
     /// client
     ///     .transfer_notarization(notarization_id, recipient)
