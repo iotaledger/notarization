@@ -33,7 +33,7 @@ to [rustup.rs](https://rustup.rs) for the installation.
 - [Rust](https://www.rust-lang.org/) (>= 1.65)
 - [Cargo](https://doc.rust-lang.org/cargo/) (>= 1.65)
 - for running example: a local network node with the IOTA notarization package deployed as being described
-  [here](https://docs.iota.org/developer/iota-notarization/getting-started/local-network-setup)
+  [here](https://docs.iota.org/developer/iota-notarization/single-notarization/getting-started/local-network-setup)
 
 ### 1. Install Local Tooling
 
