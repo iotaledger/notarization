@@ -93,6 +93,10 @@ name = "11_manage_record_tags"
 path = "audit-trail/advanced/11_manage_record_tags.rs"
 
 [[example]]
+name = "12_correct_records"
+path = "audit-trail/advanced/12_correct_records.rs"
+
+[[example]]
 name = "01_customs_clearance"
 path = "audit-trail/real-world/01_customs_clearance.rs"
 
