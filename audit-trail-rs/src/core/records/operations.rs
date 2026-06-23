@@ -7,8 +7,9 @@
 //! arguments expected by the trail package.
 
 use iota_interaction::OptionalSync;
-use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::transaction::ProgrammableTransaction;
+use iota_sdk_types::ObjectId;
 use product_common::core_client::CoreClientReadOnly;
 
 use crate::core::internal::capability::find_capable_cap_for_tag;
@@ -26,12 +27,12 @@ impl RecordsOps {
     /// both `AddRecord` and the requested tag.
     pub(super) async fn add_record<C>(
         client: &C,
-        trail_id: ObjectID,
+        trail_id: ObjectId,
         owner: IotaAddress,
         data: Data,
         record_metadata: Option<String>,
         record_tag: Option<String>,
-        selected_capability_id: Option<ObjectID>,
+        selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -87,10 +88,10 @@ impl RecordsOps {
     /// Authorization and locking remain enforced by the Move entry point.
     pub(super) async fn delete_record<C>(
         client: &C,
-        trail_id: ObjectID,
+        trail_id: ObjectId,
         owner: IotaAddress,
         sequence_number: u64,
-        selected_capability_id: Option<ObjectID>,
+        selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -121,10 +122,10 @@ impl RecordsOps {
     /// than `limit` records may be visited before `limit` deletions accumulate.
     pub(super) async fn delete_records_batch<C>(
         client: &C,
-        trail_id: ObjectID,
+        trail_id: ObjectId,
         owner: IotaAddress,
         limit: u64,
-        selected_capability_id: Option<ObjectID>,
+        selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -148,7 +149,7 @@ impl RecordsOps {
     /// Builds the read-only `get_record` call.
     pub(super) async fn get_record<C>(
         client: &C,
-        trail_id: ObjectID,
+        trail_id: ObjectId,
         sequence_number: u64,
     ) -> Result<ProgrammableTransaction, Error>
     where
@@ -162,7 +163,7 @@ impl RecordsOps {
     }
 
     /// Builds the read-only `record_count` call.
-    pub(super) async fn record_count<C>(client: &C, trail_id: ObjectID) -> Result<ProgrammableTransaction, Error>
+    pub(super) async fn record_count<C>(client: &C, trail_id: ObjectId) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {

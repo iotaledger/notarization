@@ -17,8 +17,8 @@
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::IotaTransactionBlockEffects;
-use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::types::transaction::ProgrammableTransaction;
+use iota_sdk_types::ObjectId;
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;
@@ -38,13 +38,13 @@ use crate::error::Error;
 pub struct UpdateMetadata {
     metadata: Option<String>,
     /// The ID of the notarization to update
-    notarization_id: ObjectID,
+    notarization_id: ObjectId,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl UpdateMetadata {
     /// Creates a new transaction for updating the metadata of a notarization.
-    pub fn new(metadata: Option<String>, notarization_id: ObjectID) -> Self {
+    pub fn new(metadata: Option<String>, notarization_id: ObjectId) -> Self {
         Self {
             metadata,
             notarization_id,

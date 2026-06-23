@@ -11,8 +11,8 @@
 //! records a role may operate on, but they do not replace the underlying permission checks enforced by the Move
 //! package.
 
-use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::{IotaKeySignature, OptionalSync};
+use iota_sdk_types::ObjectId;
 use product_common::core_client::CoreClient;
 use product_common::transaction::transaction_builder::TransactionBuilder;
 use secret_storage::Signer;
@@ -35,12 +35,12 @@ pub use transactions::{
 #[derive(Debug, Clone)]
 pub struct TrailAccess<'a, C> {
     pub(crate) client: &'a C,
-    pub(crate) trail_id: ObjectID,
-    pub(crate) selected_capability_id: Option<ObjectID>,
+    pub(crate) trail_id: ObjectId,
+    pub(crate) selected_capability_id: Option<ObjectId>,
 }
 
 impl<'a, C> TrailAccess<'a, C> {
-    pub(crate) fn new(client: &'a C, trail_id: ObjectID, selected_capability_id: Option<ObjectID>) -> Self {
+    pub(crate) fn new(client: &'a C, trail_id: ObjectId, selected_capability_id: Option<ObjectId>) -> Self {
         Self {
             client,
             trail_id,
@@ -49,7 +49,7 @@ impl<'a, C> TrailAccess<'a, C> {
     }
 
     /// Uses the provided capability as the auth capability for subsequent write operations.
-    pub fn using_capability(mut self, capability_id: ObjectID) -> Self {
+    pub fn using_capability(mut self, capability_id: ObjectId) -> Self {
         self.selected_capability_id = Some(capability_id);
         self
     }
@@ -68,7 +68,7 @@ impl<'a, C> TrailAccess<'a, C> {
     /// when it is known so later cleanup keeps the same expiry semantics.
     pub fn revoke_capability<S>(
         &self,
-        capability_id: ObjectID,
+        capability_id: ObjectId,
         capability_valid_until: Option<u64>,
     ) -> TransactionBuilder<RevokeCapability>
     where
@@ -89,7 +89,7 @@ impl<'a, C> TrailAccess<'a, C> {
     ///
     /// This consumes the owned capability object itself. It uses the generic capability-destruction path and
     /// therefore must not be used for initial-admin capabilities.
-    pub fn destroy_capability<S>(&self, capability_id: ObjectID) -> TransactionBuilder<DestroyCapability>
+    pub fn destroy_capability<S>(&self, capability_id: ObjectId) -> TransactionBuilder<DestroyCapability>
     where
         C: AuditTrailFull + CoreClient<S>,
         S: Signer<IotaKeySignature> + OptionalSync,
@@ -109,7 +109,7 @@ impl<'a, C> TrailAccess<'a, C> {
     /// destroy path.
     pub fn destroy_initial_admin_capability<S>(
         &self,
-        capability_id: ObjectID,
+        capability_id: ObjectId,
     ) -> TransactionBuilder<DestroyInitialAdminCapability>
     where
         C: AuditTrailFull + CoreClient<S>,
@@ -124,7 +124,7 @@ impl<'a, C> TrailAccess<'a, C> {
     /// because initial-admin capability IDs are protected separately.
     pub fn revoke_initial_admin_capability<S>(
         &self,
-        capability_id: ObjectID,
+        capability_id: ObjectId,
         capability_valid_until: Option<u64>,
     ) -> TransactionBuilder<RevokeInitialAdminCapability>
     where
@@ -166,17 +166,17 @@ impl<'a, C> TrailAccess<'a, C> {
 #[derive(Debug, Clone)]
 pub struct RoleHandle<'a, C> {
     pub(crate) client: &'a C,
-    pub(crate) trail_id: ObjectID,
+    pub(crate) trail_id: ObjectId,
     pub(crate) name: String,
-    pub(crate) selected_capability_id: Option<ObjectID>,
+    pub(crate) selected_capability_id: Option<ObjectId>,
 }
 
 impl<'a, C> RoleHandle<'a, C> {
     pub(crate) fn new(
         client: &'a C,
-        trail_id: ObjectID,
+        trail_id: ObjectId,
         name: String,
-        selected_capability_id: Option<ObjectID>,
+        selected_capability_id: Option<ObjectId>,
     ) -> Self {
         Self {
             client,
@@ -187,7 +187,7 @@ impl<'a, C> RoleHandle<'a, C> {
     }
 
     /// Uses the provided capability as the auth capability for subsequent write operations.
-    pub fn using_capability(mut self, capability_id: ObjectID) -> Self {
+    pub fn using_capability(mut self, capability_id: ObjectId) -> Self {
         self.selected_capability_id = Some(capability_id);
         self
     }

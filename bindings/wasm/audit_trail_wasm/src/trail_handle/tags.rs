@@ -3,9 +3,9 @@
 
 use anyhow::anyhow;
 use audit_trails::{AuditTrailClient, AuditTrailClientReadOnly};
-use iota_interaction::types::base_types::ObjectID;
 use iota_interaction_ts::bindings::WasmTransactionSigner;
 use iota_interaction_ts::wasm_error::{wasm_error, Result, WasmResult};
+use iota_sdk_types::ObjectId;
 use product_common::bindings::transaction::WasmTransactionBuilder;
 use product_common::bindings::utils::into_transaction_builder;
 use wasm_bindgen::prelude::*;
@@ -23,7 +23,7 @@ use crate::types::WasmRecordTagEntry;
 pub struct WasmTrailTags {
     pub(crate) read_only: AuditTrailClientReadOnly,
     pub(crate) full: Option<AuditTrailClient<WasmTransactionSigner>>,
-    pub(crate) trail_id: ObjectID,
+    pub(crate) trail_id: ObjectId,
 }
 
 impl WasmTrailTags {

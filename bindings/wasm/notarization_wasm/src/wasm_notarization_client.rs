@@ -1,9 +1,9 @@
 // Copyright 2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use iota_interaction::types::base_types::ObjectID;
 use iota_interaction_ts::bindings::{WasmIotaClient, WasmPublicKey, WasmTransactionSigner};
 use iota_interaction_ts::wasm_error::{Result, WasmResult};
+use iota_sdk_types::ObjectId;
 use notarization::NotarizationClient;
 use product_common::bindings::transaction::WasmTransactionBuilder;
 use product_common::bindings::utils::{into_transaction_builder, parse_wasm_iota_address, parse_wasm_object_id};
@@ -87,7 +87,7 @@ impl WasmNotarizationClient {
     /// @returns Stringified object ID of the resolved `tf_components` package.
     #[wasm_bindgen(js_name = tfComponentsPackageId)]
     pub fn tf_components_package_id(&self) -> String {
-        self.0.tf_components_package_id().unwrap_or(ObjectID::ZERO).to_string()
+        self.0.tf_components_package_id().unwrap_or(ObjectId::ZERO).to_string()
     }
 
     /// The full history of notarization package IDs known on this network,

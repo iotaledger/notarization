@@ -44,9 +44,8 @@ use std::str::FromStr;
 
 use iota_interaction::ident_str;
 use iota_interaction::types::MOVE_STDLIB_PACKAGE_ID;
-use iota_interaction::types::base_types::{ObjectID, TypeTag};
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use iota_interaction::types::transaction::Argument;
+use iota_sdk_types::{Argument, ObjectId, TypeTag};
 use serde::{Deserialize, Deserializer, Serialize};
 
 use super::super::move_utils;
@@ -237,7 +236,7 @@ impl State {
     pub(in crate::core) fn into_ptb(
         self,
         ptb: &mut ProgrammableTransactionBuilder,
-        package_id: ObjectID,
+        package_id: ObjectId,
     ) -> Result<Argument, Error> {
         match self.data {
             Data::Bytes(data) => state_from_bytes(ptb, data, self.metadata, package_id),
@@ -251,7 +250,7 @@ fn state_from_bytes(
     ptb: &mut ProgrammableTransactionBuilder,
     data: Vec<u8>,
     metadata: Option<String>,
-    package_id: ObjectID,
+    package_id: ObjectId,
 ) -> Result<Argument, Error> {
     let data = move_utils::ptb_pure(ptb, "data", data)?;
     let metadata = move_utils::ptb_pure(ptb, "metadata", metadata)?;
@@ -270,7 +269,7 @@ fn state_from_string(
     ptb: &mut ProgrammableTransactionBuilder,
     data: String,
     metadata: Option<String>,
-    package_id: ObjectID,
+    package_id: ObjectId,
 ) -> Result<Argument, Error> {
     let data = move_utils::ptb_pure(ptb, "data", data)?;
     let metadata = move_utils::ptb_pure(ptb, "metadata", metadata)?;

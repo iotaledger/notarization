@@ -5,9 +5,9 @@ use std::collections::{BTreeMap, HashSet};
 use std::str::FromStr;
 
 use iota_interaction::ident_str;
-use iota_interaction::types::base_types::{IotaAddress, ObjectID, TypeTag};
+use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
-use iota_interaction::types::transaction::Argument;
+use iota_sdk_types::{Argument, ObjectId, TypeTag};
 use serde::{Deserialize, Serialize};
 
 use crate::core::internal::tx;
@@ -83,7 +83,7 @@ impl InitialRecord {
         }
     }
 
-    pub(crate) fn tag(package_id: ObjectID) -> TypeTag {
+    pub(crate) fn tag(package_id: ObjectId) -> TypeTag {
         TypeTag::from_str(&format!(
             "{package_id}::record::InitialRecord<{}>",
             Data::tag(package_id)
@@ -91,7 +91,7 @@ impl InitialRecord {
         .expect("invalid TypeTag for InitialRecord")
     }
 
-    pub(in crate::core) fn into_ptb(self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
+    pub(in crate::core) fn into_ptb(self, ptb: &mut Ptb, package_id: ObjectId) -> Result<Argument, Error> {
         let data_tag = Data::tag(package_id);
         let data = self.data.into_ptb(ptb, package_id)?;
         let metadata = tx::ptb_pure(ptb, "initial_record_metadata", self.metadata)?;
@@ -162,12 +162,12 @@ pub enum Data {
 
 impl Data {
     /// Returns the Move type tag for `record::Data`.
-    pub(crate) fn tag(package_id: ObjectID) -> TypeTag {
+    pub(crate) fn tag(package_id: ObjectId) -> TypeTag {
         TypeTag::from_str(&format!("{package_id}::record::Data")).expect("should be valid type tag")
     }
 
     /// Creates a PTB argument for `record::Data`.
-    pub(in crate::core) fn into_ptb(self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
+    pub(in crate::core) fn into_ptb(self, ptb: &mut Ptb, package_id: ObjectId) -> Result<Argument, Error> {
         match self {
             Data::Bytes(bytes) => {
                 let bytes = tx::ptb_pure(ptb, "data_bytes", bytes)?;
@@ -193,7 +193,7 @@ impl Data {
     }
 
     /// Validates that the on-chain trail stores `record::Data`.
-    pub(in crate::core) fn ensure_matches_tag(&self, expected: &TypeTag, package_id: ObjectID) -> Result<(), Error> {
+    pub(in crate::core) fn ensure_matches_tag(&self, expected: &TypeTag, package_id: ObjectId) -> Result<(), Error> {
         let actual = Self::tag(package_id);
 
         if &actual == expected {

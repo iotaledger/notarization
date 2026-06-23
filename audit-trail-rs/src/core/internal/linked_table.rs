@@ -4,10 +4,10 @@
 //! Helpers for reading Move `LinkedTable` nodes through dynamic fields.
 
 use iota_interaction::rpc_types::{IotaData as _, IotaObjectDataOptions};
-use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::types::collection_types::LinkedTableNode;
 use iota_interaction::types::dynamic_field::{DynamicFieldName, Field};
 use iota_interaction::{IotaClientTrait, OptionalSync};
+use iota_sdk_types::ObjectId;
 use product_common::core_client::CoreClientReadOnly;
 use serde::de::DeserializeOwned;
 
@@ -19,7 +19,7 @@ use crate::error::Error;
 /// linked-table key and value types.
 pub(crate) async fn fetch_node<C, K, V>(
     client: &C,
-    table_id: ObjectID,
+    table_id: ObjectId,
     name: DynamicFieldName,
 ) -> Result<LinkedTableNode<K, V>, Error>
 where

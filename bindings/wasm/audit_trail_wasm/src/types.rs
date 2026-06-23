@@ -11,8 +11,8 @@ use audit_trails::core::types::{
     RevokedCapabilitiesCleanedUp, Role, RoleAdminPermissions, RoleCreated, RoleDeleted, RoleMap, RoleTags, RoleUpdated,
     TimeLock,
 };
-use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::types::collection_types::LinkedTable;
+use iota_sdk_types::ObjectId;
 use js_sys::Uint8Array;
 use product_common::bindings::WasmIotaAddress;
 use serde::{Deserialize, Serialize};
@@ -149,13 +149,13 @@ fn sorted_tag_names(tags: HashSet<String>) -> Vec<String> {
     tags
 }
 
-fn sorted_object_ids(ids: HashSet<iota_interaction::types::base_types::ObjectID>) -> Vec<String> {
+fn sorted_object_ids(ids: HashSet<ObjectId>) -> Vec<String> {
     let mut ids: Vec<_> = ids.into_iter().map(|id| id.to_string()).collect();
     ids.sort_unstable();
     ids
 }
 
-fn optional_object_id(id: Option<ObjectID>) -> Option<String> {
+fn optional_object_id(id: Option<ObjectId>) -> Option<String> {
     id.map(|id| id.to_string())
 }
 
@@ -618,8 +618,8 @@ pub struct WasmObjectIdLinkedTable {
     pub tail: Option<String>,
 }
 
-impl From<LinkedTable<ObjectID>> for WasmObjectIdLinkedTable {
-    fn from(value: LinkedTable<ObjectID>) -> Self {
+impl From<LinkedTable<ObjectId>> for WasmObjectIdLinkedTable {
+    fn from(value: LinkedTable<ObjectId>) -> Self {
         Self {
             id: value.id.to_string(),
             size: value.size,

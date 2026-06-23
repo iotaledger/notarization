@@ -4,9 +4,9 @@
 use std::str::FromStr;
 
 use anyhow::anyhow;
-use iota_interaction::types::base_types::ObjectID;
 use iota_interaction_ts::bindings::WasmIotaClient;
 use iota_interaction_ts::wasm_error::{wasm_error, Result, WasmResult};
+use iota_sdk_types::ObjectId;
 use notarization::NotarizationClientReadOnly;
 use product_common::bindings::utils::parse_wasm_object_id;
 use product_common::bindings::WasmObjectID;
@@ -65,7 +65,7 @@ impl WasmNotarizationClientReadOnly {
     ) -> Result<WasmNotarizationClientReadOnly> {
         let inner_client = NotarizationClientReadOnly::new_with_pkg_id(
             iota_client,
-            ObjectID::from_str(&iota_notarization_pkg_id)
+            ObjectId::from_str(&iota_notarization_pkg_id)
                 .map_err(|e| anyhow!("Could not parse iota_notarization_pkg_id: {}", e.to_string()))
                 .wasm_result()?,
         )
@@ -85,7 +85,7 @@ impl WasmNotarizationClientReadOnly {
     /// @returns Stringified object ID of the resolved `tf_components` package.
     #[wasm_bindgen(js_name = tfComponentsPackageId)]
     pub fn tf_components_package_id(&self) -> String {
-        self.0.tf_components_package_id().unwrap_or(ObjectID::ZERO).to_string()
+        self.0.tf_components_package_id().unwrap_or(ObjectId::ZERO).to_string()
     }
 
     /// The full history of notarization package IDs known on this network,

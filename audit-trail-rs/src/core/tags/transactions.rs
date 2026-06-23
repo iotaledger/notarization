@@ -6,8 +6,9 @@
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::IotaTransactionBlockEffects;
-use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::transaction::ProgrammableTransaction;
+use iota_sdk_types::ObjectId;
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;
@@ -23,16 +24,16 @@ use crate::error::Error;
 /// On success a `RecordTagAdded` event is emitted.
 #[derive(Debug, Clone)]
 pub struct AddRecordTag {
-    trail_id: ObjectID,
+    trail_id: ObjectId,
     owner: IotaAddress,
     tag: String,
-    selected_capability_id: Option<ObjectID>,
+    selected_capability_id: Option<ObjectId>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl AddRecordTag {
     /// Creates an `AddRecordTag` transaction builder payload.
-    pub fn new(trail_id: ObjectID, owner: IotaAddress, tag: String, selected_capability_id: Option<ObjectID>) -> Self {
+    pub fn new(trail_id: ObjectId, owner: IotaAddress, tag: String, selected_capability_id: Option<ObjectId>) -> Self {
         Self {
             trail_id,
             owner,
@@ -87,16 +88,16 @@ impl Transaction for AddRecordTag {
 /// On success a `RecordTagRemoved` event is emitted.
 #[derive(Debug, Clone)]
 pub struct RemoveRecordTag {
-    trail_id: ObjectID,
+    trail_id: ObjectId,
     owner: IotaAddress,
     tag: String,
-    selected_capability_id: Option<ObjectID>,
+    selected_capability_id: Option<ObjectId>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl RemoveRecordTag {
     /// Creates a `RemoveRecordTag` transaction builder payload.
-    pub fn new(trail_id: ObjectID, owner: IotaAddress, tag: String, selected_capability_id: Option<ObjectID>) -> Self {
+    pub fn new(trail_id: ObjectId, owner: IotaAddress, tag: String, selected_capability_id: Option<ObjectId>) -> Self {
         Self {
             trail_id,
             owner,

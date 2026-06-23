@@ -15,8 +15,8 @@
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::IotaTransactionBlockEffects;
-use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::types::transaction::ProgrammableTransaction;
+use iota_sdk_types::ObjectId;
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;
@@ -43,7 +43,7 @@ use crate::error::Error;
 /// ```rust,no_run
 /// # use notarization::core::transactions::UpdateState;
 /// # use notarization::core::types::State;
-/// # use iota_interaction::types::base_types::ObjectID;
+/// # use iota_sdk_types::ObjectId;
 /// # use std::str::FromStr;
 /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 /// let new_state = State::from_string(
@@ -51,14 +51,14 @@ use crate::error::Error;
 ///     Some("Second revision".to_string()),
 /// );
 ///
-/// let object_id = ObjectID::from_str("0x123...")?;
+/// let object_id = ObjectId::from_str("0x123...")?;
 /// let update_tx = UpdateState::new(new_state, object_id);
 /// # Ok(())
 /// # }
 /// ```
 pub struct UpdateState {
     state: State,
-    object_id: ObjectID,
+    object_id: ObjectId,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
@@ -69,7 +69,7 @@ impl UpdateState {
     ///
     /// - `state`: The new state to set
     /// - `object_id`: The ID of the notarization to update
-    pub fn new(state: State, object_id: ObjectID) -> Self {
+    pub fn new(state: State, object_id: ObjectId) -> Self {
         Self {
             state,
             object_id,
