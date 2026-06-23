@@ -18,7 +18,7 @@ use audit_trails::{
         cleanup_trail_and_clock
     }
 };
-use iota::{clock, test_scenario as ts};
+use iota::{clock, test_scenario as ts, vec_set};
 use std::string;
 use tf_components::{capability::Capability, timelock};
 
@@ -166,6 +166,413 @@ fun test_add_tagged_record_with_matching_role_tags() {
 
         let stored_record = trail.get_record(0);
         assert!(*record::tag(stored_record) == std::option::some(string::utf8(b"finance")), 0);
+
+        cleanup_capability_trail_and_clock(&scenario, record_cap, trail, clock);
+    };
+
+    ts::end(scenario);
+}
+
+#[test]
+fun test_correct_record_appends_correction_and_links_records() {
+    let admin = @0xAD;
+    let mut scenario = ts::begin(admin);
+
+    {
+        let locking_config = locking::new(
+            locking::window_none(),
+            timelock::none(),
+            timelock::none(),
+        );
+        let (admin_cap, _) = setup_test_audit_trail(
+            &mut scenario,
+            locking_config,
+            std::option::none(),
+        );
+        transfer::public_transfer(admin_cap, admin);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
+
+        trail.create_role(
+            &admin_cap,
+            string::utf8(b"RecordCorrector"),
+            permission::record_admin_permissions(),
+            std::option::none(),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        let record_cap = test_utils::new_capability_without_restrictions(
+            trail.access_mut(),
+            &admin_cap,
+            &string::utf8(b"RecordCorrector"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        transfer::public_transfer(record_cap, admin);
+        admin_cap.destroy_for_testing();
+        cleanup_trail_and_clock(trail, clock);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let (record_cap, mut trail, mut clock) = fetch_capability_trail_and_clock(&mut scenario);
+        clock.set_for_testing(initial_time_for_testing() + 1000);
+
+        trail.add_record(
+            &record_cap,
+            record::new_text(string::utf8(b"Incorrect record")),
+            std::option::some(string::utf8(b"draft")),
+            std::option::none(),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        trail.correct_record(
+            &record_cap,
+            0,
+            record::new_text(string::utf8(b"Correct record")),
+            std::option::some(string::utf8(b"approved")),
+            std::option::none(),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        assert!(trail.has_record(1), 0);
+        assert!(trail.record_count() == 2, 1);
+
+        let old_record = trail.get_record(0);
+        assert!(record::is_replaced(record::correction(old_record)), 2);
+        assert!(record::is_replaced_by(record::correction(old_record)) == std::option::some(1), 3);
+
+        let correction_record = trail.get_record(1);
+        assert!(record::is_correction(record::correction(correction_record)), 4);
+        let replaced_seq = 0;
+        assert!(
+            vec_set::contains(record::replaces(record::correction(correction_record)), &replaced_seq),
+            5,
+        );
+
+        cleanup_capability_trail_and_clock(&scenario, record_cap, trail, clock);
+    };
+
+    ts::end(scenario);
+}
+
+#[test]
+fun test_correct_record_can_use_different_allowed_tag() {
+    let admin = @0xAD;
+    let mut scenario = ts::begin(admin);
+
+    {
+        let locking_config = locking::new(
+            locking::window_none(),
+            timelock::none(),
+            timelock::none(),
+        );
+        let (admin_cap, _) = setup_test_audit_trail_with_tags(
+            &mut scenario,
+            locking_config,
+            std::option::none(),
+            vector[string::utf8(b"finance"), string::utf8(b"legal")],
+        );
+        transfer::public_transfer(admin_cap, admin);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
+
+        trail.create_role(
+            &admin_cap,
+            string::utf8(b"TaggedCorrector"),
+            permission::record_admin_permissions(),
+            std::option::some(record_tags::new_role_tags(vector[
+                string::utf8(b"finance"),
+                string::utf8(b"legal"),
+            ])),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        let record_cap = test_utils::new_capability_without_restrictions(
+            trail.access_mut(),
+            &admin_cap,
+            &string::utf8(b"TaggedCorrector"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        transfer::public_transfer(record_cap, admin);
+        admin_cap.destroy_for_testing();
+        cleanup_trail_and_clock(trail, clock);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let (record_cap, mut trail, mut clock) = fetch_capability_trail_and_clock(&mut scenario);
+        clock.set_for_testing(initial_time_for_testing() + 1000);
+
+        trail.add_record(
+            &record_cap,
+            record::new_text(string::utf8(b"Finance record")),
+            std::option::none(),
+            std::option::some(string::utf8(b"finance")),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        trail.correct_record(
+            &record_cap,
+            0,
+            record::new_text(string::utf8(b"Legal correction")),
+            std::option::none(),
+            std::option::some(string::utf8(b"legal")),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        let old_record = trail.get_record(0);
+        assert!(*record::tag(old_record) == std::option::some(string::utf8(b"finance")), 0);
+        assert!(record::is_replaced(record::correction(old_record)), 1);
+
+        let correction_record = trail.get_record(1);
+        assert!(*record::tag(correction_record) == std::option::some(string::utf8(b"legal")), 2);
+        assert!(record::is_correction(record::correction(correction_record)), 3);
+
+        cleanup_capability_trail_and_clock(&scenario, record_cap, trail, clock);
+    };
+
+    ts::end(scenario);
+}
+
+#[test]
+#[expected_failure(abort_code = main::ERecordNotFound)]
+fun test_correct_record_not_found() {
+    let admin = @0xAD;
+    let mut scenario = ts::begin(admin);
+
+    {
+        let locking_config = locking::new(
+            locking::window_none(),
+            timelock::none(),
+            timelock::none(),
+        );
+        let (admin_cap, _) = setup_test_audit_trail(
+            &mut scenario,
+            locking_config,
+            std::option::none(),
+        );
+        transfer::public_transfer(admin_cap, admin);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
+
+        trail.create_role(
+            &admin_cap,
+            string::utf8(b"RecordCorrector"),
+            permission::record_admin_permissions(),
+            std::option::none(),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        let record_cap = test_utils::new_capability_without_restrictions(
+            trail.access_mut(),
+            &admin_cap,
+            &string::utf8(b"RecordCorrector"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        transfer::public_transfer(record_cap, admin);
+        admin_cap.destroy_for_testing();
+        cleanup_trail_and_clock(trail, clock);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let (record_cap, mut trail, mut clock) = fetch_capability_trail_and_clock(&mut scenario);
+        clock.set_for_testing(initial_time_for_testing() + 1000);
+
+        trail.correct_record(
+            &record_cap,
+            999,
+            record::new_text(string::utf8(b"Correct record")),
+            std::option::none(),
+            std::option::none(),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        cleanup_capability_trail_and_clock(&scenario, record_cap, trail, clock);
+    };
+
+    ts::end(scenario);
+}
+
+#[test]
+#[expected_failure(abort_code = main::ERecordAlreadyReplaced)]
+fun test_correct_record_rejects_replaced_record() {
+    let admin = @0xAD;
+    let mut scenario = ts::begin(admin);
+
+    {
+        let locking_config = locking::new(
+            locking::window_none(),
+            timelock::none(),
+            timelock::none(),
+        );
+        let (admin_cap, _) = setup_test_audit_trail(
+            &mut scenario,
+            locking_config,
+            std::option::none(),
+        );
+        transfer::public_transfer(admin_cap, admin);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
+
+        trail.create_role(
+            &admin_cap,
+            string::utf8(b"RecordCorrector"),
+            permission::record_admin_permissions(),
+            std::option::none(),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        let record_cap = test_utils::new_capability_without_restrictions(
+            trail.access_mut(),
+            &admin_cap,
+            &string::utf8(b"RecordCorrector"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        transfer::public_transfer(record_cap, admin);
+        admin_cap.destroy_for_testing();
+        cleanup_trail_and_clock(trail, clock);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let (record_cap, mut trail, mut clock) = fetch_capability_trail_and_clock(&mut scenario);
+        clock.set_for_testing(initial_time_for_testing() + 1000);
+
+        trail.add_record(
+            &record_cap,
+            record::new_text(string::utf8(b"Original record")),
+            std::option::none(),
+            std::option::none(),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        trail.correct_record(
+            &record_cap,
+            0,
+            record::new_text(string::utf8(b"First correction")),
+            std::option::none(),
+            std::option::none(),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        trail.correct_record(
+            &record_cap,
+            0,
+            record::new_text(string::utf8(b"Second correction")),
+            std::option::none(),
+            std::option::none(),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        cleanup_capability_trail_and_clock(&scenario, record_cap, trail, clock);
+    };
+
+    ts::end(scenario);
+}
+
+#[test]
+#[expected_failure(abort_code = audit_trails::main::ERecordTagNotAllowed)]
+fun test_correct_record_requires_matching_new_tag() {
+    let admin = @0xAD;
+    let mut scenario = ts::begin(admin);
+
+    {
+        let locking_config = locking::new(
+            locking::window_none(),
+            timelock::none(),
+            timelock::none(),
+        );
+        let (admin_cap, _) = setup_test_audit_trail_with_tags(
+            &mut scenario,
+            locking_config,
+            std::option::none(),
+            vector[string::utf8(b"finance"), string::utf8(b"legal")],
+        );
+        transfer::public_transfer(admin_cap, admin);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let (admin_cap, mut trail, clock) = fetch_capability_trail_and_clock(&mut scenario);
+
+        trail.create_role(
+            &admin_cap,
+            string::utf8(b"FinanceCorrector"),
+            permission::record_admin_permissions(),
+            std::option::some(record_tags::new_role_tags(vector[string::utf8(b"finance")])),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        let record_cap = test_utils::new_capability_without_restrictions(
+            trail.access_mut(),
+            &admin_cap,
+            &string::utf8(b"FinanceCorrector"),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        transfer::public_transfer(record_cap, admin);
+        admin_cap.destroy_for_testing();
+        cleanup_trail_and_clock(trail, clock);
+    };
+
+    ts::next_tx(&mut scenario, admin);
+    {
+        let (record_cap, mut trail, mut clock) = fetch_capability_trail_and_clock(&mut scenario);
+        clock.set_for_testing(initial_time_for_testing() + 1000);
+
+        trail.add_record(
+            &record_cap,
+            record::new_text(string::utf8(b"Finance record")),
+            std::option::none(),
+            std::option::some(string::utf8(b"finance")),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
+
+        trail.correct_record(
+            &record_cap,
+            0,
+            record::new_text(string::utf8(b"Legal correction")),
+            std::option::none(),
+            std::option::some(string::utf8(b"legal")),
+            &clock,
+            ts::ctx(&mut scenario),
+        );
 
         cleanup_capability_trail_and_clock(&scenario, record_cap, trail, clock);
     };

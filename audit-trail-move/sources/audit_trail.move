@@ -21,7 +21,7 @@ use audit_trails::{
     record::{Self, Record, InitialRecord},
     record_tags::{Self, RoleTags, TagRegistry}
 };
-use iota::{clock::{Self, Clock}, event, linked_table::{Self, LinkedTable}, vec_set::VecSet};
+use iota::{clock::{Self, Clock}, event, linked_table::{Self, LinkedTable}, vec_set::{Self, VecSet}};
 use std::string::String;
 use tf_components::{capability::Capability, role_map::{Self, RoleMap}, timelock::TimeLock};
 
@@ -51,6 +51,8 @@ const ERecordTagAlreadyDefined: vector<u8> =
 #[error]
 const ERecordTagInUse: vector<u8> =
     b"The requested tag cannot be removed because it is already used by an existing record or role";
+#[error]
+const ERecordAlreadyReplaced: vector<u8> = b"The record has already been replaced";
 
 // ===== Constants =====
 
@@ -520,6 +522,109 @@ public fun add_record<D: store + copy>(
     );
 
     linked_table::push_back(&mut self.records, seq, record);
+    self.sequence_number = self.sequence_number + 1;
+
+    let output = RecordAdded {
+        trail_id,
+        sequence_number: seq,
+        added_by: caller,
+        timestamp,
+    };
+
+    event::emit(copy output);
+    output
+}
+
+/// Adds a correction record that supersedes an existing record.
+///
+/// The original record remains immutable. The new correction record is appended
+/// at the next sequence number with a correction tracker whose `replaces` set
+/// contains `sequence_number`. The replaced record receives an `is_replaced_by`
+/// back-pointer to the new correction so clients can resolve the current
+/// canonical record by following the replacement chain.
+///
+/// Requires a capability granting the `CorrectRecord` permission. When either
+/// the replaced record or the new correction record carries a tag, that same
+/// capability must also allow the corresponding tag.
+///
+/// Aborts with:
+/// * `EPackageVersionMismatch` when the trail is at a different package version.
+/// * any error documented by `RoleMap::assert_capability_valid` when `cap` fails
+///   authorization checks.
+/// * `ETrailWriteLocked` while `write_lock` is active.
+/// * `ERecordNotFound` when no record exists at `sequence_number`.
+/// * `ERecordAlreadyReplaced` when `sequence_number` already points to a newer
+///   correction.
+/// * `ERecordTagNotDefined` when `record_tag` is not in the trail's tag registry.
+/// * `ERecordTagNotAllowed` when `cap`'s role does not allow the replaced
+///   record tag or the new correction tag.
+///
+/// Emits a `RecordAdded` event for the correction record on success.
+///
+/// Returns the same receipt that is emitted as the `RecordAdded` event.
+public fun correct_record<D: store + copy>(
+    self: &mut AuditTrail<D>,
+    cap: &Capability,
+    sequence_number: u64,
+    stored_data: D,
+    record_metadata: Option<String>,
+    record_tag: Option<String>,
+    clock: &Clock,
+    ctx: &mut TxContext,
+): RecordAdded {
+    assert!(self.version == PACKAGE_VERSION, EPackageVersionMismatch);
+    self
+        .roles
+        .assert_capability_valid(
+            cap,
+            &permission::correct_record(),
+            clock,
+            ctx,
+        );
+    assert!(!locking::is_write_locked(&self.locking_config, clock), ETrailWriteLocked);
+    assert!(linked_table::contains(&self.records, sequence_number), ERecordNotFound);
+    assert!(
+        !record::is_replaced(record::correction(self.records.borrow(sequence_number))),
+        ERecordAlreadyReplaced,
+    );
+    assert!(
+        is_record_tag_allowed(
+            self,
+            cap,
+            self.records.borrow(sequence_number).tag(),
+        ),
+        ERecordTagNotAllowed,
+    );
+    assert!(is_record_tag_allowed(self, cap, &record_tag), ERecordTagNotAllowed);
+
+    let caller = ctx.sender();
+    let timestamp = clock::timestamp_ms(clock);
+    let trail_id = self.id();
+    let seq = self.sequence_number;
+
+    if (record_tag.is_some()) {
+        record_tags::increment_usage_count(&mut self.tags, option::borrow(&record_tag));
+    };
+
+    let mut replaces = vec_set::empty();
+    replaces.insert(sequence_number);
+
+    let correction = record::new(
+        stored_data,
+        record_metadata,
+        record_tag,
+        seq,
+        caller,
+        timestamp,
+        record::with_replaces(replaces),
+    );
+
+    record::set_replaced_by(
+        record::correction_mut(linked_table::borrow_mut(&mut self.records, sequence_number)),
+        seq,
+    );
+
+    linked_table::push_back(&mut self.records, seq, correction);
     self.sequence_number = self.sequence_number + 1;
 
     let output = RecordAdded {

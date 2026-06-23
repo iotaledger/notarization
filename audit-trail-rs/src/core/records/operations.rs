@@ -11,9 +11,9 @@ use iota_interaction::types::base_types::{IotaAddress, ObjectID};
 use iota_interaction::types::transaction::ProgrammableTransaction;
 use product_common::core_client::CoreClientReadOnly;
 
-use crate::core::internal::capability::find_capable_cap_for_tag;
-use crate::core::internal::{trail as trail_reader, tx};
-use crate::core::types::{Data, Permission};
+use crate::core::internal::capability::{find_capable_cap_for_tag, find_capable_cap_for_tags};
+use crate::core::internal::{linked_table, trail as trail_reader, tx};
+use crate::core::types::{Data, Permission, Record};
 use crate::error::Error;
 
 /// Internal namespace for record-related transaction construction.
@@ -80,6 +80,75 @@ impl RecordsOps {
             )
             .await
         }
+    }
+
+    /// Builds the `correct_record` call.
+    ///
+    /// Corrections append a new record that supersedes `sequence_number`. Tagged corrections require a
+    /// capability whose role grants `CorrectRecord` and allows both the replaced record tag, when present, and
+    /// the new correction tag, when present.
+    pub(super) async fn correct_record<C>(
+        client: &C,
+        trail_id: ObjectID,
+        owner: IotaAddress,
+        sequence_number: u64,
+        data: Data,
+        record_metadata: Option<String>,
+        record_tag: Option<String>,
+        selected_capability_id: Option<ObjectID>,
+    ) -> Result<ProgrammableTransaction, Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        let package_id = client.package_id();
+        let trail = trail_reader::get_audit_trail(trail_id, client).await?;
+        let replaced = linked_table::fetch_node_by_key::<_, Record<Data>>(client, trail.records.id, sequence_number)
+            .await?
+            .value;
+
+        if let Some(tag) = record_tag.as_deref() {
+            if !trail.tags.contains_key(tag) {
+                return Err(Error::InvalidArgument(format!(
+                    "record tag '{tag}' is not defined for trail {trail_id}"
+                )));
+            }
+        }
+
+        let cap_ref = if let Some(capability_id) = selected_capability_id {
+            tx::get_object_ref_by_id(client, &capability_id).await?
+        } else {
+            let mut required_tags = Vec::new();
+            if let Some(tag) = replaced.tag.as_deref() {
+                required_tags.push(tag);
+            }
+            if let Some(tag) = record_tag.as_deref()
+                && !required_tags.contains(&tag)
+            {
+                required_tags.push(tag);
+            }
+
+            find_capable_cap_for_tags(
+                client,
+                owner,
+                trail_id,
+                &trail,
+                Permission::CorrectRecord,
+                &required_tags,
+            )
+            .await?
+        };
+
+        tx::build_trail_transaction_with_cap_ref(client, trail_id, cap_ref, "correct_record", |ptb, trail_tag| {
+            data.ensure_matches_tag(trail_tag, package_id)?;
+
+            let seq = tx::ptb_pure(ptb, "sequence_number", sequence_number)?;
+            let data_arg = data.into_ptb(ptb, package_id)?;
+            let metadata = tx::ptb_pure(ptb, "record_metadata", record_metadata)?;
+            let tag = tx::ptb_pure(ptb, "record_tag", record_tag)?;
+            let clock = tx::get_clock_ref(ptb);
+            Ok(vec![seq, data_arg, metadata, tag, clock])
+        })
+        .await
     }
 
     /// Builds the `delete_record` call.

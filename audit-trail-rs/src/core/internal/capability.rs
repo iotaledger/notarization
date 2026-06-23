@@ -195,13 +195,37 @@ pub(crate) async fn find_capable_cap_for_tag<C>(
 where
     C: CoreClientReadOnly + OptionalSync,
 {
+    find_capable_cap_for_tags(client, owner, trail_id, trail, Permission::AddRecord, &[tag]).await
+}
+
+/// Finds an owned capability for an operation that must satisfy tag-aware record authorization.
+///
+/// Every tag in `tags` must be allowed by the capability's role. Empty tag lists fall back to ordinary
+/// permission-based capability discovery.
+pub(crate) async fn find_capable_cap_for_tags<C>(
+    client: &C,
+    owner: IotaAddress,
+    trail_id: ObjectID,
+    trail: &OnChainAuditTrail,
+    permission: Permission,
+    tags: &[&str],
+) -> Result<ObjectRef, Error>
+where
+    C: CoreClientReadOnly + OptionalSync,
+{
+    if tags.is_empty() {
+        return find_capable_cap(client, owner, trail_id, trail, permission).await;
+    }
+
     let valid_roles = trail
         .roles
         .roles
         .iter()
         .filter(|(_, role)| {
-            role.permissions.contains(&Permission::AddRecord)
-                && role.data.as_ref().is_some_and(|record_tags| record_tags.allows(tag))
+            role.permissions.contains(&permission)
+                && tags
+                    .iter()
+                    .all(|tag| role.data.as_ref().is_some_and(|record_tags| record_tags.allows(tag)))
         })
         .map(|(name, _)| name.clone())
         .collect::<std::collections::HashSet<_>>();
@@ -212,8 +236,8 @@ where
     .await?
     .ok_or_else(|| {
         Error::InvalidArgument(format!(
-            "no capability with {:?} permission and record tag '{tag}' found for owner {owner} and trail {trail_id}",
-            Permission::AddRecord
+            "no capability with {:?} permission and record tags {:?} found for owner {owner} and trail {trail_id}",
+            permission, tags
         ))
     })?;
 

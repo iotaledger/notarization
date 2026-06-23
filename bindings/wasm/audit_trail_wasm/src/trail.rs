@@ -9,7 +9,7 @@ use audit_trails::core::create::{CreateTrail, TrailCreated};
 use audit_trails::core::locking::{
     UpdateDeleteRecordWindow, UpdateDeleteTrailLock, UpdateLockingConfig, UpdateWriteLock,
 };
-use audit_trails::core::records::{AddRecord, DeleteRecord, DeleteRecordsBatch};
+use audit_trails::core::records::{AddRecord, CorrectRecord, DeleteRecord, DeleteRecordsBatch};
 use audit_trails::core::tags::{AddRecordTag, RemoveRecordTag};
 use audit_trails::core::trail::{DeleteAuditTrail, Migrate, UpdateMetadata};
 use audit_trails::core::types::{
@@ -1021,6 +1021,55 @@ impl WasmAddRecord {
     /// @param client - Read-only core client used during application.
     ///
     /// @returns Decoded {@link RecordAdded} event payload.
+    ///
+    /// @throws When the expected event is missing or transaction application fails.
+    #[wasm_bindgen(js_name = applyWithEvents)]
+    pub async fn apply_with_events(
+        self,
+        wasm_effects: &WasmIotaTransactionBlockEffects,
+        wasm_events: &WasmIotaTransactionBlockEvents,
+        client: &WasmCoreClientReadOnly,
+    ) -> Result<WasmRecordAdded> {
+        let added: RecordAdded = apply_with_events(self.0, wasm_effects, wasm_events, client).await?;
+        Ok(added.into())
+    }
+}
+
+/// Transaction wrapper for correcting a record.
+///
+/// @remarks
+/// Appends a new record that supersedes an existing record while preserving the original. Tagged
+/// corrections require the supplied capability's role to allow both the replaced record's tag, when
+/// present, and the correction record's tag, when present.
+///
+/// Requires the {@link Permission.CorrectRecord} permission.
+///
+/// Emits a {@link RecordAdded} event on success.
+#[wasm_bindgen(js_name = CorrectRecord, inspectable)]
+pub struct WasmCorrectRecord(pub(crate) CorrectRecord);
+
+#[wasm_bindgen(js_class = CorrectRecord)]
+impl WasmCorrectRecord {
+    /// Builds the programmable transaction bytes for submission.
+    ///
+    /// @param client - Read-only core client used to resolve packages and serialize the
+    /// transaction.
+    ///
+    /// @returns BCS-encoded programmable transaction bytes ready for signing and submission.
+    ///
+    /// @throws When transaction serialization fails.
+    #[wasm_bindgen(js_name = buildProgrammableTransaction)]
+    pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
+        build_programmable_transaction(&self.0, client).await
+    }
+
+    /// Applies transaction effects and events and decodes the matching event payload.
+    ///
+    /// @param wasmEffects - Effects of the executed transaction.
+    /// @param wasmEvents - Events emitted by the executed transaction.
+    /// @param client - Read-only core client used during application.
+    ///
+    /// @returns Decoded {@link RecordAdded} event payload for the appended correction.
     ///
     /// @throws When the expected event is missing or transaction application fails.
     #[wasm_bindgen(js_name = applyWithEvents)]

@@ -1,6 +1,7 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+use std::collections::HashSet;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use audit_trails::core::types::{
@@ -203,6 +204,182 @@ async fn add_record_requires_add_record_permission() -> anyhow::Result<()> {
 
     assert!(denied.is_err(), "adding without AddRecord permission must fail");
     assert_eq!(admin.trail(trail_id).records().record_count().await?, 1);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn correct_record_appends_correction_and_resolves_current_record() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let trail_id = client.create_test_trail(Data::text("correction-root")).await?;
+    let records = client.trail(trail_id).records();
+
+    grant_role_capability(
+        &client,
+        trail_id,
+        "RecordCorrector",
+        [Permission::AddRecord, Permission::CorrectRecord],
+    )
+    .await?;
+
+    let original = records
+        .add(Data::text("incorrect value"), Some("draft".to_string()), None)
+        .build_and_execute(&client)
+        .await?
+        .output;
+
+    let correction = records
+        .correct(
+            original.sequence_number,
+            Data::text("correct value"),
+            Some("approved".to_string()),
+            None,
+        )
+        .build_and_execute(&client)
+        .await?
+        .output;
+
+    assert_eq!(correction.trail_id, trail_id);
+    assert_eq!(correction.sequence_number, original.sequence_number + 1);
+    assert_eq!(correction.added_by, client.sender_address());
+
+    let old_record = records.get(original.sequence_number).await?;
+    assert_eq!(old_record.correction.replaces, HashSet::new());
+    assert_eq!(old_record.correction.is_replaced_by, Some(correction.sequence_number));
+    assert_text_data(old_record.data, "incorrect value");
+
+    let correction_record = records.get(correction.sequence_number).await?;
+    assert_eq!(
+        correction_record.correction.replaces,
+        HashSet::from([original.sequence_number])
+    );
+    assert_eq!(correction_record.correction.is_replaced_by, None);
+    assert_eq!(correction_record.metadata, Some("approved".to_string()));
+    assert_text_data(correction_record.data, "correct value");
+
+    let current = records.resolve_current(original.sequence_number).await?;
+    assert_eq!(current.sequence_number, correction.sequence_number);
+    assert_text_data(current.data, "correct value");
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn correct_record_not_found_fails() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let trail_id = client.create_test_trail(Data::text("correction-missing-root")).await?;
+    let records = client.trail(trail_id).records();
+
+    grant_role_capability(&client, trail_id, "RecordCorrector", [Permission::CorrectRecord]).await?;
+
+    let denied = records
+        .correct(999, Data::text("correct value"), None, None)
+        .build_and_execute(&client)
+        .await;
+
+    assert!(denied.is_err(), "correcting a missing sequence must fail");
+    assert_eq!(records.record_count().await?, 1);
+    assert_text_data(records.get(0).await?.data, "correction-missing-root");
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn correct_record_requires_correct_record_permission() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let trail_id = client
+        .create_test_trail(Data::text("correction-permission-root"))
+        .await?;
+    let records = client.trail(trail_id).records();
+
+    grant_role_capability(&client, trail_id, "RecordWriter", [Permission::AddRecord]).await?;
+
+    let denied = records
+        .correct(0, Data::text("correct value"), None, None)
+        .build_and_execute(&client)
+        .await;
+
+    assert!(denied.is_err(), "correcting must require CorrectRecord permission");
+    assert_eq!(records.record_count().await?, 1);
+    assert_text_data(records.get(0).await?.data, "correction-permission-root");
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn correct_record_rejects_replaced_record() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let trail_id = client.create_test_trail(Data::text("correction-replaced-root")).await?;
+    let records = client.trail(trail_id).records();
+
+    grant_role_capability(&client, trail_id, "RecordCorrector", [Permission::CorrectRecord]).await?;
+
+    let first_correction = records
+        .correct(0, Data::text("first correction"), None, None)
+        .build_and_execute(&client)
+        .await?
+        .output;
+
+    let denied = records
+        .correct(0, Data::text("second correction"), None, None)
+        .build_and_execute(&client)
+        .await;
+
+    assert!(denied.is_err(), "correcting an already replaced record must fail");
+    assert_eq!(records.record_count().await?, 2);
+    assert_eq!(
+        records.get(0).await?.correction.is_replaced_by,
+        Some(first_correction.sequence_number)
+    );
+    assert_text_data(records.resolve_current(0).await?.data, "first correction");
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn correct_record_requires_matching_new_tag_access() -> anyhow::Result<()> {
+    let client = get_funded_test_client().await?;
+    let trail_id = client
+        .create_test_trail_with_tags(Data::text("correction-tag-root"), ["finance", "legal"])
+        .await?;
+    let records = client.trail(trail_id).records();
+
+    client
+        .create_role(
+            trail_id,
+            "FinanceCorrector",
+            [Permission::AddRecord, Permission::CorrectRecord],
+            Some(RoleTags::new(["finance"])),
+        )
+        .await?;
+    client
+        .issue_cap(trail_id, "FinanceCorrector", CapabilityIssueOptions::default())
+        .await?;
+
+    let original = records
+        .add(Data::text("finance record"), None, Some("finance".to_string()))
+        .build_and_execute(&client)
+        .await?
+        .output;
+
+    let denied = records
+        .correct(
+            original.sequence_number,
+            Data::text("legal correction"),
+            None,
+            Some("legal".to_string()),
+        )
+        .build_and_execute(&client)
+        .await;
+
+    assert!(
+        denied.is_err(),
+        "correction tag changes must require access to the new tag"
+    );
+    assert_eq!(records.record_count().await?, 2);
+    let stored = records.get(original.sequence_number).await?;
+    assert_eq!(stored.correction.is_replaced_by, None);
+    assert_eq!(stored.tag.as_deref(), Some("finance"));
 
     Ok(())
 }

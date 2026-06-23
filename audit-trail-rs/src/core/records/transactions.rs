@@ -123,6 +123,115 @@ impl Transaction for AddRecord {
     }
 }
 
+// ===== CorrectRecord =====
+
+/// Transaction that appends a correction record to a trail.
+///
+/// Requires the `CorrectRecord` permission. The new record supersedes `sequence_number` while preserving the
+/// original record. Tagged corrections additionally require the tag to exist in the trail registry and the
+/// capability's role to allow both the replaced record's tag, when present, and the new correction tag, when
+/// present. The package also aborts with `ETrailWriteLocked` while the configured `write_lock` is active. On
+/// success the correction is stored at the trail's current monotonic sequence number and a `RecordAdded` event
+/// is emitted.
+#[derive(Debug, Clone)]
+pub struct CorrectRecord {
+    /// Trail object ID that will receive the correction.
+    pub trail_id: ObjectID,
+    /// Address authorizing the correction.
+    pub owner: IotaAddress,
+    /// Sequence number of the record being corrected.
+    pub sequence_number: u64,
+    /// Correction payload to append.
+    pub data: Data,
+    /// Optional application-defined metadata.
+    pub metadata: Option<String>,
+    /// Optional trail-owned tag to attach to the correction record.
+    pub tag: Option<String>,
+    /// Explicit capability to use instead of auto-selecting one from the owner's wallet.
+    pub selected_capability_id: Option<ObjectID>,
+    cached_ptb: OnceCell<ProgrammableTransaction>,
+}
+
+impl CorrectRecord {
+    /// Creates a `CorrectRecord` transaction builder payload.
+    pub fn new(
+        trail_id: ObjectID,
+        owner: IotaAddress,
+        sequence_number: u64,
+        data: Data,
+        metadata: Option<String>,
+        tag: Option<String>,
+        selected_capability_id: Option<ObjectID>,
+    ) -> Self {
+        Self {
+            trail_id,
+            owner,
+            sequence_number,
+            data,
+            metadata,
+            tag,
+            selected_capability_id,
+            cached_ptb: OnceCell::new(),
+        }
+    }
+
+    async fn make_ptb<C>(&self, client: &C) -> Result<ProgrammableTransaction, Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        RecordsOps::correct_record(
+            client,
+            self.trail_id,
+            self.owner,
+            self.sequence_number,
+            self.data.clone(),
+            self.metadata.clone(),
+            self.tag.clone(),
+            self.selected_capability_id,
+        )
+        .await
+    }
+}
+
+#[cfg_attr(not(feature = "send-sync"), async_trait(?Send))]
+#[cfg_attr(feature = "send-sync", async_trait)]
+impl Transaction for CorrectRecord {
+    type Error = Error;
+    type Output = RecordAdded;
+
+    async fn build_programmable_transaction<C>(&self, client: &C) -> Result<ProgrammableTransaction, Self::Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        self.cached_ptb.get_or_try_init(|| self.make_ptb(client)).await.cloned()
+    }
+
+    async fn apply_with_events<C>(
+        mut self,
+        _: &mut IotaTransactionBlockEffects,
+        events: &mut IotaTransactionBlockEvents,
+        _: &C,
+    ) -> Result<Self::Output, Self::Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        let event = events
+            .data
+            .iter()
+            .find_map(|data| serde_json::from_value::<Event<RecordAdded>>(data.parsed_json.clone()).ok())
+            .ok_or_else(|| Error::UnexpectedApiResponse("RecordAdded event not found".to_string()))?;
+
+        Ok(event.data)
+    }
+
+    async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        unreachable!()
+    }
+}
+
 // ===== DeleteRecord =====
 
 /// Transaction that deletes a single record.
