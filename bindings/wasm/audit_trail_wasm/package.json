@@ -33,7 +33,7 @@
     "example:web": "npm i --prefix ./cypress/app/ && npm run dev --prefix ./cypress/app/ -- --host",
     "cypress": "cypress open",
     "fmt": "dprint fmt",
-    "fix_docs": "find ./docs/wasm/ -type f -name '*.md' -exec sed -E -i.bak -e 's/(\\.md?#([^#]*)?)#/\\1/' {} ';' -exec rm {}.bak ';'"
+    "fix_docs": "find ./docs/wasm/ -type f -name '*.md' -exec sed -E -i.bak -e 's/\\.(md?)#([^#)]*)#([^#)]*)\\)/.\\1#\\2\\3)/g' {} ';' -exec rm {}.bak ';'"
   },
   "publishConfig": {
     "access": "public"
