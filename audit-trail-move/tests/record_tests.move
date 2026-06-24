@@ -253,7 +253,10 @@ fun test_correct_record_appends_correction_and_links_records() {
         assert!(record::is_correction(record::correction(correction_record)), 4);
         let replaced_seq = 0;
         assert!(
-            vec_set::contains(record::replaces(record::correction(correction_record)), &replaced_seq),
+            vec_set::contains(
+                record::replaces(record::correction(correction_record)),
+                &replaced_seq,
+            ),
             5,
         );
 
@@ -291,10 +294,12 @@ fun test_correct_record_can_use_different_allowed_tag() {
             &admin_cap,
             string::utf8(b"TaggedCorrector"),
             permission::record_admin_permissions(),
-            std::option::some(record_tags::new_role_tags(vector[
-                string::utf8(b"finance"),
-                string::utf8(b"legal"),
-            ])),
+            std::option::some(
+                record_tags::new_role_tags(vector[
+                    string::utf8(b"finance"),
+                    string::utf8(b"legal"),
+                ]),
+            ),
             &clock,
             ts::ctx(&mut scenario),
         );

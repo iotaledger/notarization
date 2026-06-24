@@ -598,7 +598,7 @@ public fun correct_record<D: store + copy>(
     assert!(is_record_tag_allowed(self, cap, &record_tag), ERecordTagNotAllowed);
 
     let caller = ctx.sender();
-    let timestamp = clock::timestamp_ms(clock);
+    let timestamp = clock.timestamp_ms();
     let trail_id = self.id();
     let seq = self.sequence_number;
 

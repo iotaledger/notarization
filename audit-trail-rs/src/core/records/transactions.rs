@@ -17,7 +17,7 @@ use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;
 
 use super::operations::RecordsOps;
-use crate::core::types::{Data, Event, RecordAdded, RecordDeleted};
+use crate::core::types::{Data, Event, RecordAdded, RecordDeleted, RecordInput};
 use crate::error::Error;
 
 // ===== AddRecord =====
@@ -76,9 +76,7 @@ impl AddRecord {
             client,
             self.trail_id,
             self.owner,
-            self.data.clone(),
-            self.metadata.clone(),
-            self.tag.clone(),
+            RecordInput::new(self.data.clone(), self.metadata.clone(), self.tag.clone()),
             self.selected_capability_id,
         )
         .await
@@ -185,9 +183,7 @@ impl CorrectRecord {
             self.trail_id,
             self.owner,
             self.sequence_number,
-            self.data.clone(),
-            self.metadata.clone(),
-            self.tag.clone(),
+            RecordInput::new(self.data.clone(), self.metadata.clone(), self.tag.clone()),
             self.selected_capability_id,
         )
         .await
