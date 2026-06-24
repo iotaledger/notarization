@@ -1,6 +1,6 @@
 [package]
 name = "audit_trails"
-version = "0.1.1-alpha"
+version = "0.1.2-alpha"
 authors.workspace = true
 edition.workspace = true
 homepage.workspace = true
@@ -16,6 +16,7 @@ anyhow.workspace = true
 async-trait.workspace = true
 bcs.workspace = true
 iota-caip = { git = "https://github.com/iotaledger/iota-caip.git", default-features = false, features = ["iota"], optional = true }
+iota-sdk-types.workspace = true
 iota_interaction = { workspace = true, default-features = false }
 product_common = { workspace = true, default-features = false, features = ["transaction"] }
 secret-storage = { workspace = true, default-features = false }

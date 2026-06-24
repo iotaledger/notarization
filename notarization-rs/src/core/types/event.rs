@@ -1,7 +1,7 @@
 // Copyright 2020-2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use iota_interaction::types::base_types::ObjectID;
+use iota_sdk_types::ObjectId;
 use serde::{Deserialize, Serialize};
 /// An event emitted by notarization operations.
 ///
@@ -15,11 +15,11 @@ pub struct Event<D> {
 /// An event that is emitted when a new dynamic notarization is created.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct DynamicNotarizationCreated {
-    pub notarization_id: ObjectID,
+    pub notarization_id: ObjectId,
 }
 
 /// An event that is emitted when a new locked notarization is created.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct LockedNotarizationCreated {
-    pub notarization_id: ObjectID,
+    pub notarization_id: ObjectId,
 }

@@ -4,12 +4,12 @@
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 
-use iota_interaction::types::base_types::{IotaAddress, ObjectID, TypeTag};
+use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::collection_types::LinkedTable;
 use iota_interaction::types::id::UID;
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
-use iota_interaction::types::transaction::Argument;
 use iota_interaction::{MoveType, ident_str};
+use iota_sdk_types::{Argument, ObjectId, TypeTag};
 use serde::{Deserialize, Serialize};
 use serde_aux::field_attributes::deserialize_option_number_from_string;
 
@@ -25,7 +25,7 @@ use crate::error::Error;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RoleMap {
     /// Trail object ID that this role map protects.
-    pub target_key: ObjectID,
+    pub target_key: ObjectId,
     /// Role definitions keyed by role name.
     #[serde(deserialize_with = "deserialize_vec_map")]
     pub roles: HashMap<String, Role>,
@@ -33,10 +33,10 @@ pub struct RoleMap {
     /// Move `INITIAL_ADMIN_ROLE_NAME` constant). The role bearing this name cannot be deleted.
     pub initial_admin_role_name: String,
     /// Denylist of revoked capability IDs.
-    pub revoked_capabilities: LinkedTable<ObjectID>,
+    pub revoked_capabilities: LinkedTable<ObjectId>,
     /// Capability IDs currently recognized as initial-admin capabilities.
     #[serde(deserialize_with = "deserialize_vec_set")]
-    pub initial_admin_cap_ids: HashSet<ObjectID>,
+    pub initial_admin_cap_ids: HashSet<ObjectId>,
     /// Permissions required to administer roles.
     pub role_admin_permissions: RoleAdminPermissions,
     /// Permissions required to administer capabilities.
@@ -121,11 +121,11 @@ impl RoleTags {
         self.tags.contains(tag)
     }
 
-    pub(crate) fn tag(package_id: ObjectID) -> TypeTag {
+    pub(crate) fn tag(package_id: ObjectId) -> TypeTag {
         TypeTag::from_str(&format!("{package_id}::record_tags::RoleTags")).expect("invalid TypeTag for RoleTags")
     }
 
-    pub(in crate::core) fn to_ptb(&self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
+    pub(in crate::core) fn to_ptb(&self, ptb: &mut Ptb, package_id: ObjectId) -> Result<Argument, Error> {
         let mut tags = self.tags.iter().cloned().collect::<Vec<_>>();
         tags.sort();
         let tags_arg = tx::ptb_pure(ptb, "tags", tags)?;
@@ -149,7 +149,7 @@ pub struct Capability {
     /// Capability object ID.
     pub id: UID,
     /// Trail object ID protected by the capability.
-    pub target_key: ObjectID,
+    pub target_key: ObjectId,
     /// Role granted by the capability.
     pub role: String,
     /// Address bound to the capability. When `None`, any holder may present the capability for
@@ -166,17 +166,17 @@ pub struct Capability {
 }
 
 impl Capability {
-    pub(crate) fn type_tag(package_id: ObjectID) -> TypeTag {
+    pub(crate) fn type_tag(package_id: ObjectId) -> TypeTag {
         TypeTag::from_str(format!("{package_id}::capability::Capability").as_str()).expect("failed to create type tag")
     }
 
-    pub(crate) fn matches_target_and_role(&self, trail_id: ObjectID, valid_roles: &HashSet<String>) -> bool {
+    pub(crate) fn matches_target_and_role(&self, trail_id: ObjectId, valid_roles: &HashSet<String>) -> bool {
         self.target_key == trail_id && valid_roles.contains(&self.role)
     }
 }
 
 impl MoveType for Capability {
-    fn move_type(package: ObjectID) -> TypeTag {
+    fn move_type(package: ObjectId) -> TypeTag {
         Self::type_tag(package)
     }
 }

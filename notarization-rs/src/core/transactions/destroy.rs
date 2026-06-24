@@ -16,8 +16,8 @@
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::IotaTransactionBlockEffects;
-use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::types::transaction::ProgrammableTransaction;
+use iota_sdk_types::ObjectId;
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;
@@ -37,13 +37,13 @@ use crate::error::Error;
 ///
 /// Emits a `NotarizationDestroyed` event on success.
 pub struct DestroyNotarization {
-    notarization_id: ObjectID,
+    notarization_id: ObjectId,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl DestroyNotarization {
     /// Creates a new destroy transaction.
-    pub fn new(notarization_id: ObjectID) -> Self {
+    pub fn new(notarization_id: ObjectId) -> Self {
         Self {
             notarization_id,
             cached_ptb: OnceCell::new(),

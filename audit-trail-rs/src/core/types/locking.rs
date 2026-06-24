@@ -2,9 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use iota_interaction::ident_str;
-use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
-use iota_interaction::types::transaction::Argument;
+use iota_sdk_types::{Argument, ObjectId};
 use serde::{Deserialize, Serialize};
 
 use crate::core::internal::tx;
@@ -57,8 +56,8 @@ impl LockingConfig {
     pub(in crate::core) fn to_ptb(
         &self,
         ptb: &mut Ptb,
-        package_id: ObjectID,
-        tf_components_package_id: ObjectID,
+        package_id: ObjectId,
+        tf_components_package_id: ObjectId,
     ) -> Result<Argument, Error> {
         let delete_record_window = self.delete_record_window.to_ptb(ptb, package_id)?;
         let delete_trail_lock = self.delete_trail_lock.to_ptb(ptb, tf_components_package_id)?;
@@ -111,7 +110,7 @@ impl TimeLock {
         Ok(())
     }
 
-    pub(in crate::core) fn to_ptb(&self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
+    pub(in crate::core) fn to_ptb(&self, ptb: &mut Ptb, package_id: ObjectId) -> Result<Argument, Error> {
         match self {
             Self::None => Ok(ptb.programmable_move_call(
                 package_id,
@@ -213,7 +212,7 @@ impl LockingWindow {
     /// Creates a new `Argument` from the `LockingWindow`.
     ///
     /// To be used when creating or updating locking config on the ledger.
-    pub(in crate::core) fn to_ptb(&self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
+    pub(in crate::core) fn to_ptb(&self, ptb: &mut Ptb, package_id: ObjectId) -> Result<Argument, Error> {
         self.validate()?;
         match self {
             Self::None => Ok(ptb.programmable_move_call(

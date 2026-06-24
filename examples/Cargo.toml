@@ -1,6 +1,6 @@
 [package]
 name = "examples"
-version = "0.1.23-alpha"
+version = "0.1.24-alpha"
 authors = ["IOTA Stiftung"]
 edition = "2024"
 publish = false
@@ -111,10 +111,11 @@ path = "audit-trail/real-world/03_digital_product_passport.rs"
 [dependencies]
 anyhow.workspace = true
 audit_trails = { path = "../audit-trail-rs" }
-chrono = { workspace = true }
-iota-sdk = { workspace = true }
+chrono.workspace = true
+iota-sdk.workspace = true
+iota-sdk-types.workspace = true
 notarization = { path = "../notarization-rs" }
 product_common = { workspace = true, features = ["core-client", "test-utils", "transaction"] }
-serde_json = { workspace = true }
-sha2 = { workspace = true }
-tokio = { workspace = true }
+serde_json.workspace = true
+sha2.workspace = true
+tokio.workspace = true

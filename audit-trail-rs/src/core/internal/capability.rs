@@ -8,10 +8,11 @@ use iota_interaction::rpc_types::{
     IotaObjectDataFilter, IotaObjectDataOptions, IotaObjectResponseQuery, IotaParsedData,
 };
 use iota_interaction::types::MoveTypeTagTrait;
-use iota_interaction::types::base_types::{IotaAddress, ObjectID, ObjectRef, StructTag};
+use iota_interaction::types::base_types::{IotaAddress, ObjectRef};
 use iota_interaction::types::dynamic_field::DynamicFieldName;
 use iota_interaction::types::id::ID;
 use iota_interaction::{IotaClientTrait, OptionalSync};
+use iota_sdk_types::{ObjectId, StructTag};
 use product_common::core_client::CoreClientReadOnly;
 
 use super::{linked_table, tx};
@@ -25,7 +26,7 @@ use crate::error::Error;
 pub(crate) async fn find_capable_cap<C>(
     client: &C,
     owner: IotaAddress,
-    trail_id: ObjectID,
+    trail_id: ObjectId,
     trail: &OnChainAuditTrail,
     permission: Permission,
 ) -> Result<ObjectRef, Error>
@@ -120,7 +121,7 @@ where
 ///
 /// The traversal validates that the linked-table shape is acyclic and that the number of visited
 /// entries matches the size recorded on-chain.
-async fn revoked_capability_ids<C>(client: &C, trail: &OnChainAuditTrail) -> Result<HashSet<ObjectID>, Error>
+async fn revoked_capability_ids<C>(client: &C, trail: &OnChainAuditTrail) -> Result<HashSet<ObjectId>, Error>
 where
     C: CoreClientReadOnly + OptionalSync,
 {
@@ -137,7 +138,7 @@ where
             )));
         }
 
-        let node = linked_table::fetch_node::<_, ObjectID, u64>(
+        let node = linked_table::fetch_node::<_, ObjectId, u64>(
             client,
             table.id,
             DynamicFieldName {
@@ -167,7 +168,7 @@ fn capability_matches<P>(
     cap: &Capability,
     owner: IotaAddress,
     now_ms: u64,
-    revoked_capability_ids: &HashSet<ObjectID>,
+    revoked_capability_ids: &HashSet<ObjectId>,
     predicate: &P,
 ) -> bool
 where
@@ -188,7 +189,7 @@ where
 pub(crate) async fn find_capable_cap_for_tag<C>(
     client: &C,
     owner: IotaAddress,
-    trail_id: ObjectID,
+    trail_id: ObjectId,
     trail: &OnChainAuditTrail,
     tag: &str,
 ) -> Result<ObjectRef, Error>
@@ -205,7 +206,7 @@ where
 pub(crate) async fn find_capable_cap_for_tags<C>(
     client: &C,
     owner: IotaAddress,
-    trail_id: ObjectID,
+    trail_id: ObjectId,
     trail: &OnChainAuditTrail,
     permission: Permission,
     tags: &[&str],
@@ -268,8 +269,9 @@ pub(crate) fn now_ms() -> u64 {
 mod tests {
     use std::collections::HashSet;
 
-    use iota_interaction::types::base_types::{IotaAddress, ObjectID, dbg_object_id};
+    use iota_interaction::types::base_types::{IotaAddress, dbg_object_id};
     use iota_interaction::types::id::UID;
+    use iota_sdk_types::ObjectId;
 
     use super::capability_matches;
     use crate::core::types::Capability;
@@ -383,8 +385,8 @@ mod tests {
     }
 
     fn make_capability(
-        id: ObjectID,
-        trail_id: ObjectID,
+        id: ObjectId,
+        trail_id: ObjectId,
         role: &str,
         issued_to: Option<IotaAddress>,
         valid_from: Option<u64>,

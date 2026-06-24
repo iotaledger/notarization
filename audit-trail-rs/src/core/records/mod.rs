@@ -5,9 +5,9 @@
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 
-use iota_interaction::types::base_types::ObjectID;
 use iota_interaction::types::collection_types::LinkedTable;
 use iota_interaction::{IotaKeySignature, OptionalSync};
+use iota_sdk_types::ObjectId;
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use product_common::transaction::transaction_builder::TransactionBuilder;
 use secret_storage::Signer;
@@ -33,13 +33,13 @@ const MAX_LIST_PAGE_LIMIT: usize = 1_000;
 #[derive(Debug, Clone)]
 pub struct TrailRecords<'a, C, D = Data> {
     pub(crate) client: &'a C,
-    pub(crate) trail_id: ObjectID,
-    pub(crate) selected_capability_id: Option<ObjectID>,
+    pub(crate) trail_id: ObjectId,
+    pub(crate) selected_capability_id: Option<ObjectId>,
     pub(crate) _phantom: std::marker::PhantomData<D>,
 }
 
 impl<'a, C, D> TrailRecords<'a, C, D> {
-    pub(crate) fn new(client: &'a C, trail_id: ObjectID, selected_capability_id: Option<ObjectID>) -> Self {
+    pub(crate) fn new(client: &'a C, trail_id: ObjectId, selected_capability_id: Option<ObjectId>) -> Self {
         Self {
             client,
             trail_id,
@@ -49,7 +49,7 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
     }
 
     /// Uses the provided capability as the auth capability for subsequent write operations.
-    pub fn using_capability(mut self, capability_id: ObjectID) -> Self {
+    pub fn using_capability(mut self, capability_id: ObjectId) -> Self {
         self.selected_capability_id = Some(capability_id);
         self
     }

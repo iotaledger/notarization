@@ -6,8 +6,9 @@
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::{IotaTransactionBlockEffects, IotaTransactionBlockEvents};
-use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::transaction::ProgrammableTransaction;
+use iota_sdk_types::ObjectId;
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;
@@ -25,15 +26,15 @@ use crate::error::Error;
 /// On success an `AuditTrailMigrated` event is emitted.
 #[derive(Debug, Clone)]
 pub struct Migrate {
-    trail_id: ObjectID,
+    trail_id: ObjectId,
     owner: IotaAddress,
-    selected_capability_id: Option<ObjectID>,
+    selected_capability_id: Option<ObjectId>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl Migrate {
     /// Creates a `Migrate` transaction builder payload.
-    pub fn new(trail_id: ObjectID, owner: IotaAddress, selected_capability_id: Option<ObjectID>) -> Self {
+    pub fn new(trail_id: ObjectId, owner: IotaAddress, selected_capability_id: Option<ObjectId>) -> Self {
         Self {
             trail_id,
             owner,
@@ -79,20 +80,20 @@ impl Transaction for Migrate {
 /// On success a `MetadataUpdated` event is emitted.
 #[derive(Debug, Clone)]
 pub struct UpdateMetadata {
-    trail_id: ObjectID,
+    trail_id: ObjectId,
     owner: IotaAddress,
     metadata: Option<String>,
-    selected_capability_id: Option<ObjectID>,
+    selected_capability_id: Option<ObjectId>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl UpdateMetadata {
     /// Creates an `UpdateMetadata` transaction builder payload.
     pub fn new(
-        trail_id: ObjectID,
+        trail_id: ObjectId,
         owner: IotaAddress,
         metadata: Option<String>,
-        selected_capability_id: Option<ObjectID>,
+        selected_capability_id: Option<ObjectId>,
     ) -> Self {
         Self {
             trail_id,
@@ -148,15 +149,15 @@ impl Transaction for UpdateMetadata {
 /// On success an `AuditTrailDeleted` event is emitted.
 #[derive(Debug, Clone)]
 pub struct DeleteAuditTrail {
-    trail_id: ObjectID,
+    trail_id: ObjectId,
     owner: IotaAddress,
-    selected_capability_id: Option<ObjectID>,
+    selected_capability_id: Option<ObjectId>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl DeleteAuditTrail {
     /// Creates a `DeleteAuditTrail` transaction builder payload.
-    pub fn new(trail_id: ObjectID, owner: IotaAddress, selected_capability_id: Option<ObjectID>) -> Self {
+    pub fn new(trail_id: ObjectId, owner: IotaAddress, selected_capability_id: Option<ObjectId>) -> Self {
         Self {
             trail_id,
             owner,

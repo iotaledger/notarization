@@ -7,8 +7,9 @@
 //! corresponding locking-update permissions.
 
 use iota_interaction::OptionalSync;
-use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::transaction::ProgrammableTransaction;
+use iota_sdk_types::ObjectId;
 use product_common::core_client::CoreClientReadOnly;
 
 use crate::core::internal::tx;
@@ -22,10 +23,10 @@ impl LockingOps {
     /// Builds the `update_locking_config` call.
     pub(super) async fn update_locking_config<C>(
         client: &C,
-        trail_id: ObjectID,
+        trail_id: ObjectId,
         owner: IotaAddress,
         new_config: LockingConfig,
-        selected_capability_id: Option<ObjectID>,
+        selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -54,10 +55,10 @@ impl LockingOps {
     /// Builds the `update_delete_record_window` call.
     pub(super) async fn update_delete_record_window<C>(
         client: &C,
-        trail_id: ObjectID,
+        trail_id: ObjectId,
         owner: IotaAddress,
         new_delete_record_window: LockingWindow,
-        selected_capability_id: Option<ObjectID>,
+        selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -82,10 +83,10 @@ impl LockingOps {
     /// Builds the `update_delete_trail_lock` call.
     pub(super) async fn update_delete_trail_lock<C>(
         client: &C,
-        trail_id: ObjectID,
+        trail_id: ObjectId,
         owner: IotaAddress,
         new_delete_trail_lock: TimeLock,
-        selected_capability_id: Option<ObjectID>,
+        selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -113,10 +114,10 @@ impl LockingOps {
     /// Builds the `update_write_lock` call.
     pub(super) async fn update_write_lock<C>(
         client: &C,
-        trail_id: ObjectID,
+        trail_id: ObjectId,
         owner: IotaAddress,
         new_write_lock: TimeLock,
-        selected_capability_id: Option<ObjectID>,
+        selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -144,7 +145,7 @@ impl LockingOps {
     /// Builds the read-only `is_record_locked` call.
     pub(super) async fn is_record_locked<C>(
         client: &C,
-        trail_id: ObjectID,
+        trail_id: ObjectId,
         sequence_number: u64,
     ) -> Result<ProgrammableTransaction, Error>
     where
