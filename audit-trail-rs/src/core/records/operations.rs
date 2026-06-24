@@ -12,7 +12,7 @@ use iota_interaction::types::transaction::ProgrammableTransaction;
 use iota_sdk_types::ObjectId;
 use product_common::core_client::CoreClientReadOnly;
 
-use crate::core::internal::capability::{find_capable_cap_for_tag, find_capable_cap_for_tags};
+use crate::core::internal::capability::find_capable_cap_for_tags;
 use crate::core::internal::{linked_table, trail as trail_reader, tx};
 use crate::core::types::{Data, Permission, Record, RecordInput};
 use crate::error::Error;
@@ -48,7 +48,8 @@ impl RecordsOps {
             let cap_ref = if let Some(capability_id) = selected_capability_id {
                 tx::get_object_ref_by_id(client, &capability_id).await?
             } else {
-                find_capable_cap_for_tag(client, owner, trail_id, &trail, &tag).await?
+                find_capable_cap_for_tags(client, owner, trail_id, &trail, Permission::AddRecord, [tag.as_str()])
+                    .await?
             };
 
             tx::build_trail_transaction_with_cap_ref(client, trail_id, cap_ref, "add_record", |ptb, trail_tag| {
@@ -125,7 +126,7 @@ impl RecordsOps {
                 trail_id,
                 &trail,
                 Permission::CorrectRecord,
-                &required_tags,
+                required_tags,
             )
             .await?
         };

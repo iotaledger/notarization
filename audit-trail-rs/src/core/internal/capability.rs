@@ -181,39 +181,24 @@ where
         && cap.valid_until.is_none_or(|valid_until| now_ms <= valid_until)
 }
 
-/// Finds an owned capability for adding a tagged record.
-///
-/// Tagged writes have stricter lookup rules than ordinary permission-based
-/// operations: the selected role must grant `AddRecord` and its configured
-/// `RoleTags` must allow the requested record tag.
-pub(crate) async fn find_capable_cap_for_tag<C>(
-    client: &C,
-    owner: IotaAddress,
-    trail_id: ObjectId,
-    trail: &OnChainAuditTrail,
-    tag: &str,
-) -> Result<ObjectRef, Error>
-where
-    C: CoreClientReadOnly + OptionalSync,
-{
-    find_capable_cap_for_tags(client, owner, trail_id, trail, Permission::AddRecord, &[tag]).await
-}
-
 /// Finds an owned capability for an operation that must satisfy tag-aware record authorization.
 ///
 /// Every tag in `tags` must be allowed by the capability's role. Empty tag lists fall back to ordinary
 /// permission-based capability discovery.
-pub(crate) async fn find_capable_cap_for_tags<C>(
+pub(crate) async fn find_capable_cap_for_tags<'a, C, I>(
     client: &C,
     owner: IotaAddress,
     trail_id: ObjectId,
     trail: &OnChainAuditTrail,
     permission: Permission,
-    tags: &[&str],
+    tags: I,
 ) -> Result<ObjectRef, Error>
 where
     C: CoreClientReadOnly + OptionalSync,
+    I: IntoIterator<Item = &'a str>,
 {
+    let tags = tags.into_iter().collect::<Vec<_>>();
+
     if tags.is_empty() {
         return find_capable_cap(client, owner, trail_id, trail, permission).await;
     }
@@ -229,7 +214,7 @@ where
                     .all(|tag| role.data.as_ref().is_some_and(|record_tags| record_tags.allows(tag)))
         })
         .map(|(name, _)| name.clone())
-        .collect::<std::collections::HashSet<_>>();
+        .collect::<HashSet<_>>();
 
     let cap = find_owned_capability(client, owner, trail, |cap| {
         cap.target_key == trail_id && valid_roles.contains(&cap.role)
