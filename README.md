@@ -11,7 +11,6 @@
   <a href="#introduction">Introduction</a> ◈
   <a href="#where-to-start">Where To Start</a> ◈
   <a href="#documentation-and-resources">Documentation & Resources</a> ◈
-  <a href="#bindings">Bindings</a> ◈
   <a href="#contributing">Contributing</a>
 </p>
 
@@ -38,30 +37,16 @@ Each toolkit component is available as:
 
 ## Where To Start
 
-### I want a single notarized record
+See [Single Notarization resources](#single-notarization) for one on-chain proof object, such as a document hash, immutable record, or dynamic latest-state record.
 
-Choose this path for one on-chain proof object, such as a document hash, immutable record, or dynamic latest-state record.
+See [Audit Trails resources](#audit-trails) for structured record histories with permissions, capabilities, tagging, and write or delete controls.
 
-- [Rust client](./notarization-rs)
-- [Move contracts](./notarization-move)
-- [Wasm bindings](./bindings/wasm/notarization_wasm)
-- [Examples](./bindings/wasm/notarization_wasm/examples/README.md)
-
-### I want an audit trail
-
-Choose this path for structured record histories with permissions, capabilities, tagging, and write or delete controls.
-
-- [Rust client](./audit-trail-rs)
-- [Move contracts](./audit-trail-move)
-- [Wasm bindings](./bindings/wasm/audit_trail_wasm)
-- [Examples](./bindings/wasm/audit_trail_wasm/examples/README.md)
-
-### I want the on-chain contracts
+If you need to integrate the Notarization on-chain contracts into your own Move package:
 
 - [Notarization contracts](./notarization-move)
 - [Audit trail contracts](./audit-trail-move)
 
-### I want to build an application
+If you want to build a client application:
 
 - [Rust client for notarized records](./notarization-rs)
 - [Rust client for audit trails](./audit-trail-rs)
@@ -70,33 +55,25 @@ Choose this path for structured record histories with permissions, capabilities,
 
 ## Documentation and Resources
 
+- [IOTA Notarization documentation](https://docs.iota.org/developer/iota-notarization/)
+
 ### Single Notarization
 
 - [Rust package README](./notarization-rs/README.md)
 - [Rust API documentation](https://iotaledger.github.io/notarization/notarization/index.html)
+- [Rust Examples](./examples/README.md)
 - [Move package README](./notarization-move/README.md)
 - [Wasm package README](./bindings/wasm/notarization_wasm/README.md)
-- [Examples](./bindings/wasm/notarization_wasm/examples/README.md)
-- [Docs portal](https://docs.iota.org/developer/iota-notarization)
+- [Wasm Examples](./bindings/wasm/notarization_wasm/examples/README.md)
 
 ### Audit Trails
 
 - [Rust package README](./audit-trail-rs/README.md)
 - [Rust API documentation](https://iotaledger.github.io/notarization/audit_trails/index.html)
+- [Rust Examples](./examples/audit-trail/README.md)
 - [Move package README](./audit-trail-move/README.md)
 - [Wasm package README](./bindings/wasm/audit_trail_wasm/README.md)
-- [Examples](./bindings/wasm/audit_trail_wasm/examples/README.md)
-
-### Shared
-
-- [Repository examples](./examples/README.md)
-
-## Bindings
-
-[Foreign Function Interface (FFI)](https://en.wikipedia.org/wiki/Foreign_function_interface) bindings available in this repository:
-
-- [Web Assembly for Single Notarization](./bindings/wasm/notarization_wasm)
-- [Web Assembly for Audit Trails](./bindings/wasm/audit_trail_wasm)
+- [Wasm Examples](./bindings/wasm/audit_trail_wasm/examples/README.md)
 
 ## Contributing
 
