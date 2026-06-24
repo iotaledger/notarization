@@ -7,8 +7,9 @@
 //! permissions.
 
 use iota_interaction::OptionalSync;
-use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::transaction::ProgrammableTransaction;
+use iota_sdk_types::ObjectId;
 use product_common::core_client::CoreClientReadOnly;
 
 use crate::core::internal::tx;
@@ -22,10 +23,10 @@ impl TagsOps {
     /// Builds the `add_record_tag` call.
     pub(super) async fn add_record_tag<C>(
         client: &C,
-        trail_id: ObjectID,
+        trail_id: ObjectId,
         owner: IotaAddress,
         tag: String,
-        selected_capability_id: Option<ObjectID>,
+        selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -49,10 +50,10 @@ impl TagsOps {
     /// Builds the `remove_record_tag` call.
     pub(super) async fn remove_record_tag<C>(
         client: &C,
-        trail_id: ObjectID,
+        trail_id: ObjectId,
         owner: IotaAddress,
         tag: String,
-        selected_capability_id: Option<ObjectID>,
+        selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,

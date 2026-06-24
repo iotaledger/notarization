@@ -3,6 +3,7 @@
 
 use iota_interaction_ts::bindings::{WasmIotaClient, WasmPublicKey, WasmTransactionSigner};
 use iota_interaction_ts::wasm_error::{Result, WasmResult};
+use iota_sdk_types::ObjectId;
 use notarization::NotarizationClient;
 use product_common::bindings::transaction::WasmTransactionBuilder;
 use product_common::bindings::utils::{into_transaction_builder, parse_wasm_iota_address, parse_wasm_object_id};
@@ -81,6 +82,14 @@ impl WasmNotarizationClient {
         self.0.package_id().to_string()
     }
 
+    /// Returns the `tf_components` package ID currently in use.
+    ///
+    /// @returns Stringified object ID of the resolved `tf_components` package.
+    #[wasm_bindgen(js_name = tfComponentsPackageId)]
+    pub fn tf_components_package_id(&self) -> String {
+        self.0.tf_components_package_id().unwrap_or(ObjectId::ZERO).to_string()
+    }
+
     /// The full history of notarization package IDs known on this network,
     /// most recent first.
     #[wasm_bindgen(js_name = packageHistory)]
@@ -90,15 +99,6 @@ impl WasmNotarizationClient {
             .into_iter()
             .map(|pkg_id| pkg_id.to_string())
             .collect()
-    }
-
-    /// The TF-Components package ID for product_common compatibility.
-    ///
-    /// Notarization uses the package-local `timelock` module, so this is
-    /// always `undefined`.
-    #[wasm_bindgen(js_name = tfComponentsPackageId)]
-    pub fn tf_components_package_id(&self) -> Option<String> {
-        None
     }
 
     /// The underlying IOTA client used for ledger queries.

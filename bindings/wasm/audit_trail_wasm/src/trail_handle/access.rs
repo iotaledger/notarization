@@ -3,9 +3,9 @@
 
 use anyhow::anyhow;
 use audit_trails::AuditTrailClient;
-use iota_interaction::types::base_types::ObjectID;
 use iota_interaction_ts::bindings::WasmTransactionSigner;
 use iota_interaction_ts::wasm_error::{wasm_error, Result};
+use iota_sdk_types::ObjectId;
 use product_common::bindings::transaction::WasmTransactionBuilder;
 use product_common::bindings::utils::{into_transaction_builder, parse_wasm_object_id};
 use product_common::bindings::WasmObjectID;
@@ -27,7 +27,7 @@ use crate::types::{WasmCapabilityIssueOptions, WasmPermissionSet, WasmRoleTags};
 #[wasm_bindgen(js_name = TrailAccess, inspectable)]
 pub struct WasmTrailAccess {
     pub(crate) full: Option<AuditTrailClient<WasmTransactionSigner>>,
-    pub(crate) trail_id: ObjectID,
+    pub(crate) trail_id: ObjectId,
 }
 
 impl WasmTrailAccess {
@@ -229,7 +229,7 @@ impl WasmTrailAccess {
 #[wasm_bindgen(js_name = RoleHandle, inspectable)]
 pub struct WasmRoleHandle {
     pub(crate) full: Option<AuditTrailClient<WasmTransactionSigner>>,
-    pub(crate) trail_id: ObjectID,
+    pub(crate) trail_id: ObjectId,
     pub(crate) name: String,
 }
 

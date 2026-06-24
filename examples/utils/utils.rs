@@ -4,8 +4,9 @@
 use anyhow::Context;
 use audit_trails::core::types::{CapabilityIssueOptions, PermissionSet, RoleTags};
 use audit_trails::{AuditTrailClient, PackageOverrides};
-use iota_sdk::types::base_types::{IotaAddress, ObjectID};
+use iota_sdk::types::base_types::IotaAddress;
 use iota_sdk::{IOTA_LOCAL_NETWORK_URL, IotaClientBuilder};
+use iota_sdk_types::ObjectId;
 use notarization::client::{NotarizationClient, NotarizationClientReadOnly};
 use product_common::test_utils::{InMemSigner, request_funds};
 
@@ -17,7 +18,7 @@ async fn get_iota_client() -> anyhow::Result<iota_sdk::IotaClient> {
         .map_err(|err| anyhow::anyhow!("failed to connect to network; {}", err))
 }
 
-fn get_package_id_from_env(env_var_name: &str) -> anyhow::Result<ObjectID> {
+fn get_package_id_from_env(env_var_name: &str) -> anyhow::Result<ObjectId> {
     let value = std::env::var(env_var_name)
         .with_context(|| format!("env variable '{env_var_name}' must be set in order to run the examples"))?;
 
@@ -78,7 +79,7 @@ pub async fn get_funded_audit_trail_client() -> Result<AuditTrailClient<InMemSig
 
 pub async fn issue_tagged_record_role(
     client: &AuditTrailClient<InMemSigner>,
-    trail_id: ObjectID,
+    trail_id: ObjectId,
     role_name: &str,
     tag: &str,
     issued_to: IotaAddress,

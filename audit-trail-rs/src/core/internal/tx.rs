@@ -6,14 +6,14 @@
 use std::str::FromStr;
 
 use iota_interaction::rpc_types::IotaObjectDataOptions;
-use iota_interaction::types::base_types::{Identifier, IotaAddress, ObjectID, ObjectRef, TypeTag};
-use iota_interaction::types::object::Owner;
+use iota_interaction::types::base_types::{IotaAddress, ObjectRef};
 use iota_interaction::types::programmable_transaction_builder::{
     ProgrammableTransactionBuilder as Ptb, ProgrammableTransactionBuilder,
 };
-use iota_interaction::types::transaction::{Argument, CallArg, ProgrammableTransaction, SharedObjectRef};
+use iota_interaction::types::transaction::{CallArg, ProgrammableTransaction, SharedObjectRef};
 use iota_interaction::types::{IOTA_CLOCK_OBJECT_ID, IOTA_CLOCK_OBJECT_SHARED_VERSION, MOVE_STDLIB_PACKAGE_ID};
 use iota_interaction::{IotaClientTrait, OptionalSync, ident_str};
+use iota_sdk_types::{Argument, Identifier, ObjectId, Owner, TypeTag};
 use product_common::core_client::CoreClientReadOnly;
 use serde::Serialize;
 
@@ -75,10 +75,10 @@ pub(crate) fn option_to_move(
 /// capability for `owner`.
 pub(crate) async fn build_trail_transaction<C, F>(
     client: &C,
-    trail_id: ObjectID,
+    trail_id: ObjectId,
     owner: IotaAddress,
     permission: Permission,
-    selected_capability_id: Option<ObjectID>,
+    selected_capability_id: Option<ObjectId>,
     method: impl AsRef<str>,
     additional_args: F,
 ) -> Result<ProgrammableTransaction, Error>
@@ -99,7 +99,7 @@ where
 /// reference.
 pub(crate) async fn build_trail_transaction_with_cap_ref<C, F>(
     client: &C,
-    trail_id: ObjectID,
+    trail_id: ObjectId,
     cap_ref: ObjectRef,
     method: impl AsRef<str>,
     additional_args: F,
@@ -140,7 +140,7 @@ where
 /// Builds a read-only trail transaction that borrows the shared trail object immutably.
 pub(crate) async fn build_read_only_transaction<C, F>(
     client: &C,
-    trail_id: ObjectID,
+    trail_id: ObjectId,
     method: impl AsRef<str>,
     additional_args: F,
 ) -> Result<ProgrammableTransaction, Error>
@@ -178,7 +178,7 @@ where
 ///
 /// Audit-trail Move entry points are generic over the record payload type, so transaction builders
 /// need this type tag to invoke the correct specialization.
-pub(crate) async fn get_type_tag<C>(client: &C, object_id: &ObjectID) -> Result<TypeTag, Error>
+pub(crate) async fn get_type_tag<C>(client: &C, object_id: &ObjectId) -> Result<TypeTag, Error>
 where
     C: CoreClientReadOnly + OptionalSync,
 {
@@ -218,7 +218,7 @@ fn parse_type(full_type: &str) -> Result<String, Error> {
 /// Fetches the current object reference for `object_id`.
 pub(crate) async fn get_object_ref_by_id(
     client: &impl CoreClientReadOnly,
-    object_id: &ObjectID,
+    object_id: &ObjectId,
 ) -> Result<ObjectRef, Error> {
     let res = client
         .client_adapter()
@@ -240,7 +240,7 @@ pub(crate) async fn get_object_ref_by_id(
 /// the planned call.
 pub(crate) async fn get_shared_object_arg(
     client: &impl CoreClientReadOnly,
-    object_id: &ObjectID,
+    object_id: &ObjectId,
     mutable: bool,
 ) -> Result<CallArg, Error> {
     let res = client

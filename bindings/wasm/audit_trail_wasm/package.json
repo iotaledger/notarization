@@ -3,7 +3,7 @@
   "author": "IOTA Foundation <info@iota.org>",
   "description": "WASM bindings for IOTA Audit Trail. To be used in JavaScript/TypeScript.",
   "homepage": "https://www.iota.org",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -33,7 +33,7 @@
     "example:web": "npm i --prefix ./cypress/app/ && npm run dev --prefix ./cypress/app/ -- --host",
     "cypress": "cypress open",
     "fmt": "dprint fmt",
-    "fix_docs": "find ./docs/wasm/ -type f -name '*.md' -exec sed -E -i.bak -e 's/(\\.md?#([^#]*)?)#/\\1/' {} ';' -exec rm {}.bak ';'"
+    "fix_docs": "find ./docs/wasm/ -type f -name '*.md' -exec sed -E -i.bak -e 's/\\.(md?)#([^#)]*)#([^#)]*)\\)/.\\1#\\2\\3)/g' {} ';' -exec rm {}.bak ';'"
   },
   "publishConfig": {
     "access": "public"
@@ -55,14 +55,13 @@
     "tsconfig-paths": "^4.1.0",
     "typedoc": "^0.28.5",
     "typedoc-plugin-markdown": "^4.4.1",
-    "typescript": "^5.7.3",
-    "wasm-opt": "^1.4.0"
+    "typescript": "^5.7.3"
   },
   "dependencies": {
-    "@iota/iota-interaction-ts": "^0.13.0"
+    "@iota/iota-interaction-ts": "^0.14.0"
   },
   "peerDependencies": {
-    "@iota/iota-sdk": "^1.13.0"
+    "@iota/iota-sdk": "^1.14.0"
   },
   "config": {
     "CYPRESS_VERIFY_TIMEOUT": 100000

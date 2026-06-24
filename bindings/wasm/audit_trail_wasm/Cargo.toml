@@ -1,6 +1,6 @@
 [package]
 name = "audit_trail_wasm"
-version = "0.1.0-alpha"
+version = "0.1.2-alpha"
 authors = ["IOTA Stiftung"]
 edition = "2021"
 homepage = "https://www.iota.org"
@@ -20,10 +20,11 @@ anyhow = "1.0.95"
 audit_trails = { path = "../../../audit-trail-rs", default-features = false, features = ["gas-station", "default-http-client"] }
 bcs = "0.1.6"
 console_error_panic_hook = { version = "0.1" }
-iota_interaction = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.19", package = "iota_interaction", default-features = false }
-iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.19", package = "iota_interaction_ts" }
+iota-sdk-types = { git = "https://github.com/iotaledger/iota-rust-sdk.git", rev = "35a27488b887e28e844a1e46d7edb78605871155", default-features = false }
+iota_interaction = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.21", default-features = false }
+iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.21" }
 js-sys = { version = "0.3.61" }
-product_common = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.19", package = "product_common", features = ["core-client", "transaction", "bindings", "binding-utils", "gas-station", "default-http-client"] }
+product_common = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.21", features = ["core-client", "transaction", "bindings", "binding-utils", "gas-station", "default-http-client"] }
 serde = { version = "1.0", features = ["derive"] }
 serde-wasm-bindgen = "0.6.5"
 tokio = { version = "1.49.0", default-features = false, features = ["sync"] }

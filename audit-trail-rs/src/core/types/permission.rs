@@ -5,9 +5,8 @@ use std::collections::HashSet;
 use std::str::FromStr;
 
 use iota_interaction::ident_str;
-use iota_interaction::types::base_types::{Identifier, ObjectID, TypeTag};
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
-use iota_interaction::types::transaction::{Argument, Command, MakeMoveVector};
+use iota_sdk_types::{Argument, Command, Identifier, MakeMoveVector, ObjectId, TypeTag};
 use serde::{Deserialize, Serialize};
 
 use crate::error::Error;
@@ -87,11 +86,11 @@ impl Permission {
         }
     }
 
-    pub(crate) fn tag(package_id: ObjectID) -> TypeTag {
+    pub(crate) fn tag(package_id: ObjectId) -> TypeTag {
         TypeTag::from_str(&format!("{package_id}::permission::Permission")).expect("invalid TypeTag for Permission")
     }
 
-    pub(in crate::core) fn to_ptb(self, ptb: &mut Ptb, package_id: ObjectID) -> Result<Argument, Error> {
+    pub(in crate::core) fn to_ptb(self, ptb: &mut Ptb, package_id: ObjectId) -> Result<Argument, Error> {
         let function = Identifier::from_str(self.function_name())
             .map_err(|e| Error::InvalidArgument(format!("Failed to create identifier for function: {e}")))?;
 
@@ -113,7 +112,7 @@ pub struct PermissionSet {
 }
 
 impl PermissionSet {
-    pub(crate) fn to_move_vec(&self, package_id: ObjectID, ptb: &mut Ptb) -> Result<Argument, Error> {
+    pub(crate) fn to_move_vec(&self, package_id: ObjectId, ptb: &mut Ptb) -> Result<Argument, Error> {
         let permission_type = Permission::tag(package_id);
         let permission_args: Vec<_> = self
             .permissions

@@ -7,8 +7,9 @@
 //! and deletion calls.
 
 use iota_interaction::OptionalSync;
-use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::transaction::ProgrammableTransaction;
+use iota_sdk_types::ObjectId;
 use product_common::core_client::CoreClientReadOnly;
 
 use crate::core::internal::tx;
@@ -22,9 +23,9 @@ impl TrailOps {
     /// Builds the `migrate` call.
     pub(super) async fn migrate<C>(
         client: &C,
-        trail_id: ObjectID,
+        trail_id: ObjectId,
         owner: IotaAddress,
-        selected_capability_id: Option<ObjectID>,
+        selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -47,10 +48,10 @@ impl TrailOps {
     /// Builds the `update_metadata` call.
     pub(super) async fn update_metadata<C>(
         client: &C,
-        trail_id: ObjectID,
+        trail_id: ObjectId,
         owner: IotaAddress,
         metadata: Option<String>,
-        selected_capability_id: Option<ObjectID>,
+        selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,
@@ -74,9 +75,9 @@ impl TrailOps {
     /// Builds the `delete_audit_trail` call.
     pub(super) async fn delete_audit_trail<C>(
         client: &C,
-        trail_id: ObjectID,
+        trail_id: ObjectId,
         owner: IotaAddress,
-        selected_capability_id: Option<ObjectID>,
+        selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
     where
         C: CoreClientReadOnly + OptionalSync,

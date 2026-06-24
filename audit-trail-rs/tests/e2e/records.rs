@@ -7,7 +7,7 @@ use audit_trails::core::types::{
     CapabilityIssueOptions, Data, InitialRecord, LockingConfig, LockingWindow, Permission, RoleTags, TimeLock,
 };
 use audit_trails::error::Error;
-use iota_interaction::types::base_types::ObjectID;
+use iota_sdk_types::ObjectId;
 use product_common::core_client::CoreClient;
 use tokio::time::{Duration, sleep};
 
@@ -15,7 +15,7 @@ use crate::client::{TestClient, get_funded_test_client};
 
 async fn grant_role_capability(
     client: &TestClient,
-    trail_id: ObjectID,
+    trail_id: ObjectId,
     role_name: &str,
     permissions: impl IntoIterator<Item = Permission>,
 ) -> anyhow::Result<()> {

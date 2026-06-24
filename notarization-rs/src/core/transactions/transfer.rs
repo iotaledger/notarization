@@ -20,8 +20,9 @@
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::IotaTransactionBlockEffects;
-use iota_interaction::types::base_types::{IotaAddress, ObjectID};
+use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::transaction::ProgrammableTransaction;
+use iota_sdk_types::ObjectId;
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;
@@ -45,13 +46,13 @@ use crate::error::Error;
 /// Emits a `DynamicNotarizationTransferred` event on success.
 pub struct TransferNotarization {
     recipient: IotaAddress,
-    notarization_id: ObjectID,
+    notarization_id: ObjectId,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl TransferNotarization {
     /// Creates a new transfer transaction.
-    pub fn new(recipient: IotaAddress, notarization_id: ObjectID) -> Self {
+    pub fn new(recipient: IotaAddress, notarization_id: ObjectId) -> Self {
         Self {
             recipient,
             notarization_id,
