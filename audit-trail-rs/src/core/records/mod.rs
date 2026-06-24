@@ -15,7 +15,7 @@ use serde::de::DeserializeOwned;
 
 use crate::core::internal::{linked_table, trail as trail_reader};
 use crate::core::trail::{AuditTrailFull, AuditTrailReadOnly};
-use crate::core::types::{Data, PaginatedRecord, Record};
+use crate::core::types::{Data, PaginatedRecord, Record, RecordInput};
 use crate::error::Error;
 
 mod operations;
@@ -150,13 +150,7 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
     /// The original record remains immutable. The correction is appended with a new sequence number and records
     /// that it supersedes `sequence_number`. Tagged corrections require a capability whose role allows both the
     /// replaced record's tag, when present, and the correction's tag, when present.
-    pub fn correct<S>(
-        &self,
-        sequence_number: u64,
-        data: D,
-        metadata: Option<String>,
-        tag: Option<String>,
-    ) -> TransactionBuilder<CorrectRecord>
+    pub fn correct<S>(&self, sequence_number: u64, record: RecordInput<D>) -> TransactionBuilder<CorrectRecord>
     where
         C: AuditTrailFull + CoreClient<S>,
         S: Signer<IotaKeySignature> + OptionalSync,
@@ -167,9 +161,9 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
             self.trail_id,
             owner,
             sequence_number,
-            data.into(),
-            metadata,
-            tag,
+            record.data.into(),
+            record.metadata,
+            record.tag,
             self.selected_capability_id,
         ))
     }

@@ -9,7 +9,7 @@
 //!   verifies that the original record cannot be corrected again.
 
 use anyhow::{Result, ensure};
-use audit_trails::core::types::{CapabilityIssueOptions, Data, InitialRecord, PermissionSet};
+use audit_trails::core::types::{CapabilityIssueOptions, Data, InitialRecord, PermissionSet, RecordInput};
 use examples::get_funded_audit_trail_client;
 use product_common::core_client::CoreClient;
 
@@ -64,9 +64,11 @@ async fn main() -> Result<()> {
     let correction = records
         .correct(
             0,
-            Data::text("Invoice total: 110 USD"),
-            Some("status:corrected".to_string()),
-            None,
+            RecordInput::new(
+                Data::text("Invoice total: 110 USD"),
+                Some("status:corrected".to_string()),
+                None,
+            ),
         )
         .build_and_execute(&record_admin_client)
         .await?
@@ -98,9 +100,11 @@ async fn main() -> Result<()> {
     let second_correction_attempt = records
         .correct(
             0,
-            Data::text("Invoice total: 120 USD"),
-            Some("status:second-correction".to_string()),
-            None,
+            RecordInput::new(
+                Data::text("Invoice total: 120 USD"),
+                Some("status:second-correction".to_string()),
+                None,
+            ),
         )
         .build_and_execute(&record_admin_client)
         .await;

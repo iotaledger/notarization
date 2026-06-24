@@ -5,7 +5,8 @@ use std::collections::HashSet;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use audit_trails::core::types::{
-    CapabilityIssueOptions, Data, InitialRecord, LockingConfig, LockingWindow, Permission, RoleTags, TimeLock,
+    CapabilityIssueOptions, Data, InitialRecord, LockingConfig, LockingWindow, Permission, RecordInput, RoleTags,
+    TimeLock,
 };
 use audit_trails::error::Error;
 use iota_sdk_types::ObjectId;
@@ -231,9 +232,7 @@ async fn correct_record_appends_correction_and_resolves_current_record() -> anyh
     let correction = records
         .correct(
             original.sequence_number,
-            Data::text("correct value"),
-            Some("approved".to_string()),
-            None,
+            RecordInput::new(Data::text("correct value"), Some("approved".to_string()), None),
         )
         .build_and_execute(&client)
         .await?
@@ -273,7 +272,7 @@ async fn correct_record_not_found_fails() -> anyhow::Result<()> {
     grant_role_capability(&client, trail_id, "RecordCorrector", [Permission::CorrectRecord]).await?;
 
     let denied = records
-        .correct(999, Data::text("correct value"), None, None)
+        .correct(999, RecordInput::new(Data::text("correct value"), None, None))
         .build_and_execute(&client)
         .await;
 
@@ -295,7 +294,7 @@ async fn correct_record_requires_correct_record_permission() -> anyhow::Result<(
     grant_role_capability(&client, trail_id, "RecordWriter", [Permission::AddRecord]).await?;
 
     let denied = records
-        .correct(0, Data::text("correct value"), None, None)
+        .correct(0, RecordInput::new(Data::text("correct value"), None, None))
         .build_and_execute(&client)
         .await;
 
@@ -315,13 +314,13 @@ async fn correct_record_rejects_replaced_record() -> anyhow::Result<()> {
     grant_role_capability(&client, trail_id, "RecordCorrector", [Permission::CorrectRecord]).await?;
 
     let first_correction = records
-        .correct(0, Data::text("first correction"), None, None)
+        .correct(0, RecordInput::new(Data::text("first correction"), None, None))
         .build_and_execute(&client)
         .await?
         .output;
 
     let denied = records
-        .correct(0, Data::text("second correction"), None, None)
+        .correct(0, RecordInput::new(Data::text("second correction"), None, None))
         .build_and_execute(&client)
         .await;
 
@@ -365,9 +364,7 @@ async fn correct_record_requires_matching_new_tag_access() -> anyhow::Result<()>
     let denied = records
         .correct(
             original.sequence_number,
-            Data::text("legal correction"),
-            None,
-            Some("legal".to_string()),
+            RecordInput::new(Data::text("legal correction"), None, Some("legal".to_string())),
         )
         .build_and_execute(&client)
         .await;

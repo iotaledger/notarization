@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::anyhow;
-use audit_trails::core::types::Data as AuditTrailData;
+use audit_trails::core::types::{Data as AuditTrailData, RecordInput};
 use audit_trails::{AuditTrailClient, AuditTrailClientReadOnly};
 use iota_interaction_ts::bindings::WasmTransactionSigner;
 use iota_interaction_ts::wasm_error::{wasm_error, Result, WasmResult};
@@ -203,7 +203,10 @@ impl WasmTrailRecords {
             .require_write()?
             .trail(self.trail_id)
             .records()
-            .correct(sequence_number, AuditTrailData::from(data), metadata, tag)
+            .correct(
+                sequence_number,
+                RecordInput::new(AuditTrailData::from(data), metadata, tag),
+            )
             .into_inner();
         Ok(into_transaction_builder(WasmCorrectRecord(tx)))
     }
