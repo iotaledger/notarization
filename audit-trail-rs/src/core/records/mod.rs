@@ -148,8 +148,14 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
     /// Builds a transaction that appends a correction record to the trail.
     ///
     /// The original record remains immutable. The correction is appended with a new sequence number and records
-    /// that it supersedes `sequence_number`. Tagged corrections require a capability whose role allows both the
-    /// replaced record's tag, when present, and the correction's tag, when present.
+    /// that it supersedes `sequence_number`; the corrected record receives a back-pointer to the correction so
+    /// [`Self::resolve_current`] can follow the replacement chain.
+    ///
+    /// Requires `CorrectRecord`. Tagged corrections require the correction tag to exist in the trail registry
+    /// and the capability's role to allow both the replaced record's tag, when present, and the correction's
+    /// tag, when present. The transaction can fail if the trail package version is incompatible, the capability
+    /// is invalid, the trail is write-locked, the target record does not exist, the target record was already
+    /// replaced, or tag authorization fails. On success a `RecordAdded` event is emitted.
     pub fn correct<S>(&self, sequence_number: u64, record: RecordInput<D>) -> TransactionBuilder<CorrectRecord>
     where
         C: AuditTrailFull + CoreClient<S>,

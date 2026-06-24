@@ -176,8 +176,15 @@ impl WasmTrailRecords {
     ///
     /// @remarks
     /// Appends a new correction record that supersedes `sequenceNumber` while preserving the
-    /// original record. When either the replaced record or the correction record carries a tag, the
-    /// supplied capability's role must allow that tag.
+    /// original record. The correction records the sequence number it replaces, and the replaced
+    /// record receives a back-pointer to the new correction so `resolveCurrent` can follow the
+    /// replacement chain.
+    ///
+    /// Tagged corrections require the correction tag to exist in the trail registry and the
+    /// supplied capability's role to allow both the replaced record's tag, when present, and the
+    /// correction record's tag, when present. The transaction aborts on-chain when the package
+    /// version is incompatible, the capability is invalid, the trail is write-locked, the target
+    /// record does not exist, the target record was already replaced, or tag authorization fails.
     ///
     /// Requires the {@link Permission.CorrectRecord} permission.
     ///

@@ -1038,9 +1038,15 @@ impl WasmAddRecord {
 /// Transaction wrapper for correcting a record.
 ///
 /// @remarks
-/// Appends a new record that supersedes an existing record while preserving the original. Tagged
-/// corrections require the supplied capability's role to allow both the replaced record's tag, when
-/// present, and the correction record's tag, when present.
+/// Appends a new record that supersedes an existing record while preserving the original. The
+/// correction records the sequence number it replaces, and the replaced record receives a
+/// back-pointer to the new correction so clients can resolve the current record.
+///
+/// Tagged corrections require the correction tag to exist in the trail registry and the supplied
+/// capability's role to allow both the replaced record's tag, when present, and the correction
+/// record's tag, when present. The transaction aborts on-chain when the package version is
+/// incompatible, the capability is invalid, the trail is write-locked, the target record does not
+/// exist, the target record was already replaced, or tag authorization fails.
 ///
 /// Requires the {@link Permission.CorrectRecord} permission.
 ///
@@ -1057,7 +1063,9 @@ impl WasmCorrectRecord {
     ///
     /// @returns BCS-encoded programmable transaction bytes ready for signing and submission.
     ///
-    /// @throws When transaction serialization fails.
+    /// @throws When transaction construction or serialization fails, including when the target
+    /// record cannot be loaded, the correction tag is not defined, or no suitable capability can be
+    /// found.
     #[wasm_bindgen(js_name = buildProgrammableTransaction)]
     pub async fn build_programmable_transaction(&self, client: &WasmCoreClientReadOnly) -> Result<Vec<u8>> {
         build_programmable_transaction(&self.0, client).await

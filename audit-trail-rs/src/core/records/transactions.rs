@@ -126,12 +126,16 @@ impl Transaction for AddRecord {
 
 /// Transaction that appends a correction record to a trail.
 ///
-/// Requires the `CorrectRecord` permission. The new record supersedes `sequence_number` while preserving the
-/// original record. Tagged corrections additionally require the tag to exist in the trail registry and the
-/// capability's role to allow both the replaced record's tag, when present, and the new correction tag, when
-/// present. The package also aborts with `ETrailWriteLocked` while the configured `write_lock` is active. On
-/// success the correction is stored at the trail's current monotonic sequence number and a `RecordAdded` event
-/// is emitted.
+/// The original record remains immutable. The correction is appended at the trail's next sequence number with
+/// a correction tracker whose `replaces` set contains the corrected sequence number, and the corrected record
+/// receives a back-pointer to the new correction.
+///
+/// Requires the `CorrectRecord` permission. Tagged corrections require the correction tag to exist in the trail
+/// registry and the capability's role to allow both the replaced record's tag, when present, and the correction
+/// tag, when present. The Move call aborts when the trail package version is incompatible, the capability is
+/// invalid, the trail is write-locked, the target record does not exist, the target record was already replaced,
+/// or tag authorization fails. On success the correction is stored at the trail's current monotonic sequence
+/// number and a `RecordAdded` event is emitted.
 #[derive(Debug, Clone)]
 pub struct CorrectRecord {
     /// Trail object ID that will receive the correction.
@@ -153,6 +157,10 @@ pub struct CorrectRecord {
 
 impl CorrectRecord {
     /// Creates a `CorrectRecord` transaction builder payload.
+    ///
+    /// The resulting transaction appends a correction record for `sequence_number` and carries the same
+    /// authorization, write-lock, record-existence, already-replaced, tag-definition, and tag-authorization
+    /// requirements as the Move `correct_record` entry point.
     pub fn new(
         trail_id: ObjectId,
         owner: IotaAddress,
