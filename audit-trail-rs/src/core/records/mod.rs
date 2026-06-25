@@ -4,6 +4,7 @@
 //! Record read and mutation APIs for Audit Trails.
 
 use std::collections::{BTreeMap, HashMap, HashSet};
+use std::marker::PhantomData;
 
 use iota_interaction::move_core_types::annotated_value::MoveValue;
 use iota_interaction::rpc_types::IotaMoveValue;
@@ -37,7 +38,7 @@ pub struct TrailRecords<'a, C, D = Data> {
     pub(crate) client: &'a C,
     pub(crate) trail_id: ObjectId,
     pub(crate) selected_capability_id: Option<ObjectId>,
-    pub(crate) _phantom: std::marker::PhantomData<D>,
+    pub(crate) _phantom: PhantomData<D>,
 }
 
 impl<'a, C, D> TrailRecords<'a, C, D> {
@@ -46,7 +47,7 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
             client,
             trail_id,
             selected_capability_id,
-            _phantom: std::marker::PhantomData,
+            _phantom: PhantomData,
         }
     }
 
