@@ -7,9 +7,12 @@
 //! arguments expected by the trail package.
 
 use iota_interaction::OptionalSync;
+use iota_interaction::move_core_types::annotated_value::MoveValue;
+use iota_interaction::rpc_types::IotaMoveValue;
 use iota_interaction::types::base_types::IotaAddress;
+use iota_interaction::types::dynamic_field::DynamicFieldName;
 use iota_interaction::types::transaction::ProgrammableTransaction;
-use iota_sdk_types::ObjectId;
+use iota_sdk_types::{ObjectId, TypeTag};
 use product_common::core_client::CoreClientReadOnly;
 
 use crate::core::internal::capability::find_capable_cap_for_tags;
@@ -95,9 +98,17 @@ impl RecordsOps {
         let package_id = client.package_id();
         let record_tag = record.tag.clone();
         let trail = trail_reader::get_audit_trail(trail_id, client).await?;
-        let replaced = linked_table::fetch_node_by_key::<_, Record<Data>>(client, trail.records.id, sequence_number)
-            .await?
-            .value;
+
+        let replaced = linked_table::fetch_node::<_, u64, Record<Data>>(
+            client,
+            trail.records.id,
+            DynamicFieldName {
+                type_: TypeTag::U64,
+                value: IotaMoveValue::from(MoveValue::U64(sequence_number)).to_json_value(),
+            },
+        )
+        .await?
+        .value;
 
         if let Some(tag) = record_tag.as_deref() {
             if !trail.tags.contains_key(tag) {

@@ -3,12 +3,11 @@
 
 //! Helpers for reading Move `LinkedTable` nodes through dynamic fields.
 
-use iota_interaction::move_core_types::annotated_value::MoveValue;
-use iota_interaction::rpc_types::{IotaData as _, IotaMoveValue, IotaObjectDataOptions};
+use iota_interaction::rpc_types::{IotaData as _, IotaObjectDataOptions};
 use iota_interaction::types::collection_types::LinkedTableNode;
 use iota_interaction::types::dynamic_field::{DynamicFieldName, Field};
 use iota_interaction::{IotaClientTrait, OptionalSync};
-use iota_sdk_types::{ObjectId, TypeTag};
+use iota_sdk_types::ObjectId;
 use product_common::core_client::CoreClientReadOnly;
 use serde::de::DeserializeOwned;
 
@@ -63,25 +62,4 @@ where
         })?;
 
     Ok(field.value)
-}
-
-/// Fetches and decodes a linked-table node keyed by a `u64`.
-pub(crate) async fn fetch_node_by_key<C, V>(
-    client: &C,
-    table_id: ObjectId,
-    key: u64,
-) -> Result<LinkedTableNode<u64, V>, Error>
-where
-    C: CoreClientReadOnly + OptionalSync,
-    V: DeserializeOwned,
-{
-    fetch_node::<_, u64, V>(
-        client,
-        table_id,
-        DynamicFieldName {
-            type_: TypeTag::U64,
-            value: IotaMoveValue::from(MoveValue::U64(key)).to_json_value(),
-        },
-    )
-    .await
 }

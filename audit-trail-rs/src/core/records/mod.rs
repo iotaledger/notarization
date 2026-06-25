@@ -5,9 +5,12 @@
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 
+use iota_interaction::move_core_types::annotated_value::MoveValue;
+use iota_interaction::rpc_types::IotaMoveValue;
 use iota_interaction::types::collection_types::LinkedTable;
+use iota_interaction::types::dynamic_field::DynamicFieldName;
 use iota_interaction::{IotaKeySignature, OptionalSync};
-use iota_sdk_types::ObjectId;
+use iota_sdk_types::{ObjectId, TypeTag};
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use product_common::transaction::transaction_builder::TransactionBuilder;
 use secret_storage::Signer;
@@ -17,7 +20,6 @@ use crate::core::internal::{linked_table, trail as trail_reader};
 use crate::core::trail::{AuditTrailFull, AuditTrailReadOnly};
 use crate::core::types::{Data, PaginatedRecord, Record, RecordInput};
 use crate::error::Error;
-
 mod operations;
 mod transactions;
 
@@ -310,7 +312,15 @@ where
             )));
         }
 
-        let node = linked_table::fetch_node_by_key::<_, V>(client, table.id, key).await?;
+        let node = linked_table::fetch_node::<_, u64, V>(
+            client,
+            table.id,
+            DynamicFieldName {
+                type_: TypeTag::U64,
+                value: IotaMoveValue::from(MoveValue::U64(key)).to_json_value(),
+            },
+        )
+        .await?;
 
         cursor = node.next;
         items.insert(key, node.value);
