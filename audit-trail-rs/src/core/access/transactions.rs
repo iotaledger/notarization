@@ -17,6 +17,7 @@ use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;
 
 use super::operations::AccessOps;
+use crate::core::internal::tx;
 use crate::core::types::{
     CapabilityDestroyed, CapabilityIssueOptions, CapabilityIssued, CapabilityRevoked, Event, PermissionSet,
     RawRoleCreated, RawRoleDeleted, RawRoleUpdated, RevokedCapabilitiesCleanedUp, RoleCreated, RoleDeleted, RoleTags,
@@ -116,11 +117,11 @@ impl Transaction for CreateRole {
         Ok(event)
     }
 
-    async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
+    async fn apply<C>(self, effects: &mut IotaTransactionBlockEffects, client: &C) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        unreachable!("RoleCreated output requires transaction events")
+        tx::apply_with_events(self, effects, client).await
     }
 }
 
@@ -212,11 +213,11 @@ impl Transaction for UpdateRole {
         Ok(event)
     }
 
-    async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
+    async fn apply<C>(self, effects: &mut IotaTransactionBlockEffects, client: &C) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        unreachable!()
+        tx::apply_with_events(self, effects, client).await
     }
 }
 
@@ -294,11 +295,11 @@ impl Transaction for DeleteRole {
         Ok(event)
     }
 
-    async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
+    async fn apply<C>(self, effects: &mut IotaTransactionBlockEffects, client: &C) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        unreachable!()
+        tx::apply_with_events(self, effects, client).await
     }
 }
 
@@ -385,11 +386,11 @@ impl Transaction for IssueCapability {
         Ok(event.data)
     }
 
-    async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
+    async fn apply<C>(self, effects: &mut IotaTransactionBlockEffects, client: &C) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        unreachable!()
+        tx::apply_with_events(self, effects, client).await
     }
 }
 
@@ -476,11 +477,11 @@ impl Transaction for RevokeCapability {
         Ok(event.data)
     }
 
-    async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
+    async fn apply<C>(self, effects: &mut IotaTransactionBlockEffects, client: &C) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        unreachable!()
+        tx::apply_with_events(self, effects, client).await
     }
 }
 
@@ -562,11 +563,11 @@ impl Transaction for DestroyCapability {
         Ok(event.data)
     }
 
-    async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
+    async fn apply<C>(self, effects: &mut IotaTransactionBlockEffects, client: &C) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        unreachable!()
+        tx::apply_with_events(self, effects, client).await
     }
 }
 
@@ -638,11 +639,11 @@ impl Transaction for DestroyInitialAdminCapability {
         Ok(event.data)
     }
 
-    async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
+    async fn apply<C>(self, effects: &mut IotaTransactionBlockEffects, client: &C) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        unreachable!()
+        tx::apply_with_events(self, effects, client).await
     }
 }
 
@@ -735,11 +736,11 @@ impl Transaction for RevokeInitialAdminCapability {
         Ok(event.data)
     }
 
-    async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
+    async fn apply<C>(self, effects: &mut IotaTransactionBlockEffects, client: &C) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        unreachable!()
+        tx::apply_with_events(self, effects, client).await
     }
 }
 
@@ -814,10 +815,10 @@ impl Transaction for CleanupRevokedCapabilities {
         Ok(event.data)
     }
 
-    async fn apply<C>(self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
+    async fn apply<C>(self, effects: &mut IotaTransactionBlockEffects, client: &C) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        unreachable!("RevokedCapabilitiesCleanedUp output requires transaction events")
+        tx::apply_with_events(self, effects, client).await
     }
 }

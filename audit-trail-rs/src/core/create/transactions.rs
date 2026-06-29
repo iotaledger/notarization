@@ -13,7 +13,7 @@ use tokio::sync::OnceCell;
 
 use super::operations::{CreateOps, CreateTrailArgs};
 use crate::core::builder::AuditTrailBuilder;
-use crate::core::internal::trail as trail_reader;
+use crate::core::internal::{trail as trail_reader, tx};
 use crate::core::types::{AuditTrailCreated, Event, OnChainAuditTrail};
 use crate::error::Error;
 
@@ -138,10 +138,10 @@ impl Transaction for CreateTrail {
         })
     }
 
-    async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
+    async fn apply<C>(self, effects: &mut IotaTransactionBlockEffects, client: &C) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        unreachable!()
+        tx::apply_with_events(self, effects, client).await
     }
 }

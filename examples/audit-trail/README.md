@@ -74,6 +74,7 @@ IOTA_AUDIT_TRAIL_PKG_ID=0x... IOTA_TF_COMPONENTS_PKG_ID=0x... cargo run --releas
 | [09_tagged_records](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/advanced/09_tagged_records.rs)                 | Uses role tags and address-bound capabilities to restrict who may add tagged records.   |
 | [10_capability_constraints](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/advanced/10_capability_constraints.rs) | Shows address-bound capability use and how revocation immediately blocks future writes. |
 | [11_manage_record_tags](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/advanced/11_manage_record_tags.rs)         | Delegates record-tag administration and shows that in-use tags cannot be removed.       |
+| [12_correct_records](https://github.com/iotaledger/notarization/tree/main/examples/audit-trail/advanced/12_correct_records.rs)               | Appends a correction record and resolves the current record from the original sequence. |
 
 ## Real-World Examples
 

@@ -62,6 +62,7 @@ Available examples:
 | `09_tagged_records`         | Uses role tags and address-bound capabilities to restrict who may add tagged records   |
 | `10_capability_constraints` | Shows address-bound capability use and how revocation immediately blocks future writes |
 | `11_manage_record_tags`     | Delegates tag management, adds/removes tags, shows that in-use tags cannot be removed  |
+| `12_correct_records`        | Appends a correction record and resolves the current record from the original sequence |
 
 ### Real-World
 
