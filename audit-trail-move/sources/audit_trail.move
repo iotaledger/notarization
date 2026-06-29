@@ -581,10 +581,10 @@ public fun correct_record<D: store + copy>(
             clock,
             ctx,
         );
-    assert!(!locking::is_write_locked(&self.locking_config, clock), ETrailWriteLocked);
-    assert!(linked_table::contains(&self.records, sequence_number), ERecordNotFound);
+    assert!(!self.locking_config.is_write_locked(clock), ETrailWriteLocked);
+    assert!(self.records.contains(sequence_number), ERecordNotFound);
     assert!(
-        !record::is_replaced(record::correction(self.records.borrow(sequence_number))),
+        !self.records.borrow(sequence_number).correction().is_replaced(),
         ERecordAlreadyReplaced,
     );
     assert!(
@@ -603,7 +603,7 @@ public fun correct_record<D: store + copy>(
     let seq = self.sequence_number;
 
     if (record_tag.is_some()) {
-        record_tags::increment_usage_count(&mut self.tags, option::borrow(&record_tag));
+        self.tags.increment_usage_count(record_tag.borrow());
     };
 
     let mut replaces = vec_set::empty();
@@ -619,10 +619,7 @@ public fun correct_record<D: store + copy>(
         record::with_replaces(replaces),
     );
 
-    record::set_replaced_by(
-        record::correction_mut(linked_table::borrow_mut(&mut self.records, sequence_number)),
-        seq,
-    );
+    self.records.borrow_mut(sequence_number).correction_mut().set_replaced_by(seq);
 
     linked_table::push_back(&mut self.records, seq, correction);
     self.sequence_number = self.sequence_number + 1;
