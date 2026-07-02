@@ -42,8 +42,7 @@ use audit_trails::core::types::{
     CapabilityIssueOptions, Data, ImmutableMetadata, InitialRecord, PermissionSet, RoleTags,
 };
 use examples::{get_funded_audit_trail_client, issue_tagged_record_role};
-use iota_sdk::types::base_types::Address;
-use iota_sdk_types::ObjectId;
+use iota_sdk_types::{Address, ObjectId};
 use product_common::core_client::CoreClient;
 use product_common::test_utils::InMemSigner;
 

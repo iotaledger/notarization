@@ -68,7 +68,7 @@ fn iota_address_zero() -> Address {
 
 #[cfg(feature = "irl")]
 pub mod irl_integration {
-    use iota_caip::iota::{Address, IotaNetwork, IotaResourceLocator};
+    use iota_caip::iota::{IotaAddress, IotaNetwork, IotaResourceLocator};
     use iota_caip::resource::RelativeUrl;
     use product_common::network_name::NetworkName;
 
@@ -88,7 +88,7 @@ pub mod irl_integration {
         pub fn iota_resource_locator_builder(&self, network: &NetworkName) -> NotarizationResourceBuilder {
             NotarizationResourceBuilder {
                 network: IotaNetwork::custom(network.as_ref()).expect("valid network"),
-                notarization_id: Address::new(self.id.id.bytes.into_bytes()),
+                notarization_id: IotaAddress::new(self.id.id.bytes.into_bytes()),
             }
         }
     }
@@ -97,7 +97,7 @@ pub mod irl_integration {
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct NotarizationResourceBuilder {
         network: IotaNetwork,
-        notarization_id: Address,
+        notarization_id: IotaAddress,
     }
 
     impl NotarizationResourceBuilder {

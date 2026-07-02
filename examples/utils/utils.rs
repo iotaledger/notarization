@@ -4,9 +4,8 @@
 use anyhow::Context;
 use audit_trails::core::types::{CapabilityIssueOptions, PermissionSet, RoleTags};
 use audit_trails::{AuditTrailClient, PackageOverrides};
-use iota_sdk::types::base_types::Address;
 use iota_sdk::{IOTA_LOCAL_NETWORK_URL, IotaClientBuilder};
-use iota_sdk_types::ObjectId;
+use iota_sdk_types::{Address, ObjectId};
 use notarization::client::{NotarizationClient, NotarizationClientReadOnly};
 use product_common::test_utils::{InMemSigner, request_funds};
 
