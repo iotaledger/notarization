@@ -3,7 +3,6 @@
 
 use std::collections::HashSet;
 
-
 use iota_interaction::types::collection_types::VecSet;
 use iota_sdk_types::{Address, ObjectId};
 use serde::{Deserialize, Serialize};

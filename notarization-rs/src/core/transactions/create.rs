@@ -24,7 +24,7 @@ use iota_interaction::rpc_types::{
     IotaData as _, IotaObjectDataOptions, IotaTransactionBlockEffects, IotaTransactionBlockEvents,
 };
 use iota_interaction::{IotaClientTrait, OptionalSend, OptionalSync};
-use iota_sdk_types::{ObjectId, Owner, Address, ProgrammableTransaction};
+use iota_sdk_types::{Address, ObjectId, Owner, ProgrammableTransaction};
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;

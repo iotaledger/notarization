@@ -3,9 +3,9 @@
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use iota_sdk_types::Address;
 use notarization::core::types::{NotarizationMethod, State, TimeLock};
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
-use iota_sdk_types::Address;
 
 use crate::client::get_funded_test_client;
 

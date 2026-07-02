@@ -171,12 +171,7 @@ pub struct UpdateDeleteTrailLock {
 
 impl UpdateDeleteTrailLock {
     /// Creates an `UpdateDeleteTrailLock` transaction builder payload.
-    pub fn new(
-        trail_id: ObjectId,
-        owner: Address,
-        lock: TimeLock,
-        selected_capability_id: Option<ObjectId>,
-    ) -> Self {
+    pub fn new(trail_id: ObjectId, owner: Address, lock: TimeLock, selected_capability_id: Option<ObjectId>) -> Self {
         Self {
             trail_id,
             owner,
@@ -239,12 +234,7 @@ pub struct UpdateWriteLock {
 
 impl UpdateWriteLock {
     /// Creates an `UpdateWriteLock` transaction builder payload.
-    pub fn new(
-        trail_id: ObjectId,
-        owner: Address,
-        lock: TimeLock,
-        selected_capability_id: Option<ObjectId>,
-    ) -> Self {
+    pub fn new(trail_id: ObjectId, owner: Address, lock: TimeLock, selected_capability_id: Option<ObjectId>) -> Self {
         Self {
             trail_id,
             owner,

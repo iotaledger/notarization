@@ -15,7 +15,7 @@ use async_trait::async_trait;
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use iota_interaction::types::transaction::CallArg;
 use iota_interaction::{OptionalSync, ident_str};
-use iota_sdk_types::{Argument, Identifier, ObjectId, Address, ProgrammableTransaction};
+use iota_sdk_types::{Address, Argument, Identifier, ObjectId, ProgrammableTransaction};
 use product_common::core_client::CoreClientReadOnly;
 
 use super::move_utils;

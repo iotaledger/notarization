@@ -5,8 +5,8 @@
 
 use std::collections::HashSet;
 
-use product_common::transaction::transaction_builder::TransactionBuilder;
 use iota_sdk_types::Address;
+use product_common::transaction::transaction_builder::TransactionBuilder;
 
 use super::types::{Data, ImmutableMetadata, InitialRecord, LockingConfig};
 use crate::core::create::CreateTrail;

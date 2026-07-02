@@ -7,8 +7,6 @@
 //! permissions.
 
 use iota_interaction::OptionalSync;
-
-
 use iota_sdk_types::{Address, ObjectId, ProgrammableTransaction};
 use product_common::core_client::CoreClientReadOnly;
 
