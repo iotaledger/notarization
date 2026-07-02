@@ -79,10 +79,9 @@
 
 use std::ops::Deref;
 
-use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::crypto::PublicKey;
 use iota_interaction::{IotaKeySignature, OptionalSync};
-use iota_sdk_types::ObjectId;
+use iota_sdk_types::{Address, ObjectId};
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use product_common::network_name::NetworkName;
 use product_common::transaction::transaction_builder::TransactionBuilder;
@@ -372,9 +371,9 @@ where
     ///
     /// ```rust,ignore
     /// # use notarization::client::full_client::NotarizationClient;
-    /// # use iota_interaction::types::base_types::IotaAddress;
+    /// #
     /// # use iota_sdk_types::ObjectId;
-    /// # async fn example(client: &NotarizationClient<impl secret_storage::Signer<iota_interaction::IotaKeySignature>>, notarization_id: ObjectId, recipient: IotaAddress) -> Result<(), Box<dyn std::error::Error>> {
+    /// # async fn example(client: &NotarizationClient<impl secret_storage::Signer<iota_interaction::IotaKeySignature>>, notarization_id: ObjectId, recipient: Address) -> Result<(), Box<dyn std::error::Error>> {
     /// client
     ///     .transfer_notarization(notarization_id, recipient)
     ///     .build_and_execute(&client)
@@ -387,7 +386,7 @@ where
     pub fn transfer_notarization(
         &self,
         notarization_id: ObjectId,
-        recipient: IotaAddress,
+        recipient: Address,
     ) -> TransactionBuilder<TransferNotarization> {
         TransactionBuilder::new(TransferNotarization::new(recipient, notarization_id))
     }
@@ -414,8 +413,8 @@ impl<S> CoreClient<S> for NotarizationClient<S>
 where
     S: Signer<IotaKeySignature> + OptionalSync,
 {
-    fn sender_address(&self) -> IotaAddress {
-        IotaAddress::from(&self.public_key)
+    fn sender_address(&self) -> Address {
+        Address::from(&self.public_key)
     }
 
     fn signer(&self) -> &S {

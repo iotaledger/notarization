@@ -7,9 +7,7 @@
 //! arguments expected by the trail package.
 
 use iota_interaction::OptionalSync;
-use iota_interaction::types::base_types::IotaAddress;
-use iota_interaction::types::transaction::ProgrammableTransaction;
-use iota_sdk_types::ObjectId;
+use iota_sdk_types::{Address, ObjectId, ProgrammableTransaction};
 use product_common::core_client::CoreClientReadOnly;
 
 use crate::core::internal::capability::find_capable_cap_for_tag;
@@ -28,7 +26,7 @@ impl RecordsOps {
     pub(super) async fn add_record<C>(
         client: &C,
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         data: Data,
         record_metadata: Option<String>,
         record_tag: Option<String>,
@@ -89,7 +87,7 @@ impl RecordsOps {
     pub(super) async fn delete_record<C>(
         client: &C,
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         sequence_number: u64,
         selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
@@ -123,7 +121,7 @@ impl RecordsOps {
     pub(super) async fn delete_records_batch<C>(
         client: &C,
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         limit: u64,
         selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>

@@ -9,9 +9,7 @@
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::{IotaTransactionBlockEffects, IotaTransactionBlockEvents};
-use iota_interaction::types::base_types::IotaAddress;
-use iota_interaction::types::transaction::ProgrammableTransaction;
-use iota_sdk_types::ObjectId;
+use iota_sdk_types::{Address, ObjectId, ProgrammableTransaction};
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;
@@ -37,7 +35,7 @@ use crate::error::Error;
 #[derive(Debug, Clone)]
 pub struct CreateRole {
     trail_id: ObjectId,
-    owner: IotaAddress,
+    owner: Address,
     name: String,
     permissions: PermissionSet,
     role_tags: Option<RoleTags>,
@@ -51,7 +49,7 @@ impl CreateRole {
     /// `role_tags`, when present, are serialized as Move `record_tags::RoleTags` role data.
     pub fn new(
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         name: String,
         permissions: PermissionSet,
         role_tags: Option<RoleTags>,
@@ -135,7 +133,7 @@ impl Transaction for CreateRole {
 #[derive(Debug, Clone)]
 pub struct UpdateRole {
     trail_id: ObjectId,
-    owner: IotaAddress,
+    owner: Address,
     name: String,
     permissions: PermissionSet,
     role_tags: Option<RoleTags>,
@@ -147,7 +145,7 @@ impl UpdateRole {
     /// Creates an `UpdateRole` transaction builder payload.
     pub fn new(
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         name: String,
         permissions: PermissionSet,
         role_tags: Option<RoleTags>,
@@ -230,7 +228,7 @@ impl Transaction for UpdateRole {
 #[derive(Debug, Clone)]
 pub struct DeleteRole {
     trail_id: ObjectId,
-    owner: IotaAddress,
+    owner: Address,
     name: String,
     selected_capability_id: Option<ObjectId>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
@@ -238,7 +236,7 @@ pub struct DeleteRole {
 
 impl DeleteRole {
     /// Creates a `DeleteRole` transaction builder payload.
-    pub fn new(trail_id: ObjectId, owner: IotaAddress, name: String, selected_capability_id: Option<ObjectId>) -> Self {
+    pub fn new(trail_id: ObjectId, owner: Address, name: String, selected_capability_id: Option<ObjectId>) -> Self {
         Self {
             trail_id,
             owner,
@@ -312,7 +310,7 @@ impl Transaction for DeleteRole {
 #[derive(Debug, Clone)]
 pub struct IssueCapability {
     trail_id: ObjectId,
-    owner: IotaAddress,
+    owner: Address,
     role: String,
     options: CapabilityIssueOptions,
     selected_capability_id: Option<ObjectId>,
@@ -323,7 +321,7 @@ impl IssueCapability {
     /// Creates an `IssueCapability` transaction builder payload.
     pub fn new(
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         role: String,
         options: CapabilityIssueOptions,
         selected_capability_id: Option<ObjectId>,
@@ -403,7 +401,7 @@ impl Transaction for IssueCapability {
 #[derive(Debug, Clone)]
 pub struct RevokeCapability {
     trail_id: ObjectId,
-    owner: IotaAddress,
+    owner: Address,
     capability_id: ObjectId,
     capability_valid_until: Option<u64>,
     selected_capability_id: Option<ObjectId>,
@@ -414,7 +412,7 @@ impl RevokeCapability {
     /// Creates a `RevokeCapability` transaction builder payload.
     pub fn new(
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         capability_id: ObjectId,
         capability_valid_until: Option<u64>,
         selected_capability_id: Option<ObjectId>,
@@ -493,7 +491,7 @@ impl Transaction for RevokeCapability {
 #[derive(Debug, Clone)]
 pub struct DestroyCapability {
     trail_id: ObjectId,
-    owner: IotaAddress,
+    owner: Address,
     capability_id: ObjectId,
     selected_capability_id: Option<ObjectId>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
@@ -503,7 +501,7 @@ impl DestroyCapability {
     /// Creates a `DestroyCapability` transaction builder payload.
     pub fn new(
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         capability_id: ObjectId,
         selected_capability_id: Option<ObjectId>,
     ) -> Self {
@@ -662,7 +660,7 @@ impl Transaction for DestroyInitialAdminCapability {
 #[derive(Debug, Clone)]
 pub struct RevokeInitialAdminCapability {
     trail_id: ObjectId,
-    owner: IotaAddress,
+    owner: Address,
     capability_id: ObjectId,
     capability_valid_until: Option<u64>,
     selected_capability_id: Option<ObjectId>,
@@ -673,7 +671,7 @@ impl RevokeInitialAdminCapability {
     /// Creates a `RevokeInitialAdminCapability` transaction builder payload.
     pub fn new(
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         capability_id: ObjectId,
         capability_valid_until: Option<u64>,
         selected_capability_id: Option<ObjectId>,
@@ -757,14 +755,14 @@ impl Transaction for RevokeInitialAdminCapability {
 #[derive(Debug, Clone)]
 pub struct CleanupRevokedCapabilities {
     trail_id: ObjectId,
-    owner: IotaAddress,
+    owner: Address,
     selected_capability_id: Option<ObjectId>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
 }
 
 impl CleanupRevokedCapabilities {
     /// Creates a `CleanupRevokedCapabilities` transaction builder payload.
-    pub fn new(trail_id: ObjectId, owner: IotaAddress, selected_capability_id: Option<ObjectId>) -> Self {
+    pub fn new(trail_id: ObjectId, owner: Address, selected_capability_id: Option<ObjectId>) -> Self {
         Self {
             trail_id,
             owner,

@@ -4,7 +4,7 @@
 use std::collections::HashSet;
 
 use audit_trails::core::types::{CapabilityIssueOptions, Data, Permission, PermissionSet, RoleTags};
-use iota_interaction::types::base_types::IotaAddress;
+use iota_sdk_types::Address;
 use product_common::core_client::CoreClient;
 
 use crate::client::get_funded_test_client;
@@ -370,7 +370,7 @@ async fn issue_capability_with_constraints() -> anyhow::Result<()> {
         .create_role(trail_id, role_name, vec![Permission::AddRecord], None)
         .await?;
 
-    let issued_to = IotaAddress::random();
+    let issued_to = Address::random();
     let constrained = CapabilityIssueOptions {
         issued_to: Some(issued_to),
         valid_from_ms: Some(1_700_000_000_000),

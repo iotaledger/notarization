@@ -5,8 +5,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
 use examples::get_funded_notarization_client;
-use iota_sdk::types::base_types::IotaAddress;
 use notarization::core::types::{State, TimeLock};
+use iota_sdk_types::Address;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -15,8 +15,8 @@ async fn main() -> Result<()> {
     let notarization_client = get_funded_notarization_client().await?;
 
     // Generate random addresses for transfer recipients
-    let alice = IotaAddress::random();
-    let bob = IotaAddress::random();
+    let alice = Address::random();
+    let bob = Address::random();
 
     println!("Transfer recipients:");
     println!("Alice: {alice}");

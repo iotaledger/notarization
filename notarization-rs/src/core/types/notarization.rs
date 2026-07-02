@@ -1,8 +1,8 @@
 // Copyright 2020-2025 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::id::UID;
+use iota_sdk_types::Address;
 use serde::{Deserialize, Serialize};
 
 use super::NotarizationMethod;
@@ -59,11 +59,11 @@ pub struct OnChainNotarization {
     pub method: NotarizationMethod,
     /// The owner of the notarization.
     #[serde(skip, default = "iota_address_zero")]
-    pub owner: IotaAddress,
+    pub owner: Address,
 }
 
-fn iota_address_zero() -> IotaAddress {
-    IotaAddress::ZERO
+fn iota_address_zero() -> Address {
+    Address::ZERO
 }
 
 #[cfg(feature = "irl")]

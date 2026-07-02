@@ -5,11 +5,10 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use iota_interaction::ident_str;
-use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::collection_types::LinkedTable;
 use iota_interaction::types::id::UID;
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
-use iota_sdk_types::{Argument, ObjectId, TypeTag};
+use iota_sdk_types::{Address, Argument, ObjectId, TypeTag};
 use serde::{Deserialize, Serialize};
 
 use super::locking::LockingConfig;
@@ -66,7 +65,7 @@ pub struct OnChainAuditTrail {
     /// Unique object ID of the trail.
     pub id: UID,
     /// Address that created the trail.
-    pub creator: IotaAddress,
+    pub creator: Address,
     /// Millisecond timestamp at which the trail was created.
     pub created_at: u64,
     /// Current record sequence number cursor.
