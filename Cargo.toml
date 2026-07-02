@@ -8,7 +8,7 @@ rust-version = "1.85"
 
 [workspace]
 resolver = "2"
-members = ["audit-trail-rs", "examples", "notarization-rs"]
+members = ["audit-trail-rs", "examples", "notarization-rs", "poi-rs"]
 exclude = ["bindings/wasm/notarization_wasm", "bindings/wasm/audit_trail_wasm"]
 
 [workspace.dependencies]
@@ -19,6 +19,7 @@ chrono = { version = "0.4", default-features = false }
 hyper = "1"
 iota-sdk = { git = "https://github.com/iotaledger/iota.git", package = "iota-sdk", tag = "v1.25.0" }
 iota-sdk-types = { git = "https://github.com/iotaledger/iota-rust-sdk.git", rev = "35a27488b887e28e844a1e46d7edb78605871155", default-features = false }
+iota-types = { git = "https://github.com/iotaledger/iota.git", package = "iota-types", tag = "v1.25.0" }
 iota_interaction = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.21", default-features = false, package = "iota_interaction" }
 iota_interaction_rust = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.21", default-features = false, package = "iota_interaction_rust" }
 iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.21", default-features = false, package = "iota_interaction_ts" }

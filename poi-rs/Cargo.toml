@@ -1,0 +1,18 @@
+[package]
+name = "poi-rs"
+version = "0.1.0-alpha"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+keywords = ["iota", "proof", "inclusion", "notarization"]
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Proof of Inclusion support for the IOTA Notarization Toolkit."
+
+[dependencies]
+iota-sdk-types.workspace = true
+iota-types.workspace = true
+serde.workspace = true
+serde_json = { workspace = true, features = ["alloc"] }
+thiserror.workspace = true
