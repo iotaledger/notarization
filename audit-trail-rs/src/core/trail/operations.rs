@@ -7,9 +7,9 @@
 //! and deletion calls.
 
 use iota_interaction::OptionalSync;
-use iota_interaction::types::base_types::IotaAddress;
-use iota_interaction::types::transaction::ProgrammableTransaction;
-use iota_sdk_types::ObjectId;
+
+
+use iota_sdk_types::{Address, ObjectId, ProgrammableTransaction};
 use product_common::core_client::CoreClientReadOnly;
 
 use crate::core::internal::tx;
@@ -24,7 +24,7 @@ impl TrailOps {
     pub(super) async fn migrate<C>(
         client: &C,
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
     where
@@ -49,7 +49,7 @@ impl TrailOps {
     pub(super) async fn update_metadata<C>(
         client: &C,
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         metadata: Option<String>,
         selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
@@ -76,7 +76,7 @@ impl TrailOps {
     pub(super) async fn delete_audit_trail<C>(
         client: &C,
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
     where

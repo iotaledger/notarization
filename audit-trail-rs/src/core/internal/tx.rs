@@ -6,14 +6,14 @@
 use std::str::FromStr;
 
 use iota_interaction::rpc_types::IotaObjectDataOptions;
-use iota_interaction::types::base_types::{IotaAddress, ObjectRef};
+use iota_interaction::types::base_types::ObjectRef;
 use iota_interaction::types::programmable_transaction_builder::{
     ProgrammableTransactionBuilder as Ptb, ProgrammableTransactionBuilder,
 };
-use iota_interaction::types::transaction::{CallArg, ProgrammableTransaction, SharedObjectRef};
+use iota_interaction::types::transaction::{CallArg, SharedObjectRef};
 use iota_interaction::types::{IOTA_CLOCK_OBJECT_ID, IOTA_CLOCK_OBJECT_SHARED_VERSION, MOVE_STDLIB_PACKAGE_ID};
 use iota_interaction::{IotaClientTrait, OptionalSync, ident_str};
-use iota_sdk_types::{Argument, Identifier, ObjectId, Owner, TypeTag};
+use iota_sdk_types::{Address, Argument, Identifier, ObjectId, Owner, ProgrammableTransaction, TypeTag};
 use product_common::core_client::CoreClientReadOnly;
 use serde::Serialize;
 
@@ -76,7 +76,7 @@ pub(crate) fn option_to_move(
 pub(crate) async fn build_trail_transaction<C, F>(
     client: &C,
     trail_id: ObjectId,
-    owner: IotaAddress,
+    owner: Address,
     permission: Permission,
     selected_capability_id: Option<ObjectId>,
     method: impl AsRef<str>,

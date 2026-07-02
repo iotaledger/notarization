@@ -6,10 +6,9 @@
 //! These helpers encode Rust-side access inputs into the exact Move call shapes expected by the audit-trail
 //! package and apply the lightweight preflight checks that are cheaper to surface before submission.
 
-use iota_interaction::types::base_types::IotaAddress;
-use iota_interaction::types::transaction::{CallArg, ProgrammableTransaction};
+use iota_interaction::types::transaction::CallArg;
 use iota_interaction::{OptionalSync, ident_str};
-use iota_sdk_types::ObjectId;
+use iota_sdk_types::{Address, ObjectId, ProgrammableTransaction};
 use product_common::core_client::CoreClientReadOnly;
 
 use crate::core::internal::{trail as trail_reader, tx};
@@ -32,7 +31,7 @@ impl AccessOps {
     pub(super) async fn create_role<C>(
         client: &C,
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         name: String,
         permissions: PermissionSet,
         role_tags: Option<RoleTags>,
@@ -85,7 +84,7 @@ impl AccessOps {
     pub(super) async fn update_role<C>(
         client: &C,
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         name: String,
         permissions: PermissionSet,
         role_tags: Option<RoleTags>,
@@ -139,7 +138,7 @@ impl AccessOps {
     pub(super) async fn delete_role<C>(
         client: &C,
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         name: String,
         selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
@@ -170,7 +169,7 @@ impl AccessOps {
     pub(super) async fn issue_capability<C>(
         client: &C,
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         role_name: String,
         options: CapabilityIssueOptions,
         selected_capability_id: Option<ObjectId>,
@@ -205,7 +204,7 @@ impl AccessOps {
     pub(super) async fn revoke_capability<C>(
         client: &C,
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         capability_id: ObjectId,
         capability_valid_until: Option<u64>,
         selected_capability_id: Option<ObjectId>,
@@ -238,7 +237,7 @@ impl AccessOps {
     pub(super) async fn destroy_capability<C>(
         client: &C,
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         capability_id: ObjectId,
         selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
@@ -296,7 +295,7 @@ impl AccessOps {
     pub(super) async fn revoke_initial_admin_capability<C>(
         client: &C,
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         capability_id: ObjectId,
         capability_valid_until: Option<u64>,
         selected_capability_id: Option<ObjectId>,
@@ -329,7 +328,7 @@ impl AccessOps {
     pub(super) async fn cleanup_revoked_capabilities<C>(
         client: &C,
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
     where

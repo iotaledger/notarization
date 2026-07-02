@@ -42,7 +42,7 @@ use audit_trails::core::types::{
     CapabilityIssueOptions, Data, ImmutableMetadata, InitialRecord, PermissionSet, RoleTags,
 };
 use examples::{get_funded_audit_trail_client, issue_tagged_record_role};
-use iota_sdk::types::base_types::IotaAddress;
+use iota_sdk::types::base_types::Address;
 use iota_sdk_types::ObjectId;
 use product_common::core_client::CoreClient;
 use product_common::test_utils::InMemSigner;
@@ -432,7 +432,7 @@ async fn issue_metadata_role(
     admin_client: &AuditTrailClient<InMemSigner>,
     trail_id: ObjectId,
     role_name: &str,
-    issued_to: IotaAddress,
+    issued_to: Address,
 ) -> Result<()> {
     admin_client
         .trail(trail_id)

@@ -3,9 +3,9 @@
 
 //! High-level trail handles and trail-scoped transactions.
 
-use iota_interaction::types::transaction::ProgrammableTransaction;
+
 use iota_interaction::{IotaKeySignature, OptionalSync};
-use iota_sdk_types::ObjectId;
+use iota_sdk_types::{ObjectId, ProgrammableTransaction};
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use product_common::transaction::transaction_builder::TransactionBuilder;
 use secret_storage::Signer;

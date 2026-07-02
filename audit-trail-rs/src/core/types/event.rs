@@ -3,9 +3,9 @@
 
 use std::collections::HashSet;
 
-use iota_interaction::types::base_types::IotaAddress;
+
 use iota_interaction::types::collection_types::VecSet;
-use iota_sdk_types::ObjectId;
+use iota_sdk_types::{Address, ObjectId};
 use serde::{Deserialize, Serialize};
 use serde_aux::field_attributes::{deserialize_number_from_string, deserialize_option_number_from_string};
 
@@ -25,7 +25,7 @@ pub struct AuditTrailCreated {
     /// Newly created trail object ID.
     pub trail_id: ObjectId,
     /// Address that created the trail.
-    pub creator: IotaAddress,
+    pub creator: Address,
     /// Millisecond event timestamp.
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub timestamp: u64,
@@ -47,7 +47,7 @@ pub struct AuditTrailMigrated {
     /// Migrated trail object ID.
     pub trail_id: ObjectId,
     /// Address that migrated the trail.
-    pub migrated_by: IotaAddress,
+    pub migrated_by: Address,
     /// Millisecond event timestamp.
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub timestamp: u64,
@@ -59,7 +59,7 @@ pub struct MetadataUpdated {
     /// Trail object ID whose metadata changed.
     pub trail_id: ObjectId,
     /// Address that updated the metadata.
-    pub updated_by: IotaAddress,
+    pub updated_by: Address,
     /// Millisecond event timestamp.
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub timestamp: u64,
@@ -71,7 +71,7 @@ pub struct LockingConfigUpdated {
     /// Trail object ID whose locking configuration changed.
     pub trail_id: ObjectId,
     /// Address that updated the locking configuration.
-    pub updated_by: IotaAddress,
+    pub updated_by: Address,
     /// Millisecond event timestamp.
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub timestamp: u64,
@@ -86,7 +86,7 @@ pub struct RecordAdded {
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub sequence_number: u64,
     /// Address that added the record.
-    pub added_by: IotaAddress,
+    pub added_by: Address,
     /// Millisecond event timestamp.
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub timestamp: u64,
@@ -101,7 +101,7 @@ pub struct RecordDeleted {
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub sequence_number: u64,
     /// Address that deleted the record.
-    pub deleted_by: IotaAddress,
+    pub deleted_by: Address,
     /// Millisecond event timestamp.
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub timestamp: u64,
@@ -113,7 +113,7 @@ pub struct RecordTagAdded {
     /// Trail object ID whose registry changed.
     pub trail_id: ObjectId,
     /// Address that added the tag.
-    pub added_by: IotaAddress,
+    pub added_by: Address,
     /// Millisecond event timestamp.
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub timestamp: u64,
@@ -125,7 +125,7 @@ pub struct RecordTagRemoved {
     /// Trail object ID whose registry changed.
     pub trail_id: ObjectId,
     /// Address that removed the tag.
-    pub removed_by: IotaAddress,
+    pub removed_by: Address,
     /// Millisecond event timestamp.
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub timestamp: u64,
@@ -141,7 +141,7 @@ pub struct CapabilityIssued {
     /// Role granted by the capability.
     pub role: String,
     /// Address receiving the capability, if one is assigned.
-    pub issued_to: Option<IotaAddress>,
+    pub issued_to: Option<Address>,
     /// Millisecond timestamp at which the capability becomes valid.
     #[serde(deserialize_with = "deserialize_option_number_from_string")]
     pub valid_from: Option<u64>,
@@ -160,7 +160,7 @@ pub struct CapabilityDestroyed {
     /// Role granted by the capability.
     pub role: String,
     /// Address that held the capability, if any.
-    pub issued_to: Option<IotaAddress>,
+    pub issued_to: Option<Address>,
     /// Millisecond timestamp at which the capability became valid.
     #[serde(deserialize_with = "deserialize_option_number_from_string")]
     pub valid_from: Option<u64>,
@@ -190,7 +190,7 @@ pub struct RevokedCapabilitiesCleanedUp {
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub cleaned_count: u64,
     /// Address that triggered the cleanup.
-    pub cleaned_by: IotaAddress,
+    pub cleaned_by: Address,
     /// Millisecond event timestamp.
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub timestamp: u64,
@@ -208,7 +208,7 @@ pub struct RoleCreated {
     /// Optional record-tag restrictions stored as role data.
     pub data: Option<RoleTags>,
     /// Address that created the role.
-    pub created_by: IotaAddress,
+    pub created_by: Address,
     /// Millisecond event timestamp.
     pub timestamp: u64,
 }
@@ -225,7 +225,7 @@ pub struct RoleUpdated {
     /// Updated record-tag restrictions, if any.
     pub data: Option<RoleTags>,
     /// Address that updated the role.
-    pub updated_by: IotaAddress,
+    pub updated_by: Address,
     /// Millisecond event timestamp.
     pub timestamp: u64,
 }
@@ -238,7 +238,7 @@ pub struct RoleDeleted {
     /// Role name.
     pub role: String,
     /// Address that deleted the role.
-    pub deleted_by: IotaAddress,
+    pub deleted_by: Address,
     /// Millisecond event timestamp.
     pub timestamp: u64,
 }
@@ -249,7 +249,7 @@ pub(crate) struct RawRoleCreated {
     role: String,
     permissions: VecSet<Permission>,
     data: Option<RawRoleTags>,
-    created_by: IotaAddress,
+    created_by: Address,
     timestamp: u64,
 }
 
@@ -259,7 +259,7 @@ pub(crate) struct RawRoleUpdated {
     role: String,
     new_permissions: VecSet<Permission>,
     new_data: Option<RawRoleTags>,
-    updated_by: IotaAddress,
+    updated_by: Address,
     timestamp: u64,
 }
 
@@ -267,7 +267,7 @@ pub(crate) struct RawRoleUpdated {
 pub(crate) struct RawRoleDeleted {
     target_key: ObjectId,
     role: String,
-    deleted_by: IotaAddress,
+    deleted_by: Address,
     timestamp: u64,
 }
 
@@ -331,14 +331,14 @@ impl From<RawRoleDeleted> for RoleDeleted {
 
 #[cfg(test)]
 mod tests {
-    use iota_sdk_types::ObjectId;
+    use iota_sdk_types::{Address, ObjectId};
     use serde_json::json;
 
     use super::*;
     #[test]
     fn metadata_updated_event_deserializes_string_encoded_timestamp() {
         let trail_id = ObjectId::random();
-        let updated_by = IotaAddress::random();
+        let updated_by = Address::random();
 
         let event: Event<MetadataUpdated> = serde_json::from_value(json!({
             "trail_id": trail_id,
@@ -355,7 +355,7 @@ mod tests {
     #[test]
     fn locking_config_updated_event_deserializes_string_encoded_timestamp() {
         let trail_id = ObjectId::random();
-        let updated_by = IotaAddress::random();
+        let updated_by = Address::random();
 
         let event: Event<LockingConfigUpdated> = serde_json::from_value(json!({
             "trail_id": trail_id,
@@ -372,7 +372,7 @@ mod tests {
     #[test]
     fn record_tag_events_deserialize_string_encoded_timestamps() {
         let trail_id = ObjectId::random();
-        let actor = IotaAddress::random();
+        let actor = Address::random();
 
         let added: Event<RecordTagAdded> = serde_json::from_value(json!({
             "trail_id": trail_id,
@@ -398,7 +398,7 @@ mod tests {
     #[test]
     fn audit_trail_migrated_event_deserializes_string_encoded_timestamp() {
         let trail_id = ObjectId::random();
-        let migrated_by = IotaAddress::random();
+        let migrated_by = Address::random();
 
         let event: Event<AuditTrailMigrated> = serde_json::from_value(json!({
             "trail_id": trail_id,

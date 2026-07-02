@@ -12,11 +12,10 @@
 use std::str::FromStr;
 
 use async_trait::async_trait;
-use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use iota_interaction::types::transaction::{CallArg, ProgrammableTransaction};
+use iota_interaction::types::transaction::CallArg;
 use iota_interaction::{OptionalSync, ident_str};
-use iota_sdk_types::{Argument, Identifier, ObjectId};
+use iota_sdk_types::{Argument, Identifier, ObjectId, Address, ProgrammableTransaction};
 use product_common::core_client::CoreClientReadOnly;
 
 use super::move_utils;
@@ -306,7 +305,7 @@ pub(crate) trait NotarizationOperations {
 
     async fn transfer_notarization<C>(
         object_id: ObjectId,
-        recipient: IotaAddress,
+        recipient: Address,
         client: &C,
     ) -> Result<ProgrammableTransaction, Error>
     where
