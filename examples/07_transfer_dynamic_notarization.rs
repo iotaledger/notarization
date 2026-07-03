@@ -5,8 +5,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
 use examples::get_funded_notarization_client;
-use notarization::core::types::{State, TimeLock};
 use iota_sdk_types::Address;
+use notarization::core::types::{State, TimeLock};
 
 #[tokio::main]
 async fn main() -> Result<()> {
