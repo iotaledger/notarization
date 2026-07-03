@@ -32,8 +32,5 @@ strum = { version = "0.27", default-features = false, features = ["std", "derive
 thiserror = { version = "2.0", default-features = false }
 tokio = { version = "1.52.2", default-features = false, features = ["macros", "sync", "rt", "process"] }
 
-[patch."https://github.com/iotaledger/product-core.git"]
-iota_interaction = { path = "../product-core/iota_interaction"}
-
 [profile.release.package.iota_interaction_ts]
 opt-level = 's'
