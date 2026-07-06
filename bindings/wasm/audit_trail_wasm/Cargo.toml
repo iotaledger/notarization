@@ -20,7 +20,7 @@ anyhow = "1.0.95"
 audit_trails = { path = "../../../audit-trail-rs", default-features = false, features = ["gas-station", "default-http-client"] }
 bcs = "0.1.6"
 console_error_panic_hook = { version = "0.1" }
-iota-sdk-types = { git = "https://github.com/iotaledger/iota-rust-sdk.git", rev = "35a27488b887e28e844a1e46d7edb78605871155", default-features = false }
+iota-sdk-types = { git = "https://github.com/iotaledger/iota-rust-sdk.git", rev = "36bffd625e1b1d38307eb9e49bd2cb7dd988bb11", default-features = false }
 iota_interaction = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/iota-v1.26.1-upstream-merge", default-features = false }
 iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/iota-v1.26.1-upstream-merge" }
 js-sys = { version = "0.3.61" }
