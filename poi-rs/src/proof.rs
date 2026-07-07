@@ -44,6 +44,14 @@ impl ProofVersion {
     }
 }
 
+impl TryFrom<u16> for ProofVersion {
+    type Error = Error;
+
+    fn try_from(version: u16) -> Result<Self> {
+        Self::new(version)
+    }
+}
+
 /// Transaction evidence packaged in a Proof of Inclusion envelope.
 ///
 /// A transaction proof links one transaction to a certified checkpoint. It carries
