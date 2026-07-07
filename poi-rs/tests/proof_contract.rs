@@ -18,7 +18,7 @@ fn current_proof_format_version_is_one() {
 }
 
 #[test]
-fn proof_requires_transaction_witness() {
+fn proof_requires_transaction_proof() {
     let transaction_proof_field: fn(Proof) -> TransactionProof = proof_transaction_proof_is_required;
     let _ = transaction_proof_field;
 }
