@@ -11,7 +11,7 @@ use iota_types::{
         CertifiedCheckpointSummary, CheckpointContents, CheckpointSummary, EndOfEpochData, FullCheckpointContents,
     },
 };
-use poi_rs::{Error, Proof, ProofTargets, ProofVerifier, TransactionProof};
+use poi_rs::{Proof, ProofTargets, ProofVerifier, TransactionProof, VerifyErrorKind};
 
 fn test_execution_data() -> ExecutionData {
     FullCheckpointContents::random_for_testing()
@@ -100,7 +100,7 @@ fn verifier_rejects_transaction_digest_mismatch() {
 
     let result = ProofVerifier::new(&committee).verify(&proof);
 
-    assert!(matches!(result, Err(Error::TransactionDigestMismatch)));
+    assert!(matches!(result, Err(error) if matches!(error.kind, VerifyErrorKind::TransactionDigestMismatch)));
 }
 
 #[test]
@@ -110,7 +110,7 @@ fn verifier_rejects_events_digest_mismatch() {
 
     let result = ProofVerifier::new(&committee).verify(&proof);
 
-    assert!(matches!(result, Err(Error::EventsDigestMismatch)));
+    assert!(matches!(result, Err(error) if matches!(error.kind, VerifyErrorKind::EventsDigestMismatch)));
 }
 
 #[test]
@@ -122,7 +122,7 @@ fn verifier_rejects_checkpoint_contents_mismatch() {
 
     let result = ProofVerifier::new(&committee).verify(&proof);
 
-    assert!(matches!(result, Err(Error::CheckpointSummaryVerification { .. })));
+    assert!(matches!(result, Err(error) if matches!(error.kind, VerifyErrorKind::CheckpointSummary { .. })));
 }
 
 #[test]
@@ -134,7 +134,7 @@ fn verifier_rejects_transaction_not_in_checkpoint() {
 
     let result = ProofVerifier::new(&committee).verify(&proof);
 
-    assert!(matches!(result, Err(Error::TransactionNotInCheckpoint)));
+    assert!(matches!(result, Err(error) if matches!(error.kind, VerifyErrorKind::TransactionNotInCheckpoint)));
 }
 
 #[test]
@@ -146,7 +146,7 @@ fn verifier_rejects_missing_end_of_epoch_committee() {
 
     let result = ProofVerifier::new(&verifying_committee).verify(&proof);
 
-    assert!(matches!(result, Err(Error::MissingEndOfEpochCommittee)));
+    assert!(matches!(result, Err(error) if matches!(error.kind, VerifyErrorKind::MissingEndOfEpochCommittee)));
 }
 
 #[test]
@@ -162,5 +162,5 @@ fn verifier_rejects_committee_mismatch() {
 
     let result = ProofVerifier::new(&verifying_committee).verify(&proof);
 
-    assert!(matches!(result, Err(Error::CommitteeMismatch)));
+    assert!(matches!(result, Err(error) if matches!(error.kind, VerifyErrorKind::CommitteeMismatch)));
 }

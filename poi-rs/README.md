@@ -51,4 +51,4 @@ trust the authenticated target claims relative to the supplied committee.
 - `TransactionProof`: Transaction, effects, events, and checkpoint contents used to prove inclusion.
 - `ProofTargets`: Object, event, and committee claims to authenticate.
 - `ProofVerifier`: Offline verifier for `Proof` values.
-- `Error`: Typed verification and serialization errors.
+- `VerifyError`, `SourceError`, `SerializationError`, and `VersionError`: Operation-specific errors.
