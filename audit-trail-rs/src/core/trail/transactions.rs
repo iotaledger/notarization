@@ -14,6 +14,7 @@ use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;
 
 use super::operations::TrailOps;
+use crate::core::internal::tx;
 use crate::core::types::{AuditTrailDeleted, Event};
 use crate::error::Error;
 
@@ -205,10 +206,10 @@ impl Transaction for DeleteAuditTrail {
         Ok(event.data)
     }
 
-    async fn apply<C>(self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
+    async fn apply<C>(self, effects: &mut IotaTransactionBlockEffects, client: &C) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        unreachable!()
+        tx::apply_with_events(self, effects, client).await
     }
 }

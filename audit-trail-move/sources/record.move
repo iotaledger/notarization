@@ -171,6 +171,11 @@ public fun correction<D: store + copy>(self: &Record<D>): &RecordCorrection {
     &self.correction
 }
 
+/// Returns a mutable reference to the record's bidirectional correction tracker.
+public(package) fun correction_mut<D: store + copy>(self: &mut Record<D>): &mut RecordCorrection {
+    &mut self.correction
+}
+
 /// Destroys a `Record` by destructuring it.
 public(package) fun destroy<D: store + copy + drop>(self: Record<D>) {
     let Record {

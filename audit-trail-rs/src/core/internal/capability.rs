@@ -181,31 +181,40 @@ where
         && cap.valid_until.is_none_or(|valid_until| now_ms <= valid_until)
 }
 
-/// Finds an owned capability for adding a tagged record.
+/// Finds an owned capability for an operation that must satisfy tag-aware record authorization.
 ///
-/// Tagged writes have stricter lookup rules than ordinary permission-based
-/// operations: the selected role must grant `AddRecord` and its configured
-/// `RoleTags` must allow the requested record tag.
-pub(crate) async fn find_capable_cap_for_tag<C>(
+/// Every tag in `tags` must be allowed by the capability's role. Empty tag lists fall back to ordinary
+/// permission-based capability discovery.
+pub(crate) async fn find_capable_cap_for_tags<'a, C, I>(
     client: &C,
     owner: IotaAddress,
     trail_id: ObjectId,
     trail: &OnChainAuditTrail,
-    tag: &str,
+    permission: Permission,
+    tags: I,
 ) -> Result<ObjectRef, Error>
 where
     C: CoreClientReadOnly + OptionalSync,
+    I: IntoIterator<Item = &'a str>,
 {
+    let tags = tags.into_iter().collect::<Vec<_>>();
+
+    if tags.is_empty() {
+        return find_capable_cap(client, owner, trail_id, trail, permission).await;
+    }
+
     let valid_roles = trail
         .roles
         .roles
         .iter()
         .filter(|(_, role)| {
-            role.permissions.contains(&Permission::AddRecord)
-                && role.data.as_ref().is_some_and(|record_tags| record_tags.allows(tag))
+            role.permissions.contains(&permission)
+                && tags
+                    .iter()
+                    .all(|tag| role.data.as_ref().is_some_and(|record_tags| record_tags.allows(tag)))
         })
         .map(|(name, _)| name.clone())
-        .collect::<std::collections::HashSet<_>>();
+        .collect::<HashSet<_>>();
 
     let cap = find_owned_capability(client, owner, trail, |cap| {
         cap.target_key == trail_id && valid_roles.contains(&cap.role)
@@ -213,8 +222,8 @@ where
     .await?
     .ok_or_else(|| {
         Error::InvalidArgument(format!(
-            "no capability with {:?} permission and record tag '{tag}' found for owner {owner} and trail {trail_id}",
-            Permission::AddRecord
+            "no capability with {:?} permission and record tags {:?} found for owner {owner} and trail {trail_id}",
+            permission, tags
         ))
     })?;
 
