@@ -1,18 +1,19 @@
 {
   "aliases": {
+    "mainnet": "6364aad5",
     "devnet": "daf90477",
-    "testnet": "2304aa97",
-    "mainnet": "6364aad5"
+    "testnet": "2304aa97"
   },
   "envs": {
-    "2304aa97": [
-      "0x51368931f28620c7f65b4ae2c5167b42390e69729357a6347be378755b46e7df"
-    ],
     "6364aad5": [
       "0x960d8a375af7bd09d19f08a9648940caf7e76289de90aa258b9e8e30a84f1b8a"
     ],
     "daf90477": [
-      "0x42550eab2785cca0f825289176fd92074d92b2ad8bf2f226d24f4f3e16720f84"
+      "0x42550eab2785cca0f825289176fd92074d92b2ad8bf2f226d24f4f3e16720f84",
+      "0xf5d2b3140f54e959fb656fb73593867b8dd36bb972e2bd83db7956d4e2a1d989"
+    ],
+    "2304aa97": [
+      "0x51368931f28620c7f65b4ae2c5167b42390e69729357a6347be378755b46e7df"
     ]
   }
 }
