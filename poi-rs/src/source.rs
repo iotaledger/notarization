@@ -14,6 +14,7 @@ use iota_types::{
     base_types::ObjectRef,
     digests::{ChainIdentifier, TransactionDigest},
     effects::{TransactionEffects, TransactionEffectsAPI},
+    event::EventID,
     messages_checkpoint::{CertifiedCheckpointSummary, CheckpointContents},
     object::Object,
     transaction::Transaction,
@@ -31,6 +32,8 @@ pub enum SourceTarget {
     Transaction(TransactionDigest),
     /// An object proof request.
     Object(ObjectRef),
+    /// An event proof request.
+    Event(EventID),
 }
 
 impl fmt::Display for SourceTarget {
@@ -38,6 +41,7 @@ impl fmt::Display for SourceTarget {
         match self {
             Self::Transaction(transaction_digest) => write!(f, "transaction {transaction_digest}"),
             Self::Object(object_ref) => write!(f, "object {object_ref:?}"),
+            Self::Event(event_id) => write!(f, "event {event_id:?}"),
         }
     }
 }
@@ -72,6 +76,14 @@ impl SourceError {
     pub fn object(object_ref: ObjectRef, kind: SourceErrorKind) -> Self {
         Self {
             target: SourceTarget::Object(object_ref),
+            kind,
+        }
+    }
+
+    /// Creates a source error for a requested event.
+    pub fn event(event_id: EventID, kind: SourceErrorKind) -> Self {
+        Self {
+            target: SourceTarget::Event(event_id),
             kind,
         }
     }
@@ -111,6 +123,9 @@ pub enum SourceErrorKind {
     /// The returned object does not compute to the requested reference.
     #[error("object reference does not match the requested reference")]
     ObjectReferenceMismatch,
+    /// The source could not resolve the requested event.
+    #[error("event was not found")]
+    EventNotFound,
     /// The transaction response did not expose a checkpoint sequence number.
     #[error("transaction response is missing checkpoint sequence")]
     MissingCheckpointSequence {
@@ -199,6 +214,13 @@ pub trait Source {
     /// created or mutated the object, builds that transaction proof, and attaches
     /// the object as a target. Returned proofs remain untrusted until verified.
     async fn object(&self, object_ref: ObjectRef) -> Result<Proof, SourceError>;
+
+    /// Builds an event proof from source data.
+    ///
+    /// The source uses the transaction digest embedded in the event ID, builds
+    /// that transaction proof, and attaches the event at the requested sequence
+    /// as a target. Returned proofs remain untrusted until verified.
+    async fn event(&self, event_id: EventID) -> Result<Proof, SourceError>;
 }
 
 /// gRPC-backed source for transaction proofs.
@@ -500,6 +522,23 @@ impl Source for GrpcSource {
         let object = self.fetch_object(object_ref).await?;
         let mut proof = self.transaction(object.previous_transaction).await?;
         proof.target = proof.target.add_object(object_ref, object);
+        Ok(proof)
+    }
+
+    async fn event(&self, event_id: EventID) -> Result<Proof, SourceError> {
+        let mut proof = self.transaction(event_id.tx_digest).await?;
+        let event = proof
+            .transaction_proof
+            .events
+            .as_ref()
+            .and_then(|events| {
+                usize::try_from(event_id.event_seq)
+                    .ok()
+                    .and_then(|index| events.get(index))
+            })
+            .cloned()
+            .ok_or_else(|| SourceError::event(event_id, SourceErrorKind::EventNotFound))?;
+        proof.target = proof.target.add_event(event_id, event);
         Ok(proof)
     }
 }
