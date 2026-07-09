@@ -5,12 +5,14 @@ use iota_sdk_types::gas::GasCostSummary;
 use iota_types::{
     base_types::{ExecutionData, dbg_object_id},
     committee::Committee,
-    digests::ChainIdentifier,
-    effects::TransactionEvents,
+    digests::{ChainIdentifier, TransactionDigest},
+    effects::{TestEffectsBuilder, TransactionEvents},
+    event::{Event, EventID},
     messages_checkpoint::{
         CertifiedCheckpointSummary, CheckpointContents, CheckpointSummary, EndOfEpochData, FullCheckpointContents,
     },
     object::Object,
+    sdk_types::{Address, Identifier, ObjectId, StructTag},
 };
 use poi_rs::{Proof, ProofTargets, ProofVerifier, TransactionProof, VerifyErrorKind};
 
@@ -70,6 +72,46 @@ fn test_proof_with_targets_and_end_of_epoch_data(
     );
 
     (committee, proof)
+}
+
+fn test_proof_with_events(events: TransactionEvents) -> (Committee, TransactionDigest, Proof) {
+    let mut execution_data = test_execution_data();
+    let transaction_digest = *execution_data.transaction.digest();
+    execution_data.effects = TestEffectsBuilder::new(execution_data.transaction.data())
+        .with_events_digest(events.digest())
+        .build();
+    let checkpoint_contents = CheckpointContents::new_with_digests_only_for_tests([execution_data.digests()]);
+    let (committee, checkpoint_summary) = sign_checkpoint_summary(&checkpoint_contents, None);
+    let chain = ChainIdentifier::from(*checkpoint_summary.digest());
+
+    let proof = Proof::new(
+        chain,
+        ProofTargets::new(),
+        checkpoint_summary,
+        TransactionProof::new(
+            checkpoint_contents,
+            execution_data.transaction,
+            execution_data.effects,
+            Some(events),
+        ),
+    );
+
+    (committee, transaction_digest, proof)
+}
+
+fn test_event(contents: Vec<u8>) -> Event {
+    Event {
+        package_id: ObjectId::SYSTEM,
+        module: Identifier::IOTA_SYSTEM_MODULE,
+        sender: Address::SYSTEM,
+        type_: StructTag::new(
+            Address::SYSTEM,
+            Identifier::IOTA_SYSTEM_MODULE,
+            Identifier::SYSTEM_EPOCH_INFO_EVENT,
+            Vec::new(),
+        ),
+        contents,
+    }
 }
 
 fn epoch_one_committee(committee: &Committee) -> Committee {
@@ -189,4 +231,37 @@ fn verifier_rejects_object_not_found_in_transaction_effects() {
     let result = ProofVerifier::new(&committee).verify(&proof);
 
     assert!(matches!(result, Err(error) if matches!(error.kind, VerifyErrorKind::ObjectNotFound)));
+}
+
+#[test]
+fn verifier_rejects_event_contents_mismatch() {
+    let event = test_event(vec![1, 2, 3]);
+    let wrong_event = test_event(vec![9, 9, 9]);
+    let (committee, transaction_digest, mut proof) = test_proof_with_events(TransactionEvents(vec![event]));
+    let event_id = EventID {
+        tx_digest: transaction_digest,
+        event_seq: 0,
+    };
+    proof.target = ProofTargets::new().add_event(event_id, wrong_event);
+
+    let result = ProofVerifier::new(&committee).verify(&proof);
+
+    assert!(matches!(result, Err(error) if matches!(error.kind, VerifyErrorKind::EventContentsMismatch)));
+}
+
+#[test]
+fn verifier_rejects_event_sequence_out_of_bounds() {
+    let event = test_event(vec![1, 2, 3]);
+    let (committee, transaction_digest, mut proof) = test_proof_with_events(TransactionEvents(vec![event.clone()]));
+    let event_id = EventID {
+        tx_digest: transaction_digest,
+        event_seq: 1,
+    };
+    proof.target = ProofTargets::new().add_event(event_id, event);
+
+    let result = ProofVerifier::new(&committee).verify(&proof);
+
+    assert!(
+        matches!(result, Err(error) if matches!(error.kind, VerifyErrorKind::EventSequenceOutOfBounds { sequence: 1 }))
+    );
 }

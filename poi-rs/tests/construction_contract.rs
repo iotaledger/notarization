@@ -7,8 +7,11 @@ use iota_types::{
     base_types::{ExecutionData, ObjectRef},
     committee::Committee,
     digests::{ChainIdentifier, TransactionDigest},
+    effects::TransactionEvents,
+    event::{Event, EventID},
     messages_checkpoint::{CertifiedCheckpointSummary, CheckpointContents, CheckpointSummary, FullCheckpointContents},
     object::Object,
+    sdk_types::{Address, Identifier, ObjectId, StructTag},
 };
 use poi_rs::{
     Proof, ProofTargets, ProofVerifier, Source, SourceError, SourceErrorKind, SourceTarget, TransactionProof,
@@ -36,6 +39,19 @@ impl Source for MockSource {
             .ok_or_else(|| SourceError::object(object_ref, SourceErrorKind::ObjectNotFound))?;
         let mut proof = self.transaction(object.previous_transaction).await?;
         proof.target = proof.target.add_object(object_ref, object);
+        Ok(proof)
+    }
+
+    async fn event(&self, event_id: EventID) -> Result<Proof, SourceError> {
+        let mut proof = self.transaction(event_id.tx_digest).await?;
+        let event = proof
+            .transaction_proof
+            .events
+            .as_ref()
+            .and_then(|events| events.get(event_id.event_seq as usize))
+            .cloned()
+            .ok_or_else(|| SourceError::event(event_id, SourceErrorKind::EventNotFound))?;
+        proof.target = proof.target.add_event(event_id, event);
         Ok(proof)
     }
 }
@@ -82,6 +98,21 @@ fn test_proof() -> (Committee, TransactionDigest, Proof) {
     (committee, transaction_digest, proof)
 }
 
+fn test_event(contents: Vec<u8>) -> Event {
+    Event {
+        package_id: ObjectId::SYSTEM,
+        module: Identifier::IOTA_SYSTEM_MODULE,
+        sender: Address::SYSTEM,
+        type_: StructTag::new(
+            Address::SYSTEM,
+            Identifier::IOTA_SYSTEM_MODULE,
+            Identifier::SYSTEM_EPOCH_INFO_EVENT,
+            Vec::new(),
+        ),
+        contents,
+    }
+}
+
 #[tokio::test]
 async fn source_builds_transaction_proof() {
     let (committee, transaction_digest, proof) = test_proof();
@@ -114,6 +145,26 @@ async fn source_builds_object_proof() {
 }
 
 #[tokio::test]
+async fn source_builds_event_proof() {
+    let (_, transaction_digest, mut proof) = test_proof();
+    let event = test_event(vec![1, 2, 3]);
+    proof.transaction_proof.events = Some(TransactionEvents(vec![event.clone()]));
+    let event_id = EventID {
+        tx_digest: transaction_digest,
+        event_seq: 0,
+    };
+    let source = MockSource {
+        proof: Some(proof),
+        object: None,
+    };
+
+    let proof = source.event(event_id).await.unwrap();
+
+    assert_eq!(proof.transaction_proof.transaction.digest(), &transaction_digest);
+    assert_eq!(proof.target.events, vec![(event_id, event)]);
+}
+
+#[tokio::test]
 async fn transaction_surfaces_source_failures() {
     let (_, transaction_digest, _) = test_proof();
     let source = MockSource::default();
@@ -135,4 +186,23 @@ async fn object_surfaces_source_failures() {
     let error = result.unwrap_err();
     assert_eq!(error.target, SourceTarget::Object(object_ref));
     assert!(matches!(error.kind, SourceErrorKind::ObjectNotFound));
+}
+
+#[tokio::test]
+async fn event_surfaces_source_failures() {
+    let (_, transaction_digest, proof) = test_proof();
+    let event_id = EventID {
+        tx_digest: transaction_digest,
+        event_seq: 0,
+    };
+    let source = MockSource {
+        proof: Some(proof),
+        object: None,
+    };
+
+    let result = source.event(event_id).await;
+
+    let error = result.unwrap_err();
+    assert_eq!(error.target, SourceTarget::Event(event_id));
+    assert!(matches!(error.kind, SourceErrorKind::EventNotFound));
 }
