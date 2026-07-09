@@ -5,21 +5,50 @@
 
 use std::str::FromStr;
 
-use iota_interaction::rpc_types::IotaObjectDataOptions;
+use iota_interaction::rpc_types::{
+    IotaObjectDataOptions, IotaTransactionBlockEffects, IotaTransactionBlockEffectsAPI,
+    IotaTransactionBlockResponseOptions,
+};
 use iota_interaction::types::base_types::ObjectRef;
 use iota_interaction::types::programmable_transaction_builder::{
     ProgrammableTransactionBuilder as Ptb, ProgrammableTransactionBuilder,
 };
 use iota_interaction::types::transaction::{CallArg, SharedObjectRef};
 use iota_interaction::types::{IOTA_CLOCK_OBJECT_ID, IOTA_CLOCK_OBJECT_SHARED_VERSION, MOVE_STDLIB_PACKAGE_ID};
-use iota_interaction::{IotaClientTrait, OptionalSync, ident_str};
+use iota_interaction::{IotaClientTrait, OptionalSend, OptionalSync, ident_str};
 use iota_sdk_types::{Address, Argument, Identifier, ObjectId, Owner, ProgrammableTransaction, TypeTag};
 use product_common::core_client::CoreClientReadOnly;
+use product_common::transaction::transaction_builder::Transaction;
 use serde::Serialize;
 
 use super::{capability, trail as trail_reader};
 use crate::core::types::Permission;
 use crate::error::Error;
+
+/// Applies a transaction whose output is decoded from events, fetching those events from the
+/// transaction digest in `effects`.
+pub(crate) async fn apply_with_events<T, C>(
+    tx: T,
+    effects: &mut IotaTransactionBlockEffects,
+    client: &C,
+) -> Result<T::Output, Error>
+where
+    T: Transaction<Error = Error> + OptionalSend,
+    C: CoreClientReadOnly + OptionalSync,
+{
+    let response = client
+        .client_adapter()
+        .read_api()
+        .get_transaction_with_options(
+            *effects.transaction_digest(),
+            IotaTransactionBlockResponseOptions::full_content(),
+        )
+        .await
+        .map_err(|err| Error::UnexpectedApiResponse(format!("failed to fetch transaction events; {err}")))?;
+
+    let mut events = response.events().cloned().unwrap_or_default();
+    tx.apply_with_events(effects, &mut events, client).await
+}
 
 /// Returns the canonical immutable clock object argument.
 pub(crate) fn get_clock_ref(ptb: &mut Ptb) -> Argument {

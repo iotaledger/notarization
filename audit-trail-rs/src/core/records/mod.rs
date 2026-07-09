@@ -3,7 +3,8 @@
 
 //! Record read and mutation APIs for Audit Trails.
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
+use std::marker::PhantomData;
 
 use iota_interaction::move_core_types::annotated_value::MoveValue;
 use iota_interaction::rpc_types::IotaMoveValue;
@@ -18,13 +19,12 @@ use serde::de::DeserializeOwned;
 
 use crate::core::internal::{linked_table, trail as trail_reader};
 use crate::core::trail::{AuditTrailFull, AuditTrailReadOnly};
-use crate::core::types::{Data, PaginatedRecord, Record};
+use crate::core::types::{Data, PaginatedRecord, Record, RecordInput};
 use crate::error::Error;
-
 mod operations;
 mod transactions;
 
-pub use transactions::{AddRecord, DeleteRecord, DeleteRecordsBatch};
+pub use transactions::{AddRecord, CorrectRecord, DeleteRecord, DeleteRecordsBatch};
 
 use self::operations::RecordsOps;
 
@@ -38,7 +38,7 @@ pub struct TrailRecords<'a, C, D = Data> {
     pub(crate) client: &'a C,
     pub(crate) trail_id: ObjectId,
     pub(crate) selected_capability_id: Option<ObjectId>,
-    pub(crate) _phantom: std::marker::PhantomData<D>,
+    pub(crate) _phantom: PhantomData<D>,
 }
 
 impl<'a, C, D> TrailRecords<'a, C, D> {
@@ -47,7 +47,7 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
             client,
             trail_id,
             selected_capability_id,
-            _phantom: std::marker::PhantomData,
+            _phantom: PhantomData,
         }
     }
 
@@ -148,16 +148,70 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
         ))
     }
 
-    /// Placeholder for a future correction helper.
+    /// Builds a transaction that appends a correction record to the trail.
+    ///
+    /// The original record remains immutable. The correction is appended with a new sequence number and records
+    /// that it supersedes `sequence_number`; the corrected record receives a back-pointer to the correction so
+    /// [`Self::resolve_current`] can follow the replacement chain.
+    ///
+    /// Requires `CorrectRecord`. Tagged corrections require the correction tag to exist in the trail registry
+    /// and the capability's role to allow both the replaced record's tag, when present, and the correction's
+    /// tag, when present. The transaction can fail if the trail package version is incompatible, the capability
+    /// is invalid, the trail is write-locked, the target record does not exist, the target record was already
+    /// replaced, or tag authorization fails. On success a `RecordAdded` event is emitted.
+    pub fn correct<S>(&self, sequence_number: u64, record: RecordInput<D>) -> TransactionBuilder<CorrectRecord>
+    where
+        C: AuditTrailFull + CoreClient<S>,
+        S: Signer<IotaKeySignature> + OptionalSync,
+        D: Into<Data>,
+    {
+        let owner = self.client.sender_address();
+        TransactionBuilder::new(CorrectRecord::new(
+            self.trail_id,
+            owner,
+            sequence_number,
+            record.data.into(),
+            record.metadata,
+            record.tag,
+            self.selected_capability_id,
+        ))
+    }
+
+    /// Loads the current version of a record by following correction links.
+    ///
+    /// Use [`Self::get`] when you need the exact immutable record stored at a sequence number. Use
+    /// `resolve_current` when you have an original sequence number and want the latest correction in that
+    /// record's replacement chain.
+    ///
+    /// For example, if record `3` was corrected by record `7`, and record `7` was later corrected by record
+    /// `9`, `resolve_current(3)` returns record `9`. If the starting record has not been replaced, this returns
+    /// the starting record itself.
     ///
     /// # Errors
     ///
-    /// Always returns [`Error::NotImplemented`].
-    pub async fn correct(&self, _replaces: Vec<u64>, _data: D, _metadata: Option<String>) -> Result<(), Error>
+    /// Returns an error if any record in the replacement chain cannot be loaded, or if the chain contains a
+    /// cycle.
+    pub async fn resolve_current(&self, sequence_number: u64) -> Result<Record<D>, Error>
     where
-        C: AuditTrailFull,
+        C: AuditTrailReadOnly,
+        D: DeserializeOwned,
     {
-        Err(Error::NotImplemented("TrailRecords::correct"))
+        let mut current = sequence_number;
+        let mut visited = HashSet::new();
+
+        loop {
+            if !visited.insert(current) {
+                return Err(Error::UnexpectedApiResponse(format!(
+                    "cycle detected while resolving correction chain at record {current}"
+                )));
+            }
+
+            let record = self.get(current).await?;
+            let Some(next) = record.correction.is_replaced_by else {
+                return Ok(record);
+            };
+            current = next;
+        }
     }
 
     /// Returns the number of records currently stored in the trail.
