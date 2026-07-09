@@ -76,10 +76,3 @@ fi
 
 export IOTA_AUDIT_TRAIL_PKG_ID="$audit_trail_package_id"
 printf 'export IOTA_AUDIT_TRAIL_PKG_ID=%s\n' "$IOTA_AUDIT_TRAIL_PKG_ID"
-
-if [[ "$active_env" == "localnet" ]]; then
-    tf_components_package_id="$audit_trail_package_id"
-
-    export IOTA_TF_COMPONENTS_PKG_ID="$tf_components_package_id"
-    printf 'export IOTA_TF_COMPONENTS_PKG_ID=%s\n' "$IOTA_TF_COMPONENTS_PKG_ID"
-fi
