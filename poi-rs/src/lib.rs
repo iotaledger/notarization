@@ -15,5 +15,5 @@ pub use proof::{
     Proof, ProofVerifier, ProofVersion, SerializationError, SerializationErrorKind, TransactionProof, VerifyError,
     VerifyErrorKind, VersionError,
 };
-pub use source::{GrpcSource, Source, SourceError, SourceErrorKind};
+pub use source::{GrpcSource, Source, SourceError, SourceErrorKind, SourceTarget};
 pub use target::ProofTargets;

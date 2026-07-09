@@ -4,16 +4,20 @@
 use async_trait::async_trait;
 use iota_sdk_types::gas::GasCostSummary;
 use iota_types::{
-    base_types::ExecutionData,
+    base_types::{ExecutionData, ObjectRef},
     committee::Committee,
     digests::{ChainIdentifier, TransactionDigest},
     messages_checkpoint::{CertifiedCheckpointSummary, CheckpointContents, CheckpointSummary, FullCheckpointContents},
+    object::Object,
 };
-use poi_rs::{Proof, ProofTargets, ProofVerifier, Source, SourceError, SourceErrorKind, TransactionProof};
+use poi_rs::{
+    Proof, ProofTargets, ProofVerifier, Source, SourceError, SourceErrorKind, SourceTarget, TransactionProof,
+};
 
 #[derive(Default)]
 struct MockSource {
     proof: Option<Proof>,
+    object: Option<Object>,
 }
 
 #[async_trait]
@@ -22,6 +26,17 @@ impl Source for MockSource {
         self.proof
             .clone()
             .ok_or_else(|| SourceError::new(transaction_digest, SourceErrorKind::TransactionNotFound))
+    }
+
+    async fn object(&self, object_ref: ObjectRef) -> Result<Proof, SourceError> {
+        let object = self
+            .object
+            .clone()
+            .filter(|object| object.compute_object_reference() == object_ref)
+            .ok_or_else(|| SourceError::object(object_ref, SourceErrorKind::ObjectNotFound))?;
+        let mut proof = self.transaction(object.previous_transaction).await?;
+        proof.target = proof.target.add_object(object_ref, object);
+        Ok(proof)
     }
 }
 
@@ -70,12 +85,32 @@ fn test_proof() -> (Committee, TransactionDigest, Proof) {
 #[tokio::test]
 async fn source_builds_transaction_proof() {
     let (committee, transaction_digest, proof) = test_proof();
-    let source = MockSource { proof: Some(proof) };
+    let source = MockSource {
+        proof: Some(proof),
+        object: None,
+    };
 
     let proof = source.transaction(transaction_digest).await.unwrap();
 
     assert_eq!(proof.transaction_proof.transaction.digest(), &transaction_digest);
     ProofVerifier::new(&committee).verify(&proof).unwrap();
+}
+
+#[tokio::test]
+async fn source_builds_object_proof() {
+    let (_, transaction_digest, proof) = test_proof();
+    let mut object = Object::immutable_for_testing();
+    object.previous_transaction = transaction_digest;
+    let object_ref = object.compute_object_reference();
+    let source = MockSource {
+        proof: Some(proof),
+        object: Some(object.clone()),
+    };
+
+    let proof = source.object(object_ref).await.unwrap();
+
+    assert_eq!(proof.transaction_proof.transaction.digest(), &transaction_digest);
+    assert_eq!(proof.target.objects, vec![(object_ref, object)]);
 }
 
 #[tokio::test]
@@ -86,6 +121,18 @@ async fn transaction_surfaces_source_failures() {
     let result = source.transaction(transaction_digest).await;
 
     let error = result.unwrap_err();
-    assert_eq!(error.transaction_digest, transaction_digest);
+    assert_eq!(error.target, SourceTarget::Transaction(transaction_digest));
     assert!(matches!(error.kind, SourceErrorKind::TransactionNotFound));
+}
+
+#[tokio::test]
+async fn object_surfaces_source_failures() {
+    let object_ref = Object::immutable_for_testing().compute_object_reference();
+    let source = MockSource::default();
+
+    let result = source.object(object_ref).await;
+
+    let error = result.unwrap_err();
+    assert_eq!(error.target, SourceTarget::Object(object_ref));
+    assert!(matches!(error.kind, SourceErrorKind::ObjectNotFound));
 }
