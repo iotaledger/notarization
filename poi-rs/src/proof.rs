@@ -1,8 +1,6 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use std::error::Error as StdError;
-
 use iota_types::{
     committee::Committee,
     digests::ChainIdentifier,
@@ -12,9 +10,7 @@ use iota_types::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::target::ProofTargets;
-
-type BoxError = Box<dyn StdError + Send + Sync + 'static>;
+use crate::{BoxError, target::ProofTargets};
 
 /// Error returned when a proof-format version is not supported.
 #[derive(Debug, thiserror::Error)]
