@@ -13,10 +13,10 @@ Examples can be run against
 - a local IOTA node
 - or an existing network, e.g. the IOTA testnet
 
-When setting up the local node, you'll also need to publish a notarization package as described in
+When setting up the local node, you'll also need to publish a Notarization Package as described in
 [Local Network Setup](https://docs.iota.org/developer/iota-notarization/getting-started/local-network-setup) in the documentation portal.
 You'll also need to provide an environment variable `IOTA_NOTARIZATION_PKG_ID` set to the package-id of your locally deployed
-notarization package, to be able to run the examples against the local node.
+Notarization Package, to be able to run the examples against the local node.
 
 In case of running the examples against an existing network, this network needs to have a faucet to fund your accounts (the IOTA testnet (`https://api.testnet.iota.cafe`) supports this), and you need to specify this via `NETWORK_URL`.
 

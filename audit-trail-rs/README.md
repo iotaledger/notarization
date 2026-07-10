@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The Audit Trails Rust package provides the Rust client for structured record histories in the IOTA Notarization Toolkit.
+The Audit Trails Rust Package provides the Rust client for structured record histories in the IOTA Notarization Toolkit.
 
 The package also provides an `AuditTrailBuilder` that creates audit trail objects on the IOTA ledger and an `AuditTrailHandle`
 that interacts with existing trails. The handle maps to one on-chain audit trail and provides typed APIs for records,

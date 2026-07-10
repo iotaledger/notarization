@@ -1,6 +1,6 @@
 [package]
 name = "examples"
-version = "0.1.24-alpha"
+version = "0.1.25-alpha"
 authors = ["IOTA Stiftung"]
 edition = "2024"
 publish = false
@@ -91,6 +91,10 @@ path = "audit-trail/advanced/10_capability_constraints.rs"
 [[example]]
 name = "11_manage_record_tags"
 path = "audit-trail/advanced/11_manage_record_tags.rs"
+
+[[example]]
+name = "12_correct_records"
+path = "audit-trail/advanced/12_correct_records.rs"
 
 [[example]]
 name = "01_customs_clearance"

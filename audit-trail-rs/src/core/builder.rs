@@ -5,7 +5,7 @@
 
 use std::collections::HashSet;
 
-use iota_interaction::types::base_types::IotaAddress;
+use iota_sdk_types::Address;
 use product_common::transaction::transaction_builder::TransactionBuilder;
 
 use super::types::{Data, ImmutableMetadata, InitialRecord, LockingConfig};
@@ -31,7 +31,7 @@ use crate::error::Error;
 #[derive(Debug, Clone, Default)]
 pub struct AuditTrailBuilder {
     /// Initial admin address that should receive the initial admin capability.
-    pub admin: Option<IotaAddress>,
+    pub admin: Option<Address>,
     /// Optional initial record created together with the trail.
     pub initial_record: Option<InitialRecord>,
     /// Locking rules to apply at creation time.
@@ -110,7 +110,7 @@ impl AuditTrailBuilder {
     }
 
     /// Sets the admin address that receives the initial-admin capability.
-    pub fn with_admin(mut self, admin: IotaAddress) -> Self {
+    pub fn with_admin(mut self, admin: Address) -> Self {
         self.admin = Some(admin);
         self
     }

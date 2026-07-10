@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use async_trait::async_trait;
-use iota_sdk_types::gas::GasCostSummary;
+use iota_sdk_types::{Event, gas::GasCostSummary};
 use iota_types::{
     base_types::{ExecutionData, ObjectRef},
     committee::Committee,
     digests::{ChainIdentifier, TransactionDigest},
     effects::TransactionEvents,
-    event::{Event, EventID},
+    event::EventID,
     messages_checkpoint::{CertifiedCheckpointSummary, CheckpointContents, CheckpointSummary, FullCheckpointContents},
     object::Object,
     sdk_types::{Address, Identifier, ObjectId, StructTag},
@@ -35,7 +35,7 @@ impl Source for MockSource {
         let object = self
             .object
             .clone()
-            .filter(|object| object.compute_object_reference() == object_ref)
+            .filter(|object| object.as_inner().object_ref() == object_ref)
             .ok_or_else(|| SourceError::object(object_ref, SourceErrorKind::ObjectNotFound))?;
         let mut proof = self.transaction(object.previous_transaction).await?;
         proof.target = proof.target.add_object(object_ref, object);
@@ -132,7 +132,7 @@ async fn source_builds_object_proof() {
     let (_, transaction_digest, proof) = test_proof();
     let mut object = Object::immutable_for_testing();
     object.previous_transaction = transaction_digest;
-    let object_ref = object.compute_object_reference();
+    let object_ref = object.as_inner().object_ref();
     let source = MockSource {
         proof: Some(proof),
         object: Some(object.clone()),
@@ -178,7 +178,7 @@ async fn transaction_surfaces_source_failures() {
 
 #[tokio::test]
 async fn object_surfaces_source_failures() {
-    let object_ref = Object::immutable_for_testing().compute_object_reference();
+    let object_ref = Object::immutable_for_testing().as_inner().object_ref();
     let source = MockSource::default();
 
     let result = source.object(object_ref).await;

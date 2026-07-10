@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::anyhow;
-use audit_trails::core::types::Data as AuditTrailData;
+use audit_trails::core::types::{Data as AuditTrailData, RecordInput};
 use audit_trails::{AuditTrailClient, AuditTrailClientReadOnly};
 use iota_interaction_ts::bindings::WasmTransactionSigner;
 use iota_interaction_ts::wasm_error::{wasm_error, Result, WasmResult};
@@ -11,8 +11,8 @@ use product_common::bindings::transaction::WasmTransactionBuilder;
 use product_common::bindings::utils::into_transaction_builder;
 use wasm_bindgen::prelude::*;
 
-use crate::trail::{WasmAddRecord, WasmDeleteRecord, WasmDeleteRecordsBatch};
-use crate::types::{WasmData, WasmEmpty, WasmPaginatedRecord, WasmRecord};
+use crate::trail::{WasmAddRecord, WasmCorrectRecord, WasmDeleteRecord, WasmDeleteRecordsBatch};
+use crate::types::{WasmData, WasmPaginatedRecord, WasmRecord};
 
 /// Record API scoped to a specific trail.
 ///
@@ -144,25 +144,78 @@ impl WasmTrailRecords {
         Ok(page.into())
     }
 
-    /// Executes the correction helper for a record payload.
+    /// Loads the current version of a record by following correction links.
     ///
     /// @remarks
-    /// Placeholder for a future correction helper — currently always throws because the underlying
-    /// implementation is not yet wired up.
+    /// Use {@link TrailRecords.get} when you need the exact immutable record stored at a sequence
+    /// number. Use `resolveCurrent` when you have an original sequence number and want the latest
+    /// correction in that record's replacement chain.
     ///
-    /// @param replaces - Sequence numbers of the records that the correction supersedes.
-    /// @param data - Replacement record payload.
-    /// @param metadata - Optional application-defined metadata stored alongside the correction.
+    /// For example, if record `3` was corrected by record `7`, and record `7` was later corrected
+    /// by record `9`, `resolveCurrent(3)` returns record `9`. If the starting record has not been
+    /// replaced, this returns the starting record itself.
     ///
-    /// @throws Always; the helper is not yet implemented.
-    pub async fn correct(&self, replaces: Vec<u64>, data: WasmData, metadata: Option<String>) -> Result<WasmEmpty> {
-        self.require_write()?
+    /// @param sequenceNumber - Sequence number to resolve.
+    ///
+    /// @returns The current record at the end of the correction chain.
+    ///
+    /// @throws When a record cannot be loaded or the replacement chain is malformed.
+    #[wasm_bindgen(js_name = resolveCurrent)]
+    pub async fn resolve_current(&self, sequence_number: u64) -> Result<WasmRecord> {
+        let record = self
+            .read_only
             .trail(self.trail_id)
             .records()
-            .correct(replaces, data.into(), metadata)
+            .resolve_current(sequence_number)
             .await
             .wasm_result()?;
-        Ok(WasmEmpty)
+        Ok(record.into())
+    }
+
+    /// Builds a record-correction transaction.
+    ///
+    /// @remarks
+    /// Appends a new correction record that supersedes `sequenceNumber` while preserving the
+    /// original record. The correction records the sequence number it replaces, and the replaced
+    /// record receives a back-pointer to the new correction so `resolveCurrent` can follow the
+    /// replacement chain.
+    ///
+    /// Tagged corrections require the correction tag to exist in the trail registry and the
+    /// supplied capability's role to allow both the replaced record's tag, when present, and the
+    /// correction record's tag, when present. The transaction aborts on-chain when the package
+    /// version is incompatible, the capability is invalid, the trail is write-locked, the target
+    /// record does not exist, the target record was already replaced, or tag authorization fails.
+    ///
+    /// Requires the {@link Permission.CorrectRecord} permission.
+    ///
+    /// @param sequenceNumber - Sequence number of the record to correct.
+    /// @param data - Replacement record payload.
+    /// @param metadata - Optional application-defined metadata stored alongside the correction.
+    /// @param tag - Optional trail-owned tag attached to the correction.
+    ///
+    /// @returns A {@link TransactionBuilder} wrapping the {@link CorrectRecord} transaction.
+    ///
+    /// @throws When the wrapper was created from a read-only client.
+    ///
+    /// Emits a {@link RecordAdded} event on success.
+    #[wasm_bindgen(unchecked_return_type = "TransactionBuilder<CorrectRecord>")]
+    pub fn correct(
+        &self,
+        sequence_number: u64,
+        data: WasmData,
+        metadata: Option<String>,
+        tag: Option<String>,
+    ) -> Result<WasmTransactionBuilder> {
+        let tx = self
+            .require_write()?
+            .trail(self.trail_id)
+            .records()
+            .correct(
+                sequence_number,
+                RecordInput::new(AuditTrailData::from(data), metadata, tag),
+            )
+            .into_inner();
+        Ok(into_transaction_builder(WasmCorrectRecord(tx)))
     }
 
     /// Builds a record-add transaction.

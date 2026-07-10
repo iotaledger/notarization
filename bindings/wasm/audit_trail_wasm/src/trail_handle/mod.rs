@@ -84,7 +84,7 @@ impl WasmAuditTrailHandle {
     ///
     /// @remarks
     /// Bumps the trail's stored data layout to the current package version. Intended to be called
-    /// once after the audit-trail Move package is upgraded.
+    /// once after the Audit Trails Move Package is upgraded.
     ///
     /// Requires the {@link Permission.Migrate} permission.
     ///

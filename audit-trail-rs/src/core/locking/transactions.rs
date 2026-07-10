@@ -6,9 +6,7 @@
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::IotaTransactionBlockEffects;
-use iota_interaction::types::base_types::IotaAddress;
-use iota_interaction::types::transaction::ProgrammableTransaction;
-use iota_sdk_types::ObjectId;
+use iota_sdk_types::{Address, ObjectId, ProgrammableTransaction};
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;
@@ -27,7 +25,7 @@ use crate::error::Error;
 #[derive(Debug, Clone)]
 pub struct UpdateLockingConfig {
     trail_id: ObjectId,
-    owner: IotaAddress,
+    owner: Address,
     config: LockingConfig,
     selected_capability_id: Option<ObjectId>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
@@ -37,7 +35,7 @@ impl UpdateLockingConfig {
     /// Creates an `UpdateLockingConfig` transaction builder payload.
     pub fn new(
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         config: LockingConfig,
         selected_capability_id: Option<ObjectId>,
     ) -> Self {
@@ -96,7 +94,7 @@ impl Transaction for UpdateLockingConfig {
 #[derive(Debug, Clone)]
 pub struct UpdateDeleteRecordWindow {
     trail_id: ObjectId,
-    owner: IotaAddress,
+    owner: Address,
     window: LockingWindow,
     selected_capability_id: Option<ObjectId>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
@@ -106,7 +104,7 @@ impl UpdateDeleteRecordWindow {
     /// Creates an `UpdateDeleteRecordWindow` transaction builder payload.
     pub fn new(
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         window: LockingWindow,
         selected_capability_id: Option<ObjectId>,
     ) -> Self {
@@ -165,7 +163,7 @@ impl Transaction for UpdateDeleteRecordWindow {
 #[derive(Debug, Clone)]
 pub struct UpdateDeleteTrailLock {
     trail_id: ObjectId,
-    owner: IotaAddress,
+    owner: Address,
     lock: TimeLock,
     selected_capability_id: Option<ObjectId>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
@@ -173,12 +171,7 @@ pub struct UpdateDeleteTrailLock {
 
 impl UpdateDeleteTrailLock {
     /// Creates an `UpdateDeleteTrailLock` transaction builder payload.
-    pub fn new(
-        trail_id: ObjectId,
-        owner: IotaAddress,
-        lock: TimeLock,
-        selected_capability_id: Option<ObjectId>,
-    ) -> Self {
+    pub fn new(trail_id: ObjectId, owner: Address, lock: TimeLock, selected_capability_id: Option<ObjectId>) -> Self {
         Self {
             trail_id,
             owner,
@@ -233,7 +226,7 @@ impl Transaction for UpdateDeleteTrailLock {
 #[derive(Debug, Clone)]
 pub struct UpdateWriteLock {
     trail_id: ObjectId,
-    owner: IotaAddress,
+    owner: Address,
     lock: TimeLock,
     selected_capability_id: Option<ObjectId>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
@@ -241,12 +234,7 @@ pub struct UpdateWriteLock {
 
 impl UpdateWriteLock {
     /// Creates an `UpdateWriteLock` transaction builder payload.
-    pub fn new(
-        trail_id: ObjectId,
-        owner: IotaAddress,
-        lock: TimeLock,
-        selected_capability_id: Option<ObjectId>,
-    ) -> Self {
+    pub fn new(trail_id: ObjectId, owner: Address, lock: TimeLock, selected_capability_id: Option<ObjectId>) -> Self {
         Self {
             trail_id,
             owner,

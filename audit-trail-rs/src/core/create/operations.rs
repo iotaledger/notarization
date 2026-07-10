@@ -6,10 +6,8 @@
 use std::collections::HashSet;
 
 use iota_interaction::ident_str;
-use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use iota_interaction::types::transaction::ProgrammableTransaction;
-use iota_sdk_types::{Argument, ObjectId};
+use iota_sdk_types::{Address, Argument, ObjectId, ProgrammableTransaction};
 
 use crate::core::internal::tx;
 use crate::core::types::{Data, ImmutableMetadata, InitialRecord, LockingConfig};
@@ -27,7 +25,7 @@ pub(super) struct CreateTrailArgs {
     /// TfComponents package used by locking and capability-related values.
     pub tf_components_package_id: ObjectId,
     /// Address that should receive the initial admin capability.
-    pub admin: IotaAddress,
+    pub admin: Address,
     /// Optional first record inserted into the newly created trail.
     pub initial_record: Option<InitialRecord>,
     /// Initial locking rules for the trail.
