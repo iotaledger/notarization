@@ -72,7 +72,7 @@ to [rustup.rs](https://rustup.rs) for the installation.
 - [Node.js](https://nodejs.org/en) (>= `v20`)
 - [Rust](https://www.rust-lang.org/) (>= 1.65)
 - [Cargo](https://doc.rust-lang.org/cargo/) (>= 1.65)
-- for running example: a local network node with the IOTA Audit Trails package deployed as described in [Local Network Setup](https://docs.iota.org/developer/iota-notarization/audit-trails/getting-started/local-network-setup)
+- for running example: a local network node with the IOTA Audit Trails Package deployed as described in [Local Network Setup](https://docs.iota.org/developer/iota-notarization/audit-trails/getting-started/local-network-setup)
 
 ### 1. Install Local Tooling
 
