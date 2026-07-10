@@ -76,7 +76,7 @@ impl WasmNotarizationClient {
         self.0.network().to_string()
     }
 
-    /// The notarization package ID this client is using.
+    /// The Notarization Package ID this client is using.
     #[wasm_bindgen(js_name = packageId)]
     pub fn package_id(&self) -> String {
         self.0.package_id().to_string()
@@ -90,7 +90,7 @@ impl WasmNotarizationClient {
         self.0.tf_components_package_id().unwrap_or(ObjectId::ZERO).to_string()
     }
 
-    /// The full history of notarization package IDs known on this network,
+    /// The full history of Notarization Package IDs known on this network,
     /// most recent first.
     #[wasm_bindgen(js_name = packageHistory)]
     pub fn package_history(&self) -> Vec<String> {
