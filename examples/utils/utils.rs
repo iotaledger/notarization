@@ -4,9 +4,8 @@
 use anyhow::Context;
 use audit_trails::core::types::{CapabilityIssueOptions, PermissionSet, RoleTags};
 use audit_trails::{AuditTrailClient, PackageOverrides};
-use iota_sdk::types::base_types::IotaAddress;
 use iota_sdk::{IOTA_LOCAL_NETWORK_URL, IotaClientBuilder};
-use iota_sdk_types::ObjectId;
+use iota_sdk_types::{Address, ObjectId};
 use notarization::client::{NotarizationClient, NotarizationClientReadOnly};
 use product_common::test_utils::{InMemSigner, request_funds};
 
@@ -82,7 +81,7 @@ pub async fn issue_tagged_record_role(
     trail_id: ObjectId,
     role_name: &str,
     tag: &str,
-    issued_to: IotaAddress,
+    issued_to: Address,
 ) -> Result<(), anyhow::Error> {
     client
         .trail(trail_id)

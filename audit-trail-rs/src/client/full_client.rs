@@ -82,13 +82,11 @@ use std::ops::Deref;
 use async_trait::async_trait;
 #[cfg(not(target_arch = "wasm32"))]
 use iota_interaction::IotaClient;
-use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::crypto::PublicKey;
-use iota_interaction::types::transaction::ProgrammableTransaction;
 use iota_interaction::{IotaKeySignature, OptionalSync};
 #[cfg(target_arch = "wasm32")]
 use iota_interaction_ts::bindings::WasmIotaClient as IotaClient;
-use iota_sdk_types::ObjectId;
+use iota_sdk_types::{Address, ObjectId, ProgrammableTransaction};
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use product_common::network_name::NetworkName;
 use secret_storage::Signer;
@@ -265,7 +263,7 @@ impl<S> AuditTrailClient<S> {
     /// the initial admin.
     pub fn create_trail(&self) -> AuditTrailBuilder {
         AuditTrailBuilder {
-            admin: self.public_key.as_ref().map(IotaAddress::from),
+            admin: self.public_key.as_ref().map(Address::from),
             ..AuditTrailBuilder::default()
         }
     }
@@ -280,10 +278,10 @@ where
         self.public_key.as_ref().expect("public_key is set")
     }
 
-    /// Returns the [IotaAddress] wrapped by this client.
+    /// Returns the [Address] wrapped by this client.
     #[inline(always)]
-    pub fn address(&self) -> IotaAddress {
-        IotaAddress::from(self.public_key())
+    pub fn address(&self) -> Address {
+        Address::from(self.public_key())
     }
 }
 
@@ -317,8 +315,8 @@ where
         &self.signer
     }
 
-    fn sender_address(&self) -> IotaAddress {
-        IotaAddress::from(self.public_key())
+    fn sender_address(&self) -> Address {
+        Address::from(self.public_key())
     }
 
     fn sender_public_key(&self) -> &PublicKey {

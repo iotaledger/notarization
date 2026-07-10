@@ -7,7 +7,7 @@ use iota_sdk_types::ObjectId;
 use notarization::NotarizationClient;
 use product_common::bindings::transaction::WasmTransactionBuilder;
 use product_common::bindings::utils::{into_transaction_builder, parse_wasm_iota_address, parse_wasm_object_id};
-use product_common::bindings::{WasmIotaAddress, WasmObjectID};
+use product_common::bindings::{WasmAddress, WasmObjectID};
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use wasm_bindgen::prelude::*;
 
@@ -66,7 +66,7 @@ impl WasmNotarizationClient {
 
     /// The IOTA address transactions will be sent from.
     #[wasm_bindgen(js_name = senderAddress)]
-    pub fn sender_address(&self) -> WasmIotaAddress {
+    pub fn sender_address(&self) -> WasmAddress {
         self.0.sender_address().to_string()
     }
 
@@ -260,7 +260,7 @@ impl WasmNotarizationClient {
     pub fn transfer_notarization(
         &self,
         notarization_id: WasmObjectID,
-        recipient: WasmIotaAddress,
+        recipient: WasmAddress,
     ) -> Result<WasmTransactionBuilder> {
         let notarization_id = parse_wasm_object_id(&notarization_id)?;
         let recipient_address = parse_wasm_iota_address(&recipient)?;

@@ -250,6 +250,19 @@ wasm = [
   "WasmTrailRecords::add",
 ]
 
+[audit_trails.main.correct_record]
+rust = [
+  "CorrectRecord",
+  "CorrectRecord::new",
+  "TrailRecords::correct",
+]
+wasm = [
+  "WasmCorrectRecord",
+  "WasmCorrectRecord::build_programmable_transaction",
+  "WasmCorrectRecord::apply_with_events",
+  "WasmTrailRecords::correct",
+]
+
 [audit_trails.main.delete_record]
 rust = [
   "DeleteRecord",
