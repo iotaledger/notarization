@@ -9,9 +9,7 @@
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::{IotaTransactionBlockEffects, IotaTransactionBlockEvents};
-use iota_interaction::types::base_types::IotaAddress;
-use iota_interaction::types::transaction::ProgrammableTransaction;
-use iota_sdk_types::ObjectId;
+use iota_sdk_types::{Address, ObjectId, ProgrammableTransaction};
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;
@@ -36,7 +34,7 @@ pub struct AddRecord {
     /// Trail object ID that will receive the record.
     pub trail_id: ObjectId,
     /// Address authorizing the write.
-    pub owner: IotaAddress,
+    pub owner: Address,
     /// Record payload to append.
     pub data: Data,
     /// Optional application-defined metadata.
@@ -52,7 +50,7 @@ impl AddRecord {
     /// Creates an `AddRecord` transaction builder payload.
     pub fn new(
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         data: Data,
         metadata: Option<String>,
         tag: Option<String>,
@@ -142,7 +140,7 @@ pub struct CorrectRecord {
     /// Trail object ID that will receive the correction.
     pub trail_id: ObjectId,
     /// Address authorizing the correction.
-    pub owner: IotaAddress,
+    pub owner: Address,
     /// Sequence number of the record being corrected.
     pub sequence_number: u64,
     /// Correction payload to append.
@@ -164,7 +162,7 @@ impl CorrectRecord {
     /// requirements as the Move `correct_record` entry point.
     pub fn new(
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         sequence_number: u64,
         data: Data,
         metadata: Option<String>,
@@ -253,7 +251,7 @@ pub struct DeleteRecord {
     /// Trail object ID containing the record.
     pub trail_id: ObjectId,
     /// Address authorizing the deletion.
-    pub owner: IotaAddress,
+    pub owner: Address,
     /// Sequence number of the record to delete.
     pub sequence_number: u64,
     /// Explicit capability to use instead of auto-selecting one from the owner's wallet.
@@ -265,7 +263,7 @@ impl DeleteRecord {
     /// Creates a `DeleteRecord` transaction builder payload.
     pub fn new(
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         sequence_number: u64,
         selected_capability_id: Option<ObjectId>,
     ) -> Self {
@@ -356,7 +354,7 @@ pub struct DeleteRecordsBatch {
     /// Trail object ID containing the records.
     pub trail_id: ObjectId,
     /// Address authorizing the deletion.
-    pub owner: IotaAddress,
+    pub owner: Address,
     /// Maximum number of records to delete in this batch.
     pub limit: u64,
     /// Explicit capability to use instead of auto-selecting one from the owner's wallet.
@@ -366,7 +364,7 @@ pub struct DeleteRecordsBatch {
 
 impl DeleteRecordsBatch {
     /// Creates a `DeleteRecordsBatch` transaction builder payload.
-    pub fn new(trail_id: ObjectId, owner: IotaAddress, limit: u64, selected_capability_id: Option<ObjectId>) -> Self {
+    pub fn new(trail_id: ObjectId, owner: Address, limit: u64, selected_capability_id: Option<ObjectId>) -> Self {
         Self {
             trail_id,
             owner,

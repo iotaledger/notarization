@@ -4,11 +4,10 @@
 use std::ops::Deref;
 use std::sync::Arc;
 
-use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::crypto::PublicKey;
 use iota_interaction::{IOTA_LOCAL_NETWORK_URL, IotaClientBuilder, KeytoolSigner};
 use iota_interaction_rust::IotaClientAdapter;
-use iota_sdk_types::ObjectId;
+use iota_sdk_types::{Address, ObjectId};
 use notarization::client::{NotarizationClient, NotarizationClientReadOnly};
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use product_common::network_name::NetworkName;
@@ -47,7 +46,7 @@ impl TestClient {
         Self::new_from_address(active_address).await
     }
 
-    pub async fn new_from_address(address: IotaAddress) -> anyhow::Result<Self> {
+    pub async fn new_from_address(address: Address) -> anyhow::Result<Self> {
         let api_endpoint = std::env::var("API_ENDPOINT").unwrap_or_else(|_| IOTA_LOCAL_NETWORK_URL.to_string());
         let client = IotaClientBuilder::default().build(&api_endpoint).await?;
         let package_id = PACKAGE_ID
@@ -88,7 +87,7 @@ impl CoreClient<KeytoolSigner> for TestClient {
         self.client.signer()
     }
 
-    fn sender_address(&self) -> IotaAddress {
+    fn sender_address(&self) -> Address {
         self.client.sender_address()
     }
 

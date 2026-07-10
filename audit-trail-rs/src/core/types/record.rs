@@ -5,9 +5,8 @@ use std::collections::{BTreeMap, HashSet};
 use std::str::FromStr;
 
 use iota_interaction::ident_str;
-use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
-use iota_sdk_types::{Argument, ObjectId, TypeTag};
+use iota_sdk_types::{Address, Argument, ObjectId, TypeTag};
 use serde::{Deserialize, Serialize};
 
 use crate::core::internal::tx;
@@ -39,7 +38,7 @@ pub struct Record<D = Data> {
     /// Monotonic record sequence number inside the trail.
     pub sequence_number: u64,
     /// Address that added the record.
-    pub added_by: IotaAddress,
+    pub added_by: Address,
     /// Millisecond timestamp at which the record was added.
     pub added_at: u64,
     /// Correction relationships for this record.

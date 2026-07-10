@@ -5,7 +5,7 @@ use audit_trails::core::types::{
     CapabilityIssueOptions, Data, ImmutableMetadata, InitialRecord, LockingConfig, LockingWindow, Permission, RoleTags,
     TimeLock,
 };
-use iota_interaction::types::base_types::IotaAddress;
+use iota_sdk_types::Address;
 use product_common::core_client::CoreClient;
 
 use crate::client::get_funded_test_client;
@@ -127,7 +127,7 @@ async fn create_trail_with_bytes_and_count_lock() -> anyhow::Result<()> {
 #[tokio::test]
 async fn create_trail_with_custom_admin_address() -> anyhow::Result<()> {
     let client = get_funded_test_client().await?;
-    let custom_admin = IotaAddress::random();
+    let custom_admin = Address::random();
 
     let created = client
         .create_trail()

@@ -3,7 +3,7 @@
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use iota_sdk::types::base_types::IotaAddress;
+use iota_sdk_types::Address;
 use notarization::core::types::{NotarizationMethod, State, TimeLock};
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 
@@ -392,7 +392,7 @@ async fn test_locked_notarization_transfer_fails() -> anyhow::Result<()> {
         .output
         .id;
 
-    let alice = IotaAddress::random();
+    let alice = Address::random();
 
     // Transfer should fail because locked notarizations have transfer_lock = UntilDestroyed
     let transfer_result = test_client

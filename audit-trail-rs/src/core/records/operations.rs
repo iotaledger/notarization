@@ -9,10 +9,8 @@
 use iota_interaction::OptionalSync;
 use iota_interaction::move_core_types::annotated_value::MoveValue;
 use iota_interaction::rpc_types::IotaMoveValue;
-use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::dynamic_field::DynamicFieldName;
-use iota_interaction::types::transaction::ProgrammableTransaction;
-use iota_sdk_types::{ObjectId, TypeTag};
+use iota_sdk_types::{Address, ObjectId, ProgrammableTransaction, TypeTag};
 use product_common::core_client::CoreClientReadOnly;
 
 use crate::core::internal::capability::find_capable_cap_for_tags;
@@ -31,7 +29,7 @@ impl RecordsOps {
     pub(super) async fn add_record<C>(
         client: &C,
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         record: RecordInput,
         selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
@@ -87,7 +85,7 @@ impl RecordsOps {
     pub(super) async fn correct_record<C>(
         client: &C,
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         sequence_number: u64,
         record: RecordInput,
         selected_capability_id: Option<ObjectId>,
@@ -157,7 +155,7 @@ impl RecordsOps {
     pub(super) async fn delete_record<C>(
         client: &C,
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         sequence_number: u64,
         selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
@@ -191,7 +189,7 @@ impl RecordsOps {
     pub(super) async fn delete_records_batch<C>(
         client: &C,
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         limit: u64,
         selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>

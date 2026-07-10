@@ -12,11 +12,11 @@ use audit_trails::core::types::{
     RoleTags,
 };
 use audit_trails::{AuditTrailClient, PackageOverrides};
-use iota_interaction::types::base_types::{IotaAddress, ObjectRef};
+use iota_interaction::types::base_types::ObjectRef;
 use iota_interaction::types::crypto::PublicKey;
 use iota_interaction::{IOTA_LOCAL_NETWORK_URL, IotaClient, IotaClientBuilder};
 use iota_interaction_rust::IotaClientAdapter;
-use iota_sdk_types::ObjectId;
+use iota_sdk_types::{Address, ObjectId};
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use product_common::network_name::NetworkName;
 use product_common::test_utils::{InMemSigner, request_funds};
@@ -185,7 +185,7 @@ impl TestClient {
         })
     }
 
-    pub(crate) async fn get_cap(&self, owner: IotaAddress, trail_id: ObjectId) -> anyhow::Result<ObjectRef> {
+    pub(crate) async fn get_cap(&self, owner: Address, trail_id: ObjectId) -> anyhow::Result<ObjectRef> {
         let cap: Capability = self
             .client
             .find_object_for_address(owner, |cap: &Capability| cap.target_key == trail_id)
@@ -293,7 +293,7 @@ impl CoreClient<InMemSigner> for TestClient {
         self.client.signer()
     }
 
-    fn sender_address(&self) -> IotaAddress {
+    fn sender_address(&self) -> Address {
         self.client.sender_address()
     }
 

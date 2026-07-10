@@ -7,9 +7,7 @@
 //! corresponding locking-update permissions.
 
 use iota_interaction::OptionalSync;
-use iota_interaction::types::base_types::IotaAddress;
-use iota_interaction::types::transaction::ProgrammableTransaction;
-use iota_sdk_types::ObjectId;
+use iota_sdk_types::{Address, ObjectId, ProgrammableTransaction};
 use product_common::core_client::CoreClientReadOnly;
 
 use crate::core::internal::tx;
@@ -24,7 +22,7 @@ impl LockingOps {
     pub(super) async fn update_locking_config<C>(
         client: &C,
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         new_config: LockingConfig,
         selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
@@ -56,7 +54,7 @@ impl LockingOps {
     pub(super) async fn update_delete_record_window<C>(
         client: &C,
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         new_delete_record_window: LockingWindow,
         selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
@@ -84,7 +82,7 @@ impl LockingOps {
     pub(super) async fn update_delete_trail_lock<C>(
         client: &C,
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         new_delete_trail_lock: TimeLock,
         selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>
@@ -115,7 +113,7 @@ impl LockingOps {
     pub(super) async fn update_write_lock<C>(
         client: &C,
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         new_write_lock: TimeLock,
         selected_capability_id: Option<ObjectId>,
     ) -> Result<ProgrammableTransaction, Error>

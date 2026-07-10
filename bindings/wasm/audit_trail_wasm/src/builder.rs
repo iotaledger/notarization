@@ -5,7 +5,7 @@ use audit_trails::core::builder::AuditTrailBuilder;
 use iota_interaction_ts::wasm_error::{Result, WasmResult};
 use product_common::bindings::transaction::WasmTransactionBuilder;
 use product_common::bindings::utils::{into_transaction_builder, parse_wasm_iota_address};
-use product_common::bindings::WasmIotaAddress;
+use product_common::bindings::WasmAddress;
 use wasm_bindgen::prelude::*;
 
 use crate::trail::WasmCreateTrail;
@@ -143,7 +143,7 @@ impl WasmAuditTrailBuilder {
     ///
     /// @throws When `admin` is not a valid IOTA address.
     #[wasm_bindgen(js_name = withAdmin)]
-    pub fn with_admin(self, admin: WasmIotaAddress) -> Result<Self> {
+    pub fn with_admin(self, admin: WasmAddress) -> Result<Self> {
         let admin = parse_wasm_iota_address(&admin)?;
         Ok(Self(self.0.with_admin(admin)))
     }

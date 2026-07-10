@@ -8,11 +8,11 @@ use iota_interaction::rpc_types::{
     IotaObjectDataFilter, IotaObjectDataOptions, IotaObjectResponseQuery, IotaParsedData,
 };
 use iota_interaction::types::MoveTypeTagTrait;
-use iota_interaction::types::base_types::{IotaAddress, ObjectRef};
+use iota_interaction::types::base_types::ObjectRef;
 use iota_interaction::types::dynamic_field::DynamicFieldName;
 use iota_interaction::types::id::ID;
 use iota_interaction::{IotaClientTrait, OptionalSync};
-use iota_sdk_types::{ObjectId, StructTag};
+use iota_sdk_types::{Address, ObjectId, StructTag};
 use product_common::core_client::CoreClientReadOnly;
 
 use super::{linked_table, tx};
@@ -25,7 +25,7 @@ use crate::error::Error;
 /// The lookup is restricted to roles on `trail` that include the requested permission.
 pub(crate) async fn find_capable_cap<C>(
     client: &C,
-    owner: IotaAddress,
+    owner: Address,
     trail_id: ObjectId,
     trail: &OnChainAuditTrail,
     permission: Permission,
@@ -62,7 +62,7 @@ where
 /// candidates.
 pub(crate) async fn find_owned_capability<C, P>(
     client: &C,
-    owner: IotaAddress,
+    owner: Address,
     trail: &OnChainAuditTrail,
     predicate: P,
 ) -> Result<Option<Capability>, Error>
@@ -143,7 +143,7 @@ where
             table.id,
             DynamicFieldName {
                 type_: ID::get_type_tag(),
-                value: serde_json::Value::String(IotaAddress::from(key).to_string()),
+                value: serde_json::Value::String(Address::from(key).to_string()),
             },
         )
         .await?;
@@ -166,7 +166,7 @@ where
 /// revoked, and is either unbound or explicitly issued to `owner`.
 fn capability_matches<P>(
     cap: &Capability,
-    owner: IotaAddress,
+    owner: Address,
     now_ms: u64,
     revoked_capability_ids: &HashSet<ObjectId>,
     predicate: &P,
@@ -187,7 +187,7 @@ where
 /// permission-based capability discovery.
 pub(crate) async fn find_capable_cap_for_tags<'a, C, I>(
     client: &C,
-    owner: IotaAddress,
+    owner: Address,
     trail_id: ObjectId,
     trail: &OnChainAuditTrail,
     permission: Permission,
@@ -254,16 +254,16 @@ pub(crate) fn now_ms() -> u64 {
 mod tests {
     use std::collections::HashSet;
 
-    use iota_interaction::types::base_types::{IotaAddress, dbg_object_id};
+    use iota_interaction::types::base_types::dbg_object_id;
     use iota_interaction::types::id::UID;
-    use iota_sdk_types::ObjectId;
+    use iota_sdk_types::{Address, ObjectId};
 
     use super::capability_matches;
     use crate::core::types::Capability;
 
     #[test]
     fn capability_matches_skips_revoked_caps() {
-        let owner = IotaAddress::random();
+        let owner = Address::random();
         let trail_id = dbg_object_id(1);
         let revoked_cap_id = dbg_object_id(2);
         let valid_cap_id = dbg_object_id(3);
@@ -281,8 +281,8 @@ mod tests {
 
     #[test]
     fn capability_matches_skips_issued_to_mismatch() {
-        let owner = IotaAddress::random();
-        let other_owner = IotaAddress::random();
+        let owner = Address::random();
+        let other_owner = Address::random();
         let trail_id = dbg_object_id(4);
         let valid_roles = HashSet::from(["Writer".to_string()]);
         let cap = make_capability(dbg_object_id(5), trail_id, "Writer", Some(other_owner), None, None);
@@ -294,7 +294,7 @@ mod tests {
 
     #[test]
     fn capability_matches_skips_caps_before_valid_from() {
-        let owner = IotaAddress::random();
+        let owner = Address::random();
         let trail_id = dbg_object_id(6);
         let valid_roles = HashSet::from(["Writer".to_string()]);
         let cap = make_capability(dbg_object_id(7), trail_id, "Writer", None, Some(2_000), None);
@@ -309,7 +309,7 @@ mod tests {
 
     #[test]
     fn capability_matches_skips_caps_after_valid_until() {
-        let owner = IotaAddress::random();
+        let owner = Address::random();
         let trail_id = dbg_object_id(8);
         let valid_roles = HashSet::from(["Writer".to_string()]);
         let cap = make_capability(dbg_object_id(9), trail_id, "Writer", None, None, Some(2_000));
@@ -324,7 +324,7 @@ mod tests {
 
     #[test]
     fn capability_matches_accepts_unbound_capability_for_matching_role() {
-        let owner = IotaAddress::random();
+        let owner = Address::random();
         let trail_id = dbg_object_id(6);
         let valid_roles = HashSet::from(["Writer".to_string()]);
         let cap = make_capability(dbg_object_id(7), trail_id, "Writer", None, None, None);
@@ -336,7 +336,7 @@ mod tests {
 
     #[test]
     fn capability_matches_rejects_non_matching_role() {
-        let owner = IotaAddress::random();
+        let owner = Address::random();
         let trail_id = dbg_object_id(8);
         let valid_roles = HashSet::from(["Writer".to_string()]);
         let cap = make_capability(dbg_object_id(9), trail_id, "Reader", None, None, None);
@@ -348,7 +348,7 @@ mod tests {
 
     #[test]
     fn capability_matches_honors_time_constraints() {
-        let owner = IotaAddress::random();
+        let owner = Address::random();
         let trail_id = dbg_object_id(10);
         let valid_roles = HashSet::from(["Writer".to_string()]);
         let cap = make_capability(
@@ -373,7 +373,7 @@ mod tests {
         id: ObjectId,
         trail_id: ObjectId,
         role: &str,
-        issued_to: Option<IotaAddress>,
+        issued_to: Option<Address>,
         valid_from: Option<u64>,
         valid_until: Option<u64>,
     ) -> Capability {
