@@ -416,7 +416,7 @@ impl<'committee> ProofVerifier<'committee> {
 
         let changed_objects = transaction_proof.effects.all_changed_objects();
         for (object_ref, object) in &targets.objects {
-            if object_ref != &object.compute_object_reference() {
+            if object_ref != &object.as_inner().object_ref() {
                 return Err(VerifyError {
                     kind: VerifyErrorKind::ObjectReferenceMismatch,
                 });

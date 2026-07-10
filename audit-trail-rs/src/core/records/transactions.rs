@@ -9,15 +9,14 @@
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::{IotaTransactionBlockEffects, IotaTransactionBlockEvents};
-use iota_interaction::types::base_types::IotaAddress;
-use iota_interaction::types::transaction::ProgrammableTransaction;
-use iota_sdk_types::ObjectId;
+use iota_sdk_types::{Address, ObjectId, ProgrammableTransaction};
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;
 
 use super::operations::RecordsOps;
-use crate::core::types::{Data, Event, RecordAdded, RecordDeleted};
+use crate::core::internal::tx;
+use crate::core::types::{Data, Event, RecordAdded, RecordDeleted, RecordInput};
 use crate::error::Error;
 
 // ===== AddRecord =====
@@ -35,7 +34,7 @@ pub struct AddRecord {
     /// Trail object ID that will receive the record.
     pub trail_id: ObjectId,
     /// Address authorizing the write.
-    pub owner: IotaAddress,
+    pub owner: Address,
     /// Record payload to append.
     pub data: Data,
     /// Optional application-defined metadata.
@@ -51,7 +50,7 @@ impl AddRecord {
     /// Creates an `AddRecord` transaction builder payload.
     pub fn new(
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         data: Data,
         metadata: Option<String>,
         tag: Option<String>,
@@ -76,9 +75,7 @@ impl AddRecord {
             client,
             self.trail_id,
             self.owner,
-            self.data.clone(),
-            self.metadata.clone(),
-            self.tag.clone(),
+            RecordInput::new(self.data.clone(), self.metadata.clone(), self.tag.clone()),
             self.selected_capability_id,
         )
         .await
@@ -116,11 +113,126 @@ impl Transaction for AddRecord {
         Ok(event.data)
     }
 
-    async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
+    async fn apply<C>(self, effects: &mut IotaTransactionBlockEffects, client: &C) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        unreachable!()
+        tx::apply_with_events(self, effects, client).await
+    }
+}
+
+// ===== CorrectRecord =====
+
+/// Transaction that appends a correction record to a trail.
+///
+/// The original record remains immutable. The correction is appended at the trail's next sequence number with
+/// a correction tracker whose `replaces` set contains the corrected sequence number, and the corrected record
+/// receives a back-pointer to the new correction.
+///
+/// Requires the `CorrectRecord` permission. Tagged corrections require the correction tag to exist in the trail
+/// registry and the capability's role to allow both the replaced record's tag, when present, and the correction
+/// tag, when present. The Move call aborts when the trail package version is incompatible, the capability is
+/// invalid, the trail is write-locked, the target record does not exist, the target record was already replaced,
+/// or tag authorization fails. On success the correction is stored at the trail's current monotonic sequence
+/// number and a `RecordAdded` event is emitted.
+#[derive(Debug, Clone)]
+pub struct CorrectRecord {
+    /// Trail object ID that will receive the correction.
+    pub trail_id: ObjectId,
+    /// Address authorizing the correction.
+    pub owner: Address,
+    /// Sequence number of the record being corrected.
+    pub sequence_number: u64,
+    /// Correction payload to append.
+    pub data: Data,
+    /// Optional application-defined metadata.
+    pub metadata: Option<String>,
+    /// Optional trail-owned tag to attach to the correction record.
+    pub tag: Option<String>,
+    /// Explicit capability to use instead of auto-selecting one from the owner's wallet.
+    pub selected_capability_id: Option<ObjectId>,
+    cached_ptb: OnceCell<ProgrammableTransaction>,
+}
+
+impl CorrectRecord {
+    /// Creates a `CorrectRecord` transaction builder payload.
+    ///
+    /// The resulting transaction appends a correction record for `sequence_number` and carries the same
+    /// authorization, write-lock, record-existence, already-replaced, tag-definition, and tag-authorization
+    /// requirements as the Move `correct_record` entry point.
+    pub fn new(
+        trail_id: ObjectId,
+        owner: Address,
+        sequence_number: u64,
+        data: Data,
+        metadata: Option<String>,
+        tag: Option<String>,
+        selected_capability_id: Option<ObjectId>,
+    ) -> Self {
+        Self {
+            trail_id,
+            owner,
+            sequence_number,
+            data,
+            metadata,
+            tag,
+            selected_capability_id,
+            cached_ptb: OnceCell::new(),
+        }
+    }
+
+    async fn make_ptb<C>(&self, client: &C) -> Result<ProgrammableTransaction, Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        RecordsOps::correct_record(
+            client,
+            self.trail_id,
+            self.owner,
+            self.sequence_number,
+            RecordInput::new(self.data.clone(), self.metadata.clone(), self.tag.clone()),
+            self.selected_capability_id,
+        )
+        .await
+    }
+}
+
+#[cfg_attr(not(feature = "send-sync"), async_trait(?Send))]
+#[cfg_attr(feature = "send-sync", async_trait)]
+impl Transaction for CorrectRecord {
+    type Error = Error;
+    type Output = RecordAdded;
+
+    async fn build_programmable_transaction<C>(&self, client: &C) -> Result<ProgrammableTransaction, Self::Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        self.cached_ptb.get_or_try_init(|| self.make_ptb(client)).await.cloned()
+    }
+
+    async fn apply_with_events<C>(
+        mut self,
+        _: &mut IotaTransactionBlockEffects,
+        events: &mut IotaTransactionBlockEvents,
+        _: &C,
+    ) -> Result<Self::Output, Self::Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        let event = events
+            .data
+            .iter()
+            .find_map(|data| serde_json::from_value::<Event<RecordAdded>>(data.parsed_json.clone()).ok())
+            .ok_or_else(|| Error::UnexpectedApiResponse("RecordAdded event not found".to_string()))?;
+
+        Ok(event.data)
+    }
+
+    async fn apply<C>(self, effects: &mut IotaTransactionBlockEffects, client: &C) -> Result<Self::Output, Self::Error>
+    where
+        C: CoreClientReadOnly + OptionalSync,
+    {
+        tx::apply_with_events(self, effects, client).await
     }
 }
 
@@ -139,7 +251,7 @@ pub struct DeleteRecord {
     /// Trail object ID containing the record.
     pub trail_id: ObjectId,
     /// Address authorizing the deletion.
-    pub owner: IotaAddress,
+    pub owner: Address,
     /// Sequence number of the record to delete.
     pub sequence_number: u64,
     /// Explicit capability to use instead of auto-selecting one from the owner's wallet.
@@ -151,7 +263,7 @@ impl DeleteRecord {
     /// Creates a `DeleteRecord` transaction builder payload.
     pub fn new(
         trail_id: ObjectId,
-        owner: IotaAddress,
+        owner: Address,
         sequence_number: u64,
         selected_capability_id: Option<ObjectId>,
     ) -> Self {
@@ -210,11 +322,11 @@ impl Transaction for DeleteRecord {
         Ok(event.data)
     }
 
-    async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
+    async fn apply<C>(self, effects: &mut IotaTransactionBlockEffects, client: &C) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        unreachable!()
+        tx::apply_with_events(self, effects, client).await
     }
 }
 
@@ -242,7 +354,7 @@ pub struct DeleteRecordsBatch {
     /// Trail object ID containing the records.
     pub trail_id: ObjectId,
     /// Address authorizing the deletion.
-    pub owner: IotaAddress,
+    pub owner: Address,
     /// Maximum number of records to delete in this batch.
     pub limit: u64,
     /// Explicit capability to use instead of auto-selecting one from the owner's wallet.
@@ -252,7 +364,7 @@ pub struct DeleteRecordsBatch {
 
 impl DeleteRecordsBatch {
     /// Creates a `DeleteRecordsBatch` transaction builder payload.
-    pub fn new(trail_id: ObjectId, owner: IotaAddress, limit: u64, selected_capability_id: Option<ObjectId>) -> Self {
+    pub fn new(trail_id: ObjectId, owner: Address, limit: u64, selected_capability_id: Option<ObjectId>) -> Self {
         Self {
             trail_id,
             owner,
@@ -309,10 +421,10 @@ impl Transaction for DeleteRecordsBatch {
         Ok(deleted)
     }
 
-    async fn apply<C>(self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
+    async fn apply<C>(self, effects: &mut IotaTransactionBlockEffects, client: &C) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        unreachable!()
+        tx::apply_with_events(self, effects, client).await
     }
 }

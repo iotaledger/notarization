@@ -12,11 +12,9 @@ use std::ops::Deref;
 #[cfg(not(target_arch = "wasm32"))]
 use iota_interaction::IotaClient;
 use iota_interaction::IotaClientTrait;
-use iota_interaction::types::base_types::IotaAddress;
-use iota_interaction::types::transaction::{ProgrammableTransaction, TransactionKind};
 #[cfg(target_arch = "wasm32")]
 use iota_interaction_ts::bindings::WasmIotaClient;
-use iota_sdk_types::ObjectId;
+use iota_sdk_types::{Address, ObjectId, ProgrammableTransaction, TransactionKind};
 use product_common::core_client::CoreClientReadOnly;
 use product_common::network_name::NetworkName;
 use serde::de::DeserializeOwned;
@@ -50,9 +48,9 @@ pub struct PackageOverrides {
 pub struct AuditTrailClientReadOnly {
     /// The underlying IOTA client adapter used for communication.
     iota_client: IotaClientAdapter,
-    /// The [`ObjectId`] of the deployed Audit Trail Package (smart contract).
+    /// The [`ObjectId`] of the deployed Audit Trails Package (smart contract).
     audit_trail_pkg_id: ObjectId,
-    /// The [`ObjectId`] of the deployed TfComponents package used by Audit Trail.
+    /// The [`ObjectId`] of the deployed TfComponents Package used by Audit Trails.
     pub(crate) tf_components_pkg_id: ObjectId,
     /// The name of the network this client is connected to (e.g., "mainnet", "testnet").
     network: NetworkName,
@@ -80,7 +78,7 @@ impl AuditTrailClientReadOnly {
 
     /// Returns the package ID used by this client.
     ///
-    /// This is the deployed audit-trail Move package ID, not a trail object ID.
+    /// This is the deployed Audit Trails Move Package ID, not a trail object ID.
     pub fn package_id(&self) -> ObjectId {
         self.audit_trail_pkg_id
     }
@@ -196,7 +194,7 @@ impl AuditTrailReadOnly for AuditTrailClientReadOnly {
         let inspection_result = self
             .iota_client
             .read_api()
-            .dev_inspect_transaction_block(IotaAddress::ZERO, TransactionKind::Programmable(tx), None, None, None)
+            .dev_inspect_transaction_block(Address::ZERO, TransactionKind::Programmable(tx), None, None, None)
             .await
             .map_err(|err| Error::UnexpectedApiResponse(format!("Failed to inspect transaction block: {err}")))?;
 

@@ -309,7 +309,7 @@ impl GrpcSource {
                 )
             })?;
 
-        if object.compute_object_reference() != object_ref {
+        if object.as_inner().object_ref() != object_ref {
             return Err(SourceError::object(
                 object_ref,
                 SourceErrorKind::ObjectReferenceMismatch,

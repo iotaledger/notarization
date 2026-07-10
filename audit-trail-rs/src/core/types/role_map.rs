@@ -4,12 +4,11 @@
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 
-use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::collection_types::LinkedTable;
 use iota_interaction::types::id::UID;
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
 use iota_interaction::{MoveType, ident_str};
-use iota_sdk_types::{Argument, ObjectId, TypeTag};
+use iota_sdk_types::{Address, Argument, ObjectId, TypeTag};
 use serde::{Deserialize, Serialize};
 use serde_aux::field_attributes::deserialize_option_number_from_string;
 
@@ -80,7 +79,7 @@ pub struct CapabilityAdminPermissions {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CapabilityIssueOptions {
     /// Address that should own the capability, if any.
-    pub issued_to: Option<IotaAddress>,
+    pub issued_to: Option<Address>,
     /// Millisecond timestamp at which the capability becomes valid.
     pub valid_from_ms: Option<u64>,
     /// Millisecond timestamp at which the capability expires.
@@ -154,7 +153,7 @@ pub struct Capability {
     pub role: String,
     /// Address bound to the capability. When `None`, any holder may present the capability for
     /// authorization.
-    pub issued_to: Option<IotaAddress>,
+    pub issued_to: Option<Address>,
     /// Earliest millisecond timestamp (since the Unix epoch, inclusive) at which the capability is
     /// valid. When `None`, the capability is valid from its creation time.
     #[serde(deserialize_with = "deserialize_option_number_from_string")]
@@ -183,15 +182,16 @@ impl MoveType for Capability {
 
 #[cfg(test)]
 mod tests {
-    use iota_interaction::types::base_types::{IotaAddress, dbg_object_id};
+    use iota_interaction::types::base_types::dbg_object_id;
     use iota_interaction::types::id::UID;
+    use iota_sdk_types::Address;
     use serde_json::json;
 
     use super::Capability;
 
     #[test]
     fn capability_deserializes_string_encoded_time_constraints() {
-        let issued_to = IotaAddress::random();
+        let issued_to = Address::random();
         let capability = Capability {
             id: UID::new(dbg_object_id(1)),
             target_key: dbg_object_id(2),

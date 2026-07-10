@@ -4,16 +4,14 @@
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::{IotaTransactionBlockEffects, IotaTransactionBlockEvents};
-use iota_interaction::types::base_types::IotaAddress;
-use iota_interaction::types::transaction::ProgrammableTransaction;
-use iota_sdk_types::ObjectId;
+use iota_sdk_types::{Address, ObjectId, ProgrammableTransaction};
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;
 
 use super::operations::{CreateOps, CreateTrailArgs};
 use crate::core::builder::AuditTrailBuilder;
-use crate::core::internal::trail as trail_reader;
+use crate::core::internal::{trail as trail_reader, tx};
 use crate::core::types::{AuditTrailCreated, Event, OnChainAuditTrail};
 use crate::error::Error;
 
@@ -23,7 +21,7 @@ pub struct TrailCreated {
     /// Newly created trail object ID.
     pub trail_id: ObjectId,
     /// Address that created the trail.
-    pub creator: IotaAddress,
+    pub creator: Address,
     /// Millisecond timestamp emitted by the creation event.
     pub timestamp: u64,
 }
@@ -138,10 +136,10 @@ impl Transaction for CreateTrail {
         })
     }
 
-    async fn apply<C>(mut self, _: &mut IotaTransactionBlockEffects, _: &C) -> Result<Self::Output, Self::Error>
+    async fn apply<C>(self, effects: &mut IotaTransactionBlockEffects, client: &C) -> Result<Self::Output, Self::Error>
     where
         C: CoreClientReadOnly + OptionalSync,
     {
-        unreachable!()
+        tx::apply_with_events(self, effects, client).await
     }
 }

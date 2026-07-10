@@ -6,9 +6,7 @@
 use async_trait::async_trait;
 use iota_interaction::OptionalSync;
 use iota_interaction::rpc_types::IotaTransactionBlockEffects;
-use iota_interaction::types::base_types::IotaAddress;
-use iota_interaction::types::transaction::ProgrammableTransaction;
-use iota_sdk_types::ObjectId;
+use iota_sdk_types::{Address, ObjectId, ProgrammableTransaction};
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use tokio::sync::OnceCell;
@@ -25,7 +23,7 @@ use crate::error::Error;
 #[derive(Debug, Clone)]
 pub struct AddRecordTag {
     trail_id: ObjectId,
-    owner: IotaAddress,
+    owner: Address,
     tag: String,
     selected_capability_id: Option<ObjectId>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
@@ -33,7 +31,7 @@ pub struct AddRecordTag {
 
 impl AddRecordTag {
     /// Creates an `AddRecordTag` transaction builder payload.
-    pub fn new(trail_id: ObjectId, owner: IotaAddress, tag: String, selected_capability_id: Option<ObjectId>) -> Self {
+    pub fn new(trail_id: ObjectId, owner: Address, tag: String, selected_capability_id: Option<ObjectId>) -> Self {
         Self {
             trail_id,
             owner,
@@ -89,7 +87,7 @@ impl Transaction for AddRecordTag {
 #[derive(Debug, Clone)]
 pub struct RemoveRecordTag {
     trail_id: ObjectId,
-    owner: IotaAddress,
+    owner: Address,
     tag: String,
     selected_capability_id: Option<ObjectId>,
     cached_ptb: OnceCell<ProgrammableTransaction>,
@@ -97,7 +95,7 @@ pub struct RemoveRecordTag {
 
 impl RemoveRecordTag {
     /// Creates a `RemoveRecordTag` transaction builder payload.
-    pub fn new(trail_id: ObjectId, owner: IotaAddress, tag: String, selected_capability_id: Option<ObjectId>) -> Self {
+    pub fn new(trail_id: ObjectId, owner: Address, tag: String, selected_capability_id: Option<ObjectId>) -> Self {
         Self {
             trail_id,
             owner,

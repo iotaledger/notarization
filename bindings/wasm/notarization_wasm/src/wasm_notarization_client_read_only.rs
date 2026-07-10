@@ -28,14 +28,14 @@ pub struct WasmNotarizationClientReadOnly(pub(crate) NotarizationClientReadOnly)
 
 #[wasm_bindgen(js_class = NotarizationClientReadOnly)]
 impl WasmNotarizationClientReadOnly {
-    /// Constructs a read-only client and resolves the notarization package
+    /// Constructs a read-only client and resolves the Notarization Package
     /// for the network the given IOTA client is connected to.
     ///
     /// @param iotaClient - An IOTA client connected to the target network.
     ///
     /// @returns A connected {@link NotarizationClientReadOnly}.
     ///
-    /// @throws When the network cannot be queried or no notarization package
+    /// @throws When the network cannot be queried or no Notarization Package
     /// is available for it.
     #[wasm_bindgen(js_name = create)]
     pub async fn new(iota_client: WasmIotaClient) -> Result<WasmNotarizationClientReadOnly> {
@@ -52,7 +52,7 @@ impl WasmNotarizationClientReadOnly {
     /// resolve the latest package on the network.
     ///
     /// @param iotaClient - An IOTA client connected to the target network.
-    /// @param iotaNotarizationPkgId - The notarization package ID to pin to.
+    /// @param iotaNotarizationPkgId - The Notarization Package ID to pin to.
     ///
     /// @returns A connected {@link NotarizationClientReadOnly}.
     ///
@@ -74,7 +74,7 @@ impl WasmNotarizationClientReadOnly {
         Ok(WasmNotarizationClientReadOnly(inner_client))
     }
 
-    /// The notarization package ID this client is using.
+    /// The Notarization Package ID this client is using.
     #[wasm_bindgen(js_name = packageId)]
     pub fn package_id(&self) -> String {
         self.0.package_id().to_string()
@@ -88,7 +88,7 @@ impl WasmNotarizationClientReadOnly {
         self.0.tf_components_package_id().unwrap_or(ObjectId::ZERO).to_string()
     }
 
-    /// The full history of notarization package IDs known on this network,
+    /// The full history of Notarization Package IDs known on this network,
     /// most recent first.
     #[wasm_bindgen(js_name = packageHistory)]
     pub fn package_history(&self) -> Vec<String> {

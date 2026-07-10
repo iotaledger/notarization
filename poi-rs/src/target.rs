@@ -1,12 +1,9 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+use iota_sdk_types::Event;
 use iota_types::committee::Committee;
-use iota_types::{
-    base_types::ObjectRef,
-    event::{Event, EventID},
-    object::Object,
-};
+use iota_types::{base_types::ObjectRef, event::EventID, object::Object};
 use serde::{Deserialize, Serialize};
 
 /// Target claims authenticated by a Proof of Inclusion.

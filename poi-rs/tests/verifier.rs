@@ -1,13 +1,13 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use iota_sdk_types::gas::GasCostSummary;
+use iota_sdk_types::{Event, gas::GasCostSummary};
 use iota_types::{
     base_types::{ExecutionData, dbg_object_id},
     committee::Committee,
     digests::{ChainIdentifier, TransactionDigest},
     effects::{TestEffectsBuilder, TransactionEvents},
-    event::{Event, EventID},
+    event::EventID,
     messages_checkpoint::{
         CertifiedCheckpointSummary, CheckpointContents, CheckpointSummary, EndOfEpochData, FullCheckpointContents,
     },
@@ -211,7 +211,7 @@ fn verifier_rejects_committee_mismatch() {
 #[test]
 fn verifier_rejects_object_reference_mismatch() {
     let object = Object::immutable_for_testing();
-    let mut wrong_object_ref = object.compute_object_reference();
+    let mut wrong_object_ref = object.as_inner().object_ref();
     wrong_object_ref.object_id = dbg_object_id(42);
     let (committee, proof) =
         test_proof_with_targets_and_end_of_epoch_data(ProofTargets::new().add_object(wrong_object_ref, object), None);
@@ -224,7 +224,7 @@ fn verifier_rejects_object_reference_mismatch() {
 #[test]
 fn verifier_rejects_object_not_found_in_transaction_effects() {
     let object = Object::immutable_for_testing();
-    let object_ref = object.compute_object_reference();
+    let object_ref = object.as_inner().object_ref();
     let (committee, proof) =
         test_proof_with_targets_and_end_of_epoch_data(ProofTargets::new().add_object(object_ref, object), None);
 

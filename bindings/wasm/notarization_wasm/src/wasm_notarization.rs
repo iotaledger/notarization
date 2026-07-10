@@ -15,7 +15,7 @@ use notarization::core::types::OnChainNotarization;
 use product_common::bindings::utils::{
     apply_with_events, build_programmable_transaction, parse_wasm_iota_address, parse_wasm_object_id,
 };
-use product_common::bindings::{WasmIotaAddress, WasmObjectID};
+use product_common::bindings::{WasmAddress, WasmObjectID};
 use product_common::network_name::NetworkName;
 use wasm_bindgen::prelude::*;
 
@@ -116,8 +116,8 @@ impl WasmOnChainNotarization {
 
     /// The current owner's IOTA address.
     #[wasm_bindgen(getter)]
-    pub fn owner(&self) -> WasmIotaAddress {
-        WasmIotaAddress::from_str(&self.0.owner.to_string())
+    pub fn owner(&self) -> WasmAddress {
+        WasmAddress::from_str(&self.0.owner.to_string())
             .expect("Invalid address stored on-chain, this should never happen")
     }
 
@@ -523,7 +523,7 @@ impl WasmTransferNotarization {
     ///
     /// @throws When the ID or address is malformed.
     #[wasm_bindgen(constructor)]
-    pub fn new(recipient: WasmIotaAddress, object_id: WasmObjectID) -> Result<Self> {
+    pub fn new(recipient: WasmAddress, object_id: WasmObjectID) -> Result<Self> {
         let obj_id = parse_wasm_object_id(&object_id)?;
         let recipient_address = parse_wasm_iota_address(&recipient)?;
         Ok(WasmTransferNotarization(TransferNotarization::new(

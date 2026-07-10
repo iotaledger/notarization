@@ -14,7 +14,7 @@ use audit_trails::core::types::{
 use iota_interaction::types::collection_types::LinkedTable;
 use iota_sdk_types::ObjectId;
 use js_sys::Uint8Array;
-use product_common::bindings::WasmIotaAddress;
+use product_common::bindings::WasmAddress;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
@@ -641,7 +641,7 @@ pub struct WasmCapabilityIssueOptions {
     /// Address that should own the issued capability. When `null`, the capability is transferred
     /// to the caller.
     #[wasm_bindgen(js_name = issuedTo)]
-    pub issued_to: Option<WasmIotaAddress>,
+    pub issued_to: Option<WasmAddress>,
     /// Earliest millisecond timestamp (since the Unix epoch) at which the capability becomes
     /// valid. When `null`, the capability is valid from its creation time.
     #[wasm_bindgen(js_name = validFromMs)]
@@ -661,7 +661,7 @@ impl WasmCapabilityIssueOptions {
     /// epoch.
     /// @param validUntilMs - Optional latest valid timestamp in milliseconds since the Unix epoch.
     #[wasm_bindgen(constructor)]
-    pub fn new(issued_to: Option<WasmIotaAddress>, valid_from_ms: Option<u64>, valid_until_ms: Option<u64>) -> Self {
+    pub fn new(issued_to: Option<WasmAddress>, valid_from_ms: Option<u64>, valid_until_ms: Option<u64>) -> Self {
         Self {
             issued_to,
             valid_from_ms,
@@ -708,7 +708,7 @@ pub struct WasmCapability {
     /// Address bound to the capability. When `null`, any holder may present the capability for
     /// authorization.
     #[wasm_bindgen(js_name = issuedTo)]
-    pub issued_to: Option<WasmIotaAddress>,
+    pub issued_to: Option<WasmAddress>,
     /// Earliest millisecond timestamp (since the Unix epoch, inclusive) at which the capability
     /// is valid. When `null`, the capability is valid from its creation time.
     #[wasm_bindgen(js_name = validFrom)]
@@ -740,7 +740,7 @@ pub struct WasmAuditTrailCreated {
     #[wasm_bindgen(js_name = trailId)]
     pub trail_id: String,
     /// Address that created the trail.
-    pub creator: WasmIotaAddress,
+    pub creator: WasmAddress,
     /// Millisecond event timestamp.
     pub timestamp: u64,
 }
@@ -784,7 +784,7 @@ pub struct WasmAuditTrailMigrated {
     pub trail_id: String,
     /// Address that migrated the trail.
     #[wasm_bindgen(js_name = migratedBy)]
-    pub migrated_by: WasmIotaAddress,
+    pub migrated_by: WasmAddress,
     /// Millisecond event timestamp.
     pub timestamp: u64,
 }
@@ -808,7 +808,7 @@ pub struct WasmMetadataUpdated {
     pub trail_id: String,
     /// Address that updated the metadata.
     #[wasm_bindgen(js_name = updatedBy)]
-    pub updated_by: WasmIotaAddress,
+    pub updated_by: WasmAddress,
     /// Millisecond event timestamp.
     pub timestamp: u64,
 }
@@ -832,7 +832,7 @@ pub struct WasmLockingConfigUpdated {
     pub trail_id: String,
     /// Address that updated the locking configuration.
     #[wasm_bindgen(js_name = updatedBy)]
-    pub updated_by: WasmIotaAddress,
+    pub updated_by: WasmAddress,
     /// Millisecond event timestamp.
     pub timestamp: u64,
 }
@@ -859,7 +859,7 @@ pub struct WasmRecordAdded {
     pub sequence_number: u64,
     /// Address that added the record.
     #[wasm_bindgen(js_name = addedBy)]
-    pub added_by: WasmIotaAddress,
+    pub added_by: WasmAddress,
     /// Millisecond event timestamp.
     pub timestamp: u64,
 }
@@ -887,7 +887,7 @@ pub struct WasmRecordDeleted {
     pub sequence_number: u64,
     /// Address that deleted the record.
     #[wasm_bindgen(js_name = deletedBy)]
-    pub deleted_by: WasmIotaAddress,
+    pub deleted_by: WasmAddress,
     /// Millisecond event timestamp.
     pub timestamp: u64,
 }
@@ -912,7 +912,7 @@ pub struct WasmRecordTagAdded {
     pub trail_id: String,
     /// Address that added the tag.
     #[wasm_bindgen(js_name = addedBy)]
-    pub added_by: WasmIotaAddress,
+    pub added_by: WasmAddress,
     /// Millisecond event timestamp.
     pub timestamp: u64,
 }
@@ -936,7 +936,7 @@ pub struct WasmRecordTagRemoved {
     pub trail_id: String,
     /// Address that removed the tag.
     #[wasm_bindgen(js_name = removedBy)]
-    pub removed_by: WasmIotaAddress,
+    pub removed_by: WasmAddress,
     /// Millisecond event timestamp.
     pub timestamp: u64,
 }
@@ -965,7 +965,7 @@ pub struct WasmCapabilityIssued {
     pub role: String,
     /// Address bound to the capability, if one was assigned at issue time.
     #[wasm_bindgen(js_name = issuedTo)]
-    pub issued_to: Option<WasmIotaAddress>,
+    pub issued_to: Option<WasmAddress>,
     /// Earliest millisecond timestamp (since the Unix epoch, inclusive) at which the capability
     /// becomes valid. `null` when no lower bound was set.
     #[wasm_bindgen(js_name = validFrom)]
@@ -1003,7 +1003,7 @@ pub struct WasmCapabilityDestroyed {
     pub role: String,
     /// Address bound to the capability, if one had been assigned.
     #[wasm_bindgen(js_name = issuedTo)]
-    pub issued_to: Option<WasmIotaAddress>,
+    pub issued_to: Option<WasmAddress>,
     /// Earliest millisecond timestamp (since the Unix epoch, inclusive) at which the capability
     /// became valid. `null` when no lower bound had been set.
     #[wasm_bindgen(js_name = validFrom)]
@@ -1067,7 +1067,7 @@ pub struct WasmRevokedCapabilitiesCleanedUp {
     pub cleaned_count: u64,
     /// Address that triggered the cleanup.
     #[wasm_bindgen(js_name = cleanedBy)]
-    pub cleaned_by: WasmIotaAddress,
+    pub cleaned_by: WasmAddress,
     /// Millisecond event timestamp.
     pub timestamp: u64,
 }
@@ -1099,7 +1099,7 @@ pub struct WasmRoleCreated {
     pub role_tags: Option<WasmRoleTags>,
     /// Address that created the role.
     #[wasm_bindgen(js_name = createdBy)]
-    pub created_by: WasmIotaAddress,
+    pub created_by: WasmAddress,
     /// Millisecond event timestamp.
     pub timestamp: u64,
 }
@@ -1133,7 +1133,7 @@ pub struct WasmRoleUpdated {
     pub role_tags: Option<WasmRoleTags>,
     /// Address that updated the role.
     #[wasm_bindgen(js_name = updatedBy)]
-    pub updated_by: WasmIotaAddress,
+    pub updated_by: WasmAddress,
     /// Millisecond event timestamp.
     pub timestamp: u64,
 }
@@ -1162,7 +1162,7 @@ pub struct WasmRoleDeleted {
     pub role: String,
     /// Address that deleted the role.
     #[wasm_bindgen(js_name = deletedBy)]
-    pub deleted_by: WasmIotaAddress,
+    pub deleted_by: WasmAddress,
     /// Millisecond event timestamp.
     pub timestamp: u64,
 }
@@ -1540,7 +1540,7 @@ pub struct WasmRecord {
     pub sequence_number: u64,
     /// Address that added the record.
     #[wasm_bindgen(js_name = addedBy)]
-    pub added_by: WasmIotaAddress,
+    pub added_by: WasmAddress,
     /// Millisecond timestamp at which the record was added.
     #[wasm_bindgen(js_name = addedAt)]
     pub added_at: u64,

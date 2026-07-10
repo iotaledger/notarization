@@ -5,9 +5,8 @@ use std::collections::{BTreeMap, HashSet};
 use std::str::FromStr;
 
 use iota_interaction::ident_str;
-use iota_interaction::types::base_types::IotaAddress;
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
-use iota_sdk_types::{Argument, ObjectId, TypeTag};
+use iota_sdk_types::{Address, Argument, ObjectId, TypeTag};
 use serde::{Deserialize, Serialize};
 
 use crate::core::internal::tx;
@@ -39,11 +38,77 @@ pub struct Record<D = Data> {
     /// Monotonic record sequence number inside the trail.
     pub sequence_number: u64,
     /// Address that added the record.
-    pub added_by: IotaAddress,
+    pub added_by: Address,
     /// Millisecond timestamp at which the record was added.
     pub added_at: u64,
     /// Correction relationships for this record.
     pub correction: RecordCorrection,
+}
+
+/// Input used when appending or correcting a record on an existing trail.
+///
+/// This groups the record fields shared by add and correction operations. Trail creation keeps the
+/// domain-specific [`InitialRecord`] type because it is encoded as Move's `record::InitialRecord`,
+/// while existing-trail writes pass these fields directly to record entry functions.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RecordInput<D = Data> {
+    /// Payload to store in the trail.
+    pub data: D,
+    /// Optional application-defined metadata.
+    pub metadata: Option<String>,
+    /// Optional tag from the trail-owned registry.
+    pub tag: Option<String>,
+}
+
+impl RecordInput {
+    /// Creates a new record input.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use audit_trails::core::types::{Data, RecordInput};
+    ///
+    /// let record = RecordInput::new(
+    ///     Data::text("hello"),
+    ///     Some("metadata".to_string()),
+    ///     Some("inbox".to_string()),
+    /// );
+    ///
+    /// assert_eq!(record.data, Data::text("hello"));
+    /// assert_eq!(record.metadata.as_deref(), Some("metadata"));
+    /// assert_eq!(record.tag.as_deref(), Some("inbox"));
+    /// ```
+    pub fn new(data: impl Into<Data>, metadata: Option<String>, tag: Option<String>) -> Self {
+        Self {
+            data: data.into(),
+            metadata,
+            tag,
+        }
+    }
+
+    /// Converts this input into the Move call arguments used by record write operations.
+    ///
+    /// The returned arguments are ordered as `data`, `metadata`, and `tag`, matching the `add_record` and
+    /// `correct_record` entry point parameters after any operation-specific arguments.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the input data type does not match the trail's configured record type, or if any field
+    /// cannot be serialized into a programmable transaction argument.
+    pub(in crate::core) fn into_record_args(
+        self,
+        ptb: &mut Ptb,
+        package_id: ObjectId,
+        trail_tag: &TypeTag,
+    ) -> Result<[Argument; 3], Error> {
+        self.data.ensure_matches_tag(trail_tag, package_id)?;
+
+        let data = self.data.into_ptb(ptb, package_id)?;
+        let metadata = tx::ptb_pure(ptb, "record_metadata", self.metadata)?;
+        let tag = tx::ptb_pure(ptb, "record_tag", self.tag)?;
+
+        Ok([data, metadata, tag])
+    }
 }
 
 /// Input used when creating a trail with an initial record.

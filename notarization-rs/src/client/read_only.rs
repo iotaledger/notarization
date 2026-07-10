@@ -11,11 +11,9 @@ use std::ops::Deref;
 #[cfg(not(target_arch = "wasm32"))]
 use iota_interaction::IotaClient;
 use iota_interaction::IotaClientTrait;
-use iota_interaction::types::base_types::IotaAddress;
-use iota_interaction::types::transaction::{ProgrammableTransaction, TransactionKind};
 #[cfg(target_arch = "wasm32")]
 use iota_interaction_ts::bindings::WasmIotaClient;
-use iota_sdk_types::ObjectId;
+use iota_sdk_types::{Address, ObjectId, ProgrammableTransaction, TransactionKind};
 use product_common::core_client::CoreClientReadOnly;
 use product_common::network_name::NetworkName;
 use product_common::package_registry::Env;
@@ -40,7 +38,7 @@ use crate::package;
 pub struct NotarizationClientReadOnly {
     /// The underlying IOTA client adapter used for communication.
     iota_client: IotaClientAdapter,
-    /// The [`ObjectId`] of the deployed Notarization package (smart contract).
+    /// The [`ObjectId`] of the deployed Notarization Package (smart contract).
     /// All interactions go through this package ID.
     notarization_pkg_id: ObjectId,
     /// The name of the network this client is connected to (e.g., "mainnet", "testnet").
@@ -78,7 +76,7 @@ impl NotarizationClientReadOnly {
     ///
     /// # Failures
     /// This function fails if the provided `iota_client` is connected to an unrecognized
-    /// network for which the notarization package ID is not known in the internal
+    /// network for which the Notarization Package ID is not known in the internal
     /// package registry.
     ///
     /// # Arguments
@@ -139,7 +137,7 @@ impl NotarizationClientReadOnly {
         })
     }
 
-    /// Creates a new [`NotarizationClientReadOnly`] with a specific notarization package ID.
+    /// Creates a new [`NotarizationClientReadOnly`] with a specific Notarization Package ID.
     ///
     /// This function allows overriding the package ID lookup from the registry, which is useful
     /// for connecting to networks where the package ID is known but not yet registered, or
@@ -148,7 +146,7 @@ impl NotarizationClientReadOnly {
     /// # Arguments
     ///
     /// * `iota_client`: The IOTA client instance.
-    /// * `package_id`: The specific [`ObjectId`] of the Notarization package to use.
+    /// * `package_id`: The specific [`ObjectId`] of the Notarization Package to use.
     ///
     /// # Returns
     /// A `Result` containing the initialized [`NotarizationClientReadOnly`] or an [`Error`].
@@ -436,7 +434,7 @@ impl NotarizationClientReadOnly {
         let inspection_result = self
             .iota_client
             .read_api()
-            .dev_inspect_transaction_block(IotaAddress::ZERO, TransactionKind::Programmable(tx), None, None, None)
+            .dev_inspect_transaction_block(Address::ZERO, TransactionKind::Programmable(tx), None, None, None)
             .await
             .map_err(|err| Error::UnexpectedApiResponse(format!("Failed to inspect transaction block: {err}")))?;
 
@@ -459,7 +457,7 @@ impl NotarizationClientReadOnly {
 
 #[async_trait::async_trait]
 impl CoreClientReadOnly for NotarizationClientReadOnly {
-    /// Returns the [`ObjectId`] of the Notarization package used by this client.
+    /// Returns the [`ObjectId`] of the Notarization Package used by this client.
     fn package_id(&self) -> ObjectId {
         self.notarization_pkg_id
     }
