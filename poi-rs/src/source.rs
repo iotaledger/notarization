@@ -299,15 +299,7 @@ impl GrpcSource {
                     },
                 )
             })?
-            .try_into()
-            .map_err(|source| {
-                SourceError::object(
-                    object_ref,
-                    SourceErrorKind::Object {
-                        source: Box::new(source),
-                    },
-                )
-            })?;
+            .into();
 
         if object.as_inner().object_ref() != object_ref {
             return Err(SourceError::object(
