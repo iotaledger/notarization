@@ -1,7 +1,7 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{error::Error as StdError, fmt};
+use std::fmt;
 
 use async_trait::async_trait;
 use iota_grpc_client::{
@@ -20,9 +20,7 @@ use iota_types::{
     transaction::Transaction,
 };
 
-use crate::{Proof, ProofTargets, TransactionProof};
-
-type BoxError = Box<dyn StdError + Send + Sync + 'static>;
+use crate::{BoxError, Proof, ProofTargets, TransactionProof};
 
 /// Source target requested by the caller.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
