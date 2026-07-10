@@ -78,7 +78,7 @@ cd audit-trail-move
 eval $(./scripts/upgrade_package.sh)
 ```
 
-The upgrade script reads the active chain from the IOTA CLI, resolves the current Audit Trails package ID from `Move.lock`, finds the matching `UpgradeCap` in the active wallet, and prints the upgraded `IOTA_AUDIT_TRAIL_PKG_ID`.
+The upgrade script reads the active chain from the IOTA CLI, resolves the current Audit Trails Package ID from `Move.lock`, finds the matching `UpgradeCap` in the active wallet, and prints the upgraded `IOTA_AUDIT_TRAIL_PKG_ID`.
 
 The package history files [`Move.lock`](./Move.lock) and [`Move.history.json`](./Move.history.json) are used by the Rust crate to resolve and track deployed package versions.
 

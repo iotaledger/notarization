@@ -41,10 +41,10 @@ See [Single Notarization resources](#single-notarization) for one on-chain proof
 
 See [Audit Trails resources](#audit-trails) for structured record histories with permissions, capabilities, tagging, and write or delete controls.
 
-If you need to integrate the Notarization on-chain contracts into your own Move package:
+If you need to integrate the Notarization on-chain contracts into your own Move Package:
 
-- [Notarization contracts](./notarization-move)
-- [Audit trail contracts](./audit-trail-move)
+- [Notarization Move Package](./notarization-move)
+- [Audit Trails Move Package](./audit-trail-move)
 
 If you want to build a client application:
 
@@ -59,20 +59,20 @@ If you want to build a client application:
 
 ### Single Notarization
 
-- [Rust package README](./notarization-rs/README.md)
+- [Rust Package README](./notarization-rs/README.md)
 - [Rust API documentation](https://iotaledger.github.io/notarization/notarization/index.html)
 - [Rust Examples](./examples/README.md)
-- [Move package README](./notarization-move/README.md)
-- [Wasm package README](./bindings/wasm/notarization_wasm/README.md)
+- [Move Package README](./notarization-move/README.md)
+- [Wasm Package README](./bindings/wasm/notarization_wasm/README.md)
 - [Wasm Examples](./bindings/wasm/notarization_wasm/examples/README.md)
 
 ### Audit Trails
 
-- [Rust package README](./audit-trail-rs/README.md)
+- [Rust Package README](./audit-trail-rs/README.md)
 - [Rust API documentation](https://iotaledger.github.io/notarization/audit_trails/index.html)
 - [Rust Examples](./examples/audit-trail/README.md)
-- [Move package README](./audit-trail-move/README.md)
-- [Wasm package README](./bindings/wasm/audit_trail_wasm/README.md)
+- [Move Package README](./audit-trail-move/README.md)
+- [Wasm Package README](./bindings/wasm/audit_trail_wasm/README.md)
 - [Wasm Examples](./bindings/wasm/audit_trail_wasm/examples/README.md)
 
 ## Contributing

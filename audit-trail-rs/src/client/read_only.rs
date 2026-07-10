@@ -48,9 +48,9 @@ pub struct PackageOverrides {
 pub struct AuditTrailClientReadOnly {
     /// The underlying IOTA client adapter used for communication.
     iota_client: IotaClientAdapter,
-    /// The [`ObjectId`] of the deployed Audit Trail Package (smart contract).
+    /// The [`ObjectId`] of the deployed Audit Trails Package (smart contract).
     audit_trail_pkg_id: ObjectId,
-    /// The [`ObjectId`] of the deployed TfComponents package used by Audit Trail.
+    /// The [`ObjectId`] of the deployed TfComponents Package used by Audit Trails.
     pub(crate) tf_components_pkg_id: ObjectId,
     /// The name of the network this client is connected to (e.g., "mainnet", "testnet").
     network: NetworkName,
@@ -78,7 +78,7 @@ impl AuditTrailClientReadOnly {
 
     /// Returns the package ID used by this client.
     ///
-    /// This is the deployed audit-trail Move package ID, not a trail object ID.
+    /// This is the deployed Audit Trails Move Package ID, not a trail object ID.
     pub fn package_id(&self) -> ObjectId {
         self.audit_trail_pkg_id
     }
