@@ -7,6 +7,8 @@
 /// Shared boxed source error used by the crate's typed errors.
 pub(crate) type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
 
+/// Verified committee lineage caches for anchored resolution.
+pub mod cache;
 /// Committee resolution for checkpoint verification.
 pub mod committee;
 /// Proof data types and offline verification.
@@ -16,6 +18,7 @@ pub mod source;
 /// Target claims authenticated by a proof.
 pub mod target;
 
+pub use cache::{CommitteeCache, CommitteeCacheError, MemoryCommitteeCache};
 pub use committee::{CommitteeResolutionError, CommitteeResolutionErrorKind, CommitteeResolver};
 pub use proof::{
     Proof, ProofVerifier, ProofVersion, SerializationError, SerializationErrorKind, TransactionProof, VerifyError,

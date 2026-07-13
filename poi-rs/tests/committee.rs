@@ -3,7 +3,7 @@
 
 use iota_grpc_client::Client as GrpcClient;
 use iota_types::committee::Committee;
-use poi_rs::{CommitteeResolutionErrorKind, CommitteeResolver};
+use poi_rs::{CommitteeResolutionErrorKind, CommitteeResolver, MemoryCommitteeCache};
 
 fn committee_at(epoch: u64) -> Committee {
     let (committee, _) = Committee::new_simple_test_committee();
@@ -40,4 +40,18 @@ async fn anchor_mode_rejects_an_epoch_before_the_trust_anchor() {
 #[tokio::test]
 async fn node_mode_has_an_explicit_constructor() {
     let _resolver = CommitteeResolver::node(disconnected_client());
+}
+
+#[tokio::test]
+async fn anchor_mode_accepts_a_committee_cache() {
+    let trusted_committee = committee_at(7);
+    let resolver = CommitteeResolver::anchor_with_cache(
+        disconnected_client(),
+        trusted_committee.clone(),
+        MemoryCommitteeCache::new(),
+    );
+
+    let resolved = resolver.resolve(7).await.unwrap();
+
+    assert_eq!(resolved, trusted_committee);
 }
