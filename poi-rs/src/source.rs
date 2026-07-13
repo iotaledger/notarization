@@ -22,6 +22,26 @@ use iota_types::{
 
 use crate::{BoxError, Proof, ProofTargets, TransactionProof};
 
+// Minimum gRPC fields needed to package a transaction proof.
+const TRANSACTION_PROOF_FIELDS: &[&str] = &[
+    TransactionField::TRANSACTION_BCS,
+    TransactionField::SIGNATURES,
+    TransactionField::EFFECTS_BCS,
+    TransactionField::EVENTS_DIGEST,
+    TransactionField::EVENTS_EVENTS_BCS,
+    TransactionField::CHECKPOINT,
+];
+
+// Minimum gRPC fields needed to package an object target.
+const OBJECT_PROOF_FIELDS: &[&str] = &[ObjectField::BCS];
+
+// Minimum gRPC fields needed to authenticate checkpoint contents.
+const CHECKPOINT_PROOF_FIELDS: &[&str] = &[
+    CheckpointResponseField::CHECKPOINT_SUMMARY_BCS,
+    CheckpointResponseField::CHECKPOINT_SIGNATURE,
+    CheckpointResponseField::CHECKPOINT_CONTENTS_BCS,
+];
+
 /// Source target requested by the caller.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[non_exhaustive]
@@ -532,23 +552,3 @@ impl Source for GrpcSource {
         Ok(proof)
     }
 }
-
-// Minimum gRPC fields needed to package a transaction proof.
-const TRANSACTION_PROOF_FIELDS: &[&str] = &[
-    TransactionField::TRANSACTION_BCS,
-    TransactionField::SIGNATURES,
-    TransactionField::EFFECTS_BCS,
-    TransactionField::EVENTS_DIGEST,
-    TransactionField::EVENTS_EVENTS_BCS,
-    TransactionField::CHECKPOINT,
-];
-
-// Minimum gRPC fields needed to package an object target.
-const OBJECT_PROOF_FIELDS: &[&str] = &[ObjectField::BCS];
-
-// Minimum gRPC fields needed to authenticate checkpoint contents.
-const CHECKPOINT_PROOF_FIELDS: &[&str] = &[
-    CheckpointResponseField::CHECKPOINT_SUMMARY_BCS,
-    CheckpointResponseField::CHECKPOINT_SIGNATURE,
-    CheckpointResponseField::CHECKPOINT_CONTENTS_BCS,
-];
