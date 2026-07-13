@@ -43,3 +43,36 @@ pub trait CommitteeCache: Send + Sync {
     /// Stores a committee after the resolver has authenticated it.
     async fn store(&self, committee: &Committee) -> Result<(), CommitteeCacheError>;
 }
+
+#[cfg(test)]
+mod tests {
+    use std::{error::Error as _, io};
+
+    use super::*;
+
+    #[test]
+    fn cache_is_object_safe() {
+        let cache = MemoryCommitteeCache::new();
+
+        let _: &dyn CommitteeCache = &cache;
+    }
+
+    #[test]
+    fn conflict_error_identifies_the_epoch() {
+        let error = CommitteeCacheError::Conflict { epoch: 7 };
+
+        assert_eq!(error.to_string(), "cached committee conflicts at epoch 7");
+        assert!(error.source().is_none());
+    }
+
+    #[test]
+    fn backend_error_preserves_the_epoch_and_source() {
+        let error = CommitteeCacheError::Backend {
+            epoch: 11,
+            source: Box::new(io::Error::other("storage unavailable")),
+        };
+
+        assert_eq!(error.to_string(), "committee cache backend failed at epoch 11");
+        assert_eq!(error.source().unwrap().to_string(), "storage unavailable");
+    }
+}
