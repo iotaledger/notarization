@@ -250,6 +250,21 @@ fn verifier_rejects_event_contents_mismatch() {
 }
 
 #[test]
+fn verifier_rejects_event_transaction_mismatch() {
+    let event = test_event(vec![1, 2, 3]);
+    let (committee, _, mut proof) = test_proof_with_events(TransactionEvents(vec![event.clone()]));
+    let event_id = EventID {
+        tx_digest: TransactionDigest::new([0xff; 32]),
+        event_seq: 0,
+    };
+    proof.target = ProofTargets::new().add_event(event_id, event);
+
+    let result = ProofVerifier::new(&committee).verify(&proof);
+
+    assert!(matches!(result, Err(error) if matches!(error.kind, VerifyErrorKind::EventTransactionMismatch)));
+}
+
+#[test]
 fn verifier_rejects_event_sequence_out_of_bounds() {
     let event = test_event(vec![1, 2, 3]);
     let (committee, transaction_digest, mut proof) = test_proof_with_events(TransactionEvents(vec![event.clone()]));
