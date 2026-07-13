@@ -146,7 +146,7 @@ pub enum CommitteeResolutionErrorKind {
 
 /// Selects how a resolver establishes trust in committee data.
 #[derive(Clone)]
-enum TrustMode {
+enum CommitteeResolution {
     /// Accept committee data returned directly by the connected node.
     Node,
     /// Authenticate committee lineage from an existing trust anchor.
@@ -164,7 +164,7 @@ enum TrustMode {
 #[derive(Clone)]
 pub struct CommitteeResolver {
     client: GrpcClient,
-    mode: TrustMode,
+    mode: CommitteeResolution,
 }
 
 impl CommitteeResolver {
@@ -176,7 +176,7 @@ impl CommitteeResolver {
     pub fn node(client: GrpcClient) -> Self {
         Self {
             client,
-            mode: TrustMode::Node,
+            mode: CommitteeResolution::Node,
         }
     }
 
@@ -198,7 +198,7 @@ impl CommitteeResolver {
     pub fn anchor_with_cache(client: GrpcClient, committee: Committee, cache: impl CommitteeCache + 'static) -> Self {
         Self {
             client,
-            mode: TrustMode::Anchor {
+            mode: CommitteeResolution::Anchor {
                 committee,
                 cache: Arc::new(cache),
             },
@@ -217,8 +217,8 @@ impl CommitteeResolver {
     /// before accepting its successor.
     pub async fn resolve(&self, target_epoch: EpochId) -> Result<Committee, CommitteeResolutionError> {
         match &self.mode {
-            TrustMode::Node => self.resolve_from_node(target_epoch).await,
-            TrustMode::Anchor { committee, cache } => {
+            CommitteeResolution::Node => self.resolve_from_node(target_epoch).await,
+            CommitteeResolution::Anchor { committee, cache } => {
                 self.resolve_from_anchor(committee, cache.as_ref(), target_epoch).await
             }
         }
@@ -621,7 +621,7 @@ mod tests {
             CommitteeResolver::authenticate_next_committee(&current_committee, &summary).unwrap();
         let client = GrpcClient::new("http://127.0.0.1:1").unwrap();
         let resolver = CommitteeResolver::anchor(client, current_committee);
-        let TrustMode::Anchor { cache, .. } = &resolver.mode else {
+        let CommitteeResolution::Anchor { cache, .. } = &resolver.mode else {
             panic!("anchor resolver must have a committee cache");
         };
         cache.store(&authenticated_committee).await.unwrap();
