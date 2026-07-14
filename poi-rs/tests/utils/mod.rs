@@ -17,6 +17,16 @@ pub struct CheckpointedTransfer {
     pub gas_object: ObjectRef,
 }
 
+pub struct CheckpointedStaking {
+    pub digest: TransactionDigest,
+    pub gas_object: ObjectRef,
+}
+
+pub struct CheckpointedObjectTransfer {
+    pub digest: TransactionDigest,
+    pub objects: [ObjectRef; 2],
+}
+
 pub async fn start_test_cluster() -> TestCluster {
     TestClusterBuilder::new()
         .with_num_validators(1)
@@ -49,10 +59,42 @@ pub async fn transfer_tx(cluster: &TestCluster) -> CheckpointedTransfer {
     }
 }
 
-pub async fn staking_tx(cluster: &TestCluster) -> TransactionDigest {
+pub async fn object_transfer_tx(cluster: &TestCluster) -> CheckpointedObjectTransfer {
+    let (sender, mut coins) = cluster.wallet.get_one_account().await.unwrap();
+    let gas = coins.pop().expect("funded account must have a gas coin");
+    let object = coins.pop().expect("funded account must have an object to transfer");
+    let gas_object_id = gas.object_id;
+    let transferred_object_id = object.object_id;
+    let transaction = cluster
+        .test_transaction_builder_with_gas_object(sender, gas)
+        .await
+        .transfer(object, cluster.get_address_1())
+        .build();
+    let response = cluster.sign_and_execute_transaction(&transaction).await;
+    let checkpoint = response.checkpoint.expect("object transfer must be checkpointed");
+    cluster.wait_for_checkpoint(checkpoint, None).await;
+    let gas_object = cluster
+        .wallet
+        .get_object_ref(gas_object_id)
+        .await
+        .expect("mutated gas object must be available");
+    let transferred_object = cluster
+        .wallet
+        .get_object_ref(transferred_object_id)
+        .await
+        .expect("transferred object must be available");
+
+    CheckpointedObjectTransfer {
+        digest: response.digest,
+        objects: [gas_object, transferred_object],
+    }
+}
+
+pub async fn staking_tx(cluster: &TestCluster) -> CheckpointedStaking {
     let (sender, mut coins) = cluster.wallet.get_one_account().await.unwrap();
     let gas = coins.pop().expect("funded account must have a gas coin");
     let stake = coins.pop().expect("funded account must have a stake coin");
+    let gas_object_id = gas.object_id;
     let validator = cluster
         .swarm
         .active_validators()
@@ -68,8 +110,16 @@ pub async fn staking_tx(cluster: &TestCluster) -> TransactionDigest {
     let response = cluster.sign_and_execute_transaction(&transaction).await;
     let checkpoint = response.checkpoint.expect("staking transaction must be checkpointed");
     cluster.wait_for_checkpoint(checkpoint, None).await;
+    let gas_object = cluster
+        .wallet
+        .get_object_ref(gas_object_id)
+        .await
+        .expect("mutated gas object must be available");
 
-    response.digest
+    CheckpointedStaking {
+        digest: response.digest,
+        gas_object,
+    }
 }
 
 pub fn genesis_committee(cluster: &TestCluster) -> Committee {

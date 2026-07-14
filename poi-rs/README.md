@@ -29,6 +29,10 @@ let proof = ProofBuilder::mainnet()?
 Use `ProofBuilder::testnet()` or `ProofBuilder::devnet()` for the other public networks. Applications can pass a custom
 `Source` to `ProofBuilder::new(source)` when they use a private node, archive, fixture, or local test cluster.
 
+A builder can stack multiple object and event targets by calling `object()` and `event()` repeatedly or by using the
+`objects()` and `events()` batch methods. Every target must belong to the same transaction. The builder ignores exact
+duplicates, and the source reuses one transaction proof and one set of checkpoint evidence for the complete target set.
+
 Network selection configures only the proof source. It does not make the returned proof trusted or select an authoritative
 committee for verification.
 

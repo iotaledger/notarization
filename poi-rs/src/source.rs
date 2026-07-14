@@ -107,6 +107,25 @@ impl SourceError {
     }
 }
 
+/// Transactions involved when stacked proof targets do not share one owner.
+#[derive(Debug)]
+pub struct TransactionMismatch {
+    /// Transaction selected by the first proof target.
+    pub expected: TransactionDigest,
+    /// Transaction that owns the conflicting target.
+    pub actual: TransactionDigest,
+}
+
+impl fmt::Display for TransactionMismatch {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "target belongs to transaction {}, expected transaction {}",
+            self.actual, self.expected
+        )
+    }
+}
+
 /// Kind of proof source failure.
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
@@ -144,6 +163,12 @@ pub enum SourceErrorKind {
     /// The source could not resolve the requested event.
     #[error("event was not found")]
     EventNotFound,
+    /// A requested target belongs to a different transaction than the other targets.
+    #[error("{mismatch}")]
+    TargetTransactionMismatch {
+        /// Conflicting transaction details.
+        mismatch: Box<TransactionMismatch>,
+    },
     /// The transaction response did not expose a checkpoint sequence number.
     #[error("transaction response is missing checkpoint sequence")]
     MissingCheckpointSequence {
@@ -218,27 +243,12 @@ pub enum SourceErrorKind {
 /// [`crate::ProofVerifier`].
 #[async_trait]
 pub trait Source {
-    /// Builds a transaction proof from source data.
+    /// Builds one proof for a non-empty set of targets.
     ///
-    /// The returned proof packages the transaction, effects, optional events,
-    /// certified checkpoint summary, and checkpoint contents. The transaction
-    /// itself is the authenticated claim, so the proof has no additional object,
-    /// event, or committee targets.
-    async fn transaction(&self, transaction_digest: TransactionDigest) -> Result<Proof, SourceError>;
-
-    /// Builds an object proof from source data.
-    ///
-    /// The source resolves the object reference to the transaction that last
-    /// created or mutated the object, builds that transaction proof, and attaches
-    /// the object as a target. Returned proofs remain untrusted until verified.
-    async fn object(&self, object_ref: ObjectRef) -> Result<Proof, SourceError>;
-
-    /// Builds an event proof from source data.
-    ///
-    /// The source uses the transaction digest embedded in the event ID, builds
-    /// that transaction proof, and attaches the event at the requested sequence
-    /// as a target. Returned proofs remain untrusted until verified.
-    async fn event(&self, event_id: EventID) -> Result<Proof, SourceError>;
+    /// All targets must belong to the same transaction. Implementations should
+    /// reuse the shared transaction and checkpoint evidence when constructing
+    /// stacked object and event targets.
+    async fn proof(&self, targets: &[SourceTarget]) -> Result<Proof, SourceError>;
 }
 
 /// Proof source backed by an SDK gRPC client.
@@ -352,11 +362,32 @@ impl GrpcSource {
                 )
             })
     }
-}
 
-#[async_trait]
-impl Source for GrpcSource {
-    async fn transaction(&self, transaction_digest: TransactionDigest) -> Result<Proof, SourceError> {
+    fn select_transaction(
+        selected: &mut Option<TransactionDigest>,
+        target: SourceTarget,
+        transaction_digest: TransactionDigest,
+    ) -> Result<(), SourceError> {
+        if let Some(expected) = selected {
+            if *expected != transaction_digest {
+                return Err(SourceError {
+                    target,
+                    kind: SourceErrorKind::TargetTransactionMismatch {
+                        mismatch: Box::new(TransactionMismatch {
+                            expected: *expected,
+                            actual: transaction_digest,
+                        }),
+                    },
+                });
+            }
+        } else {
+            *selected = Some(transaction_digest);
+        }
+
+        Ok(())
+    }
+
+    async fn build_transaction_proof(&self, transaction_digest: TransactionDigest) -> Result<Proof, SourceError> {
         let executed_transaction = self.fetch_executed_transaction(transaction_digest).await?;
         let checkpoint_sequence_number = executed_transaction.checkpoint_sequence_number().map_err(|source| {
             SourceError::transaction(
@@ -523,28 +554,54 @@ impl Source for GrpcSource {
             TransactionProof::new(checkpoint_contents, transaction, effects, events),
         ))
     }
+}
 
-    async fn object(&self, object_ref: ObjectRef) -> Result<Proof, SourceError> {
-        let object = self.fetch_object(object_ref).await?;
-        let mut proof = self.transaction(object.previous_transaction).await?;
-        proof.target = proof.target.add_object(object_ref, object);
-        Ok(proof)
-    }
+#[async_trait]
+impl Source for GrpcSource {
+    async fn proof(&self, targets: &[SourceTarget]) -> Result<Proof, SourceError> {
+        let mut selected_transaction = None;
+        let mut objects = Vec::new();
+        let mut events = Vec::new();
 
-    async fn event(&self, event_id: EventID) -> Result<Proof, SourceError> {
-        let mut proof = self.transaction(event_id.tx_digest).await?;
-        let event = proof
-            .transaction_proof
-            .events
-            .as_ref()
-            .and_then(|events| {
-                usize::try_from(event_id.event_seq)
-                    .ok()
-                    .and_then(|index| events.get(index))
-            })
-            .cloned()
-            .ok_or_else(|| SourceError::event(event_id, SourceErrorKind::EventNotFound))?;
-        proof.target = proof.target.add_event(event_id, event);
+        for target in targets.iter().copied() {
+            match target {
+                SourceTarget::Transaction(transaction_digest) => {
+                    Self::select_transaction(&mut selected_transaction, target, transaction_digest)?;
+                }
+                SourceTarget::Object(object_ref) => {
+                    let object = self.fetch_object(object_ref).await?;
+                    Self::select_transaction(&mut selected_transaction, target, object.previous_transaction)?;
+                    objects.push((object_ref, object));
+                }
+                SourceTarget::Event(event_id) => {
+                    Self::select_transaction(&mut selected_transaction, target, event_id.tx_digest)?;
+                    events.push(event_id);
+                }
+            }
+        }
+
+        let transaction_digest = selected_transaction.expect("ProofBuilder only calls Source with non-empty targets");
+        let mut proof = self.build_transaction_proof(transaction_digest).await?;
+
+        for (object_ref, object) in objects {
+            proof.target = proof.target.add_object(object_ref, object);
+        }
+
+        for event_id in events {
+            let event = proof
+                .transaction_proof
+                .events
+                .as_ref()
+                .and_then(|events| {
+                    usize::try_from(event_id.event_seq)
+                        .ok()
+                        .and_then(|index| events.get(index))
+                })
+                .cloned()
+                .ok_or_else(|| SourceError::event(event_id, SourceErrorKind::EventNotFound))?;
+            proof.target = proof.target.add_event(event_id, event);
+        }
+
         Ok(proof)
     }
 }

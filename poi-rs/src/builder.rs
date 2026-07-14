@@ -13,9 +13,6 @@ pub enum ProofBuilderError {
     /// No proof target was selected before building.
     #[error("proof builder requires a target")]
     MissingTarget,
-    /// More than one proof target was selected.
-    #[error("stacked proof targets are not supported yet")]
-    MultipleTargets,
     /// The configured source failed to construct the requested proof.
     #[error("proof source failed")]
     Source {
@@ -76,40 +73,57 @@ impl<S: Source> ProofBuilder<S> {
 
     /// Adds a transaction proof target.
     pub fn transaction(mut self, transaction_digest: TransactionDigest) -> Self {
-        self.targets.push(SourceTarget::Transaction(transaction_digest));
+        self.push_target(SourceTarget::Transaction(transaction_digest));
         self
     }
 
     /// Adds an object proof target.
     pub fn object(mut self, object_ref: ObjectRef) -> Self {
-        self.targets.push(SourceTarget::Object(object_ref));
+        self.push_target(SourceTarget::Object(object_ref));
+        self
+    }
+
+    /// Adds multiple object proof targets.
+    pub fn objects(mut self, object_refs: impl IntoIterator<Item = ObjectRef>) -> Self {
+        for object_ref in object_refs {
+            self.push_target(SourceTarget::Object(object_ref));
+        }
         self
     }
 
     /// Adds an event proof target.
     pub fn event(mut self, event_id: EventID) -> Self {
-        self.targets.push(SourceTarget::Event(event_id));
+        self.push_target(SourceTarget::Event(event_id));
+        self
+    }
+
+    /// Adds multiple event proof targets.
+    pub fn events(mut self, event_ids: impl IntoIterator<Item = EventID>) -> Self {
+        for event_id in event_ids {
+            self.push_target(SourceTarget::Event(event_id));
+        }
         self
     }
 
     /// Builds the requested proof from the configured source.
     pub async fn build(self) -> Result<Proof, ProofBuilderError> {
-        let [target] = self.targets.as_slice() else {
-            return Err(if self.targets.is_empty() {
-                ProofBuilderError::MissingTarget
-            } else {
-                ProofBuilderError::MultipleTargets
-            });
-        };
-
-        let proof = match *target {
-            SourceTarget::Transaction(transaction_digest) => self.source.transaction(transaction_digest).await,
-            SourceTarget::Object(object_ref) => self.source.object(object_ref).await,
-            SourceTarget::Event(event_id) => self.source.event(event_id).await,
+        if self.targets.is_empty() {
+            return Err(ProofBuilderError::MissingTarget);
         }
-        .map_err(|source| ProofBuilderError::Source { source })?;
+
+        let proof = self
+            .source
+            .proof(&self.targets)
+            .await
+            .map_err(|source| ProofBuilderError::Source { source })?;
 
         Ok(proof)
+    }
+
+    fn push_target(&mut self, target: SourceTarget) {
+        if !self.targets.contains(&target) {
+            self.targets.push(target);
+        }
     }
 }
 

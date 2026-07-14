@@ -27,5 +27,5 @@ pub use proof::{
     Proof, ProofVerifier, ProofVersion, SerializationError, SerializationErrorKind, TransactionProof, VerifyError,
     VerifyErrorKind, VersionError,
 };
-pub use source::{Source, SourceError, SourceErrorKind, SourceTarget};
+pub use source::{Source, SourceError, SourceErrorKind, SourceTarget, TransactionMismatch};
 pub use target::ProofTargets;

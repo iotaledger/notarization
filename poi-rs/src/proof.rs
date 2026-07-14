@@ -295,6 +295,8 @@ impl<'committee> ProofVerifier<'committee> {
         Ok(())
     }
 
+    /// Verifies an optional next-epoch committee target against the authenticated
+    /// end-of-epoch data in the checkpoint summary.
     fn verify_committee_target(
         &self,
         summary: &CertifiedCheckpointSummary,
@@ -329,12 +331,15 @@ impl<'committee> ProofVerifier<'committee> {
         Ok(())
     }
 
+    /// Verifies that the transaction matches its effects, appears in the
+    /// authenticated checkpoint contents, and carries the committed events.
     fn verify_transaction_proof(
         &self,
         summary: &CertifiedCheckpointSummary,
         transaction_proof: &TransactionProof,
     ) -> Result<(), VerifyError> {
         let execution_digests = transaction_proof.effects.execution_digests();
+
         if transaction_proof.transaction.digest() != &execution_digests.transaction {
             return Err(VerifyError {
                 kind: VerifyErrorKind::TransactionDigestMismatch,
@@ -363,6 +368,8 @@ impl<'committee> ProofVerifier<'committee> {
         Ok(())
     }
 
+    /// Verifies that every event target belongs to the proven transaction and
+    /// matches the event committed at its transaction-local sequence number.
     fn verify_event_targets(
         &self,
         targets: &ProofTargets,
@@ -405,6 +412,8 @@ impl<'committee> ProofVerifier<'committee> {
         Ok(())
     }
 
+    /// Verifies that every object target computes to its claimed reference and
+    /// appears among the objects changed by the proven transaction.
     fn verify_object_targets(
         &self,
         targets: &ProofTargets,
