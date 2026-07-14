@@ -338,9 +338,7 @@ impl CommitteeResolver {
         }
 
         while committee.epoch < target_epoch {
-            let next_committee = self
-                .fetch_next_committee(target_epoch, &committee, cache)
-                .await?;
+            let next_committee = self.fetch_next_committee(target_epoch, &committee, cache).await?;
             committee = next_committee;
         }
 
@@ -605,14 +603,10 @@ mod tests {
         let (current_committee, expected_committee, summary) = signed_end_of_epoch_summary(3, true);
         let cache = RecordingCache::default();
 
-        let committee = CommitteeResolver::authenticate_and_store_next_committee(
-            4,
-            &current_committee,
-            &summary,
-            &cache,
-        )
-        .await
-        .unwrap();
+        let committee =
+            CommitteeResolver::authenticate_and_store_next_committee(4, &current_committee, &summary, &cache)
+                .await
+                .unwrap();
 
         assert_eq!(committee, expected_committee);
         assert_eq!(cache.stored(), vec![expected_committee]);
@@ -625,10 +619,9 @@ mod tests {
         let wrong_committee = Committee::new(3, wrong_committee.voting_rights.iter().cloned().collect());
         let cache = RecordingCache::default();
 
-        let error =
-            CommitteeResolver::authenticate_and_store_next_committee(4, &wrong_committee, &summary, &cache)
-                .await
-                .unwrap_err();
+        let error = CommitteeResolver::authenticate_and_store_next_committee(4, &wrong_committee, &summary, &cache)
+            .await
+            .unwrap_err();
 
         assert!(matches!(
             error.kind,
@@ -646,14 +639,9 @@ mod tests {
         let (current_committee, _, summary) = signed_end_of_epoch_summary(3, false);
         let cache = RecordingCache::default();
 
-        let error = CommitteeResolver::authenticate_and_store_next_committee(
-            4,
-            &current_committee,
-            &summary,
-            &cache,
-        )
-        .await
-        .unwrap_err();
+        let error = CommitteeResolver::authenticate_and_store_next_committee(4, &current_committee, &summary, &cache)
+            .await
+            .unwrap_err();
 
         assert!(matches!(
             error.kind,

@@ -241,25 +241,21 @@ pub trait Source {
     async fn event(&self, event_id: EventID) -> Result<Proof, SourceError>;
 }
 
-/// gRPC-backed source for transaction proofs.
+/// Proof source backed by an SDK gRPC client.
 ///
-/// `GrpcSource` fetches transaction and checkpoint data from a connected gRPC
-/// node and packages it into a [`Proof`]. The node is treated only as a data
-/// source: callers still need to verify the returned proof with a trusted
-/// committee before trusting any packaged data.
-#[derive(Clone)]
+/// Applications normally construct this source through the network and client
+/// convenience constructors on [`crate::ProofBuilder`].
 pub struct GrpcSource {
     client: GrpcClient,
 }
 
 impl GrpcSource {
-    /// Creates a gRPC-backed source from an SDK gRPC client.
-    pub fn new(client: GrpcClient) -> Self {
+    pub(crate) fn new(client: GrpcClient) -> Self {
         Self { client }
     }
 
-    /// Returns the underlying SDK gRPC client.
-    pub const fn grpc_client(&self) -> &GrpcClient {
+    #[cfg(test)]
+    pub(crate) const fn grpc_client(&self) -> &GrpcClient {
         &self.client
     }
 
