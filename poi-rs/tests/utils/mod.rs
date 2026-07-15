@@ -7,7 +7,11 @@
 
 use iota_config::{IOTA_GENESIS_FILENAME, genesis::Genesis};
 use iota_grpc_client::Client as GrpcClient;
-use iota_types::{base_types::ObjectRef, committee::Committee, digests::TransactionDigest};
+use iota_types::{
+    base_types::ObjectRef,
+    committee::Committee,
+    digests::{ChainIdentifier, TransactionDigest},
+};
 use test_cluster::{TestCluster, TestClusterBuilder};
 
 pub mod proofs;
@@ -128,6 +132,13 @@ pub fn genesis_committee(cluster: &TestCluster) -> Committee {
         .expect("test cluster genesis blob must load")
         .committee()
         .expect("genesis blob must contain a committee")
+}
+
+pub fn genesis_chain_identifier(cluster: &TestCluster) -> ChainIdentifier {
+    let genesis_path = cluster.swarm.dir().join(IOTA_GENESIS_FILENAME);
+    let genesis = Genesis::load(genesis_path).expect("test cluster genesis blob must load");
+
+    ChainIdentifier::from(*genesis.checkpoint().digest())
 }
 
 pub async fn advance_to_epoch(cluster: &TestCluster, target_epoch: u64) -> Vec<Committee> {

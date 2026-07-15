@@ -12,7 +12,7 @@ use async_trait::async_trait;
 use iota_types::base_types::dbg_object_id;
 use iota_types::{digests::TransactionDigest, event::EventID, object::Object};
 use poi_rs::{Proof, ProofBuilder, ProofBuilderError, Source, SourceError, SourceErrorKind, SourceTarget};
-use utils::{grpc_client, staking_tx, start_test_cluster, transfer_tx};
+use utils::{genesis_chain_identifier, grpc_client, staking_tx, start_test_cluster, transfer_tx};
 
 struct RejectingSource;
 
@@ -143,6 +143,20 @@ async fn unknown_transaction_returns_a_fetch_error() {
     };
     assert_eq!(source.target, SourceTarget::Transaction(transaction_digest));
     assert!(matches!(source.kind, SourceErrorKind::FetchTransaction { .. }));
+}
+
+#[tokio::test]
+async fn proof_uses_the_genesis_checkpoint_as_its_chain_identifier() {
+    let cluster = start_test_cluster().await;
+    let transfer = transfer_tx(&cluster).await;
+
+    let proof = ProofBuilder::from_grpc_client(grpc_client(&cluster))
+        .transaction(transfer.digest)
+        .build()
+        .await
+        .expect("transaction proof must be constructed");
+
+    assert_eq!(proof.chain, genesis_chain_identifier(&cluster));
 }
 
 #[tokio::test]

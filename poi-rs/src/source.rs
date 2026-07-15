@@ -6,13 +6,13 @@ use std::fmt;
 use async_trait::async_trait;
 use iota_grpc_client::{
     CheckpointResponse, Client as GrpcClient, ReadMask,
-    read_mask_fields::{CheckpointResponseField, ObjectField, TransactionField},
+    read_mask_fields::{CheckpointResponseField, ObjectField, ServiceInfoField, TransactionField},
 };
 use iota_grpc_types::v1::transaction::ExecutedTransaction;
 use iota_sdk_types::{Digest, SignedTransaction};
 use iota_types::{
     base_types::ObjectRef,
-    digests::{ChainIdentifier, TransactionDigest},
+    digests::{ChainIdentifier, CheckpointDigest, TransactionDigest},
     effects::{TransactionEffects, TransactionEffectsAPI},
     event::EventID,
     messages_checkpoint::{CertifiedCheckpointSummary, CheckpointContents},
@@ -22,7 +22,7 @@ use iota_types::{
 
 use crate::{BoxError, Proof, ProofTargets, TransactionProof};
 
-// Minimum gRPC fields needed to package a transaction proof.
+// gRPC fields needed to package a transaction proof.
 const TRANSACTION_PROOF_FIELDS: &[&str] = &[
     TransactionField::TRANSACTION_BCS,
     TransactionField::SIGNATURES,
@@ -32,10 +32,13 @@ const TRANSACTION_PROOF_FIELDS: &[&str] = &[
     TransactionField::CHECKPOINT,
 ];
 
-// Minimum gRPC fields needed to package an object target.
+// gRPC fields needed to package an object target.
 const OBJECT_PROOF_FIELDS: &[&str] = &[ObjectField::BCS];
 
-// Minimum gRPC fields needed to authenticate checkpoint contents.
+// gRPC fields needed to identify the chain.
+const CHAIN_IDENTIFIER_FIELDS: &[&str] = &[ServiceInfoField::CHAIN_ID];
+
+// gRPC fields needed to authenticate checkpoint contents.
 const CHECKPOINT_PROOF_FIELDS: &[&str] = &[
     CheckpointResponseField::CHECKPOINT_SUMMARY_BCS,
     CheckpointResponseField::CHECKPOINT_SIGNATURE,
@@ -130,6 +133,20 @@ impl fmt::Display for TransactionMismatch {
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum SourceErrorKind {
+    /// Fetching the chain identifier from the source failed.
+    #[error("failed to fetch chain identifier")]
+    FetchChainIdentifier {
+        /// Underlying source error.
+        #[source]
+        source: BoxError,
+    },
+    /// Reading or converting the chain identifier failed.
+    #[error("failed to read chain identifier")]
+    ChainIdentifier {
+        /// Underlying response or conversion error.
+        #[source]
+        source: BoxError,
+    },
     /// Fetching the transaction from the source failed.
     #[error("failed to fetch transaction")]
     FetchTransaction {
@@ -260,20 +277,47 @@ pub struct GrpcSource {
 }
 
 impl GrpcSource {
+    /// Wraps an SDK gRPC client as a Proof of Inclusion source.
     pub(crate) fn new(client: GrpcClient) -> Self {
         Self { client }
     }
 
+    /// Returns the underlying client for endpoint-selection tests.
     #[cfg(test)]
     pub(crate) const fn grpc_client(&self) -> &GrpcClient {
         &self.client
     }
 
+    /// Fetches the genesis-checkpoint digest that identifies the source chain.
+    async fn chain_identifier(&self, digest: TransactionDigest) -> Result<ChainIdentifier, SourceError> {
+        let service_info = self
+            .client
+            .get_service_info(Some(ReadMask::from(CHAIN_IDENTIFIER_FIELDS)))
+            .await
+            .map_err(|source| {
+                SourceError::transaction(
+                    digest,
+                    SourceErrorKind::FetchChainIdentifier {
+                        source: Box::new(source),
+                    },
+                )
+            })?;
+        let chain_identifier = service_info.body().chain_identifier().map_err(|source| {
+            SourceError::transaction(
+                digest,
+                SourceErrorKind::ChainIdentifier {
+                    source: Box::new(source),
+                },
+            )
+        })?;
+
+        Ok(ChainIdentifier::from(CheckpointDigest::new(
+            chain_identifier.into_inner(),
+        )))
+    }
+
     /// Fetches the executed transaction envelope with the fields needed for inclusion.
-    async fn fetch_executed_transaction(
-        &self,
-        transaction_digest: TransactionDigest,
-    ) -> Result<ExecutedTransaction, SourceError> {
+    async fn get_transaction(&self, transaction_digest: TransactionDigest) -> Result<ExecutedTransaction, SourceError> {
         let digest = Digest::new(transaction_digest.into_inner());
         let transactions = self
             .client
@@ -296,7 +340,7 @@ impl GrpcSource {
     }
 
     /// Fetches the object contents for an exact object reference.
-    async fn fetch_object(&self, object_ref: ObjectRef) -> Result<Object, SourceError> {
+    async fn get_object(&self, object_ref: ObjectRef) -> Result<Object, SourceError> {
         let objects = self
             .client
             .get_objects(
@@ -338,7 +382,7 @@ impl GrpcSource {
     }
 
     /// Fetches the certified checkpoint summary and contents for an executed transaction.
-    async fn fetch_checkpoint_with_contents(
+    async fn get_checkpoint(
         &self,
         transaction_digest: TransactionDigest,
         sequence_number: u64,
@@ -363,7 +407,8 @@ impl GrpcSource {
             })
     }
 
-    fn select_transaction(
+    /// Selects the transaction shared by all targets or rejects a conflicting target.
+    fn ensure_same_transaction(
         selected: &mut Option<TransactionDigest>,
         target: SourceTarget,
         transaction_digest: TransactionDigest,
@@ -387,19 +432,11 @@ impl GrpcSource {
         Ok(())
     }
 
-    async fn build_transaction_proof(&self, transaction_digest: TransactionDigest) -> Result<Proof, SourceError> {
-        let executed_transaction = self.fetch_executed_transaction(transaction_digest).await?;
-        let checkpoint_sequence_number = executed_transaction.checkpoint_sequence_number().map_err(|source| {
-            SourceError::transaction(
-                transaction_digest,
-                SourceErrorKind::MissingCheckpointSequence {
-                    source: Box::new(source),
-                },
-            )
-        })?;
-        let checkpoint = self
-            .fetch_checkpoint_with_contents(transaction_digest, checkpoint_sequence_number)
-            .await?;
+    /// Reads the certified summary and contents from a checkpoint response.
+    fn parse_checkpoint(
+        transaction_digest: TransactionDigest,
+        checkpoint: &CheckpointResponse,
+    ) -> Result<(CertifiedCheckpointSummary, CheckpointContents), SourceError> {
         let checkpoint_summary: CertifiedCheckpointSummary = checkpoint
             .signed_summary()
             .map_err(|source| {
@@ -448,6 +485,16 @@ impl GrpcSource {
                     )
                 })
             })?;
+
+        Ok((checkpoint_summary, checkpoint_contents))
+    }
+
+    /// Builds the transaction evidence committed to by the checkpoint contents.
+    fn build_transaction_proof(
+        transaction_digest: TransactionDigest,
+        executed_transaction: &ExecutedTransaction,
+        checkpoint_contents: CheckpointContents,
+    ) -> Result<TransactionProof, SourceError> {
         let transaction = executed_transaction
             .transaction()
             .map_err(|source| {
@@ -547,12 +594,7 @@ impl GrpcSource {
             None
         };
 
-        Ok(Proof::new(
-            ChainIdentifier::from(*checkpoint_summary.digest()),
-            ProofTargets::new(),
-            checkpoint_summary,
-            TransactionProof::new(checkpoint_contents, transaction, effects, events),
-        ))
+        Ok(TransactionProof::new(checkpoint_contents, transaction, effects, events))
     }
 }
 
@@ -566,22 +608,43 @@ impl Source for GrpcSource {
         for target in targets.iter().copied() {
             match target {
                 SourceTarget::Transaction(transaction_digest) => {
-                    Self::select_transaction(&mut selected_transaction, target, transaction_digest)?;
+                    Self::ensure_same_transaction(&mut selected_transaction, target, transaction_digest)?;
                 }
                 SourceTarget::Object(object_ref) => {
-                    let object = self.fetch_object(object_ref).await?;
-                    Self::select_transaction(&mut selected_transaction, target, object.previous_transaction)?;
+                    let object = self.get_object(object_ref).await?;
+                    Self::ensure_same_transaction(&mut selected_transaction, target, object.previous_transaction)?;
                     objects.push((object_ref, object));
                 }
                 SourceTarget::Event(event_id) => {
-                    Self::select_transaction(&mut selected_transaction, target, event_id.tx_digest)?;
+                    Self::ensure_same_transaction(&mut selected_transaction, target, event_id.tx_digest)?;
                     events.push(event_id);
                 }
             }
         }
 
         let transaction_digest = selected_transaction.expect("ProofBuilder only calls Source with non-empty targets");
-        let mut proof = self.build_transaction_proof(transaction_digest).await?;
+        let executed_transaction = self.get_transaction(transaction_digest).await?;
+        let chain_identifier = self.chain_identifier(transaction_digest).await?;
+        let checkpoint_sequence_number = executed_transaction.checkpoint_sequence_number().map_err(|source| {
+            SourceError::transaction(
+                transaction_digest,
+                SourceErrorKind::MissingCheckpointSequence {
+                    source: Box::new(source),
+                },
+            )
+        })?;
+        let checkpoint = self
+            .get_checkpoint(transaction_digest, checkpoint_sequence_number)
+            .await?;
+        let (checkpoint_summary, checkpoint_contents) = Self::parse_checkpoint(transaction_digest, &checkpoint)?;
+        let transaction_proof =
+            Self::build_transaction_proof(transaction_digest, &executed_transaction, checkpoint_contents)?;
+        let mut proof = Proof::new(
+            chain_identifier,
+            ProofTargets::new(),
+            checkpoint_summary,
+            transaction_proof,
+        );
 
         for (object_ref, object) in objects {
             proof.target = proof.target.add_object(object_ref, object);
