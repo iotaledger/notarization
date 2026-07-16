@@ -10,17 +10,30 @@ repository.workspace = true
 rust-version.workspace = true
 description = "Proof of Inclusion support for the IOTA Notarization Toolkit."
 
+[features]
+cli = ["dep:anyhow", "dep:clap", "dep:iota-config", "dep:reqwest", "dep:tempfile"]
+
 [dependencies]
+anyhow = { workspace = true, optional = true }
 async-trait.workspace = true
+clap = { workspace = true, optional = true }
 iota-grpc-client.workspace = true
 iota-grpc-types.workspace = true
+iota-config = { git = "https://github.com/iotaledger/iota.git", tag = "v1.26.1", optional = true }
 iota-sdk-types.workspace = true
 iota-types.workspace = true
+reqwest = { workspace = true, optional = true }
 serde.workspace = true
 serde_json = { workspace = true, features = ["alloc"] }
+tempfile = { workspace = true, optional = true }
 thiserror.workspace = true
 tokio.workspace = true
 
 [dev-dependencies]
 iota-config = { git = "https://github.com/iotaledger/iota.git", tag = "v1.26.1" }
 test-cluster = { git = "https://github.com/iotaledger/iota.git", tag = "v1.26.1", package = "test-cluster" }
+
+[[bin]]
+name = "iota-poi"
+path = "src/bin/iota-poi.rs"
+required-features = ["cli"]

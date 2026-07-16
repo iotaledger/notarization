@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use iota_grpc_client::Client as GrpcClient;
-use iota_types::{base_types::ObjectRef, digests::TransactionDigest, event::EventID};
+use iota_sdk_types::ObjectId;
+use iota_types::{digests::TransactionDigest, event::EventID};
 
 use crate::{Proof, Source, SourceError, SourceTarget, source::GrpcSource};
 
@@ -77,16 +78,18 @@ impl<S: Source> ProofBuilder<S> {
         self
     }
 
-    /// Adds an object proof target.
-    pub fn object(mut self, object_ref: ObjectRef) -> Self {
-        self.push_target(SourceTarget::Object(object_ref));
+    /// Adds an object proof target by object ID.
+    ///
+    /// The source resolves the ID to the exact object reference packaged in the proof.
+    pub fn object(mut self, object_id: ObjectId) -> Self {
+        self.push_target(SourceTarget::Object(object_id));
         self
     }
 
-    /// Adds multiple object proof targets.
-    pub fn objects(mut self, object_refs: impl IntoIterator<Item = ObjectRef>) -> Self {
-        for object_ref in object_refs {
-            self.push_target(SourceTarget::Object(object_ref));
+    /// Adds multiple object proof targets by object ID.
+    pub fn objects(mut self, object_ids: impl IntoIterator<Item = ObjectId>) -> Self {
+        for object_id in object_ids {
+            self.push_target(SourceTarget::Object(object_id));
         }
         self
     }

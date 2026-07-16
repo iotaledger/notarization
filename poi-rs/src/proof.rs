@@ -21,24 +21,24 @@ pub struct VersionError {
     pub version: u16,
 }
 
-/// Error returned when a proof cannot be serialized.
+/// Error returned when a proof cannot be serialized or deserialized.
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
-#[error("failed to serialize Proof of Inclusion proof")]
+#[error("failed to serialize or deserialize Proof of Inclusion proof")]
 pub struct SerializationError {
     /// Serialization failure details.
     #[source]
     pub kind: SerializationErrorKind,
 }
 
-/// Kind of proof-serialization failure.
+/// Kind of proof serialization or deserialization failure.
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum SerializationErrorKind {
-    /// JSON serialization failed.
-    #[error("json serialization failed")]
+    /// JSON serialization or deserialization failed.
+    #[error("json serialization or deserialization failed")]
     Json {
-        /// Underlying JSON serialization error.
+        /// Underlying JSON serialization or deserialization error.
         #[source]
         source: serde_json::Error,
     },
@@ -237,6 +237,13 @@ impl Proof {
     /// Serializes this proof envelope as JSON.
     pub fn to_json_vec(&self) -> Result<Vec<u8>, SerializationError> {
         serde_json::to_vec(self).map_err(|source| SerializationError {
+            kind: SerializationErrorKind::Json { source },
+        })
+    }
+
+    /// Deserializes a proof envelope from JSON bytes.
+    pub fn from_json_slice(bytes: &[u8]) -> Result<Self, SerializationError> {
+        serde_json::from_slice(bytes).map_err(|source| SerializationError {
             kind: SerializationErrorKind::Json { source },
         })
     }

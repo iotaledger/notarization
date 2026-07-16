@@ -35,7 +35,7 @@ async fn object_proof_verifies_with_the_resolved_committee() {
     let client = grpc_client(&cluster);
 
     let proof = ProofBuilder::from_grpc_client(client.clone())
-        .object(transfer.gas_object)
+        .object(transfer.gas_object.object_id)
         .build()
         .await
         .expect("object proof must be constructed");
@@ -44,6 +44,7 @@ async fn object_proof_verifies_with_the_resolved_committee() {
         .await
         .expect("checkpoint committee must resolve");
 
+    assert_eq!(proof.target.objects[0].0, transfer.gas_object);
     ProofVerifier::new(&committee)
         .verify(&proof)
         .expect("object proof must verify");
@@ -81,7 +82,7 @@ async fn multiple_object_targets_share_one_verified_transaction_proof() {
     let client = grpc_client(&cluster);
 
     let proof = ProofBuilder::from_grpc_client(client.clone())
-        .objects(transfer.objects)
+        .objects(transfer.objects.map(|object_ref| object_ref.object_id))
         .build()
         .await
         .expect("stacked object proof must be constructed");
@@ -108,7 +109,7 @@ async fn object_and_event_targets_share_one_verified_transaction_proof() {
     };
 
     let proof = ProofBuilder::from_grpc_client(client.clone())
-        .object(staking.gas_object)
+        .object(staking.gas_object.object_id)
         .event(event_id)
         .build()
         .await
@@ -119,6 +120,7 @@ async fn object_and_event_targets_share_one_verified_transaction_proof() {
         .expect("checkpoint committee must resolve");
 
     assert_eq!(proof.transaction_proof.transaction.digest(), &staking.digest);
+    assert_eq!(proof.target.objects[0].0, staking.gas_object);
     assert_eq!(proof.target.objects.len(), 1);
     assert_eq!(proof.target.events.len(), 1);
     ProofVerifier::new(&committee)
