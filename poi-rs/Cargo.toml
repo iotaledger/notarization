@@ -20,3 +20,7 @@ serde.workspace = true
 serde_json = { workspace = true, features = ["alloc"] }
 thiserror.workspace = true
 tokio.workspace = true
+
+[dev-dependencies]
+iota-config = { git = "https://github.com/iotaledger/iota.git", tag = "v1.26.1" }
+test-cluster = { git = "https://github.com/iotaledger/iota.git", tag = "v1.26.1", package = "test-cluster" }

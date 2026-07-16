@@ -4,8 +4,37 @@ The Proof of Inclusion Rust package provides proof data types and offline verifi
 Notarization Toolkit.
 
 Use Proof of Inclusion when a verifier needs cryptographic evidence that a transaction, event, or object state is tied to
-a certified IOTA checkpoint. The package verifies supplied proof material locally. It does not fetch checkpoints, resolve
-committees, or trust the node that supplied the proof.
+a certified IOTA checkpoint. `ProofBuilder` fetches the proof material, while `ProofVerifier` verifies that material
+locally without trusting the source that supplied it.
+
+## Proof Construction
+
+`ProofBuilder` provides explicit constructors for the public IOTA networks. The builder does not select a default network,
+so the calling application always chooses where it fetches proof material.
+
+```rust,no_run
+use iota_types::digests::TransactionDigest;
+use poi_rs::ProofBuilder;
+
+# async fn example() -> Result<(), Box<dyn std::error::Error>> {
+let transaction_digest: TransactionDigest = todo!();
+let proof = ProofBuilder::mainnet()?
+    .transaction(transaction_digest)
+    .build()
+    .await?;
+# Ok(())
+# }
+```
+
+Use `ProofBuilder::testnet()` or `ProofBuilder::devnet()` for the other public networks. Applications can pass a custom
+`Source` to `ProofBuilder::new(source)` when they use a private node, archive, fixture, or local test cluster.
+
+A builder can stack multiple object and event targets by calling `object()` and `event()` repeatedly or by using the
+`objects()` and `events()` batch methods. Every target must belong to the same transaction. The builder ignores exact
+duplicates, and the source reuses one transaction proof and one set of checkpoint evidence for the complete target set.
+
+Network selection configures only the proof source. It does not make the returned proof trusted or select an authoritative
+committee for verification.
 
 ## Proof Model
 
@@ -38,8 +67,8 @@ Verification checks:
 ## Trust Boundaries
 
 `ProofVerifier` is intentionally offline. It does not make RPC calls and does not decide which committee is authoritative.
-Callers must provide the committee that should certify the checkpoint. A higher-level client or cache can resolve committee
-history before calling the verifier.
+Callers must provide the committee that should certify the checkpoint. `CommitteeResolver` can resolve committee history
+before the caller invokes the verifier.
 
 The verifier treats all proof payloads as untrusted until verification succeeds. After verification succeeds, callers can
 trust the authenticated target claims relative to the supplied committee.
@@ -50,5 +79,8 @@ trust the authenticated target claims relative to the supplied committee.
 - `ProofVersion`: Proof format version used for compatibility checks.
 - `TransactionProof`: Transaction, effects, events, and checkpoint contents used to prove inclusion.
 - `ProofTargets`: Object, event, and committee claims to authenticate.
+- `ProofBuilder`: Network-aware or custom-source proof construction.
+- `Source`: Extensible boundary for gRPC nodes, archives, fixtures, and other proof sources.
+- `CommitteeResolver`: Trusted-node or anchored committee resolution.
 - `ProofVerifier`: Offline verifier for `Proof` values.
 - `VerifyError`, `SourceError`, `SerializationError`, and `VersionError`: Operation-specific errors.
