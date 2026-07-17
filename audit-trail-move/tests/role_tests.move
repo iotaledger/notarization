@@ -13,7 +13,7 @@ use audit_trails::{
         setup_test_audit_trail,
         setup_test_audit_trail_with_tags,
         fetch_capability_trail_and_clock,
-        cleanup_capability_trail_and_clock
+        cleanup_capability_trail_and_clock,
     }
 };
 use iota::test_scenario as ts;
