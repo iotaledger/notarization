@@ -9,11 +9,11 @@ use iota_grpc_client::{
     read_mask_fields::{CheckpointResponseField, ObjectField, ServiceInfoField, TransactionField},
 };
 use iota_grpc_types::v1::transaction::ExecutedTransaction;
-use iota_sdk_types::{Digest, SignedTransaction};
+use iota_sdk_types::{Digest, ObjectId, SignedTransaction};
 use iota_types::{
     base_types::ObjectRef,
     digests::{ChainIdentifier, CheckpointDigest, TransactionDigest},
-    effects::{TransactionEffects, TransactionEffectsAPI},
+    effects::{TransactionEffects, TransactionEffectsAPI, TransactionEffectsExt},
     event::EventID,
     messages_checkpoint::{CertifiedCheckpointSummary, CheckpointContents},
     object::Object,
@@ -51,8 +51,8 @@ const CHECKPOINT_PROOF_FIELDS: &[&str] = &[
 pub enum SourceTarget {
     /// A transaction proof request.
     Transaction(TransactionDigest),
-    /// An object proof request.
-    Object(ObjectRef),
+    /// An object proof request identified by object ID.
+    Object(ObjectId),
     /// An event proof request.
     Event(EventID),
 }
@@ -61,7 +61,7 @@ impl fmt::Display for SourceTarget {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Transaction(transaction_digest) => write!(f, "transaction {transaction_digest}"),
-            Self::Object(object_ref) => write!(f, "object {object_ref:?}"),
+            Self::Object(object_id) => write!(f, "object {object_id}"),
             Self::Event(event_id) => write!(f, "event {event_id:?}"),
         }
     }
@@ -94,9 +94,9 @@ impl SourceError {
     }
 
     /// Creates a source error for a requested object.
-    pub fn object(object_ref: ObjectRef, kind: SourceErrorKind) -> Self {
+    pub fn object(object_id: ObjectId, kind: SourceErrorKind) -> Self {
         Self {
-            target: SourceTarget::Object(object_ref),
+            target: SourceTarget::Object(object_id),
             kind,
         }
     }
@@ -164,7 +164,7 @@ pub enum SourceErrorKind {
         #[source]
         source: BoxError,
     },
-    /// The source returned no object for the requested reference.
+    /// The source returned no object for the requested ID.
     #[error("object was not found")]
     ObjectNotFound,
     /// Reading or converting the object failed.
@@ -174,9 +174,15 @@ pub enum SourceErrorKind {
         #[source]
         source: BoxError,
     },
-    /// The returned object does not compute to the requested reference.
-    #[error("object reference does not match the requested reference")]
+    /// The returned object does not match the requested ID or transaction effects.
+    #[error("object reference does not match the requested object")]
     ObjectReferenceMismatch,
+    /// The requested object was not changed by the selected transaction.
+    #[error("object was not changed by transaction {transaction_digest}")]
+    ObjectNotChangedByTransaction {
+        /// Transaction selected by the other proof targets.
+        transaction_digest: TransactionDigest,
+    },
     /// The source could not resolve the requested event.
     #[error("event was not found")]
     EventNotFound,
@@ -339,18 +345,22 @@ impl GrpcSource {
             .ok_or_else(|| SourceError::transaction(transaction_digest, SourceErrorKind::TransactionNotFound))
     }
 
-    /// Fetches the object contents for an exact object reference.
-    async fn get_object(&self, object_ref: ObjectRef) -> Result<Object, SourceError> {
+    /// Fetches the latest object or an exact version selected by transaction effects.
+    async fn get_object(
+        &self,
+        object_id: ObjectId,
+        expected_ref: Option<ObjectRef>,
+    ) -> Result<(ObjectRef, Object), SourceError> {
         let objects = self
             .client
             .get_objects(
-                &[(object_ref.object_id, Some(object_ref.version))],
+                &[(object_id, expected_ref.map(|object_ref| object_ref.version))],
                 Some(ReadMask::from(OBJECT_PROOF_FIELDS)),
             )
             .await
             .map_err(|source| {
                 SourceError::object(
-                    object_ref,
+                    object_id,
                     SourceErrorKind::FetchObject {
                         source: Box::new(source),
                     },
@@ -359,26 +369,24 @@ impl GrpcSource {
         let object: Object = objects
             .body()
             .first()
-            .ok_or_else(|| SourceError::object(object_ref, SourceErrorKind::ObjectNotFound))?
+            .ok_or_else(|| SourceError::object(object_id, SourceErrorKind::ObjectNotFound))?
             .object()
             .map_err(|source| {
                 SourceError::object(
-                    object_ref,
+                    object_id,
                     SourceErrorKind::Object {
                         source: Box::new(source),
                     },
                 )
             })?
             .into();
+        let object_ref = object.as_inner().object_ref();
 
-        if object.as_inner().object_ref() != object_ref {
-            return Err(SourceError::object(
-                object_ref,
-                SourceErrorKind::ObjectReferenceMismatch,
-            ));
+        if object_ref.object_id != object_id || expected_ref.is_some_and(|expected| expected != object_ref) {
+            return Err(SourceError::object(object_id, SourceErrorKind::ObjectReferenceMismatch));
         }
 
-        Ok(object)
+        Ok((object_ref, object))
     }
 
     /// Fetches the certified checkpoint summary and contents for an executed transaction.
@@ -489,11 +497,38 @@ impl GrpcSource {
         Ok((checkpoint_summary, checkpoint_contents))
     }
 
+    /// Reads transaction effects before resolving transaction-scoped object IDs.
+    fn parse_effects(
+        transaction_digest: TransactionDigest,
+        executed_transaction: &ExecutedTransaction,
+    ) -> Result<TransactionEffects, SourceError> {
+        executed_transaction
+            .effects()
+            .map_err(|source| {
+                SourceError::transaction(
+                    transaction_digest,
+                    SourceErrorKind::Effects {
+                        source: Box::new(source),
+                    },
+                )
+            })?
+            .effects()
+            .map_err(|source| {
+                SourceError::transaction(
+                    transaction_digest,
+                    SourceErrorKind::Effects {
+                        source: Box::new(source),
+                    },
+                )
+            })
+    }
+
     /// Builds the transaction evidence committed to by the checkpoint contents.
     fn build_transaction_proof(
         transaction_digest: TransactionDigest,
         executed_transaction: &ExecutedTransaction,
         checkpoint_contents: CheckpointContents,
+        effects: TransactionEffects,
     ) -> Result<TransactionProof, SourceError> {
         let transaction = executed_transaction
             .transaction()
@@ -550,25 +585,6 @@ impl GrpcSource {
                 },
             )
         })?;
-        let effects: TransactionEffects = executed_transaction
-            .effects()
-            .map_err(|source| {
-                SourceError::transaction(
-                    transaction_digest,
-                    SourceErrorKind::Effects {
-                        source: Box::new(source),
-                    },
-                )
-            })?
-            .effects()
-            .map_err(|source| {
-                SourceError::transaction(
-                    transaction_digest,
-                    SourceErrorKind::Effects {
-                        source: Box::new(source),
-                    },
-                )
-            })?;
         let events = if effects.events_digest().is_some() {
             executed_transaction
                 .events()
@@ -602,7 +618,7 @@ impl GrpcSource {
 impl Source for GrpcSource {
     async fn proof(&self, targets: &[SourceTarget]) -> Result<Proof, SourceError> {
         let mut selected_transaction = None;
-        let mut objects = Vec::new();
+        let mut object_ids = Vec::new();
         let mut events = Vec::new();
 
         for target in targets.iter().copied() {
@@ -610,10 +626,8 @@ impl Source for GrpcSource {
                 SourceTarget::Transaction(transaction_digest) => {
                     Self::ensure_same_transaction(&mut selected_transaction, target, transaction_digest)?;
                 }
-                SourceTarget::Object(object_ref) => {
-                    let object = self.get_object(object_ref).await?;
-                    Self::ensure_same_transaction(&mut selected_transaction, target, object.previous_transaction)?;
-                    objects.push((object_ref, object));
+                SourceTarget::Object(object_id) => {
+                    object_ids.push(object_id);
                 }
                 SourceTarget::Event(event_id) => {
                     Self::ensure_same_transaction(&mut selected_transaction, target, event_id.tx_digest)?;
@@ -622,8 +636,47 @@ impl Source for GrpcSource {
             }
         }
 
-        let transaction_digest = selected_transaction.expect("ProofBuilder only calls Source with non-empty targets");
-        let executed_transaction = self.get_transaction(transaction_digest).await?;
+        let (transaction_digest, executed_transaction, effects, objects) =
+            if let Some(transaction_digest) = selected_transaction {
+                let executed_transaction = self.get_transaction(transaction_digest).await?;
+                let effects = Self::parse_effects(transaction_digest, &executed_transaction)?;
+                let changed_objects = effects.all_changed_objects();
+                let mut objects = Vec::with_capacity(object_ids.len());
+
+                for object_id in object_ids {
+                    let object_ref = changed_objects
+                        .iter()
+                        .find_map(|(object_ref, _, _)| (object_ref.object_id == object_id).then_some(*object_ref))
+                        .ok_or_else(|| {
+                            SourceError::object(
+                                object_id,
+                                SourceErrorKind::ObjectNotChangedByTransaction { transaction_digest },
+                            )
+                        })?;
+                    objects.push(self.get_object(object_id, Some(object_ref)).await?);
+                }
+
+                (transaction_digest, executed_transaction, effects, objects)
+            } else {
+                let mut objects = Vec::with_capacity(object_ids.len());
+                for object_id in object_ids {
+                    let (object_ref, object) = self.get_object(object_id, None).await?;
+                    Self::ensure_same_transaction(
+                        &mut selected_transaction,
+                        SourceTarget::Object(object_id),
+                        object.previous_transaction,
+                    )?;
+                    objects.push((object_ref, object));
+                }
+
+                let transaction_digest =
+                    selected_transaction.expect("ProofBuilder only calls Source with non-empty targets");
+                let executed_transaction = self.get_transaction(transaction_digest).await?;
+                let effects = Self::parse_effects(transaction_digest, &executed_transaction)?;
+
+                (transaction_digest, executed_transaction, effects, objects)
+            };
+
         let chain_identifier = self.chain_identifier(transaction_digest).await?;
         let checkpoint_sequence_number = executed_transaction.checkpoint_sequence_number().map_err(|source| {
             SourceError::transaction(
@@ -638,7 +691,7 @@ impl Source for GrpcSource {
             .await?;
         let (checkpoint_summary, checkpoint_contents) = Self::parse_checkpoint(transaction_digest, &checkpoint)?;
         let transaction_proof =
-            Self::build_transaction_proof(transaction_digest, &executed_transaction, checkpoint_contents)?;
+            Self::build_transaction_proof(transaction_digest, &executed_transaction, checkpoint_contents, effects)?;
         let mut proof = Proof::new(
             chain_identifier,
             ProofTargets::new(),

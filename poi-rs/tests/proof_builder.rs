@@ -12,7 +12,7 @@ use async_trait::async_trait;
 use iota_types::base_types::dbg_object_id;
 use iota_types::{digests::TransactionDigest, event::EventID, object::Object};
 use poi_rs::{Proof, ProofBuilder, ProofBuilderError, Source, SourceError, SourceErrorKind, SourceTarget};
-use utils::{genesis_chain_identifier, grpc_client, staking_tx, start_test_cluster, transfer_tx};
+use utils::{genesis_chain_identifier, grpc_client, object_transfer_tx, staking_tx, start_test_cluster, transfer_tx};
 
 struct RejectingSource;
 
@@ -24,7 +24,7 @@ impl Source for RejectingSource {
             SourceTarget::Transaction(transaction_digest) => {
                 SourceError::transaction(transaction_digest, SourceErrorKind::TransactionNotFound)
             }
-            SourceTarget::Object(object_ref) => SourceError::object(object_ref, SourceErrorKind::ObjectNotFound),
+            SourceTarget::Object(object_id) => SourceError::object(object_id, SourceErrorKind::ObjectNotFound),
             SourceTarget::Event(event_id) => SourceError::event(event_id, SourceErrorKind::EventNotFound),
             _ => panic!("unsupported source target"),
         })
@@ -50,7 +50,7 @@ impl Source for RecordingSource {
             SourceTarget::Transaction(transaction_digest) => {
                 SourceError::transaction(transaction_digest, SourceErrorKind::TransactionNotFound)
             }
-            SourceTarget::Object(object_ref) => SourceError::object(object_ref, SourceErrorKind::ObjectNotFound),
+            SourceTarget::Object(object_id) => SourceError::object(object_id, SourceErrorKind::ObjectNotFound),
             SourceTarget::Event(event_id) => SourceError::event(event_id, SourceErrorKind::EventNotFound),
             _ => panic!("unsupported source target"),
         })
@@ -84,12 +84,8 @@ async fn builder_without_a_target_is_rejected() {
 #[tokio::test]
 async fn stacked_targets_are_deduplicated_in_one_source_request() {
     let transaction_digest = TransactionDigest::random();
-    let object_a = Object::immutable_with_id_for_testing(dbg_object_id(1))
-        .as_inner()
-        .object_ref();
-    let object_b = Object::immutable_with_id_for_testing(dbg_object_id(2))
-        .as_inner()
-        .object_ref();
+    let object_a = dbg_object_id(1);
+    let object_b = dbg_object_id(2);
     let event_a = EventID {
         tx_digest: transaction_digest,
         event_seq: 0,
@@ -162,10 +158,10 @@ async fn proof_uses_the_genesis_checkpoint_as_its_chain_identifier() {
 #[tokio::test]
 async fn unknown_object_returns_a_fetch_error() {
     let cluster = start_test_cluster().await;
-    let object_ref = Object::immutable_for_testing().as_inner().object_ref();
+    let object_id = Object::immutable_for_testing().id();
 
     let error = ProofBuilder::from_grpc_client(grpc_client(&cluster))
-        .object(object_ref)
+        .object(object_id)
         .build()
         .await
         .unwrap_err();
@@ -173,7 +169,7 @@ async fn unknown_object_returns_a_fetch_error() {
     let ProofBuilderError::Source { source } = error else {
         panic!("missing object must return a source error");
     };
-    assert_eq!(source.target, SourceTarget::Object(object_ref));
+    assert_eq!(source.target, SourceTarget::Object(object_id));
     assert!(matches!(source.kind, SourceErrorKind::FetchObject { .. }));
 }
 
@@ -200,13 +196,19 @@ async fn event_sequence_outside_the_transaction_is_rejected() {
 }
 
 #[tokio::test]
-async fn object_targets_from_different_transactions_are_rejected() {
+async fn object_outside_the_event_transaction_is_rejected() {
     let cluster = start_test_cluster().await;
-    let first = transfer_tx(&cluster).await;
-    let second = transfer_tx(&cluster).await;
+    let transfer = object_transfer_tx(&cluster).await;
+    let staking = staking_tx(&cluster).await;
+    let object_id = transfer.objects[1].object_id;
+    let event_id = EventID {
+        tx_digest: staking.digest,
+        event_seq: 0,
+    };
 
     let error = ProofBuilder::from_grpc_client(grpc_client(&cluster))
-        .objects([first.gas_object, second.gas_object])
+        .object(object_id)
+        .event(event_id)
         .build()
         .await
         .unwrap_err();
@@ -214,7 +216,32 @@ async fn object_targets_from_different_transactions_are_rejected() {
     let ProofBuilderError::Source { source } = error else {
         panic!("mixed transactions must return a source error");
     };
-    assert_eq!(source.target, SourceTarget::Object(second.gas_object));
+    assert_eq!(source.target, SourceTarget::Object(object_id));
+    assert!(matches!(
+        source.kind,
+        SourceErrorKind::ObjectNotChangedByTransaction { transaction_digest }
+            if transaction_digest == staking.digest
+    ));
+}
+
+#[tokio::test]
+async fn object_targets_from_different_transactions_are_rejected() {
+    let cluster = start_test_cluster().await;
+    let first = object_transfer_tx(&cluster).await;
+    let second = object_transfer_tx(&cluster).await;
+    let first_object_id = first.objects[1].object_id;
+    let second_object_id = second.objects[1].object_id;
+
+    let error = ProofBuilder::from_grpc_client(grpc_client(&cluster))
+        .objects([first_object_id, second_object_id])
+        .build()
+        .await
+        .unwrap_err();
+
+    let ProofBuilderError::Source { source } = error else {
+        panic!("mixed transactions must return a source error");
+    };
+    assert_eq!(source.target, SourceTarget::Object(second_object_id));
     assert!(matches!(
         source.kind,
         SourceErrorKind::TargetTransactionMismatch { mismatch }

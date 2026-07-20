@@ -11,13 +11,14 @@ const EVENT: &str = include_str!("fixtures/v1/event.json");
 
 fn assert_version_one_compatibility(fixture: &str) -> Proof {
     let committee: Committee = serde_json::from_str(COMMITTEE).expect("committee fixture must deserialize");
-    let proof: Proof = serde_json::from_str(fixture).expect("proof fixture must deserialize");
+    let proof = Proof::from_json_slice(fixture.as_bytes()).expect("proof fixture must deserialize");
 
     ProofVerifier::new(&committee)
         .verify(&proof)
         .expect("proof fixture must verify offline");
     assert_eq!(
-        serde_json::to_value(&proof).expect("proof fixture must serialize"),
+        serde_json::from_slice::<serde_json::Value>(&proof.to_json_vec().expect("proof fixture must serialize"))
+            .expect("serialized proof must be valid JSON"),
         serde_json::from_str::<serde_json::Value>(fixture).expect("proof fixture must be valid JSON")
     );
     assert_eq!(proof.version(), ProofVersion::CURRENT);
