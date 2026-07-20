@@ -2,14 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #![forbid(unsafe_code)]
-#![deny(clippy::print_stderr, clippy::print_stdout)]
 
 use std::{
     fs,
-    io::{self, Read, Write},
+    io::{self, Write},
     path::{Path, PathBuf},
-    process::ExitCode,
-    time::Duration,
 };
 
 use anyhow::{Context, Result, bail};
@@ -19,32 +16,28 @@ use iota_grpc_client::Client as GrpcClient;
 use iota_sdk_types::ObjectId;
 use iota_types::{digests::TransactionDigest, event::EventID};
 use poi_rs::{CommitteeResolver, Proof, ProofBuilder, ProofVerifier};
-use tempfile::NamedTempFile;
 
-const STDIO_PATH: &str = "-";
-const GENESIS_CACHE_DIR: &str = "iota-poi";
-const GENESIS_DOWNLOAD_TIMEOUT: Duration = Duration::from_secs(30);
-const MAX_GENESIS_BLOB_BYTES: usize = 64 * 1024 * 1024;
+const GENESIS_CACHE_DIR: &str = "poi";
 const MAINNET_GENESIS_URL: &str = "https://dbfiles.mainnet.iota.cafe/genesis.blob";
 const TESTNET_GENESIS_URL: &str = "https://dbfiles.testnet.iota.cafe/genesis.blob";
 const DEVNET_GENESIS_URL: &str = "https://dbfiles.devnet.iota.cafe/genesis.blob";
 const CREATE_EXAMPLES: &str = r#"Examples:
-  iota-poi create --network mainnet --transaction TRANSACTION_DIGEST
-  iota-poi create --network testnet --object OBJECT_ID --output proof.json
-  iota-poi create --grpc-url http://localhost:9000 --event TRANSACTION_DIGEST:EVENT_SEQUENCE
+    poi create --network mainnet --transaction TRANSACTION_DIGEST
+    poi create --network testnet --object OBJECT_ID --output proof.json
+    poi create --grpc-url http://localhost:9000 --event TRANSACTION_DIGEST:EVENT_SEQUENCE
 
 The selected endpoint supplies untrusted proof material; it does not establish verification trust."#;
 const VERIFY_EXAMPLES: &str = r#"Examples:
-  iota-poi verify --network mainnet proof.json
-  iota-poi verify --network testnet --genesis trusted-genesis.blob proof.json
-  iota-poi verify --grpc-url http://localhost:9000 --genesis genesis.blob -
+    poi verify --network mainnet proof.json
+    poi verify --network testnet --genesis trusted-genesis.blob proof.json
+    poi verify --grpc-url http://localhost:9000 --genesis genesis.blob -
 
 Known networks download and cache their genesis blob automatically. An explicit --genesis path overrides the managed blob.
 The genesis blob is the trust anchor. The selected endpoint only supplies committee-walking data."#;
 
 #[derive(Debug, Parser)]
 #[command(
-    name = "iota-poi",
+    name = "poi",
     version,
     about = "Create and verify IOTA Proof of Inclusion proofs",
     long_about = "Create portable IOTA Proof of Inclusion proofs and verify them against committee history authenticated from a trusted genesis blob.",
@@ -121,9 +114,17 @@ impl CreateArgs {
             .build()
             .await
             .context("failed to create proof")?;
-        let json = proof.to_json_vec().context("failed to encode proof as JSON")?;
 
-        write_output(output.as_deref(), &json)
+        match output.as_deref() {
+            Some(path) if path != Path::new("-") => {
+                let file = fs::File::create(path)
+                    .with_context(|| format!("failed to create proof file '{}'", path.display()))?;
+                serde_json::to_writer_pretty(file, &proof)
+                    .with_context(|| format!("failed to write proof JSON to '{}'", path.display()))
+            }
+            _ => serde_json::to_writer_pretty(io::stdout().lock(), &proof)
+                .context("failed to write proof JSON to stdout"),
+        }
     }
 }
 
@@ -145,8 +146,14 @@ struct VerifyArgs {
 
 impl VerifyArgs {
     async fn execute(self) -> Result<()> {
-        let proof_bytes = read_input(&self.proof)?;
-        let proof = Proof::from_json_slice(&proof_bytes).context("failed to decode proof JSON")?;
+        let proof: Proof = if self.proof == Path::new("-") {
+            serde_json::from_reader(io::stdin().lock()).context("failed to read proof JSON from stdin")?
+        } else {
+            let file = fs::File::open(&self.proof)
+                .with_context(|| format!("failed to open proof file '{}'", self.proof.display()))?;
+            serde_json::from_reader(file)
+                .with_context(|| format!("failed to read proof JSON from '{}'", self.proof.display()))?
+        };
         proof.validate().context("proof format is not supported")?;
 
         let genesis = match self.genesis.as_deref() {
@@ -154,7 +161,7 @@ impl VerifyArgs {
                 Genesis::load(path).with_context(|| format!("failed to load genesis blob '{}'", path.display()))?
             }
             None => {
-                download_or_load_genesis(
+                load_genesis(
                     self.endpoint
                         .network
                         .context("a known network or explicit genesis blob is required for verification")?,
@@ -174,7 +181,7 @@ impl VerifyArgs {
         ProofVerifier::new(&committee)
             .verify(&proof)
             .context("proof verification failed")?;
-        write_stdout(b"valid")
+        writeln!(io::stdout().lock(), "valid").context("failed to write verification result to stdout")
     }
 }
 
@@ -240,163 +247,36 @@ impl Network {
     }
 }
 
-async fn download_or_load_genesis(network: Network) -> Result<Genesis> {
+async fn load_genesis(network: Network) -> Result<Genesis> {
     let path = iota_config_dir()
         .context("failed to locate the IOTA configuration directory")?
         .join(GENESIS_CACHE_DIR)
         .join(network.name())
         .join(IOTA_GENESIS_FILENAME);
 
-    if path.is_file() {
-        if let Ok(genesis) = Genesis::load(&path) {
-            return Ok(genesis);
-        }
+    if !path.is_file() {
+        let parent = path
+            .parent()
+            .context("managed genesis path does not have a parent directory")?;
+        fs::create_dir_all(parent)
+            .with_context(|| format!("failed to create genesis cache directory '{}'", parent.display()))?;
+
+        let url = network.genesis_url();
+        let bytes = reqwest::get(url)
+            .await
+            .with_context(|| format!("failed to download {} genesis blob from '{url}'", network.name()))?
+            .bytes()
+            .await
+            .with_context(|| format!("failed to read genesis blob from '{url}'"))?;
+        fs::write(&path, bytes).with_context(|| format!("failed to cache genesis blob at '{}'", path.display()))?;
     }
 
-    let parent = path
-        .parent()
-        .context("managed genesis path does not have a parent directory")?;
-    fs::create_dir_all(parent)
-        .with_context(|| format!("failed to create genesis cache directory '{}'", parent.display()))?;
-
-    let url = network.genesis_url();
-    let response = reqwest::Client::builder()
-        .timeout(GENESIS_DOWNLOAD_TIMEOUT)
-        .user_agent(concat!("iota-poi/", env!("CARGO_PKG_VERSION")))
-        .build()
-        .context("failed to configure the genesis download client")?
-        .get(url)
-        .send()
-        .await
-        .with_context(|| format!("failed to download {} genesis blob from '{url}'", network.name()))?
-        .error_for_status()
-        .with_context(|| format!("genesis server rejected the request to '{url}'"))?;
-
-    if response
-        .content_length()
-        .is_some_and(|length| length > MAX_GENESIS_BLOB_BYTES as u64)
-    {
-        bail!("genesis blob from '{url}' exceeds the {MAX_GENESIS_BLOB_BYTES}-byte size limit");
-    }
-
-    let bytes = response
-        .bytes()
-        .await
-        .with_context(|| format!("failed to read genesis blob from '{url}'"))?;
-    if bytes.len() > MAX_GENESIS_BLOB_BYTES {
-        bail!("genesis blob from '{url}' exceeds the {MAX_GENESIS_BLOB_BYTES}-byte size limit");
-    }
-
-    let mut temporary = NamedTempFile::new_in(parent)
-        .with_context(|| format!("failed to create a temporary genesis file in '{}'", parent.display()))?;
-    temporary
-        .write_all(&bytes)
-        .with_context(|| format!("failed to write downloaded {} genesis blob", network.name()))?;
-    temporary
-        .as_file()
-        .sync_all()
-        .with_context(|| format!("failed to flush downloaded {} genesis blob", network.name()))?;
-    let genesis = Genesis::load(temporary.path())
-        .with_context(|| format!("downloaded {} genesis blob from '{url}' is invalid", network.name()))?;
-    temporary
-        .persist(&path)
-        .map_err(|error| error.error)
-        .with_context(|| format!("failed to cache genesis blob at '{}'", path.display()))?;
-
-    Ok(genesis)
+    Genesis::load(&path).with_context(|| format!("failed to load genesis blob '{}'", path.display()))
 }
 
 #[tokio::main(flavor = "current_thread")]
-async fn main() -> ExitCode {
-    match run().await {
-        Ok(()) => ExitCode::SUCCESS,
-        Err(error) if is_broken_pipe(&error) => ExitCode::SUCCESS,
-        Err(error) => {
-            report_error(&error);
-            ExitCode::FAILURE
-        }
-    }
-}
-
-async fn run() -> Result<()> {
+async fn main() -> Result<()> {
     Cli::parse().command.execute().await
-}
-
-fn report_error(error: &anyhow::Error) {
-    let _ = writeln!(io::stderr().lock(), "error: {error:#}");
-}
-
-fn is_broken_pipe(error: &anyhow::Error) -> bool {
-    let mut cause: Option<&(dyn std::error::Error + 'static)> = Some(error.as_ref());
-
-    while let Some(error) = cause {
-        if error
-            .downcast_ref::<io::Error>()
-            .is_some_and(|error| error.kind() == io::ErrorKind::BrokenPipe)
-        {
-            return true;
-        }
-
-        cause = error.source();
-    }
-
-    false
-}
-
-fn read_input(path: &Path) -> Result<Vec<u8>> {
-    if is_stdio(path) {
-        let mut bytes = Vec::new();
-        io::stdin()
-            .lock()
-            .read_to_end(&mut bytes)
-            .context("failed to read proof JSON from stdin")?;
-        return Ok(bytes);
-    }
-
-    fs::read(path).with_context(|| format!("failed to read proof JSON from '{}'", path.display()))
-}
-
-fn write_output(path: Option<&Path>, bytes: &[u8]) -> Result<()> {
-    match path {
-        None => write_stdout(bytes),
-        Some(path) if is_stdio(path) => write_stdout(bytes),
-        Some(path) => write_file_atomically(path, bytes),
-    }
-}
-
-fn write_stdout(bytes: &[u8]) -> Result<()> {
-    write_json(io::stdout().lock(), bytes).context("failed to write to stdout")
-}
-
-fn write_file_atomically(path: &Path, bytes: &[u8]) -> Result<()> {
-    let parent = path
-        .parent()
-        .filter(|parent| !parent.as_os_str().is_empty())
-        .unwrap_or_else(|| Path::new("."));
-    let mut temporary = NamedTempFile::new_in(parent)
-        .with_context(|| format!("failed to create a temporary output file in '{}'", parent.display()))?;
-
-    write_json(&mut temporary, bytes)
-        .with_context(|| format!("failed to write proof JSON for '{}'", path.display()))?;
-    temporary
-        .as_file()
-        .sync_all()
-        .with_context(|| format!("failed to flush proof JSON for '{}'", path.display()))?;
-    temporary
-        .persist(path)
-        .map(|_| ())
-        .map_err(|error| error.error)
-        .with_context(|| format!("failed to atomically replace output file '{}'", path.display()))
-}
-
-fn write_json(mut writer: impl Write, bytes: &[u8]) -> io::Result<()> {
-    writer.write_all(bytes)?;
-    writer.write_all(b"\n")?;
-    writer.flush()
-}
-
-fn is_stdio(path: &Path) -> bool {
-    path == Path::new(STDIO_PATH)
 }
 
 fn parse_transaction_digest(value: &str) -> Result<TransactionDigest, String> {
@@ -438,7 +318,7 @@ mod tests {
 
     #[test]
     fn create_requires_a_target() {
-        let error = Cli::try_parse_from(["iota-poi", "create", "--network", "mainnet"])
+        let error = Cli::try_parse_from(["poi", "create", "--network", "mainnet"])
             .expect_err("create without a target must fail");
 
         assert!(error.to_string().contains("--transaction <DIGEST>"));
@@ -448,7 +328,7 @@ mod tests {
     fn create_accepts_mixed_targets() {
         let event = format!("{DIGEST}:0");
         let cli = Cli::try_parse_from([
-            "iota-poi",
+            "poi",
             "create",
             "--network",
             "testnet",
@@ -472,7 +352,7 @@ mod tests {
     #[test]
     fn endpoint_selection_is_exclusive() {
         let error = Cli::try_parse_from([
-            "iota-poi",
+            "poi",
             "create",
             "--network",
             "mainnet",
@@ -488,7 +368,7 @@ mod tests {
 
     #[test]
     fn known_network_verification_manages_genesis_automatically() {
-        let cli = Cli::try_parse_from(["iota-poi", "verify", "--network", "mainnet", "proof.json"])
+        let cli = Cli::try_parse_from(["poi", "verify", "--network", "mainnet", "proof.json"])
             .expect("known network must not require an explicit genesis blob");
 
         let Command::Verify(args) = cli.command else {
@@ -499,14 +379,8 @@ mod tests {
 
     #[test]
     fn custom_endpoint_verification_requires_genesis() {
-        let error = Cli::try_parse_from([
-            "iota-poi",
-            "verify",
-            "--grpc-url",
-            "http://localhost:9000",
-            "proof.json",
-        ])
-        .expect_err("custom endpoint must require an explicit genesis blob");
+        let error = Cli::try_parse_from(["poi", "verify", "--grpc-url", "http://localhost:9000", "proof.json"])
+            .expect_err("custom endpoint must require an explicit genesis blob");
 
         assert!(error.to_string().contains("--genesis <PATH>"));
     }
@@ -520,7 +394,7 @@ mod tests {
 
     #[test]
     fn invalid_event_id_reports_the_required_format() {
-        let error = Cli::try_parse_from(["iota-poi", "create", "--network", "mainnet", "--event", "not-an-event"])
+        let error = Cli::try_parse_from(["poi", "create", "--network", "mainnet", "--event", "not-an-event"])
             .expect_err("invalid event ID must fail");
 
         assert!(error.to_string().contains("TRANSACTION_DIGEST:EVENT_SEQUENCE"));
@@ -528,15 +402,8 @@ mod tests {
 
     #[test]
     fn invalid_object_id_reports_the_invalid_value() {
-        let error = Cli::try_parse_from([
-            "iota-poi",
-            "create",
-            "--network",
-            "mainnet",
-            "--object",
-            "not-an-object",
-        ])
-        .expect_err("invalid object ID must fail");
+        let error = Cli::try_parse_from(["poi", "create", "--network", "mainnet", "--object", "not-an-object"])
+            .expect_err("invalid object ID must fail");
 
         assert!(error.to_string().contains("invalid object ID 'not-an-object'"));
     }
@@ -557,25 +424,5 @@ mod tests {
 
         assert!(create.contains("does not establish verification trust"));
         assert!(verify.contains("genesis blob is the trust anchor"));
-    }
-
-    #[test]
-    fn file_output_is_newline_terminated_and_replaced_atomically() {
-        let directory = tempfile::tempdir().expect("temporary directory must be created");
-        let output = directory.path().join("proof.json");
-
-        write_output(Some(&output), br#"{"version":1}"#).expect("initial proof must be written");
-        assert_eq!(fs::read(&output).unwrap(), b"{\"version\":1}\n");
-
-        write_output(Some(&output), br#"{"version":2}"#).expect("proof must be replaced");
-        assert_eq!(fs::read(&output).unwrap(), b"{\"version\":2}\n");
-    }
-
-    #[test]
-    fn broken_pipe_is_treated_as_a_successful_pipeline_shutdown() {
-        let error = anyhow::Error::new(io::Error::new(io::ErrorKind::BrokenPipe, "reader closed"))
-            .context("failed to write proof");
-
-        assert!(is_broken_pipe(&error));
     }
 }
