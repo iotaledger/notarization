@@ -1,0 +1,178 @@
+{
+  "version": 1,
+  "chain": "5898bF83xaXFZ6BZaBq7fRCJPmbxzuSUYuv4rbDrMD2W",
+  "target": {
+    "objects": [],
+    "events": [],
+    "committee": null
+  },
+  "checkpoint_summary": {
+    "data": {
+      "epoch": 0,
+      "sequence_number": 7,
+      "network_total_transactions": 1,
+      "content_digest": "CD6NGAT7wv4qp8JwCFxBTeb7hiiD8YdurzJpZDewKgiJ",
+      "previous_digest": null,
+      "epoch_rolling_gas_cost_summary": {
+        "computation_cost": "0",
+        "computation_cost_burned": "0",
+        "storage_cost": "0",
+        "storage_rebate": "0",
+        "non_refundable_storage_fee": "0"
+      },
+      "timestamp_ms": 1700000000000,
+      "checkpoint_commitments": [],
+      "end_of_epoch_data": null,
+      "version_specific_data": []
+    },
+    "auth_signature": {
+      "epoch": 0,
+      "signature": "ieRwALkYYOgCi4IVuVAE8DWvZJ+mHgoZmWxQTFFUVR8aRUKyWb5JH5QU1yHHPA2p",
+      "signers_map": [
+        58,
+        48,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        3,
+        0,
+        16,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        2,
+        0,
+        3,
+        0
+      ]
+    }
+  },
+  "transaction_proof": {
+    "checkpoint_contents": {
+      "V1": {
+        "transactions": [
+          {
+            "transaction": "GYD4BTtwZVGqBJtpjyEevCBU8fde1WwXLWuH92eGjUAT",
+            "effects": "7VStHbgVuDPaf1tq3h99SGuqwbtQdoPwcoqr3p2FMHjQ"
+          }
+        ],
+        "user_signatures": [
+          []
+        ]
+      }
+    },
+    "transaction": {
+      "data": [
+        {
+          "intent_message": {
+            "intent": {
+              "scope": 0,
+              "version": 0,
+              "app_id": 0
+            },
+            "value": {
+              "V1": {
+                "kind": {
+                  "Programmable": {
+                    "inputs": [],
+                    "commands": []
+                  }
+                },
+                "sender": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                "gas_payment": {
+                  "objects": [
+                    {
+                      "object_id": "0x0101010101010101010101010101010101010101010101010101010101010101",
+                      "version": "1",
+                      "digest": "11111111111111111111111111111111"
+                    }
+                  ],
+                  "owner": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                  "price": "1",
+                  "budget": "1000000"
+                },
+                "expiration": "None"
+              }
+            }
+          },
+          "tx_signatures": []
+        }
+      ],
+      "auth_signature": {}
+    },
+    "effects": {
+      "V1": {
+        "status": {
+          "success": true
+        },
+        "epoch": "0",
+        "gas_cost_summary": {
+          "computation_cost": "0",
+          "computation_cost_burned": "0",
+          "storage_cost": "0",
+          "storage_rebate": "0",
+          "non_refundable_storage_fee": "0"
+        },
+        "transaction_digest": "GYD4BTtwZVGqBJtpjyEevCBU8fde1WwXLWuH92eGjUAT",
+        "gas_object_index": 0,
+        "events_digest": "CGqq9UxqSAkkhpaGsBHB2BE4cuneLn3dGsXmMMqWDoKn",
+        "dependencies": [],
+        "lamport_version": "1",
+        "changed_objects": [
+          {
+            "object_id": "0x0101010101010101010101010101010101010101010101010101010101010101",
+            "input_state": {
+              "Data": {
+                "version": "1",
+                "digest": "11111111111111111111111111111111",
+                "owner": {
+                  "Address": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                }
+              }
+            },
+            "output_state": {
+              "ObjectWrite": {
+                "digest": "JEKNVnkbo3jma5nREBBJCDoXFVeKkD56V3xKrvRmWxFG",
+                "owner": {
+                  "Address": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                }
+              }
+            },
+            "id_operation": "none"
+          },
+          {
+            "object_id": "0x2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a",
+            "input_state": "Missing",
+            "output_state": {
+              "ObjectWrite": {
+                "digest": "7vp4HH8URCE27sP3xW1J6PHog4arGxgh6zPGMJFeboK",
+                "owner": "Immutable"
+              }
+            },
+            "id_operation": "created"
+          }
+        ],
+        "unchanged_shared_objects": [],
+        "auxiliary_data_digest": null
+      }
+    },
+    "events": [
+      {
+        "package_id": "0x0000000000000000000000000000000000000000000000000000000000000003",
+        "module": "iota_system",
+        "sender": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "type": "0x3::iota_system::SystemEpochInfoEvent",
+        "contents": "AQID"
+      }
+    ]
+  }
+}
