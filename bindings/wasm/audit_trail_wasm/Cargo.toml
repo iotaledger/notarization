@@ -21,10 +21,10 @@ audit_trails = { path = "../../../audit-trail-rs", default-features = false, fea
 bcs = "0.1.6"
 console_error_panic_hook = { version = "0.1" }
 iota-sdk-types = { git = "https://github.com/iotaledger/iota-rust-sdk.git", rev = "ce81341ac3fdb7204df112182c68319f26d5896b", default-features = false }
-iota_interaction = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/iota-v1.27.0-upstream-merge", default-features = false }
-iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/iota-v1.27.0-upstream-merge" }
+iota_interaction = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.23", default-features = false }
+iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.23" }
 js-sys = { version = "0.3.61" }
-product_common = { git = "https://github.com/iotaledger/product-core.git", branch = "feat/iota-v1.27.0-upstream-merge", features = ["core-client", "transaction", "bindings", "binding-utils", "gas-station", "default-http-client"] }
+product_common = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.23", features = ["core-client", "transaction", "bindings", "binding-utils", "gas-station", "default-http-client"] }
 serde = { version = "1.0", features = ["derive"] }
 serde-wasm-bindgen = "0.6.5"
 tokio = { version = "1.49.0", default-features = false, features = ["sync"] }
