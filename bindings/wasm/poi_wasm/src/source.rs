@@ -53,7 +53,7 @@ impl SourceAdapter {
         Self { source }
     }
 
-    async fn await_method(result: Result<Promise, JsValue>) -> Result<JsValue, BridgeError> {
+    pub(crate) async fn await_method(result: Result<Promise, JsValue>) -> Result<JsValue, BridgeError> {
         let promise = result.map_err(BridgeError::from_js)?;
         JsFuture::from(promise).await.map_err(BridgeError::from_js)
     }
@@ -345,10 +345,10 @@ where
 }
 
 #[derive(Debug)]
-struct BridgeError(String);
+pub(crate) struct BridgeError(pub(crate) String);
 
 impl BridgeError {
-    fn from_js(value: JsValue) -> Self {
+    pub(crate) fn from_js(value: JsValue) -> Self {
         let message = value
             .dyn_ref::<js_sys::Error>()
             .map(js_sys::Error::message)

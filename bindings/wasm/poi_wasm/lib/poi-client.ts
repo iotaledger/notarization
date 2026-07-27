@@ -3,7 +3,7 @@
 
 import type { Transport } from "@connectrpc/connect";
 
-import { ProofBuilder } from "../node/poi_wasm.js";
+import { CommitteeResolver, ProofBuilder } from "../node/poi_wasm.js";
 import { LedgerSource } from "./ledger-source.js";
 
 const MAINNET_ENDPOINT = "https://grpc.mainnet.iota.cafe:443";
@@ -53,5 +53,14 @@ export class PoiClient {
   /** Creates a fresh builder for one Proof of Inclusion. */
   public proof(): ProofBuilder {
     return new ProofBuilder(this.#source);
+  }
+
+  /**
+   * Creates a resolver that trusts this client's node for committee data.
+   *
+   * The resolver does not authenticate committee lineage from genesis.
+   */
+  public committeeResolver(): CommitteeResolver {
+    return new CommitteeResolver(this.#source);
   }
 }

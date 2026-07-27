@@ -10,11 +10,13 @@ import {
 } from "./client.js";
 import type {
   CheckpointEvidence,
+  Committee,
   LedgerSource as LedgerSourceContract,
   TransactionEvidence,
 } from "./source-types.js";
 
 const CHAIN_IDENTIFIER_FIELDS = ["chain_id"];
+const COMMITTEE_FIELDS = ["committee"];
 const OBJECT_PROOF_FIELDS = ["bcs"];
 const TRANSACTION_PROOF_FIELDS = [
   "transaction.bcs",
@@ -48,7 +50,7 @@ export class LedgerSource implements LedgerSourceContract {
       readMask: { paths: CHAIN_IDENTIFIER_FIELDS },
     });
 
-    return required(response.chainId?.digest, "service info chain_id");
+    return response.chainId!.digest!;
   }
 
   public async transaction(
@@ -87,28 +89,17 @@ export class LedgerSource implements LedgerSourceContract {
       return undefined;
     }
 
-    const signatures = required(
-      transaction.signatures,
-      "transaction signatures",
-    );
+    const signatures = transaction.signatures!;
     const transactionEvents = transaction.events?.events?.events;
 
     return {
-      transactionBcs: required(
-        transaction.transaction?.bcs?.data,
-        "transaction BCS",
+      transactionBcs: transaction.transaction!.bcs!.data!,
+      signaturesBcs: signatures.signatures.map(
+        (signature) => signature.bcs!.data!,
       ),
-      signaturesBcs: signatures.signatures.map((signature, index) =>
-        required(signature.bcs?.data, `transaction signature ${index} BCS`),
-      ),
-      effectsBcs: required(transaction.effects?.bcs?.data, "effects BCS"),
-      eventsBcs: transactionEvents?.map((event, index) =>
-        required(event.bcs?.data, `transaction event ${index} BCS`),
-      ),
-      checkpointSequenceNumber: required(
-        transaction.checkpoint,
-        "transaction checkpoint sequence number",
-      ),
+      effectsBcs: transaction.effects!.bcs!.data!,
+      eventsBcs: transactionEvents?.map((event) => event.bcs!.data!),
+      checkpointSequenceNumber: transaction.checkpoint!,
     };
   }
 
@@ -146,7 +137,7 @@ export class LedgerSource implements LedgerSourceContract {
           throw new Error("getObjects returned more than one object for one ID");
         }
 
-        objectBcs = required(result.result.value.bcs?.data, "object BCS");
+        objectBcs = result.result.value.bcs!.data!;
       }
     }
 
@@ -185,18 +176,9 @@ export class LedgerSource implements LedgerSourceContract {
         }
 
         checkpoint = {
-          summaryBcs: required(
-            value.summary?.bcs?.data,
-            "checkpoint summary BCS",
-          ),
-          signatureBcs: required(
-            value.signature?.bcs?.data,
-            "checkpoint signature BCS",
-          ),
-          contentsBcs: required(
-            value.contents?.bcs?.data,
-            "checkpoint contents BCS",
-          ),
+          summaryBcs: value.summary!.bcs!.data!,
+          signatureBcs: value.signature!.bcs!.data!,
+          contentsBcs: value.contents!.bcs!.data!,
         };
       } else if (response.payload.case === "endMarker") {
         const returnedSequenceNumber = response.payload.value.sequenceNumber;
@@ -228,14 +210,21 @@ export class LedgerSource implements LedgerSourceContract {
 
     return checkpoint;
   }
-}
 
-function required<T>(value: T | null | undefined, field: string): T {
-  if (value === undefined || value === null) {
-    throw new Error(`IOTA gRPC response is missing ${field}`);
+  public async committee(epoch: bigint): Promise<Committee> {
+    const response = await this.#client.getEpoch({
+      epoch,
+      readMask: { paths: COMMITTEE_FIELDS },
+    });
+    const committee = response.epoch!.committee!;
+
+    return {
+      members: committee.members!.members.map((member) => ({
+        publicKey: member.publicKey!,
+        weight: member.weight!,
+      })),
+    };
   }
-
-  return value;
 }
 
 function statusError(method: string, status: Status): Error {

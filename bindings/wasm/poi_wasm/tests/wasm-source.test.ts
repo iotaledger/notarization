@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { ProofBuilder } from "../node/poi_wasm.js";
+import { CommitteeResolver, ProofBuilder } from "../node/poi_wasm.js";
 import type { LedgerSource } from "../lib/source-types.js";
 
 test("the WASM builder reads transaction evidence from the ledger source", async () => {
@@ -39,4 +40,30 @@ test("the WASM builder validates digest lengths before fetching", () => {
     () => new ProofBuilder(source).transaction(new Uint8Array(31)),
     /invalid digest byte length: expected 32, got 31/,
   );
+});
+
+test("the WASM resolver constructs a committee reported by a trusted node", async () => {
+  const fixture = JSON.parse(
+    await readFile(
+      new URL("../../../../poi-rs/tests/fixtures/v1/committee.json", import.meta.url),
+      "utf8",
+    ),
+  ) as {
+    epoch: number;
+    voting_rights: [string, number][];
+  };
+  const source = {
+    async committee() {
+      return {
+        members: fixture.voting_rights.map(([publicKey, weight]) => ({
+          publicKey: Buffer.from(publicKey, "base64"),
+          weight: BigInt(weight),
+        })),
+      };
+    },
+  } as unknown as LedgerSource;
+
+  const committee = await new CommitteeResolver(source).resolve(0n);
+
+  assert.equal(committee.epoch, 0n);
 });

@@ -38,13 +38,10 @@ import { PoiClient } from "@iota/poi-wasm";
 const mainnet = PoiClient.mainnet();
 const testnet = PoiClient.testnet();
 const devnet = PoiClient.devnet();
-const custom = PoiClient.custom("https://my-node.example:443");
 ```
 
 No network is selected implicitly. The named constructors use the public IOTA
-gRPC endpoints, while `custom` supports private nodes, archives, local networks,
-and alternative endpoints. Selecting an endpoint determines where evidence is
-fetched; it does not establish the trust anchor used to verify that evidence.
+gRPC endpoints.
 
 ## Proof construction
 
@@ -70,7 +67,24 @@ checkpoint sequence numbers into WASM. Rust decodes those values into existing
 IOTA domain types and delegates target resolution and proof construction to
 `poi-rs`.
 
-## Verification
+## Trusted-node verification
+
+```ts
+const resolver = client.committeeResolver();
+const committee = await resolver.resolve(proof.checkpointEpoch);
+
+proof.verify(committee);
+```
+
+`CommitteeResolver` asks the client's node for the committee governing the
+proof checkpoint epoch. Rust validates the returned committee representation
+and performs proof verification locally with `poi-rs`.
+
+This mode places the node inside the caller's trust boundary. It does not
+authenticate committee lineage from genesis. Genesis-anchored committee
+resolution will be added separately.
+
+## Package verification
 
 ```sh
 npm install

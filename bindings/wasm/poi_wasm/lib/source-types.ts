@@ -22,6 +22,17 @@ export interface CheckpointEvidence {
   contentsBcs: Uint8Array;
 }
 
+/** A validator entry reported by a trusted IOTA node. */
+export interface CommitteeMember {
+  publicKey: Uint8Array;
+  weight: bigint;
+}
+
+/** Committee data reported by a trusted IOTA node. */
+export interface Committee {
+  members: CommitteeMember[];
+}
+
 /** Internal JavaScript contract consumed by the WASM proof builder. */
 export interface LedgerSource {
   chainIdentifier(): Promise<Uint8Array>;
@@ -30,4 +41,5 @@ export interface LedgerSource {
   ): Promise<TransactionEvidence | undefined>;
   object(objectId: Uint8Array, version?: bigint): Promise<Uint8Array | undefined>;
   checkpoint(sequenceNumber: bigint): Promise<CheckpointEvidence>;
+  committee(epoch: bigint): Promise<Committee>;
 }

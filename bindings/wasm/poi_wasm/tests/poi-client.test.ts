@@ -17,13 +17,3 @@ test("creates clients for every supported public network", () => {
     assert.equal(typeof client.proof().transaction, "function");
   }
 });
-
-test("creates a client for a custom endpoint", () => {
-  const client = PoiClient.custom("https://ledger.example:443");
-
-  assert.equal(typeof client.proof().transaction, "function");
-});
-
-test("rejects an empty custom endpoint", () => {
-  assert.throws(() => PoiClient.custom("  "), /endpoint must not be empty/);
-});

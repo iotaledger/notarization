@@ -9,6 +9,7 @@ import { createRouterTransport } from "@connectrpc/connect";
 
 import {
   CheckpointDataSchema,
+  GetEpochResponseSchema,
   GetObjectsResponseSchema,
   GetServiceInfoResponseSchema,
   GetTransactionsResponseSchema,
@@ -28,6 +29,7 @@ test("returns the BCS evidence needed by poi-rs", async () => {
   const summaryBcs = bytes(0x09);
   const checkpointSignatureBcs = bytes(0x0a);
   const contentsBcs = bytes(0x0b);
+  const committeePublicKey = new Uint8Array(96).fill(0x0c);
 
   const transport = createRouterTransport((router) => {
     router.service(LedgerService, {
@@ -126,6 +128,21 @@ test("returns the BCS evidence needed by poi-rs", async () => {
           },
         });
       },
+      getEpoch(request) {
+        assert.equal(request.epoch, 7n);
+        assert.deepEqual(request.readMask?.paths, ["committee"]);
+
+        return create(GetEpochResponseSchema, {
+          epoch: {
+            committee: {
+              epoch: 7n,
+              members: {
+                members: [{ publicKey: committeePublicKey, weight: 10_000n }],
+              },
+            },
+          },
+        });
+      },
     });
   });
   const source = new LedgerSource("http://unused.test", { transport });
@@ -143,6 +160,9 @@ test("returns the BCS evidence needed by poi-rs", async () => {
     summaryBcs,
     signatureBcs: checkpointSignatureBcs,
     contentsBcs,
+  });
+  assert.deepEqual(await source.committee(7n), {
+    members: [{ publicKey: committeePublicKey, weight: 10_000n }],
   });
 });
 

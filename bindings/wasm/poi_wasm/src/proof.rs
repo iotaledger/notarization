@@ -9,14 +9,28 @@ use js_sys::Uint8Array;
 use poi_rs::{Proof, ProofBuilder};
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
+use crate::committee::WasmCommittee;
 use crate::source::{LedgerSource, SourceAdapter};
 
 /// Proof of Inclusion evidence constructed by `poi-rs`.
 #[wasm_bindgen(js_name = Proof)]
-pub struct WasmProof(Proof);
+pub struct WasmProof(pub(crate) Proof);
 
 #[wasm_bindgen(js_class = Proof)]
 impl WasmProof {
+    /// Returns the epoch of the committee that certified this proof.
+    #[wasm_bindgen(getter, js_name = checkpointEpoch)]
+    pub fn checkpoint_epoch(&self) -> u64 {
+        self.0.checkpoint_summary.epoch()
+    }
+
+    /// Verifies this proof locally with the supplied committee.
+    pub fn verify(&self, committee: &WasmCommittee) -> Result<(), JsValue> {
+        poi_rs::ProofVerifier::new(committee.inner())
+            .verify(&self.0)
+            .map_err(error_to_js)
+    }
+
     /// Serializes this proof as JSON.
     #[wasm_bindgen(js_name = toJSON)]
     pub fn to_json(&self) -> Result<String, JsValue> {
@@ -64,7 +78,7 @@ impl WasmProofBuilder {
     }
 }
 
-fn error_to_js(error: impl Error) -> JsValue {
+pub(crate) fn error_to_js(error: impl Error) -> JsValue {
     let mut message = error.to_string();
     let mut source = error.source();
 
