@@ -9,8 +9,9 @@ use std::sync::{
 };
 
 use async_trait::async_trait;
+use iota_sdk_types::TransactionDigest;
 use iota_types::base_types::dbg_object_id;
-use iota_types::{digests::TransactionDigest, event::EventID, object::Object};
+use iota_types::{event::EventID, object::Object};
 use poi_rs::{Proof, ProofBuilder, ProofBuilderError, Source, SourceError, SourceErrorKind, SourceTarget};
 use utils::{genesis_chain_identifier, grpc_client, object_transfer_tx, staking_tx, start_test_cluster, transfer_tx};
 

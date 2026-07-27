@@ -9,13 +9,14 @@ use iota_grpc_client::{
     read_mask_fields::{CheckpointResponseField, ObjectField, ServiceInfoField, TransactionField},
 };
 use iota_grpc_types::v1::transaction::ExecutedTransaction;
-use iota_sdk_types::{Digest, ObjectId, SignedTransaction};
+use iota_sdk_types::{
+    CheckpointContents, CheckpointDigest, ObjectId, ObjectReference, SignedTransaction, TransactionDigest,
+};
 use iota_types::{
-    base_types::ObjectRef,
-    digests::{ChainIdentifier, CheckpointDigest, TransactionDigest},
+    digests::ChainIdentifier,
     effects::{TransactionEffects, TransactionEffectsAPI, TransactionEffectsExt},
     event::EventID,
-    messages_checkpoint::{CertifiedCheckpointSummary, CheckpointContents},
+    messages_checkpoint::CertifiedCheckpointSummary,
     object::Object,
     transaction::Transaction,
 };
@@ -324,10 +325,9 @@ impl GrpcSource {
 
     /// Fetches the executed transaction envelope with the fields needed for inclusion.
     async fn get_transaction(&self, transaction_digest: TransactionDigest) -> Result<ExecutedTransaction, SourceError> {
-        let digest = Digest::new(transaction_digest.into_inner());
         let transactions = self
             .client
-            .get_transactions(&[digest], Some(ReadMask::from(TRANSACTION_PROOF_FIELDS)))
+            .get_transactions(&[transaction_digest], Some(ReadMask::from(TRANSACTION_PROOF_FIELDS)))
             .await
             .map_err(|source| {
                 SourceError::transaction(
@@ -349,8 +349,8 @@ impl GrpcSource {
     async fn get_object(
         &self,
         object_id: ObjectId,
-        expected_ref: Option<ObjectRef>,
-    ) -> Result<(ObjectRef, Object), SourceError> {
+        expected_ref: Option<ObjectReference>,
+    ) -> Result<(ObjectReference, Object), SourceError> {
         let objects = self
             .client
             .get_objects(
@@ -482,16 +482,6 @@ impl GrpcSource {
                         source: Box::new(source),
                     },
                 )
-            })
-            .and_then(|contents| {
-                contents.try_into().map_err(|source| {
-                    SourceError::transaction(
-                        transaction_digest,
-                        SourceErrorKind::CheckpointContents {
-                            source: Box::new(source),
-                        },
-                    )
-                })
             })?;
 
         Ok((checkpoint_summary, checkpoint_contents))
@@ -576,15 +566,7 @@ impl GrpcSource {
             transaction,
             signatures,
         }
-        .try_into()
-        .map_err(|source| {
-            SourceError::transaction(
-                transaction_digest,
-                SourceErrorKind::Transaction {
-                    source: Box::new(source),
-                },
-            )
-        })?;
+        .into();
         let events = if effects.events_digest().is_some() {
             executed_transaction
                 .events()

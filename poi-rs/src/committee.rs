@@ -5,8 +5,10 @@ use std::sync::Arc;
 
 use iota_grpc_client::{
     Client as GrpcClient, ReadMask,
-    read_mask_fields::{CheckpointResponseField, EpochField, ServiceInfoField},
+    read_mask_fields::{EpochField, ServiceInfoField},
 };
+use iota_grpc_types::proto::TryFromProtoError;
+use iota_sdk_types::SignedCheckpointSummary;
 use iota_types::{
     committee::{Committee, EpochId},
     error::IotaError,
@@ -87,26 +89,17 @@ pub enum CommitteeResolutionErrorKind {
         #[source]
         source: BoxError,
     },
-    /// The epoch response omitted its last checkpoint sequence number.
-    #[error("epoch {epoch} is missing its last checkpoint")]
-    MissingLastCheckpoint {
-        /// Epoch whose last checkpoint was requested.
+    /// A closed epoch response omitted its epoch-close proof.
+    #[error("epoch {epoch} is missing its epoch-close proof")]
+    MissingEpochCloseProof {
+        /// Closed epoch whose proof was requested.
         epoch: EpochId,
     },
-    /// Fetching a certified end-of-epoch checkpoint summary failed.
-    #[error("failed to fetch end-of-epoch checkpoint {sequence_number}")]
-    FetchCheckpoint {
-        /// Checkpoint sequence number requested from the node.
-        sequence_number: u64,
-        /// Underlying gRPC error.
-        #[source]
-        source: BoxError,
-    },
-    /// Reading or converting a checkpoint summary failed.
-    #[error("failed to read end-of-epoch checkpoint {sequence_number}")]
-    CheckpointSummary {
-        /// Checkpoint sequence number returned by the epoch response.
-        sequence_number: u64,
+    /// Reading or converting the certified checkpoint in an epoch-close proof failed.
+    #[error("failed to read epoch {epoch} close proof")]
+    EpochCloseProof {
+        /// Epoch whose proof was returned by the node.
+        epoch: EpochId,
         /// Underlying response or conversion error.
         #[source]
         source: BoxError,
@@ -373,22 +366,25 @@ impl CommitteeResolver {
         current_committee: &Committee,
         cache: &dyn CommitteeCache,
     ) -> Result<Committee, CommitteeResolutionError> {
-        let sequence_number = self
-            .epoch_last_checkpoint(target_epoch, current_committee.epoch)
+        let summary = self
+            .certified_epoch_close_summary(target_epoch, current_committee.epoch)
             .await?;
-        let summary = self.certified_checkpoint_summary(target_epoch, sequence_number).await?;
 
         Self::authenticate_and_store_next_committee(target_epoch, current_committee, summary, cache).await
     }
 
-    /// Fetches the checkpoint sequence number that closes an epoch.
-    async fn epoch_last_checkpoint(
+    /// Fetches the certified closing checkpoint embedded in an epoch response.
+    async fn certified_epoch_close_summary(
         &self,
         target_epoch: EpochId,
         epoch: EpochId,
-    ) -> Result<u64, CommitteeResolutionError> {
-        self.client
-            .get_epoch(Some(epoch), Some(ReadMask::from(EpochField::LAST_CHECKPOINT)))
+    ) -> Result<CertifiedCheckpointSummary, CommitteeResolutionError> {
+        let epoch_info = self
+            .client
+            .get_epoch(
+                Some(epoch),
+                Some(ReadMask::from(EpochField::EPOCH_CLOSE_PROOF_CHECKPOINT)),
+            )
             .await
             .map_err(|source| {
                 CommitteeResolutionError::new(
@@ -399,57 +395,87 @@ impl CommitteeResolver {
                     },
                 )
             })?
-            .into_inner()
-            .last_checkpoint
-            .ok_or_else(|| {
-                CommitteeResolutionError::new(
-                    target_epoch,
-                    CommitteeResolutionErrorKind::MissingLastCheckpoint { epoch },
-                )
-            })
-    }
-
-    /// Fetches only the signed checkpoint summary required to authenticate the next committee.
-    async fn certified_checkpoint_summary(
-        &self,
-        target_epoch: EpochId,
-        sequence_number: u64,
-    ) -> Result<CertifiedCheckpointSummary, CommitteeResolutionError> {
-        let checkpoint = self
-            .client
-            .get_checkpoint_by_sequence_number(
-                sequence_number,
-                Some(ReadMask::from(CHECKPOINT_SUMMARY_FIELDS)),
-                None,
-                None,
-            )
-            .await
+            .into_inner();
+        let epoch_close_proof = epoch_info
+            .epoch_close_proof()
             .map_err(|source| {
                 CommitteeResolutionError::new(
                     target_epoch,
-                    CommitteeResolutionErrorKind::FetchCheckpoint {
-                        sequence_number,
+                    CommitteeResolutionErrorKind::EpochCloseProof {
+                        epoch,
                         source: Box::new(source),
                     },
                 )
             })?
-            .into_inner();
-
-        let summary = checkpoint.signed_summary().map_err(|source| {
+            .ok_or_else(|| {
+                CommitteeResolutionError::new(
+                    target_epoch,
+                    CommitteeResolutionErrorKind::MissingEpochCloseProof { epoch },
+                )
+            })?;
+        let checkpoint = epoch_close_proof.checkpoint().map_err(|source| {
             CommitteeResolutionError::new(
                 target_epoch,
-                CommitteeResolutionErrorKind::CheckpointSummary {
-                    sequence_number,
+                CommitteeResolutionErrorKind::EpochCloseProof {
+                    epoch,
                     source: Box::new(source),
                 },
             )
         })?;
-
-        summary.try_into().map_err(|source| {
+        let summary = checkpoint
+            .summary
+            .as_ref()
+            .ok_or_else(|| TryFromProtoError::missing("summary"))
+            .map_err(|source| {
+                CommitteeResolutionError::new(
+                    target_epoch,
+                    CommitteeResolutionErrorKind::EpochCloseProof {
+                        epoch,
+                        source: Box::new(source),
+                    },
+                )
+            })?;
+        let checkpoint_summary = summary.summary().map_err(|source| {
             CommitteeResolutionError::new(
                 target_epoch,
-                CommitteeResolutionErrorKind::CheckpointSummary {
-                    sequence_number,
+                CommitteeResolutionErrorKind::EpochCloseProof {
+                    epoch,
+                    source: Box::new(source),
+                },
+            )
+        })?;
+        let signature = checkpoint
+            .signature
+            .as_ref()
+            .ok_or_else(|| TryFromProtoError::missing("signature"))
+            .map_err(|source| {
+                CommitteeResolutionError::new(
+                    target_epoch,
+                    CommitteeResolutionErrorKind::EpochCloseProof {
+                        epoch,
+                        source: Box::new(source),
+                    },
+                )
+            })?;
+        let checkpoint_signature = signature.signature().map_err(|source| {
+            CommitteeResolutionError::new(
+                target_epoch,
+                CommitteeResolutionErrorKind::EpochCloseProof {
+                    epoch,
+                    source: Box::new(source),
+                },
+            )
+        })?;
+        let signed_summary = SignedCheckpointSummary {
+            checkpoint: checkpoint_summary,
+            signature: checkpoint_signature,
+        };
+
+        signed_summary.try_into().map_err(|source| {
+            CommitteeResolutionError::new(
+                target_epoch,
+                CommitteeResolutionErrorKind::EpochCloseProof {
+                    epoch,
                     source: Box::new(source),
                 },
             )
@@ -495,10 +521,7 @@ impl CommitteeResolver {
             .expect("checked before signature verification")
             .next_epoch_committee;
 
-        Ok(Committee::new(
-            next_epoch,
-            next_epoch_committee.iter().cloned().collect(),
-        ))
+        Ok(Committee::from_committee_members(next_epoch, next_epoch_committee))
     }
 
     /// Authenticates a committee handoff before exposing it through the cache.
@@ -525,18 +548,11 @@ impl CommitteeResolver {
     }
 }
 
-/// Checkpoint fields required to authenticate the next committee.
-const CHECKPOINT_SUMMARY_FIELDS: &[&str] = &[
-    CheckpointResponseField::CHECKPOINT_SUMMARY_BCS,
-    CheckpointResponseField::CHECKPOINT_SIGNATURE,
-];
-
 #[cfg(test)]
 mod tests {
     use std::sync::Mutex;
 
-    use iota_sdk_types::gas::GasCostSummary;
-    use iota_types::messages_checkpoint::{CheckpointSummary, EndOfEpochData};
+    use iota_sdk_types::{CheckpointSummary, EndOfEpochData, gas::GasCostSummary};
 
     use super::*;
 
@@ -590,8 +606,8 @@ mod tests {
             next_base_committee.voting_rights.iter().cloned().collect(),
         );
         let end_of_epoch_data = include_next_committee.then(|| EndOfEpochData {
-            next_epoch_committee: next_committee.voting_rights.clone(),
-            next_epoch_protocol_version: 1.into(),
+            next_epoch_committee: next_committee.committee_members(),
+            next_epoch_protocol_version: 1,
             epoch_commitments: Vec::new(),
             epoch_supply_change: 0,
         });

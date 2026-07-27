@@ -3,7 +3,8 @@
 
 mod utils;
 
-use iota_grpc_client::Client as GrpcClient;
+use iota_config::genesis::Genesis;
+use iota_grpc_client::{Client as GrpcClient, ReadMask, read_mask_fields::ServiceInfoField};
 use iota_types::committee::Committee;
 use poi_rs::{CommitteeCache, CommitteeResolutionErrorKind, CommitteeResolver, MemoryCommitteeCache};
 use utils::{advance_to_epoch, genesis_committee, grpc_client, start_test_cluster};
@@ -82,4 +83,39 @@ async fn trusted_node_resolution_does_not_write_to_an_anchor_cache() {
 
     assert_eq!(resolved, *cluster.committee());
     assert!(cache.is_empty().await);
+}
+
+#[tokio::test]
+#[ignore = "requires POI_TEST_GRPC_URL and POI_TEST_GENESIS"]
+async fn live_endpoint_authenticates_committees_from_genesis() {
+    let endpoint = std::env::var("POI_TEST_GRPC_URL").expect("POI_TEST_GRPC_URL must identify the live gRPC endpoint");
+    let genesis_path =
+        std::env::var("POI_TEST_GENESIS").expect("POI_TEST_GENESIS must identify the trusted genesis blob");
+    let client = GrpcClient::new(endpoint).expect("live gRPC client must be constructed");
+    let current_epoch = client
+        .get_service_info(Some(ReadMask::from(ServiceInfoField::EPOCH)))
+        .await
+        .expect("service information must be available")
+        .body()
+        .epoch
+        .expect("service information must contain the current epoch");
+    assert!(
+        current_epoch > 0,
+        "the live network must have at least one closed epoch"
+    );
+    let target_epoch = current_epoch.min(10);
+    let trusted_committee = Genesis::load(genesis_path)
+        .expect("trusted genesis blob must load")
+        .committee()
+        .expect("trusted genesis blob must contain a committee");
+    let expected = CommitteeResolver::node(client.clone())
+        .resolve(target_epoch)
+        .await
+        .expect("the node must expose the target committee");
+    let authenticated = CommitteeResolver::anchor(client, trusted_committee)
+        .resolve(target_epoch)
+        .await
+        .expect("epoch-close proofs must authenticate the target committee");
+
+    assert_eq!(authenticated, expected);
 }

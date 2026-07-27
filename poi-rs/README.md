@@ -13,7 +13,7 @@ locally without trusting the source that supplied it.
 so the calling application always chooses where it fetches proof material.
 
 ```rust,no_run
-use iota_types::digests::TransactionDigest;
+use iota_sdk_types::TransactionDigest;
 use poi_rs::ProofBuilder;
 
 # async fn example() -> Result<(), Box<dyn std::error::Error>> {
