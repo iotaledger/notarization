@@ -50,14 +50,6 @@ export class PoiClient {
     return new PoiClient(DEVNET_ENDPOINT, options);
   }
 
-  /** Creates a client connected to a caller-provided IOTA gRPC endpoint. */
-  public static custom(
-    endpoint: string,
-    options: PoiClientOptions = {},
-  ): PoiClient {
-    return new PoiClient(endpoint, options);
-  }
-
   /** Creates a fresh builder for one Proof of Inclusion. */
   public proof(): ProofBuilder {
     return new ProofBuilder(this.#source);
