@@ -13,8 +13,8 @@ import {
   GetServiceInfoResponseSchema,
   GetTransactionsResponseSchema,
   LedgerService,
-} from "../src/grpc/generated/iota/grpc/v1/ledger_service_pb.js";
-import { NodePoiSource } from "../src/node-poi-source.js";
+} from "../lib/grpc/generated/iota/grpc/v1/ledger_service_pb.js";
+import { LedgerSource } from "../lib/ledger-source.js";
 
 test("returns the BCS evidence needed by poi-rs", async () => {
   const chainId = bytes(0x01);
@@ -128,7 +128,7 @@ test("returns the BCS evidence needed by poi-rs", async () => {
       },
     });
   });
-  const source = new NodePoiSource("http://unused.test", { transport });
+  const source = new LedgerSource("http://unused.test", { transport });
 
   assert.deepEqual(await source.chainIdentifier(), chainId);
   assert.deepEqual(await source.transaction(transactionDigest), {
@@ -157,7 +157,7 @@ test("returns undefined when a transaction or object is not returned", async () 
       },
     });
   });
-  const source = new NodePoiSource("http://unused.test", { transport });
+  const source = new LedgerSource("http://unused.test", { transport });
 
   assert.equal(await source.transaction(bytes(0x01)), undefined);
   assert.equal(await source.object(bytes(0x02)), undefined);
@@ -176,7 +176,7 @@ test("rejects incomplete checkpoint evidence", async () => {
       },
     });
   });
-  const source = new NodePoiSource("http://unused.test", { transport });
+  const source = new LedgerSource("http://unused.test", { transport });
 
   await assert.rejects(
     source.checkpoint(42n),

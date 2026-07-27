@@ -7,14 +7,14 @@ import test from "node:test";
 import { create } from "@bufbuild/protobuf";
 import { createRouterTransport } from "@connectrpc/connect";
 
-import { createIotaGrpcClient } from "../src/client.js";
+import { createIotaGrpcClient } from "../lib/client.js";
 import {
   CheckpointDataSchema,
   GetObjectsResponseSchema,
   GetServiceInfoResponseSchema,
   GetTransactionsResponseSchema,
   LedgerService,
-} from "../src/grpc/generated/iota/grpc/v1/ledger_service_pb.js";
+} from "../lib/grpc/generated/iota/grpc/v1/ledger_service_pb.js";
 
 test("creates the generated LedgerService client", async () => {
   const requests = {
@@ -116,4 +116,3 @@ async function collect<T>(stream: AsyncIterable<T>): Promise<T[]> {
 
   return values;
 }
-

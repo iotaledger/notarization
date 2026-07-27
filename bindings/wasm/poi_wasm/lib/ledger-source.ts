@@ -8,6 +8,11 @@ import {
   type IotaGrpcClient,
   type IotaGrpcClientOptions,
 } from "./client.js";
+import type {
+  CheckpointEvidence,
+  LedgerSource as LedgerSourceContract,
+  TransactionEvidence,
+} from "./source-types.js";
 
 const CHAIN_IDENTIFIER_FIELDS = ["chain_id"];
 const OBJECT_PROOF_FIELDS = ["bcs"];
@@ -26,35 +31,12 @@ const CHECKPOINT_PROOF_FIELDS = [
 ];
 
 /**
- * Serialized transaction data needed by `poi-rs` to build a proof.
- *
- * These values are opaque BCS bytes. Node.js fetches them, while Rust remains
- * responsible for decoding and validating them.
- */
-export interface TransactionEvidence {
-  transactionBcs: Uint8Array;
-  signaturesBcs: Uint8Array[];
-  effectsBcs: Uint8Array;
-  eventsBcs?: Uint8Array[];
-  checkpointSequenceNumber: bigint;
-}
-
-/**
- * Serialized checkpoint data needed by `poi-rs` to authenticate a transaction.
- */
-export interface CheckpointEvidence {
-  summaryBcs: Uint8Array;
-  signatureBcs: Uint8Array;
-  contentsBcs: Uint8Array;
-}
-
-/**
- * Node.js implementation of the ledger reads required by Proof of Inclusion.
+ * Internal implementation of the ledger reads required by Proof of Inclusion.
  *
  * The generated client owns gRPC and protobuf. This class narrows its responses
  * to BCS evidence that can cross the JavaScript/WASM boundary.
  */
-export class NodePoiSource {
+export class LedgerSource implements LedgerSourceContract {
   readonly #client: IotaGrpcClient;
 
   public constructor(endpoint: string, options: IotaGrpcClientOptions = {}) {

@@ -9,7 +9,7 @@ use js_sys::Uint8Array;
 use poi_rs::{Proof, ProofBuilder};
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
-use crate::node_source::{NodePoiSource, WasmSource};
+use crate::source::{LedgerSource, SourceAdapter};
 
 /// Proof of Inclusion evidence constructed by `poi-rs`.
 #[wasm_bindgen(js_name = Proof)]
@@ -25,16 +25,16 @@ impl WasmProof {
     }
 }
 
-/// Builds Proof of Inclusion evidence with a JavaScript `NodePoiSource`.
+/// Builds Proof of Inclusion evidence with an internal JavaScript ledger source.
 #[wasm_bindgen(js_name = ProofBuilder)]
-pub struct WasmProofBuilder(ProofBuilder<WasmSource>);
+pub struct WasmProofBuilder(ProofBuilder<SourceAdapter>);
 
 #[wasm_bindgen(js_class = ProofBuilder)]
 impl WasmProofBuilder {
-    /// Creates a builder backed by the provided Node.js gRPC source.
+    /// Creates a builder backed by the provided JavaScript ledger source.
     #[wasm_bindgen(constructor)]
-    pub fn new(source: NodePoiSource) -> Self {
-        Self(ProofBuilder::new(WasmSource::new(source)))
+    pub fn new(source: LedgerSource) -> Self {
+        Self(ProofBuilder::new(SourceAdapter::new(source)))
     }
 
     /// Adds a transaction target.

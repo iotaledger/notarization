@@ -1,8 +1,8 @@
 // Copyright 2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-mod node_source;
 mod proof;
+mod source;
 mod versioned;
 
 #[wasm_bindgen::prelude::wasm_bindgen(start)]
@@ -11,6 +11,6 @@ pub fn start() {
 }
 
 #[wasm_bindgen::prelude::wasm_bindgen(typescript_custom_section)]
-const NODE_SOURCE_IMPORT: &str = r#"
-import type { NodePoiSource } from "../src/node-poi-source.js";
+const LEDGER_SOURCE_IMPORT: &str = r#"
+import type { LedgerSource } from "./source-types.js";
 "#;

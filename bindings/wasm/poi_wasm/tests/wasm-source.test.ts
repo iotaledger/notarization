@@ -4,9 +4,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { ProofBuilder, type NodePoiSource } from "../src/index.js";
+import { ProofBuilder } from "../node/poi_wasm.js";
+import type { LedgerSource } from "../lib/source-types.js";
 
-test("the WASM builder reads transaction evidence from NodePoiSource", async () => {
+test("the WASM builder reads transaction evidence from the ledger source", async () => {
   const transactionDigest = new Uint8Array(32).fill(0x2a);
   let requestedDigest: Uint8Array | undefined;
   const source = {
@@ -22,7 +23,7 @@ test("the WASM builder reads transaction evidence from NodePoiSource", async () 
         checkpointSequenceNumber: 7n,
       };
     },
-  } as unknown as NodePoiSource;
+  } as unknown as LedgerSource;
 
   await assert.rejects(
     new ProofBuilder(source).transaction(transactionDigest).build(),
@@ -32,10 +33,10 @@ test("the WASM builder reads transaction evidence from NodePoiSource", async () 
 });
 
 test("the WASM builder validates digest lengths before fetching", () => {
-  const source = {} as NodePoiSource;
+  const source = {} as LedgerSource;
 
   assert.throws(
     () => new ProofBuilder(source).transaction(new Uint8Array(31)),
-    /transaction digest must contain 32 bytes/,
+    /invalid digest byte length: expected 32, got 31/,
   );
 });

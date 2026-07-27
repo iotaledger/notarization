@@ -5,13 +5,22 @@
   "description": "Node.js WASM bindings for the IOTA Proof of Inclusion Package.",
   "license": "Apache-2.0",
   "type": "module",
+  "main": "./node/index.js",
+  "types": "./node/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./node/index.d.ts",
+      "import": "./node/index.js",
+      "require": "./node/index.js"
+    }
+  },
   "files": [
     "node/*"
   ],
   "scripts": {
     "build:src:nodejs": "cargo build --lib --release --target wasm32-unknown-unknown --target-dir ../target",
     "prebundle:nodejs": "rimraf node",
-    "bundle:nodejs": "wasm-bindgen ../target/wasm32-unknown-unknown/release/poi_wasm.wasm --typescript --target nodejs --out-dir node && node ../build/node poi_wasm --skip-fetch-polyfill && tsc --project ./tsconfig.build.json",
+    "bundle:nodejs": "wasm-bindgen ../target/wasm32-unknown-unknown/release/poi_wasm.wasm --typescript --target nodejs --out-dir node && node ../build/node poi_wasm --skip-fetch-polyfill && tsc --project ./lib/tsconfig.json",
     "build:nodejs": "npm run build:src:nodejs && npm run bundle:nodejs && wasm-opt -O node/poi_wasm_bg.wasm -o node/poi_wasm_bg.wasm",
     "grpc:schema:update": "node scripts/update-iota-schema.mjs",
     "grpc:generate": "node scripts/generate-grpc.mjs",

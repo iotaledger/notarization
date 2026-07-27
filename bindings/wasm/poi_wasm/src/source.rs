@@ -27,29 +27,29 @@ use crate::versioned::{VersionedCheckpointSummary, VersionedEvent, VersionedVali
 
 #[wasm_bindgen]
 extern "C" {
-    /// JavaScript source that owns the generated Node.js gRPC client.
-    #[wasm_bindgen(typescript_type = "NodePoiSource")]
-    pub type NodePoiSource;
+    /// JavaScript source that owns the generated ledger client.
+    #[wasm_bindgen(typescript_type = "LedgerSource")]
+    pub type LedgerSource;
 
     #[wasm_bindgen(method, catch, structural, js_name = chainIdentifier)]
-    fn chain_identifier_js(this: &NodePoiSource) -> Result<Promise, JsValue>;
+    fn chain_identifier(this: &LedgerSource) -> Result<Promise, JsValue>;
 
-    #[wasm_bindgen(method, catch, structural, js_name = transaction)]
-    fn transaction_js(this: &NodePoiSource, digest: Uint8Array) -> Result<Promise, JsValue>;
+    #[wasm_bindgen(method, catch, structural)]
+    fn transaction(this: &LedgerSource, digest: Uint8Array) -> Result<Promise, JsValue>;
 
-    #[wasm_bindgen(method, catch, structural, js_name = object)]
-    fn object_js(this: &NodePoiSource, object_id: Uint8Array, version: Option<u64>) -> Result<Promise, JsValue>;
+    #[wasm_bindgen(method, catch, structural)]
+    fn object(this: &LedgerSource, object_id: Uint8Array, version: Option<u64>) -> Result<Promise, JsValue>;
 
-    #[wasm_bindgen(method, catch, structural, js_name = checkpoint)]
-    fn checkpoint_js(this: &NodePoiSource, sequence_number: u64) -> Result<Promise, JsValue>;
+    #[wasm_bindgen(method, catch, structural)]
+    fn checkpoint(this: &LedgerSource, sequence_number: u64) -> Result<Promise, JsValue>;
 }
 
-pub(crate) struct WasmSource {
-    source: NodePoiSource,
+pub(crate) struct SourceAdapter {
+    source: LedgerSource,
 }
 
-impl WasmSource {
-    pub(crate) fn new(source: NodePoiSource) -> Self {
+impl SourceAdapter {
+    pub(crate) fn new(source: LedgerSource) -> Self {
         Self { source }
     }
 
@@ -78,9 +78,9 @@ struct JsCheckpointEvidence {
 }
 
 #[async_trait(?Send)]
-impl Source for WasmSource {
+impl Source for SourceAdapter {
     async fn chain_identifier(&self, transaction_digest: TransactionDigest) -> Result<ChainIdentifier, SourceError> {
-        let value = Self::await_method(self.source.chain_identifier_js())
+        let value = Self::await_method(self.source.chain_identifier())
             .await
             .map_err(|source| {
                 SourceError::transaction(
@@ -111,7 +111,7 @@ impl Source for WasmSource {
         transaction_digest: TransactionDigest,
     ) -> Result<Option<SourceTransaction>, SourceError> {
         let digest = Uint8Array::from(transaction_digest.as_ref());
-        let value = Self::await_method(self.source.transaction_js(digest))
+        let value = Self::await_method(self.source.transaction(digest))
             .await
             .map_err(|source| {
                 SourceError::transaction(
@@ -142,7 +142,7 @@ impl Source for WasmSource {
         let object_id_bytes = Uint8Array::from(object_id.as_ref());
         let value = Self::await_method(
             self.source
-                .object_js(object_id_bytes, version.map(|version| version.as_u64())),
+                .object(object_id_bytes, version.map(|version| version.as_u64())),
         )
         .await
         .map_err(|source| {
@@ -177,7 +177,7 @@ impl Source for WasmSource {
         transaction_digest: TransactionDigest,
         sequence_number: u64,
     ) -> Result<SourceCheckpoint, SourceError> {
-        let value = Self::await_method(self.source.checkpoint_js(sequence_number))
+        let value = Self::await_method(self.source.checkpoint(sequence_number))
             .await
             .map_err(|source| {
                 SourceError::transaction(

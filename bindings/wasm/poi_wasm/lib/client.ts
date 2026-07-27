@@ -41,4 +41,3 @@ export function createIotaGrpcClient(
 
   return createClient(LedgerService, transport);
 }
-
