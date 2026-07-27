@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { CommitteeResolver, ProofBuilder } from "../node/poi_wasm.js";
+import { CommitteeResolver, Proof, ProofBuilder } from "../node/poi_wasm.js";
 import type { LedgerSource } from "../lib/source-types.js";
 
 test("the WASM builder reads transaction evidence from the ledger source", async () => {
@@ -66,4 +66,44 @@ test("the WASM resolver constructs a committee reported by a trusted node", asyn
   const committee = await new CommitteeResolver(source).resolve(0n);
 
   assert.equal(committee.epoch, 0n);
+});
+
+test("the WASM proof can be deserialized for verification", async () => {
+  const json = await readFile(
+    new URL("../../../../poi-rs/tests/fixtures/v1/transaction.json", import.meta.url),
+    "utf8",
+  );
+
+  const proof = Proof.fromJSON(json);
+
+  assert.equal(proof.version, 1);
+  assert.equal(proof.checkpointEpoch, 0n);
+  assert.doesNotThrow(() => proof.validate());
+});
+
+test("the anchored resolver reserves the future API without trusting the node", async () => {
+  const fixture = JSON.parse(
+    await readFile(
+      new URL("../../../../poi-rs/tests/fixtures/v1/committee.json", import.meta.url),
+      "utf8",
+    ),
+  ) as {
+    voting_rights: [string, number][];
+  };
+  const source = {
+    async committee() {
+      return {
+        members: fixture.voting_rights.map(([publicKey, weight]) => ({
+          publicKey: Buffer.from(publicKey, "base64"),
+          weight: BigInt(weight),
+        })),
+      };
+    },
+  } as unknown as LedgerSource;
+  const committee = await CommitteeResolver.node(source).resolve(0n);
+
+  await assert.rejects(
+    CommitteeResolver.anchor(source, committee).resolve(1n),
+    /genesis-anchored committee resolution from epoch 0 is not implemented yet/,
+  );
 });

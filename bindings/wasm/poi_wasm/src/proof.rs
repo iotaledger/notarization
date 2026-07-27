@@ -18,6 +18,20 @@ pub struct WasmProof(pub(crate) Proof);
 
 #[wasm_bindgen(js_class = Proof)]
 impl WasmProof {
+    /// Deserializes a proof from JSON.
+    #[wasm_bindgen(js_name = fromJSON)]
+    pub fn from_json(json: &str) -> Result<WasmProof, JsValue> {
+        Proof::from_json_slice(json.as_bytes())
+            .map(WasmProof)
+            .map_err(error_to_js)
+    }
+
+    /// Returns the proof format version.
+    #[wasm_bindgen(getter)]
+    pub fn version(&self) -> u16 {
+        self.0.version().value()
+    }
+
     /// Returns the epoch of the committee that certified this proof.
     #[wasm_bindgen(getter, js_name = checkpointEpoch)]
     pub fn checkpoint_epoch(&self) -> u64 {
@@ -29,6 +43,11 @@ impl WasmProof {
         poi_rs::ProofVerifier::new(committee.inner())
             .verify(&self.0)
             .map_err(error_to_js)
+    }
+
+    /// Validates the proof format version.
+    pub fn validate(&self) -> Result<(), JsValue> {
+        self.0.validate().map_err(error_to_js)
     }
 
     /// Serializes this proof as JSON.

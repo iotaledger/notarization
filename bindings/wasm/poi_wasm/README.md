@@ -82,7 +82,15 @@ and performs proof verification locally with `poi-rs`.
 
 This mode places the node inside the caller's trust boundary. It does not
 authenticate committee lineage from genesis. Genesis-anchored committee
-resolution will be added separately.
+resolution is reserved by the following API but is not implemented yet:
+
+```ts
+const resolver = client.anchoredCommitteeResolver(trustedGenesisCommittee);
+await resolver.resolve(proof.checkpointEpoch);
+```
+
+Until epoch-close walking is connected, `resolve()` rejects with an explicit
+not-implemented error in anchored mode.
 
 ## Package verification
 

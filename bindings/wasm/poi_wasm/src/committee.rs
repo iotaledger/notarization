@@ -5,19 +5,18 @@ use std::collections::BTreeMap;
 
 use fastcrypto::traits::ToFromBytes;
 use iota_types::{base_types::AuthorityName, committee::Committee};
-use js_sys::Promise;
 use serde::Deserialize;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 use crate::{
     proof::error_to_js,
-    source::{BridgeError, LedgerSource, SourceAdapter},
+    source::{BridgeError, LedgerSource},
 };
 
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(method, catch, structural)]
-    fn committee(this: &LedgerSource, epoch: u64) -> Result<Promise, JsValue>;
+    async fn committee(this: &LedgerSource, epoch: u64) -> Result<JsValue, JsValue>;
 }
 
 /// A validator committee used to verify a Proof of Inclusion proof.
@@ -39,13 +38,19 @@ impl WasmCommittee {
     }
 }
 
-/// Resolves committees reported by a node inside the caller's trust boundary.
+/// Resolves the committee required to verify a Proof of Inclusion proof.
 ///
-/// This resolver does not authenticate committee lineage from genesis. The
-/// connected node is authoritative for the committee returned for each epoch.
+/// Node mode trusts the JavaScript source for committee data. Anchored mode
+/// reserves the API for future genesis-authenticated committee walking.
 #[wasm_bindgen(js_name = CommitteeResolver)]
 pub struct WasmCommitteeResolver {
     source: LedgerSource,
+    mode: CommitteeResolution,
+}
+
+enum CommitteeResolution {
+    Node,
+    Anchor(Committee),
 }
 
 #[wasm_bindgen(js_class = CommitteeResolver)]
@@ -53,13 +58,44 @@ impl WasmCommitteeResolver {
     /// Creates a trusted-node resolver backed by a JavaScript ledger source.
     #[wasm_bindgen(constructor)]
     pub fn new(source: LedgerSource) -> Self {
-        Self { source }
+        Self::node(source)
     }
 
-    /// Returns the committee reported by the trusted node for `epoch`.
+    /// Creates a resolver that trusts the JavaScript source for committee data.
+    pub fn node(source: LedgerSource) -> Self {
+        Self {
+            source,
+            mode: CommitteeResolution::Node,
+        }
+    }
+
+    /// Creates a resolver anchored at an already trusted committee.
+    ///
+    /// Genesis-anchored committee walking is not implemented yet. The method
+    /// reserves the public API that will delegate to `poi-rs` once the updated
+    /// epoch-close resolver is integrated.
+    pub fn anchor(source: LedgerSource, committee: &WasmCommittee) -> Self {
+        Self {
+            source,
+            mode: CommitteeResolution::Anchor(committee.0.clone()),
+        }
+    }
+
+    /// Resolves the committee governing `epoch`.
     pub async fn resolve(&self, epoch: u64) -> Result<WasmCommittee, JsValue> {
-        let value = SourceAdapter::await_method(self.source.committee(epoch))
+        if let CommitteeResolution::Anchor(committee) = &self.mode {
+            return Err(js_sys::Error::new(&format!(
+                "genesis-anchored committee resolution from epoch {} is not implemented yet",
+                committee.epoch()
+            ))
+            .into());
+        }
+
+        let value = self
+            .source
+            .committee(epoch)
             .await
+            .map_err(BridgeError::from_js)
             .map_err(error_to_js)?;
         let evidence: JsCommittee =
             serde_wasm_bindgen::from_value(value).map_err(|source| error_to_js(BridgeError(source.to_string())))?;

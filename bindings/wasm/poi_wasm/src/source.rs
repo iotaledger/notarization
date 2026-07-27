@@ -15,12 +15,11 @@ use iota_types::{
     digests::{ChainIdentifier, CheckpointDigest},
     object::Object,
 };
-use js_sys::{Promise, Uint8Array};
+use js_sys::Uint8Array;
 use poi_rs::Source;
 use poi_rs::{SourceCheckpoint, SourceError, SourceErrorKind, SourceTransaction};
 use serde::Deserialize;
 use wasm_bindgen::{JsCast, JsValue, prelude::wasm_bindgen};
-use wasm_bindgen_futures::JsFuture;
 
 use crate::versioned::VersionedObject;
 use crate::versioned::{VersionedCheckpointSummary, VersionedEvent, VersionedValidatorAggregatedSignature};
@@ -32,16 +31,16 @@ extern "C" {
     pub type LedgerSource;
 
     #[wasm_bindgen(method, catch, structural, js_name = chainIdentifier)]
-    fn chain_identifier(this: &LedgerSource) -> Result<Promise, JsValue>;
+    async fn chain_identifier(this: &LedgerSource) -> Result<Uint8Array, JsValue>;
 
     #[wasm_bindgen(method, catch, structural)]
-    fn transaction(this: &LedgerSource, digest: Uint8Array) -> Result<Promise, JsValue>;
+    async fn transaction(this: &LedgerSource, digest: Uint8Array) -> Result<JsValue, JsValue>;
 
     #[wasm_bindgen(method, catch, structural)]
-    fn object(this: &LedgerSource, object_id: Uint8Array, version: Option<u64>) -> Result<Promise, JsValue>;
+    async fn object(this: &LedgerSource, object_id: Uint8Array, version: Option<u64>) -> Result<JsValue, JsValue>;
 
     #[wasm_bindgen(method, catch, structural)]
-    fn checkpoint(this: &LedgerSource, sequence_number: u64) -> Result<Promise, JsValue>;
+    async fn checkpoint(this: &LedgerSource, sequence_number: u64) -> Result<JsValue, JsValue>;
 }
 
 pub(crate) struct SourceAdapter {
@@ -51,11 +50,6 @@ pub(crate) struct SourceAdapter {
 impl SourceAdapter {
     pub(crate) fn new(source: LedgerSource) -> Self {
         Self { source }
-    }
-
-    pub(crate) async fn await_method(result: Result<Promise, JsValue>) -> Result<JsValue, BridgeError> {
-        let promise = result.map_err(BridgeError::from_js)?;
-        JsFuture::from(promise).await.map_err(BridgeError::from_js)
     }
 }
 
@@ -80,17 +74,19 @@ struct JsCheckpointEvidence {
 #[async_trait(?Send)]
 impl Source for SourceAdapter {
     async fn chain_identifier(&self, transaction_digest: TransactionDigest) -> Result<ChainIdentifier, SourceError> {
-        let value = Self::await_method(self.source.chain_identifier())
+        let bytes = self
+            .source
+            .chain_identifier()
             .await
             .map_err(|source| {
                 SourceError::transaction(
                     transaction_digest,
                     SourceErrorKind::FetchChainIdentifier {
-                        source: Box::new(source),
+                        source: Box::new(BridgeError::from_js(source)),
                     },
                 )
-            })?;
-        let bytes = Uint8Array::new(&value).to_vec();
+            })?
+            .to_vec();
         let digest = bytes.try_into().map_err(|bytes: Vec<u8>| {
             SourceError::transaction(
                 transaction_digest,
@@ -111,16 +107,14 @@ impl Source for SourceAdapter {
         transaction_digest: TransactionDigest,
     ) -> Result<Option<SourceTransaction>, SourceError> {
         let digest = Uint8Array::from(transaction_digest.as_ref());
-        let value = Self::await_method(self.source.transaction(digest))
-            .await
-            .map_err(|source| {
-                SourceError::transaction(
-                    transaction_digest,
-                    SourceErrorKind::FetchTransaction {
-                        source: Box::new(source),
-                    },
-                )
-            })?;
+        let value = self.source.transaction(digest).await.map_err(|source| {
+            SourceError::transaction(
+                transaction_digest,
+                SourceErrorKind::FetchTransaction {
+                    source: Box::new(BridgeError::from_js(source)),
+                },
+            )
+        })?;
 
         if value.is_undefined() || value.is_null() {
             return Ok(None);
@@ -140,19 +134,18 @@ impl Source for SourceAdapter {
 
     async fn object(&self, object_id: ObjectId, version: Option<Version>) -> Result<Option<Object>, SourceError> {
         let object_id_bytes = Uint8Array::from(object_id.as_ref());
-        let value = Self::await_method(
-            self.source
-                .object(object_id_bytes, version.map(|version| version.as_u64())),
-        )
-        .await
-        .map_err(|source| {
-            SourceError::object(
-                object_id,
-                SourceErrorKind::FetchObject {
-                    source: Box::new(source),
-                },
-            )
-        })?;
+        let value = self
+            .source
+            .object(object_id_bytes, version.map(|version| version.as_u64()))
+            .await
+            .map_err(|source| {
+                SourceError::object(
+                    object_id,
+                    SourceErrorKind::FetchObject {
+                        source: Box::new(BridgeError::from_js(source)),
+                    },
+                )
+            })?;
 
         if value.is_undefined() || value.is_null() {
             return Ok(None);
@@ -177,17 +170,15 @@ impl Source for SourceAdapter {
         transaction_digest: TransactionDigest,
         sequence_number: u64,
     ) -> Result<SourceCheckpoint, SourceError> {
-        let value = Self::await_method(self.source.checkpoint(sequence_number))
-            .await
-            .map_err(|source| {
-                SourceError::transaction(
-                    transaction_digest,
-                    SourceErrorKind::FetchCheckpoint {
-                        sequence_number,
-                        source: Box::new(source),
-                    },
-                )
-            })?;
+        let value = self.source.checkpoint(sequence_number).await.map_err(|source| {
+            SourceError::transaction(
+                transaction_digest,
+                SourceErrorKind::FetchCheckpoint {
+                    sequence_number,
+                    source: Box::new(BridgeError::from_js(source)),
+                },
+            )
+        })?;
         let evidence: JsCheckpointEvidence = serde_wasm_bindgen::from_value(value).map_err(|source| {
             SourceError::transaction(
                 transaction_digest,

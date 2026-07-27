@@ -3,7 +3,11 @@
 
 import type { Transport } from "@connectrpc/connect";
 
-import { CommitteeResolver, ProofBuilder } from "../node/poi_wasm.js";
+import {
+  type Committee,
+  CommitteeResolver,
+  ProofBuilder,
+} from "../node/poi_wasm.js";
 import { LedgerSource } from "./ledger-source.js";
 
 const MAINNET_ENDPOINT = "https://grpc.mainnet.iota.cafe:443";
@@ -62,5 +66,16 @@ export class PoiClient {
    */
   public committeeResolver(): CommitteeResolver {
     return new CommitteeResolver(this.#source);
+  }
+
+  /**
+   * Creates a resolver anchored at an already trusted committee.
+   *
+   * Committee walking is reserved by this API but not implemented yet.
+   */
+  public anchoredCommitteeResolver(
+    committee: Committee,
+  ): CommitteeResolver {
+    return CommitteeResolver.anchor(this.#source, committee);
   }
 }
