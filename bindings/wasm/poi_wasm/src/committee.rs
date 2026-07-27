@@ -9,8 +9,8 @@ use serde::Deserialize;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 use crate::{
-    proof::error_to_js,
-    source::{BridgeError, LedgerSource},
+    error::{PoiError, WasmResult},
+    source::LedgerSource,
 };
 
 #[wasm_bindgen]
@@ -95,14 +95,13 @@ impl WasmCommitteeResolver {
             .source
             .committee(epoch)
             .await
-            .map_err(BridgeError::from_js)
-            .map_err(error_to_js)?;
-        let evidence: JsCommittee =
-            serde_wasm_bindgen::from_value(value).map_err(|source| error_to_js(BridgeError(source.to_string())))?;
+            .map_err(PoiError::from_js)
+            .wasm_result()?;
+        let evidence: JsCommittee = serde_wasm_bindgen::from_value(value)
+            .map_err(|source| PoiError::invalid_response(source.to_string()))
+            .wasm_result()?;
 
-        decode_committee(epoch, evidence)
-            .map(WasmCommittee)
-            .map_err(error_to_js)
+        decode_committee(epoch, evidence).map(WasmCommittee).wasm_result()
     }
 }
 
@@ -119,14 +118,14 @@ struct JsCommitteeMember {
     weight: u64,
 }
 
-fn decode_committee(requested_epoch: u64, evidence: JsCommittee) -> Result<Committee, BridgeError> {
+fn decode_committee(requested_epoch: u64, evidence: JsCommittee) -> Result<Committee, PoiError> {
     let voting_rights = evidence
         .members
         .into_iter()
         .map(|member| {
             AuthorityName::from_bytes(&member.public_key)
                 .map(|authority| (authority, member.weight))
-                .map_err(|source| BridgeError(format!("invalid committee public key: {source}")))
+                .map_err(|source| PoiError::invalid_response(format!("invalid committee public key: {source}")))
         })
         .collect::<Result<BTreeMap<_, _>, _>>()?;
 

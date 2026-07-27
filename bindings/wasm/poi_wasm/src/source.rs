@@ -1,8 +1,6 @@
 // Copyright 2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{error::Error, fmt};
-
 use async_trait::async_trait;
 use iota_sdk_types::{ObjectId, Version};
 use iota_sdk_types::{SignedCheckpointSummary, SignedTransaction, Transaction, TransactionEffects, UserSignature};
@@ -19,8 +17,9 @@ use js_sys::Uint8Array;
 use poi_rs::Source;
 use poi_rs::{SourceCheckpoint, SourceError, SourceErrorKind, SourceTransaction};
 use serde::Deserialize;
-use wasm_bindgen::{JsCast, JsValue, prelude::wasm_bindgen};
+use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
+use crate::error::PoiError;
 use crate::versioned::VersionedObject;
 use crate::versioned::{VersionedCheckpointSummary, VersionedEvent, VersionedValidatorAggregatedSignature};
 
@@ -82,7 +81,7 @@ impl Source for SourceAdapter {
                 SourceError::transaction(
                     transaction_digest,
                     SourceErrorKind::FetchChainIdentifier {
-                        source: Box::new(BridgeError::from_js(source)),
+                        source: Box::new(PoiError::from_js(source)),
                     },
                 )
             })?
@@ -91,7 +90,7 @@ impl Source for SourceAdapter {
             SourceError::transaction(
                 transaction_digest,
                 SourceErrorKind::ChainIdentifier {
-                    source: Box::new(BridgeError(format!(
+                    source: Box::new(PoiError::invalid_response(format!(
                         "chain identifier must contain 32 bytes, received {}",
                         bytes.len()
                     ))),
@@ -111,7 +110,7 @@ impl Source for SourceAdapter {
             SourceError::transaction(
                 transaction_digest,
                 SourceErrorKind::FetchTransaction {
-                    source: Box::new(BridgeError::from_js(source)),
+                    source: Box::new(PoiError::from_js(source)),
                 },
             )
         })?;
@@ -124,7 +123,7 @@ impl Source for SourceAdapter {
             SourceError::transaction(
                 transaction_digest,
                 SourceErrorKind::Transaction {
-                    source: Box::new(BridgeError(source.to_string())),
+                    source: Box::new(PoiError::invalid_response(source.to_string())),
                 },
             )
         })?;
@@ -142,7 +141,7 @@ impl Source for SourceAdapter {
                 SourceError::object(
                     object_id,
                     SourceErrorKind::FetchObject {
-                        source: Box::new(BridgeError::from_js(source)),
+                        source: Box::new(PoiError::from_js(source)),
                     },
                 )
             })?;
@@ -175,7 +174,7 @@ impl Source for SourceAdapter {
                 transaction_digest,
                 SourceErrorKind::FetchCheckpoint {
                     sequence_number,
-                    source: Box::new(BridgeError::from_js(source)),
+                    source: Box::new(PoiError::from_js(source)),
                 },
             )
         })?;
@@ -183,7 +182,7 @@ impl Source for SourceAdapter {
             SourceError::transaction(
                 transaction_digest,
                 SourceErrorKind::CheckpointSummary {
-                    source: Box::new(BridgeError(source.to_string())),
+                    source: Box::new(PoiError::invalid_response(source.to_string())),
                 },
             )
         })?;
@@ -243,7 +242,7 @@ fn decode_transaction(
             SourceError::transaction(
                 transaction_digest,
                 SourceErrorKind::MissingEvents {
-                    source: Box::new(BridgeError(
+                    source: Box::new(PoiError::invalid_response(
                         "transaction effects commit to events but eventsBcs is missing".to_owned(),
                     )),
                 },
@@ -334,29 +333,6 @@ where
 {
     bcs::from_bytes(bytes)
 }
-
-#[derive(Debug)]
-pub(crate) struct BridgeError(pub(crate) String);
-
-impl BridgeError {
-    pub(crate) fn from_js(value: JsValue) -> Self {
-        let message = value
-            .dyn_ref::<js_sys::Error>()
-            .map(js_sys::Error::message)
-            .and_then(|message| message.as_string())
-            .or_else(|| value.as_string())
-            .unwrap_or_else(|| format!("{value:?}"));
-        Self(message)
-    }
-}
-
-impl fmt::Display for BridgeError {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str(&self.0)
-    }
-}
-
-impl Error for BridgeError {}
 
 #[cfg(test)]
 mod tests {

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod committee;
+mod error;
 mod proof;
 mod source;
 mod versioned;
