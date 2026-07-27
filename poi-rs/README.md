@@ -31,10 +31,17 @@ Use `ProofBuilder::testnet()` or `ProofBuilder::devnet()` for the other public n
 
 A builder can stack multiple object and event targets by calling `object()` and `event()` repeatedly or by using the
 `objects()` and `events()` batch methods. Every target must belong to the same transaction. The builder ignores exact
-duplicates, and the source reuses one transaction proof and one set of checkpoint evidence for the complete target set.
+duplicates and reuses one transaction and one checkpoint for the complete target set.
+
+`Source` is the transport boundary: it fetches decoded transaction, object, checkpoint, and chain evidence.
+`ProofBuilder` owns target resolution, consistency checks, and proof construction, so custom sources do not reimplement
+that logic.
 
 Network selection configures only the proof source. It does not make the returned proof trusted or select an authoritative
 committee for verification.
+
+The default `native-grpc` feature provides `GrpcSource`, the public-network constructors, and `CommitteeResolver`.
+WASM packages can disable default features and supply a JavaScript-backed `Source` without compiling native gRPC.
 
 ## Proof Model
 
@@ -80,7 +87,8 @@ trust the authenticated target claims relative to the supplied committee.
 - `TransactionProof`: Transaction, effects, events, and checkpoint contents used to prove inclusion.
 - `ProofTargets`: Object, event, and committee claims to authenticate.
 - `ProofBuilder`: Network-aware or custom-source proof construction.
-- `Source`: Extensible boundary for gRPC nodes, archives, fixtures, and other proof sources.
+- `Source`: Ledger-read boundary for gRPC nodes, JavaScript clients, archives, fixtures, and other evidence sources.
+- `SourceTransaction` and `SourceCheckpoint`: Transport-independent decoded evidence returned by a `Source`.
 - `CommitteeResolver`: Trusted-node or anchored committee resolution.
 - `ProofVerifier`: Offline verifier for `Proof` values.
 - `VerifyError`, `SourceError`, `SerializationError`, and `VersionError`: Operation-specific errors.

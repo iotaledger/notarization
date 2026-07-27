@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/iotaledger/iota-rust-sdk",
+  "revision": "36bffd625e1b1d38307eb9e49bd2cb7dd988bb11",
+  "protoRoot": "crates/iota-sdk-grpc-types/proto",
+  "entrypoints": [
+    "iota/grpc/v1/ledger_service.proto"
+  ],
+  "imageSha256": "sha256:1edb00622210b6685be1f9d0c979cd926671856c146f7db91ea196436d410b29"
+}

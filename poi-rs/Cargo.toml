@@ -11,14 +11,26 @@ rust-version.workspace = true
 description = "Proof of Inclusion support for the IOTA Notarization Toolkit."
 
 [features]
-cli = ["dep:anyhow", "dep:clap", "dep:iota-config", "dep:reqwest", "serde_json/std"]
+default = ["native-grpc"]
+native-grpc = ["dep:iota-grpc-client", "dep:iota-grpc-types"]
+cli = [
+  "native-grpc",
+  "dep:anyhow",
+  "dep:clap",
+  "dep:iota-config",
+  "dep:reqwest",
+  "serde_json/std",
+  "tokio/macros",
+  "tokio/process",
+  "tokio/rt",
+]
 
 [dependencies]
 anyhow = { workspace = true, optional = true }
 async-trait.workspace = true
 clap = { workspace = true, optional = true }
-iota-grpc-client.workspace = true
-iota-grpc-types.workspace = true
+iota-grpc-client = { workspace = true, optional = true }
+iota-grpc-types = { workspace = true, optional = true }
 iota-config = { git = "https://github.com/iotaledger/iota.git", tag = "v1.26.1", optional = true }
 iota-sdk-types.workspace = true
 iota-types.workspace = true
@@ -26,11 +38,12 @@ reqwest = { workspace = true, optional = true }
 serde.workspace = true
 serde_json = { workspace = true, features = ["alloc"] }
 thiserror.workspace = true
-tokio.workspace = true
+tokio = { version = "1.52.2", default-features = false, features = ["sync"] }
 
 [dev-dependencies]
 iota-config = { git = "https://github.com/iotaledger/iota.git", tag = "v1.26.1" }
 test-cluster = { git = "https://github.com/iotaledger/iota.git", tag = "v1.26.1", package = "test-cluster" }
+tokio = { version = "1.52.2", default-features = false, features = ["macros", "process", "rt", "sync"] }
 
 [[bin]]
 name = "poi"

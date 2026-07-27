@@ -1,0 +1,14 @@
+version: v2
+clean: true
+
+plugins:
+  - local: protoc-gen-es
+    out: src/grpc/generated
+    opt:
+      - target=ts
+      - import_extension=js
+    include_imports: true
+
+inputs:
+  - binary_image: grpc/iota-ledger.binpb
+

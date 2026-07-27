@@ -9,51 +9,87 @@ use std::sync::{
 };
 
 use async_trait::async_trait;
+use iota_sdk_types::{ObjectId, Version};
 use iota_types::base_types::dbg_object_id;
-use iota_types::{digests::TransactionDigest, event::EventID, object::Object};
-use poi_rs::{Proof, ProofBuilder, ProofBuilderError, Source, SourceError, SourceErrorKind, SourceTarget};
+use iota_types::{
+    digests::{ChainIdentifier, TransactionDigest},
+    event::EventID,
+    object::Object,
+};
+use poi_rs::{
+    ProofBuilder, ProofBuilderError, Source, SourceCheckpoint, SourceError, SourceErrorKind, SourceTarget,
+    SourceTransaction,
+};
 use utils::{genesis_chain_identifier, grpc_client, object_transfer_tx, staking_tx, start_test_cluster, transfer_tx};
 
 struct RejectingSource;
 
 #[async_trait]
 impl Source for RejectingSource {
-    async fn proof(&self, targets: &[SourceTarget]) -> Result<Proof, SourceError> {
-        let target = *targets.first().expect("builder must provide a target");
-        Err(match target {
-            SourceTarget::Transaction(transaction_digest) => {
-                SourceError::transaction(transaction_digest, SourceErrorKind::TransactionNotFound)
-            }
-            SourceTarget::Object(object_id) => SourceError::object(object_id, SourceErrorKind::ObjectNotFound),
-            SourceTarget::Event(event_id) => SourceError::event(event_id, SourceErrorKind::EventNotFound),
-            _ => panic!("unsupported source target"),
-        })
+    async fn chain_identifier(&self, _transaction_digest: TransactionDigest) -> Result<ChainIdentifier, SourceError> {
+        unreachable!("rejected transactions do not resolve a chain identifier")
+    }
+
+    async fn transaction(
+        &self,
+        transaction_digest: TransactionDigest,
+    ) -> Result<Option<SourceTransaction>, SourceError> {
+        Err(SourceError::transaction(
+            transaction_digest,
+            SourceErrorKind::TransactionNotFound,
+        ))
+    }
+
+    async fn object(&self, object_id: ObjectId, _version: Option<Version>) -> Result<Option<Object>, SourceError> {
+        Err(SourceError::object(object_id, SourceErrorKind::ObjectNotFound))
+    }
+
+    async fn checkpoint(
+        &self,
+        _transaction_digest: TransactionDigest,
+        _sequence_number: u64,
+    ) -> Result<SourceCheckpoint, SourceError> {
+        unreachable!("rejected transactions do not resolve a checkpoint")
     }
 }
 
 struct RecordingSource {
     requests: Arc<AtomicUsize>,
-    targets: Arc<Mutex<Vec<SourceTarget>>>,
+    transactions: Arc<Mutex<Vec<TransactionDigest>>>,
 }
 
 #[async_trait]
 impl Source for RecordingSource {
-    async fn proof(&self, targets: &[SourceTarget]) -> Result<Proof, SourceError> {
-        self.requests.fetch_add(1, Ordering::Relaxed);
-        self.targets
-            .lock()
-            .expect("recorded targets lock must not be poisoned")
-            .extend_from_slice(targets);
+    async fn chain_identifier(&self, _transaction_digest: TransactionDigest) -> Result<ChainIdentifier, SourceError> {
+        unreachable!("rejected transactions do not resolve a chain identifier")
+    }
 
-        let target = *targets.first().expect("builder must provide a target");
-        Err(match target {
-            SourceTarget::Transaction(transaction_digest) => {
-                SourceError::transaction(transaction_digest, SourceErrorKind::TransactionNotFound)
-            }
-            SourceTarget::Object(object_id) => SourceError::object(object_id, SourceErrorKind::ObjectNotFound),
-            SourceTarget::Event(event_id) => SourceError::event(event_id, SourceErrorKind::EventNotFound),
-            _ => panic!("unsupported source target"),
-        })
+    async fn transaction(
+        &self,
+        transaction_digest: TransactionDigest,
+    ) -> Result<Option<SourceTransaction>, SourceError> {
+        self.requests.fetch_add(1, Ordering::Relaxed);
+        self.transactions
+            .lock()
+            .expect("recorded transactions lock must not be poisoned")
+            .push(transaction_digest);
+
+        Err(SourceError::transaction(
+            transaction_digest,
+            SourceErrorKind::TransactionNotFound,
+        ))
+    }
+
+    async fn object(&self, object_id: ObjectId, _version: Option<Version>) -> Result<Option<Object>, SourceError> {
+        Err(SourceError::object(object_id, SourceErrorKind::ObjectNotFound))
+    }
+
+    async fn checkpoint(
+        &self,
+        _transaction_digest: TransactionDigest,
+        _sequence_number: u64,
+    ) -> Result<SourceCheckpoint, SourceError> {
+        unreachable!("rejected transactions do not resolve a checkpoint")
     }
 }
 
@@ -82,7 +118,7 @@ async fn builder_without_a_target_is_rejected() {
 }
 
 #[tokio::test]
-async fn stacked_targets_are_deduplicated_in_one_source_request() {
+async fn stacked_targets_reuse_one_transaction_request() {
     let transaction_digest = TransactionDigest::random();
     let object_a = dbg_object_id(1);
     let object_b = dbg_object_id(2);
@@ -95,11 +131,11 @@ async fn stacked_targets_are_deduplicated_in_one_source_request() {
         event_seq: 1,
     };
     let requests = Arc::new(AtomicUsize::new(0));
-    let targets = Arc::new(Mutex::new(Vec::new()));
+    let transactions = Arc::new(Mutex::new(Vec::new()));
 
     let _ = ProofBuilder::new(RecordingSource {
         requests: requests.clone(),
-        targets: targets.clone(),
+        transactions: transactions.clone(),
     })
     .transaction(transaction_digest)
     .objects([object_a, object_b, object_a])
@@ -112,14 +148,10 @@ async fn stacked_targets_are_deduplicated_in_one_source_request() {
 
     assert_eq!(requests.load(Ordering::Relaxed), 1);
     assert_eq!(
-        *targets.lock().expect("recorded targets lock must not be poisoned"),
-        vec![
-            SourceTarget::Transaction(transaction_digest),
-            SourceTarget::Object(object_a),
-            SourceTarget::Object(object_b),
-            SourceTarget::Event(event_a),
-            SourceTarget::Event(event_b),
-        ]
+        *transactions
+            .lock()
+            .expect("recorded transactions lock must not be poisoned"),
+        vec![transaction_digest]
     );
 }
 

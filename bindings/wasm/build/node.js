@@ -4,6 +4,7 @@ const { lintAll } = require("./lints");
 const generatePackage = require("./utils/generatePackage");
 
 const artifact = process.argv[2];
+const skipFetchPolyfill = process.argv.includes("--skip-fetch-polyfill");
 
 const RELEASE_FOLDER = path.join(__dirname, "..", artifact, "node");
 const entryFilePathNode = path.join(RELEASE_FOLDER, `${artifact}.js`);
@@ -12,10 +13,11 @@ console.log(`[build/node.js] Processing entryFile '${entryFilePathNode}' for art
 
 lintAll(entryFileNode);
 
-// Add node-fetch polyfill (https://github.com/seanmonstar/reqwest/issues/910).
-let changedFileNode = entryFileNode.replace(
-    "let imports = {};",
-    `if (!globalThis.fetch) {
+if (!skipFetchPolyfill) {
+    // Add node-fetch polyfill (https://github.com/seanmonstar/reqwest/issues/910).
+    const changedFileNode = entryFileNode.replace(
+        "let imports = {};",
+        `if (!globalThis.fetch) {
     const fetch = require('node-fetch')
     globalThis.Headers = fetch.Headers
     globalThis.Request = fetch.Request
@@ -23,15 +25,16 @@ let changedFileNode = entryFileNode.replace(
     globalThis.fetch = fetch
 }
 let imports = {};`,
-);
+    );
 
-fs.writeFileSync(
-    entryFilePathNode,
-    changedFileNode,
-);
-console.log(
-    `[build/node.js] Added node-fetch polyfill to entryFile '${entryFilePathNode}'. Starting generatePackage().`,
-);
+    fs.writeFileSync(
+        entryFilePathNode,
+        changedFileNode,
+    );
+    console.log(`[build/node.js] Added node-fetch polyfill to entryFile '${entryFilePathNode}'.`);
+} else {
+    console.log(`[build/node.js] Skipped node-fetch polyfill for artifact '${artifact}'.`);
+}
 
 // Generate `package.json`.
 const newPackage = generatePackage({
