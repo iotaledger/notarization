@@ -3,9 +3,10 @@
 
 mod utils;
 
+use iota_sdk_types::CheckpointContents;
 use iota_types::{
     base_types::dbg_object_id, committee::Committee, effects::TransactionEvents, event::EventID,
-    messages_checkpoint::CheckpointContents, object::Object,
+    messages_checkpoint::CheckpointContentsExt, object::Object,
 };
 use poi_rs::{ProofTargets, ProofVerifier, VerifyErrorKind};
 use utils::proofs::{
@@ -137,7 +138,7 @@ fn event_target_must_belong_to_the_proven_transaction() {
     let target = event(vec![1, 2, 3]);
     let (committee, _, mut proof) = proof_with_events(TransactionEvents(vec![target.clone()]));
     let event_id = EventID {
-        tx_digest: iota_types::digests::TransactionDigest::new([0xff; 32]),
+        tx_digest: iota_sdk_types::TransactionDigest::new([0xff; 32]),
         event_seq: 0,
     };
     proof.target = ProofTargets::new().add_event(event_id, target);

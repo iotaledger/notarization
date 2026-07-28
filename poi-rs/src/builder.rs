@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use iota_grpc_client::Client as GrpcClient;
-use iota_sdk_types::ObjectId;
-use iota_types::{digests::TransactionDigest, event::EventID};
+use iota_sdk_types::{ObjectId, TransactionDigest};
+use iota_types::event::EventID;
 
 use crate::{Proof, Source, SourceError, SourceTarget, source::GrpcSource};
 

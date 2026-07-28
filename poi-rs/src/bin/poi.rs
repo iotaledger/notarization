@@ -13,8 +13,8 @@ use anyhow::{Context, Result, bail};
 use clap::{ArgGroup, Args, Parser, Subcommand, ValueEnum};
 use iota_config::{IOTA_GENESIS_FILENAME, genesis::Genesis, iota_config_dir};
 use iota_grpc_client::Client as GrpcClient;
-use iota_sdk_types::ObjectId;
-use iota_types::{digests::TransactionDigest, event::EventID};
+use iota_sdk_types::{ObjectId, TransactionDigest};
+use iota_types::event::EventID;
 use poi_rs::{CommitteeResolver, Proof, ProofBuilder, ProofVerifier};
 
 const GENESIS_CACHE_DIR: &str = "poi";

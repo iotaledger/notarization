@@ -1,9 +1,9 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use iota_sdk_types::Event;
+use iota_sdk_types::{Event, ObjectReference};
 use iota_types::committee::Committee;
-use iota_types::{base_types::ObjectRef, event::EventID, object::Object};
+use iota_types::{event::EventID, object::Object};
 use serde::{Deserialize, Serialize};
 
 /// Target claims authenticated by a Proof of Inclusion.
@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Default, Debug, Serialize, Deserialize, Clone)]
 pub struct ProofTargets {
     /// Objects that need to be certified.
-    pub objects: Vec<(ObjectRef, Object)>,
+    pub objects: Vec<(ObjectReference, Object)>,
 
     /// Events that need to be certified.
     pub events: Vec<(EventID, Event)>,
@@ -35,7 +35,7 @@ impl ProofTargets {
     ///
     /// Verification checks that the object computes to the supplied reference and
     /// that the transaction effects include the reference.
-    pub fn add_object(mut self, object_ref: ObjectRef, object: Object) -> Self {
+    pub fn add_object(mut self, object_ref: ObjectReference, object: Object) -> Self {
         self.objects.push((object_ref, object));
         self
     }

@@ -1,11 +1,12 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+use iota_sdk_types::{CheckpointContents, EndOfEpochData};
 use iota_types::{
     committee::Committee,
     digests::ChainIdentifier,
     effects::{TransactionEffects, TransactionEffectsAPI, TransactionEffectsExt, TransactionEvents},
-    messages_checkpoint::{CertifiedCheckpointSummary, CheckpointContents, EndOfEpochData},
+    messages_checkpoint::{CertifiedCheckpointSummary, CheckpointContentsExt},
     transaction::Transaction,
 };
 use serde::{Deserialize, Serialize};
@@ -322,11 +323,11 @@ impl<'committee> ProofVerifier<'committee> {
             });
         };
 
-        let actual_committee = Committee::new(
+        let actual_committee = Committee::from_committee_members(
             summary.epoch().checked_add(1).ok_or(VerifyError {
                 kind: VerifyErrorKind::NextEpochOverflow,
             })?,
-            next_epoch_committee.iter().cloned().collect(),
+            next_epoch_committee,
         );
 
         if actual_committee != *expected_committee {
@@ -356,7 +357,7 @@ impl<'committee> ProofVerifier<'committee> {
         let transaction_is_in_checkpoint = transaction_proof
             .checkpoint_contents
             .enumerate_transactions(summary)
-            .any(|(_, digests)| digests == &execution_digests);
+            .any(|(_, digests)| digests == execution_digests);
 
         if !transaction_is_in_checkpoint {
             return Err(VerifyError {
