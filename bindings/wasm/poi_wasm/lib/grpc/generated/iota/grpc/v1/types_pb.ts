@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file iota/grpc/v1/types.proto.
  */
 export const file_iota_grpc_v1_types: GenFile = /*@__PURE__*/
-  fileDesc("Chhpb3RhL2dycGMvdjEvdHlwZXMucHJvdG8SEmlvdGEuZ3JwYy52MS50eXBlcyIkCgdBZGRyZXNzEg8KB2FkZHJlc3MYASABKAw6CIK1GAR3aXRoIicKCE9iamVjdElkEhEKCW9iamVjdF9pZBgBIAEoDDoIgrUYBHdpdGgiIgoGRGlnZXN0Eg4KBmRpZ2VzdBgBIAEoDDoIgrUYBHdpdGgivQEKD09iamVjdFJlZmVyZW5jZRI0CglvYmplY3RfaWQYASABKAsyHC5pb3RhLmdycGMudjEudHlwZXMuT2JqZWN0SWRIAIgBARIUCgd2ZXJzaW9uGAIgASgESAGIAQESLwoGZGlnZXN0GAMgASgLMhouaW90YS5ncnBjLnYxLnR5cGVzLkRpZ2VzdEgCiAEBOgiCtRgEd2l0aEIMCgpfb2JqZWN0X2lkQgoKCF92ZXJzaW9uQgkKB19kaWdlc3QiQAoNVHlwZVRhZ1ZlY3RvchIvCgppbm5lcl90eXBlGAEgASgLMhsuaW90YS5ncnBjLnYxLnR5cGVzLlR5cGVUYWciIwoNVHlwZVRhZ1N0cnVjdBISCgpzdHJ1Y3RfdGFnGAEgASgJIrsCCgdUeXBlVGFnEhIKCGJvb2xfdGFnGAEgASgISAASEAoGdThfdGFnGAIgASgISAASEQoHdTE2X3RhZxgDIAEoCEgAEhEKB3UzMl90YWcYBCABKAhIABIRCgd1NjRfdGFnGAUgASgISAASEgoIdTEyOF90YWcYBiABKAhIABISCgh1MjU2X3RhZxgHIAEoCEgAEhUKC2FkZHJlc3NfdGFnGAggASgISAASFAoKc2lnbmVyX3RhZxgJIAEoCEgAEjcKCnZlY3Rvcl90YWcYCiABKAsyIS5pb3RhLmdycGMudjEudHlwZXMuVHlwZVRhZ1ZlY3RvckgAEjcKCnN0cnVjdF90YWcYCyABKAsyIS5pb3RhLmdycGMudjEudHlwZXMuVHlwZVRhZ1N0cnVjdEgAQgoKCHR5cGVfdGFnIjoKCFR5cGVUYWdzEi4KCXR5cGVfdGFncxgBIAMoCzIbLmlvdGEuZ3JwYy52MS50eXBlcy5UeXBlVGFnYgZwcm90bzM", [file_iota_grpc_options]);
+  fileDesc("Chhpb3RhL2dycGMvdjEvdHlwZXMucHJvdG8SEmlvdGEuZ3JwYy52MS50eXBlcyIkCgdBZGRyZXNzEg8KB2FkZHJlc3MYASABKAw6CIK1GAR3aXRoIicKCE9iamVjdElkEhEKCW9iamVjdF9pZBgBIAEoDDoIgrUYBHdpdGgiIgoGRGlnZXN0Eg4KBmRpZ2VzdBgBIAEoDDoIgrUYBHdpdGgivQEKD09iamVjdFJlZmVyZW5jZRI0CglvYmplY3RfaWQYASABKAsyHC5pb3RhLmdycGMudjEudHlwZXMuT2JqZWN0SWRIAIgBARIUCgd2ZXJzaW9uGAIgASgESAGIAQESLwoGZGlnZXN0GAMgASgLMhouaW90YS5ncnBjLnYxLnR5cGVzLkRpZ2VzdEgCiAEBOgiCtRgEd2l0aEIMCgpfb2JqZWN0X2lkQgoKCF92ZXJzaW9uQgkKB19kaWdlc3QirAEKBU93bmVyEjQKDWFkZHJlc3Nfb3duZXIYASABKAsyGy5pb3RhLmdycGMudjEudHlwZXMuQWRkcmVzc0gAEjQKDG9iamVjdF9vd25lchgCIAEoCzIcLmlvdGEuZ3JwYy52MS50eXBlcy5PYmplY3RJZEgAEhAKBnNoYXJlZBgDIAEoBEgAEhMKCWltbXV0YWJsZRgEIAEoCEgAOgiCtRgEd2l0aEIGCgRraW5kIkAKDVR5cGVUYWdWZWN0b3ISLwoKaW5uZXJfdHlwZRgBIAEoCzIbLmlvdGEuZ3JwYy52MS50eXBlcy5UeXBlVGFnIiMKDVR5cGVUYWdTdHJ1Y3QSEgoKc3RydWN0X3RhZxgBIAEoCSK7AgoHVHlwZVRhZxISCghib29sX3RhZxgBIAEoCEgAEhAKBnU4X3RhZxgCIAEoCEgAEhEKB3UxNl90YWcYAyABKAhIABIRCgd1MzJfdGFnGAQgASgISAASEQoHdTY0X3RhZxgFIAEoCEgAEhIKCHUxMjhfdGFnGAYgASgISAASEgoIdTI1Nl90YWcYByABKAhIABIVCgthZGRyZXNzX3RhZxgIIAEoCEgAEhQKCnNpZ25lcl90YWcYCSABKAhIABI3Cgp2ZWN0b3JfdGFnGAogASgLMiEuaW90YS5ncnBjLnYxLnR5cGVzLlR5cGVUYWdWZWN0b3JIABI3CgpzdHJ1Y3RfdGFnGAsgASgLMiEuaW90YS5ncnBjLnYxLnR5cGVzLlR5cGVUYWdTdHJ1Y3RIAEIKCgh0eXBlX3RhZyI6CghUeXBlVGFncxIuCgl0eXBlX3RhZ3MYASADKAsyGy5pb3RhLmdycGMudjEudHlwZXMuVHlwZVRhZ2IGcHJvdG8z", [file_iota_grpc_options]);
 
 /**
  * 32-byte address type for IOTA account addresses.
@@ -109,6 +109,58 @@ export const ObjectReferenceSchema: GenMessage<ObjectReference> = /*@__PURE__*/
   messageDesc(file_iota_grpc_v1_types, 3);
 
 /**
+ * Ownership information for an object.
+ *
+ * @generated from message iota.grpc.v1.types.Owner
+ */
+export type Owner = Message<"iota.grpc.v1.types.Owner"> & {
+  /**
+   * @generated from oneof iota.grpc.v1.types.Owner.kind
+   */
+  kind: {
+    /**
+     * Object is exclusively owned by a single address, and is mutable.
+     *
+     * @generated from field: iota.grpc.v1.types.Address address_owner = 1;
+     */
+    value: Address;
+    case: "addressOwner";
+  } | {
+    /**
+     * Object is exclusively owned by a single object, and is mutable.
+     *
+     * @generated from field: iota.grpc.v1.types.ObjectId object_owner = 2;
+     */
+    value: ObjectId;
+    case: "objectOwner";
+  } | {
+    /**
+     * Object is shared and can be used by any address. The value is the
+     * version at which the object became shared.
+     *
+     * @generated from field: uint64 shared = 3;
+     */
+    value: bigint;
+    case: "shared";
+  } | {
+    /**
+     * Object is immutable, and hence ownership doesn't matter.
+     *
+     * @generated from field: bool immutable = 4;
+     */
+    value: boolean;
+    case: "immutable";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message iota.grpc.v1.types.Owner.
+ * Use `create(OwnerSchema)` to create a new message.
+ */
+export const OwnerSchema: GenMessage<Owner> = /*@__PURE__*/
+  messageDesc(file_iota_grpc_v1_types, 4);
+
+/**
  * @generated from message iota.grpc.v1.types.TypeTagVector
  */
 export type TypeTagVector = Message<"iota.grpc.v1.types.TypeTagVector"> & {
@@ -123,7 +175,7 @@ export type TypeTagVector = Message<"iota.grpc.v1.types.TypeTagVector"> & {
  * Use `create(TypeTagVectorSchema)` to create a new message.
  */
 export const TypeTagVectorSchema: GenMessage<TypeTagVector> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_types, 4);
+  messageDesc(file_iota_grpc_v1_types, 5);
 
 /**
  * @generated from message iota.grpc.v1.types.TypeTagStruct
@@ -140,7 +192,7 @@ export type TypeTagStruct = Message<"iota.grpc.v1.types.TypeTagStruct"> & {
  * Use `create(TypeTagStructSchema)` to create a new message.
  */
 export const TypeTagStructSchema: GenMessage<TypeTagStruct> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_types, 5);
+  messageDesc(file_iota_grpc_v1_types, 6);
 
 /**
  * @generated from message iota.grpc.v1.types.TypeTag
@@ -223,7 +275,7 @@ export type TypeTag = Message<"iota.grpc.v1.types.TypeTag"> & {
  * Use `create(TypeTagSchema)` to create a new message.
  */
 export const TypeTagSchema: GenMessage<TypeTag> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_types, 6);
+  messageDesc(file_iota_grpc_v1_types, 7);
 
 /**
  * @generated from message iota.grpc.v1.types.TypeTags
@@ -240,5 +292,5 @@ export type TypeTags = Message<"iota.grpc.v1.types.TypeTags"> & {
  * Use `create(TypeTagsSchema)` to create a new message.
  */
 export const TypeTagsSchema: GenMessage<TypeTags> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_types, 7);
+  messageDesc(file_iota_grpc_v1_types, 8);
 

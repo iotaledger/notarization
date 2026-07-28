@@ -31,7 +31,7 @@ async-trait.workspace = true
 clap = { workspace = true, optional = true }
 iota-grpc-client = { workspace = true, optional = true }
 iota-grpc-types = { workspace = true, optional = true }
-iota-config = { git = "https://github.com/iotaledger/iota.git", tag = "v1.26.1", optional = true }
+iota-config = { git = "https://github.com/iotaledger/iota.git", rev = "420df58ea50ce916a927ebba2dcaee192832e436", optional = true }
 iota-sdk-types.workspace = true
 iota-types.workspace = true
 reqwest = { workspace = true, optional = true }
@@ -41,8 +41,8 @@ thiserror.workspace = true
 tokio = { version = "1.52.2", default-features = false, features = ["sync"] }
 
 [dev-dependencies]
-iota-config = { git = "https://github.com/iotaledger/iota.git", tag = "v1.26.1" }
-test-cluster = { git = "https://github.com/iotaledger/iota.git", tag = "v1.26.1", package = "test-cluster" }
+iota-config = { git = "https://github.com/iotaledger/iota.git", rev = "420df58ea50ce916a927ebba2dcaee192832e436" }
+test-cluster = { git = "https://github.com/iotaledger/iota.git", rev = "420df58ea50ce916a927ebba2dcaee192832e436", package = "test-cluster" }
 tokio = { version = "1.52.2", default-features = false, features = ["macros", "process", "rt", "sync"] }
 
 [[bin]]

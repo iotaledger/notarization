@@ -1,21 +1,24 @@
 // Copyright 2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+use std::collections::BTreeMap;
+
 use async_trait::async_trait;
-use iota_sdk_types::{ObjectId, Version};
-use iota_sdk_types::{SignedCheckpointSummary, SignedTransaction, Transaction, TransactionEffects, UserSignature};
-use iota_types::{
-    digests::TransactionDigest,
-    effects::{TransactionEffectsAPI, TransactionEvents},
-    messages_checkpoint::{CertifiedCheckpointSummary, CheckpointContents},
+use fastcrypto::traits::ToFromBytes;
+use iota_sdk_types::{
+    CheckpointContents, CheckpointDigest, ObjectId, SignedCheckpointSummary, SignedTransaction, Transaction,
+    TransactionDigest, UserSignature, Version,
 };
 use iota_types::{
-    digests::{ChainIdentifier, CheckpointDigest},
+    base_types::AuthorityName,
+    committee::{Committee, EpochId},
+    digests::ChainIdentifier,
+    effects::{TransactionEffects, TransactionEffectsAPI, TransactionEvents},
+    messages_checkpoint::CertifiedCheckpointSummary,
     object::Object,
 };
 use js_sys::Uint8Array;
-use poi_rs::Source;
-use poi_rs::{SourceCheckpoint, SourceError, SourceErrorKind, SourceTransaction};
+use poi_rs::{CommitteeSource, Source, SourceCheckpoint, SourceError, SourceErrorKind, SourceTransaction};
 use serde::Deserialize;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
@@ -40,6 +43,15 @@ extern "C" {
 
     #[wasm_bindgen(method, catch, structural)]
     async fn checkpoint(this: &LedgerSource, sequence_number: u64) -> Result<JsValue, JsValue>;
+
+    #[wasm_bindgen(method, catch, structural)]
+    async fn committee(this: &LedgerSource, epoch: u64) -> Result<JsValue, JsValue>;
+
+    #[wasm_bindgen(method, catch, structural, js_name = currentEpoch)]
+    async fn current_epoch(this: &LedgerSource) -> Result<JsValue, JsValue>;
+
+    #[wasm_bindgen(method, catch, structural, js_name = epochCloseSummary)]
+    async fn epoch_close_summary(this: &LedgerSource, epoch: u64) -> Result<JsValue, JsValue>;
 }
 
 pub(crate) struct SourceAdapter {
@@ -68,6 +80,64 @@ struct JsCheckpointEvidence {
     summary_bcs: Vec<u8>,
     signature_bcs: Vec<u8>,
     contents_bcs: Vec<u8>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct JsCheckpointSummaryEvidence {
+    summary_bcs: Vec<u8>,
+    signature_bcs: Vec<u8>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct JsCommittee {
+    members: Vec<JsCommitteeMember>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct JsCommitteeMember {
+    public_key: Vec<u8>,
+    weight: u64,
+}
+
+#[async_trait(?Send)]
+impl CommitteeSource for SourceAdapter {
+    type Error = PoiError;
+
+    async fn committee(&self, epoch: EpochId) -> Result<Committee, Self::Error> {
+        let value = self.source.committee(epoch).await.map_err(PoiError::from_js)?;
+        let evidence: JsCommittee =
+            serde_wasm_bindgen::from_value(value).map_err(|source| PoiError::invalid_response(source.to_string()))?;
+
+        decode_committee(epoch, evidence)
+    }
+
+    async fn current_epoch(&self) -> Result<Option<EpochId>, Self::Error> {
+        let value = self.source.current_epoch().await.map_err(PoiError::from_js)?;
+        let epoch =
+            serde_wasm_bindgen::from_value(value).map_err(|source| PoiError::invalid_response(source.to_string()))?;
+
+        Ok(Some(epoch))
+    }
+
+    async fn epoch_close_summary(&self, epoch: EpochId) -> Result<Option<CertifiedCheckpointSummary>, Self::Error> {
+        let value = self
+            .source
+            .epoch_close_summary(epoch)
+            .await
+            .map_err(PoiError::from_js)?;
+
+        if value.is_undefined() || value.is_null() {
+            return Ok(None);
+        }
+
+        let evidence: JsCheckpointSummaryEvidence =
+            serde_wasm_bindgen::from_value(value).map_err(|source| PoiError::invalid_response(source.to_string()))?;
+
+        decode_certified_summary(&evidence.summary_bcs, &evidence.signature_bcs).map(Some)
+    }
 }
 
 #[async_trait(?Send)]
@@ -216,19 +286,11 @@ fn decode_transaction(
                 },
             )
         })?;
-    let transaction = SignedTransaction {
+    let transaction: iota_types::transaction::Transaction = SignedTransaction {
         transaction,
         signatures,
     }
-    .try_into()
-    .map_err(|source| {
-        SourceError::transaction(
-            transaction_digest,
-            SourceErrorKind::Transaction {
-                source: Box::new(source),
-            },
-        )
-    })?;
+    .into();
     let effects: TransactionEffects = decode_bcs(&evidence.effects_bcs).map_err(|source| {
         SourceError::transaction(
             transaction_digest,
@@ -281,7 +343,7 @@ fn decode_checkpoint(
     transaction_digest: TransactionDigest,
     evidence: JsCheckpointEvidence,
 ) -> Result<SourceCheckpoint, SourceError> {
-    let VersionedCheckpointSummary::V1(summary) = decode_bcs(&evidence.summary_bcs).map_err(|source| {
+    let summary = decode_certified_summary(&evidence.summary_bcs, &evidence.signature_bcs).map_err(|source| {
         SourceError::transaction(
             transaction_digest,
             SourceErrorKind::CheckpointSummary {
@@ -289,42 +351,48 @@ fn decode_checkpoint(
             },
         )
     })?;
+    let contents: CheckpointContents = decode_bcs(&evidence.contents_bcs).map_err(|source| {
+        SourceError::transaction(
+            transaction_digest,
+            SourceErrorKind::CheckpointContents {
+                source: Box::new(source),
+            },
+        )
+    })?;
+
+    Ok(SourceCheckpoint { summary, contents })
+}
+
+fn decode_certified_summary(summary_bcs: &[u8], signature_bcs: &[u8]) -> Result<CertifiedCheckpointSummary, PoiError> {
+    let VersionedCheckpointSummary::V1(summary) =
+        decode_bcs(summary_bcs).map_err(|source| PoiError::invalid_response(source.to_string()))?;
     let VersionedValidatorAggregatedSignature::V1(signature) =
-        decode_bcs(&evidence.signature_bcs).map_err(|source| {
-            SourceError::transaction(
-                transaction_digest,
-                SourceErrorKind::CheckpointSummary {
-                    source: Box::new(source),
-                },
-            )
-        })?;
-    let summary: CertifiedCheckpointSummary = SignedCheckpointSummary {
+        decode_bcs(signature_bcs).map_err(|source| PoiError::invalid_response(source.to_string()))?;
+
+    SignedCheckpointSummary {
         checkpoint: summary,
         signature,
     }
     .try_into()
-    .map_err(|source| {
-        SourceError::transaction(
-            transaction_digest,
-            SourceErrorKind::CheckpointSummary {
-                source: Box::new(source),
-            },
-        )
-    })?;
-    let contents = decode_bcs::<iota_sdk_types::CheckpointContents>(&evidence.contents_bcs)
-        .and_then(|contents| {
-            CheckpointContents::try_from(contents).map_err(|source| bcs::Error::Custom(source.to_string()))
-        })
-        .map_err(|source| {
-            SourceError::transaction(
-                transaction_digest,
-                SourceErrorKind::CheckpointContents {
-                    source: Box::new(source),
-                },
-            )
-        })?;
+    .map_err(
+        |source: iota_types::iota_sdk_types_conversions::SdkTypeConversionError| {
+            PoiError::invalid_response(source.to_string())
+        },
+    )
+}
 
-    Ok(SourceCheckpoint { summary, contents })
+fn decode_committee(epoch: EpochId, evidence: JsCommittee) -> Result<Committee, PoiError> {
+    let voting_rights = evidence
+        .members
+        .into_iter()
+        .map(|member| {
+            AuthorityName::from_bytes(&member.public_key)
+                .map(|authority| (authority, member.weight))
+                .map_err(|source| PoiError::invalid_response(format!("invalid committee public key: {source}")))
+        })
+        .collect::<Result<BTreeMap<_, _>, _>>()?;
+
+    Ok(Committee::new(epoch, voting_rights))
 }
 
 fn decode_bcs<T>(bytes: &[u8]) -> Result<T, bcs::Error>
@@ -346,7 +414,7 @@ mod tests {
 
     #[test]
     fn decodes_the_grpc_bcs_evidence_into_existing_iota_types() {
-        let proof = Proof::from_json_slice(include_bytes!("../../../../poi-rs/tests/fixtures/v1/event.json"))
+        let proof = Proof::from_json_slice(include_bytes!("../../../../poi-rs/tests/fixtures/current/event.json"))
             .expect("fixture must deserialize");
         let transaction_digest = *proof.transaction_proof.transaction.digest();
         let signed_transaction: SdkSignedTransaction = proof

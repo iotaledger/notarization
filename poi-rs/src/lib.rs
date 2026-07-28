@@ -12,7 +12,6 @@ pub mod builder;
 /// Verified committee lineage caches for anchored resolution.
 pub mod cache;
 /// Committee resolution for checkpoint verification.
-#[cfg(feature = "native-grpc")]
 pub mod committee;
 /// Proof data types and offline verification.
 pub mod proof;
@@ -24,7 +23,8 @@ pub mod target;
 pub use builder::{ProofBuilder, ProofBuilderError};
 pub use cache::{CommitteeCache, CommitteeCacheError, MemoryCommitteeCache};
 #[cfg(feature = "native-grpc")]
-pub use committee::{CommitteeResolutionError, CommitteeResolutionErrorKind, CommitteeResolver};
+pub use committee::GrpcCommitteeSourceError;
+pub use committee::{CommitteeResolutionError, CommitteeResolutionErrorKind, CommitteeResolver, CommitteeSource};
 pub use proof::{
     Proof, ProofVerifier, ProofVersion, SerializationError, SerializationErrorKind, TransactionProof, VerifyError,
     VerifyErrorKind, VersionError,

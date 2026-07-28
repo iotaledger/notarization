@@ -1,23 +1,14 @@
 // Copyright 2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use std::collections::BTreeMap;
-
-use fastcrypto::traits::ToFromBytes;
-use iota_types::{base_types::AuthorityName, committee::Committee};
-use serde::Deserialize;
+use iota_types::committee::Committee;
+use poi_rs::CommitteeResolver;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 use crate::{
-    error::{PoiError, WasmResult},
-    source::LedgerSource,
+    error::WasmResult,
+    source::{LedgerSource, SourceAdapter},
 };
-
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(method, catch, structural)]
-    async fn committee(this: &LedgerSource, epoch: u64) -> Result<JsValue, JsValue>;
-}
 
 /// A validator committee used to verify a Proof of Inclusion proof.
 #[wasm_bindgen(js_name = Committee)]
@@ -41,17 +32,10 @@ impl WasmCommittee {
 /// Resolves the committee required to verify a Proof of Inclusion proof.
 ///
 /// Node mode trusts the JavaScript source for committee data. Anchored mode
-/// reserves the API for future genesis-authenticated committee walking.
+/// authenticates committee lineage from a trusted committee and caches verified
+/// committees in memory.
 #[wasm_bindgen(js_name = CommitteeResolver)]
-pub struct WasmCommitteeResolver {
-    source: LedgerSource,
-    mode: CommitteeResolution,
-}
-
-enum CommitteeResolution {
-    Node,
-    Anchor(Committee),
-}
+pub struct WasmCommitteeResolver(CommitteeResolver<SourceAdapter>);
 
 #[wasm_bindgen(js_class = CommitteeResolver)]
 impl WasmCommitteeResolver {
@@ -63,71 +47,22 @@ impl WasmCommitteeResolver {
 
     /// Creates a resolver that trusts the JavaScript source for committee data.
     pub fn node(source: LedgerSource) -> Self {
-        Self {
-            source,
-            mode: CommitteeResolution::Node,
-        }
+        Self(CommitteeResolver::node(SourceAdapter::new(source)))
     }
 
     /// Creates a resolver anchored at an already trusted committee.
     ///
-    /// Genesis-anchored committee walking is not implemented yet. The method
-    /// reserves the public API that will delegate to `poi-rs` once the updated
-    /// epoch-close resolver is integrated.
+    /// The resolver authenticates every epoch-close checkpoint from the trusted
+    /// committee up to the requested epoch.
     pub fn anchor(source: LedgerSource, committee: &WasmCommittee) -> Self {
-        Self {
-            source,
-            mode: CommitteeResolution::Anchor(committee.0.clone()),
-        }
+        Self(CommitteeResolver::anchor(
+            SourceAdapter::new(source),
+            committee.0.clone(),
+        ))
     }
 
     /// Resolves the committee governing `epoch`.
     pub async fn resolve(&self, epoch: u64) -> Result<WasmCommittee, JsValue> {
-        if let CommitteeResolution::Anchor(committee) = &self.mode {
-            return Err(js_sys::Error::new(&format!(
-                "genesis-anchored committee resolution from epoch {} is not implemented yet",
-                committee.epoch()
-            ))
-            .into());
-        }
-
-        let value = self
-            .source
-            .committee(epoch)
-            .await
-            .map_err(PoiError::from_js)
-            .wasm_result()?;
-        let evidence: JsCommittee = serde_wasm_bindgen::from_value(value)
-            .map_err(|source| PoiError::invalid_response(source.to_string()))
-            .wasm_result()?;
-
-        decode_committee(epoch, evidence).map(WasmCommittee).wasm_result()
+        self.0.resolve(epoch).await.map(WasmCommittee).wasm_result()
     }
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct JsCommittee {
-    members: Vec<JsCommitteeMember>,
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct JsCommitteeMember {
-    public_key: Vec<u8>,
-    weight: u64,
-}
-
-fn decode_committee(requested_epoch: u64, evidence: JsCommittee) -> Result<Committee, PoiError> {
-    let voting_rights = evidence
-        .members
-        .into_iter()
-        .map(|member| {
-            AuthorityName::from_bytes(&member.public_key)
-                .map(|authority| (authority, member.weight))
-                .map_err(|source| PoiError::invalid_response(format!("invalid committee public key: {source}")))
-        })
-        .collect::<Result<BTreeMap<_, _>, _>>()?;
-
-    Ok(Committee::new(requested_epoch, voting_rights))
 }

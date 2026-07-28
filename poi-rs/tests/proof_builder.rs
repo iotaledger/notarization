@@ -9,13 +9,9 @@ use std::sync::{
 };
 
 use async_trait::async_trait;
-use iota_sdk_types::{ObjectId, Version};
+use iota_sdk_types::{ObjectId, TransactionDigest, Version};
 use iota_types::base_types::dbg_object_id;
-use iota_types::{
-    digests::{ChainIdentifier, TransactionDigest},
-    event::EventID,
-    object::Object,
-};
+use iota_types::{digests::ChainIdentifier, event::EventID, object::Object};
 use poi_rs::{
     ProofBuilder, ProofBuilderError, Source, SourceCheckpoint, SourceError, SourceErrorKind, SourceTarget,
     SourceTransaction,

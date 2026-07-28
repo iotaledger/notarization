@@ -3,10 +3,8 @@
 
 #[cfg(feature = "native-grpc")]
 use iota_grpc_client::Client as GrpcClient;
-use iota_sdk_types::ObjectId;
-use iota_types::{
-    base_types::ObjectRef, digests::TransactionDigest, effects::TransactionEffectsExt, event::EventID, object::Object,
-};
+use iota_sdk_types::{ObjectId, ObjectReference, TransactionDigest};
+use iota_types::{effects::TransactionEffectsExt, event::EventID, object::Object};
 
 #[cfg(feature = "native-grpc")]
 use crate::source::GrpcSource;
@@ -238,8 +236,8 @@ impl<S: Source> ProofBuilder<S> {
     async fn fetch_object(
         &self,
         object_id: ObjectId,
-        expected_ref: Option<ObjectRef>,
-    ) -> Result<(ObjectRef, Object), SourceError> {
+        expected_ref: Option<ObjectReference>,
+    ) -> Result<(ObjectReference, Object), SourceError> {
         let object = self
             .source
             .object(object_id, expected_ref.map(|object_ref| object_ref.version))

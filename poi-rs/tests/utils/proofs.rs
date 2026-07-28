@@ -1,15 +1,15 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use iota_sdk_types::{Event, gas::GasCostSummary};
+use iota_sdk_types::{
+    CheckpointContents, CheckpointSummary, EndOfEpochData, Event, TransactionDigest, gas::GasCostSummary,
+};
 use iota_types::{
     base_types::ExecutionData,
     committee::Committee,
-    digests::{ChainIdentifier, TransactionDigest},
+    digests::ChainIdentifier,
     effects::{TestEffectsBuilder, TransactionEvents},
-    messages_checkpoint::{
-        CertifiedCheckpointSummary, CheckpointContents, CheckpointSummary, EndOfEpochData, FullCheckpointContents,
-    },
+    messages_checkpoint::{CertifiedCheckpointSummary, CheckpointContentsExt, FullCheckpointContents},
     sdk_types::{Address, Identifier, ObjectId, StructTag},
 };
 use poi_rs::{Proof, ProofTargets, TransactionProof};
@@ -28,8 +28,8 @@ fn signed_checkpoint(
     let summary = CheckpointSummary {
         epoch: 0,
         sequence_number: 0,
-        network_total_transactions: contents.size() as u64,
-        content_digest: *contents.digest(),
+        network_total_transactions: contents.len() as u64,
+        content_digest: contents.digest(),
         previous_digest: None,
         epoch_rolling_gas_cost_summary: GasCostSummary::default(),
         timestamp_ms: 0,
@@ -102,8 +102,8 @@ pub fn next_epoch_committee(committee: &Committee) -> Committee {
 
 pub fn end_of_epoch_data(committee: &Committee) -> EndOfEpochData {
     EndOfEpochData {
-        next_epoch_committee: committee.voting_rights.clone(),
-        next_epoch_protocol_version: 1.into(),
+        next_epoch_committee: committee.committee_members(),
+        next_epoch_protocol_version: 1,
         epoch_commitments: Vec::new(),
         epoch_supply_change: 0,
     }

@@ -11,16 +11,16 @@ use iota_grpc_client::{
 };
 #[cfg(feature = "native-grpc")]
 use iota_grpc_types::v1::transaction::ExecutedTransaction;
+use iota_sdk_types::{CheckpointContents, ObjectId, TransactionDigest, Version};
 #[cfg(feature = "native-grpc")]
-use iota_sdk_types::{Digest, SignedTransaction};
-use iota_sdk_types::{ObjectId, Version};
+use iota_sdk_types::{CheckpointDigest, SignedTransaction};
 #[cfg(feature = "native-grpc")]
-use iota_types::{digests::CheckpointDigest, effects::TransactionEffectsAPI};
+use iota_types::effects::TransactionEffectsAPI;
 use iota_types::{
-    digests::{ChainIdentifier, TransactionDigest},
+    digests::ChainIdentifier,
     effects::{TransactionEffects, TransactionEvents},
     event::EventID,
-    messages_checkpoint::{CertifiedCheckpointSummary, CheckpointContents},
+    messages_checkpoint::CertifiedCheckpointSummary,
     object::Object,
     transaction::Transaction,
 };
@@ -359,16 +359,6 @@ impl GrpcSource {
                         source: Box::new(source),
                     },
                 )
-            })
-            .and_then(|contents| {
-                contents.try_into().map_err(|source| {
-                    SourceError::transaction(
-                        transaction_digest,
-                        SourceErrorKind::CheckpointContents {
-                            source: Box::new(source),
-                        },
-                    )
-                })
             })?;
 
         Ok((checkpoint_summary, checkpoint_contents))
@@ -452,15 +442,7 @@ impl GrpcSource {
             transaction,
             signatures,
         }
-        .try_into()
-        .map_err(|source| {
-            SourceError::transaction(
-                transaction_digest,
-                SourceErrorKind::Transaction {
-                    source: Box::new(source),
-                },
-            )
-        })?;
+        .into();
         let events = if effects.events_digest().is_some() {
             executed_transaction
                 .events()
@@ -538,11 +520,10 @@ impl Source for GrpcSource {
         &self,
         transaction_digest: TransactionDigest,
     ) -> Result<Option<SourceTransaction>, SourceError> {
-        let digest = Digest::new(transaction_digest.into_inner());
         let transactions = self
             .client
             .get_transactions(
-                &[digest],
+                &[transaction_digest],
                 Some(ReadMask::from(&[
                     TransactionField::TRANSACTION_BCS,
                     TransactionField::SIGNATURES,

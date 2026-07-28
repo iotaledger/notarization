@@ -4,12 +4,12 @@
 use iota_types::committee::Committee;
 use poi_rs::{Proof, ProofVerifier, ProofVersion, VerifyErrorKind};
 
-const COMMITTEE: &str = include_str!("fixtures/v1/committee.json");
-const TRANSACTION: &str = include_str!("fixtures/v1/transaction.json");
-const OBJECT: &str = include_str!("fixtures/v1/object.json");
-const EVENT: &str = include_str!("fixtures/v1/event.json");
+const COMMITTEE: &str = include_str!("fixtures/current/committee.json");
+const TRANSACTION: &str = include_str!("fixtures/current/transaction.json");
+const OBJECT: &str = include_str!("fixtures/current/object.json");
+const EVENT: &str = include_str!("fixtures/current/event.json");
 
-fn assert_version_one_compatibility(fixture: &str) -> Proof {
+fn assert_current_format(fixture: &str) -> Proof {
     let committee: Committee = serde_json::from_str(COMMITTEE).expect("committee fixture must deserialize");
     let proof = Proof::from_json_slice(fixture.as_bytes()).expect("proof fixture must deserialize");
 
@@ -27,24 +27,24 @@ fn assert_version_one_compatibility(fixture: &str) -> Proof {
 }
 
 #[test]
-fn version_one_transaction_fixture_remains_compatible() {
-    let proof = assert_version_one_compatibility(TRANSACTION);
+fn current_transaction_fixture_remains_stable() {
+    let proof = assert_current_format(TRANSACTION);
 
     assert!(proof.target().objects.is_empty());
     assert!(proof.target().events.is_empty());
 }
 
 #[test]
-fn version_one_object_fixture_remains_compatible() {
-    let proof = assert_version_one_compatibility(OBJECT);
+fn current_object_fixture_remains_stable() {
+    let proof = assert_current_format(OBJECT);
 
     assert_eq!(proof.target().objects.len(), 1);
     assert!(proof.target().events.is_empty());
 }
 
 #[test]
-fn version_one_event_fixture_remains_compatible() {
-    let proof = assert_version_one_compatibility(EVENT);
+fn current_event_fixture_remains_stable() {
+    let proof = assert_current_format(EVENT);
 
     assert!(proof.target().objects.is_empty());
     assert_eq!(proof.target().events.len(), 1);

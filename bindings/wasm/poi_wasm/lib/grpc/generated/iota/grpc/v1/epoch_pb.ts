@@ -13,13 +13,17 @@ import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_iota_grpc_options } from "../options_pb.js";
 import type { BcsData } from "./bcs_pb.js";
 import { file_iota_grpc_v1_bcs } from "./bcs_pb.js";
+import type { Checkpoint } from "./checkpoint_pb.js";
+import { file_iota_grpc_v1_checkpoint } from "./checkpoint_pb.js";
+import type { TransactionEffects, TransactionEvents } from "./transaction_pb.js";
+import { file_iota_grpc_v1_transaction } from "./transaction_pb.js";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file iota/grpc/v1/epoch.proto.
  */
 export const file_iota_grpc_v1_epoch: GenFile = /*@__PURE__*/
-  fileDesc("Chhpb3RhL2dycGMvdjEvZXBvY2gucHJvdG8SEmlvdGEuZ3JwYy52MS5lcG9jaCJsChhWYWxpZGF0b3JDb21taXR0ZWVNZW1iZXISFwoKcHVibGljX2tleRgBIAEoDEgAiAEBEhMKBndlaWdodBgCIAEoBEgBiAEBOgiCtRgEd2l0aEINCgtfcHVibGljX2tleUIJCgdfd2VpZ2h0ImQKGVZhbGlkYXRvckNvbW1pdHRlZU1lbWJlcnMSPQoHbWVtYmVycxgBIAMoCzIsLmlvdGEuZ3JwYy52MS5lcG9jaC5WYWxpZGF0b3JDb21taXR0ZWVNZW1iZXI6CIK1GAR3aXRoIo0BChJWYWxpZGF0b3JDb21taXR0ZWUSEgoFZXBvY2gYASABKARIAIgBARJDCgdtZW1iZXJzGAIgASgLMi0uaW90YS5ncnBjLnYxLmVwb2NoLlZhbGlkYXRvckNvbW1pdHRlZU1lbWJlcnNIAYgBAToIgrUYBHdpdGhCCAoGX2Vwb2NoQgoKCF9tZW1iZXJzIpYBChRQcm90b2NvbEZlYXR1cmVGbGFncxJCCgVmbGFncxgBIAMoCzIzLmlvdGEuZ3JwYy52MS5lcG9jaC5Qcm90b2NvbEZlYXR1cmVGbGFncy5GbGFnc0VudHJ5GiwKCkZsYWdzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgIOgI4AToMgrUYBHdpdGiQtRgBIqEBChJQcm90b2NvbEF0dHJpYnV0ZXMSSgoKYXR0cmlidXRlcxgBIAMoCzI2LmlvdGEuZ3JwYy52MS5lcG9jaC5Qcm90b2NvbEF0dHJpYnV0ZXMuQXR0cmlidXRlc0VudHJ5GjEKD0F0dHJpYnV0ZXNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOgyCtRgEd2l0aJC1GAEi9gEKDlByb3RvY29sQ29uZmlnEh0KEHByb3RvY29sX3ZlcnNpb24YASABKARIAIgBARJECg1mZWF0dXJlX2ZsYWdzGAIgASgLMiguaW90YS5ncnBjLnYxLmVwb2NoLlByb3RvY29sRmVhdHVyZUZsYWdzSAGIAQESPwoKYXR0cmlidXRlcxgDIAEoCzImLmlvdGEuZ3JwYy52MS5lcG9jaC5Qcm90b2NvbEF0dHJpYnV0ZXNIAogBAToIgrUYBHdpdGhCEwoRX3Byb3RvY29sX3ZlcnNpb25CEAoOX2ZlYXR1cmVfZmxhZ3NCDQoLX2F0dHJpYnV0ZXMisgQKBUVwb2NoEhIKBWVwb2NoGAEgASgESACIAQESPgoJY29tbWl0dGVlGAIgASgLMiYuaW90YS5ncnBjLnYxLmVwb2NoLlZhbGlkYXRvckNvbW1pdHRlZUgBiAEBEjgKEGJjc19zeXN0ZW1fc3RhdGUYAyABKAsyGS5pb3RhLmdycGMudjEuYmNzLkJjc0RhdGFIAogBARIdChBmaXJzdF9jaGVja3BvaW50GAQgASgESAOIAQESHAoPbGFzdF9jaGVja3BvaW50GAUgASgESASIAQESLgoFc3RhcnQYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wSAWIAQESLAoDZW5kGAcgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgGiAEBEiAKE3JlZmVyZW5jZV9nYXNfcHJpY2UYCCABKARIB4gBARJACg9wcm90b2NvbF9jb25maWcYCSABKAsyIi5pb3RhLmdycGMudjEuZXBvY2guUHJvdG9jb2xDb25maWdICIgBAToIgrUYBHdpdGhCCAoGX2Vwb2NoQgwKCl9jb21taXR0ZWVCEwoRX2Jjc19zeXN0ZW1fc3RhdGVCEwoRX2ZpcnN0X2NoZWNrcG9pbnRCEgoQX2xhc3RfY2hlY2twb2ludEIICgZfc3RhcnRCBgoEX2VuZEIWChRfcmVmZXJlbmNlX2dhc19wcmljZUISChBfcHJvdG9jb2xfY29uZmlnYgZwcm90bzM", [file_google_protobuf_timestamp, file_iota_grpc_options, file_iota_grpc_v1_bcs]);
+  fileDesc("Chhpb3RhL2dycGMvdjEvZXBvY2gucHJvdG8SEmlvdGEuZ3JwYy52MS5lcG9jaCJsChhWYWxpZGF0b3JDb21taXR0ZWVNZW1iZXISFwoKcHVibGljX2tleRgBIAEoDEgAiAEBEhMKBndlaWdodBgCIAEoBEgBiAEBOgiCtRgEd2l0aEINCgtfcHVibGljX2tleUIJCgdfd2VpZ2h0ImQKGVZhbGlkYXRvckNvbW1pdHRlZU1lbWJlcnMSPQoHbWVtYmVycxgBIAMoCzIsLmlvdGEuZ3JwYy52MS5lcG9jaC5WYWxpZGF0b3JDb21taXR0ZWVNZW1iZXI6CIK1GAR3aXRoIo0BChJWYWxpZGF0b3JDb21taXR0ZWUSEgoFZXBvY2gYASABKARIAIgBARJDCgdtZW1iZXJzGAIgASgLMi0uaW90YS5ncnBjLnYxLmVwb2NoLlZhbGlkYXRvckNvbW1pdHRlZU1lbWJlcnNIAYgBAToIgrUYBHdpdGhCCAoGX2Vwb2NoQgoKCF9tZW1iZXJzIpYBChRQcm90b2NvbEZlYXR1cmVGbGFncxJCCgVmbGFncxgBIAMoCzIzLmlvdGEuZ3JwYy52MS5lcG9jaC5Qcm90b2NvbEZlYXR1cmVGbGFncy5GbGFnc0VudHJ5GiwKCkZsYWdzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgIOgI4AToMgrUYBHdpdGiQtRgBIqEBChJQcm90b2NvbEF0dHJpYnV0ZXMSSgoKYXR0cmlidXRlcxgBIAMoCzI2LmlvdGEuZ3JwYy52MS5lcG9jaC5Qcm90b2NvbEF0dHJpYnV0ZXMuQXR0cmlidXRlc0VudHJ5GjEKD0F0dHJpYnV0ZXNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOgyCtRgEd2l0aJC1GAEi9gEKDlByb3RvY29sQ29uZmlnEh0KEHByb3RvY29sX3ZlcnNpb24YASABKARIAIgBARJECg1mZWF0dXJlX2ZsYWdzGAIgASgLMiguaW90YS5ncnBjLnYxLmVwb2NoLlByb3RvY29sRmVhdHVyZUZsYWdzSAGIAQESPwoKYXR0cmlidXRlcxgDIAEoCzImLmlvdGEuZ3JwYy52MS5lcG9jaC5Qcm90b2NvbEF0dHJpYnV0ZXNIAogBAToIgrUYBHdpdGhCEwoRX3Byb3RvY29sX3ZlcnNpb25CEAoOX2ZlYXR1cmVfZmxhZ3NCDQoLX2F0dHJpYnV0ZXMijQUKBUVwb2NoEhIKBWVwb2NoGAEgASgESACIAQESPgoJY29tbWl0dGVlGAIgASgLMiYuaW90YS5ncnBjLnYxLmVwb2NoLlZhbGlkYXRvckNvbW1pdHRlZUgBiAEBEjgKEGJjc19zeXN0ZW1fc3RhdGUYAyABKAsyGS5pb3RhLmdycGMudjEuYmNzLkJjc0RhdGFIAogBARIdChBmaXJzdF9jaGVja3BvaW50GAQgASgESAOIAQESHAoPbGFzdF9jaGVja3BvaW50GAUgASgESASIAQESLgoFc3RhcnQYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wSAWIAQESLAoDZW5kGAcgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgGiAEBEiAKE3JlZmVyZW5jZV9nYXNfcHJpY2UYCCABKARIB4gBARJACg9wcm90b2NvbF9jb25maWcYCSABKAsyIi5pb3RhLmdycGMudjEuZXBvY2guUHJvdG9jb2xDb25maWdICIgBARJDChFlcG9jaF9jbG9zZV9wcm9vZhgKIAEoCzIjLmlvdGEuZ3JwYy52MS5lcG9jaC5FcG9jaENsb3NlUHJvb2ZICYgBAToIgrUYBHdpdGhCCAoGX2Vwb2NoQgwKCl9jb21taXR0ZWVCEwoRX2Jjc19zeXN0ZW1fc3RhdGVCEwoRX2ZpcnN0X2NoZWNrcG9pbnRCEgoQX2xhc3RfY2hlY2twb2ludEIICgZfc3RhcnRCBgoEX2VuZEIWChRfcmVmZXJlbmNlX2dhc19wcmljZUISChBfcHJvdG9jb2xfY29uZmlnQhQKEl9lcG9jaF9jbG9zZV9wcm9vZiKxAwoPRXBvY2hDbG9zZVByb29mEjwKCmNoZWNrcG9pbnQYASABKAsyIy5pb3RhLmdycGMudjEuY2hlY2twb2ludC5DaGVja3BvaW50SACIAQESWwogZW5kX29mX2Vwb2NoX3RyYW5zYWN0aW9uX2VmZmVjdHMYAiABKAsyLC5pb3RhLmdycGMudjEudHJhbnNhY3Rpb24uVHJhbnNhY3Rpb25FZmZlY3RzSAGIAQESWQofZW5kX29mX2Vwb2NoX3RyYW5zYWN0aW9uX2V2ZW50cxgDIAEoCzIrLmlvdGEuZ3JwYy52MS50cmFuc2FjdGlvbi5UcmFuc2FjdGlvbkV2ZW50c0gCiAEBEkYKI2Jjc19uZXh0X2Vwb2NoX3N5c3RlbV9zdGF0ZV9vYmplY3RzGAQgAygLMhkuaW90YS5ncnBjLnYxLmJjcy5CY3NEYXRhOgiCtRgEd2l0aEINCgtfY2hlY2twb2ludEIjCiFfZW5kX29mX2Vwb2NoX3RyYW5zYWN0aW9uX2VmZmVjdHNCIgogX2VuZF9vZl9lcG9jaF90cmFuc2FjdGlvbl9ldmVudHNiBnByb3RvMw", [file_google_protobuf_timestamp, file_iota_grpc_options, file_iota_grpc_v1_bcs, file_iota_grpc_v1_checkpoint, file_iota_grpc_v1_transaction]);
 
 /**
  * A member of a validator committee.
@@ -211,6 +215,17 @@ export type Epoch = Message<"iota.grpc.v1.epoch.Epoch"> & {
    * @generated from field: optional iota.grpc.v1.epoch.ProtocolConfig protocol_config = 9;
    */
   protocolConfig?: ProtocolConfig | undefined;
+
+  /**
+   * Proof of how this epoch closed: the certified closing checkpoint, the
+   * epoch-change transaction's effects and events, and the system-state
+   * objects it wrote for the next epoch's start state.
+   *
+   * Absent until the epoch closes.
+   *
+   * @generated from field: optional iota.grpc.v1.epoch.EpochCloseProof epoch_close_proof = 10;
+   */
+  epochCloseProof?: EpochCloseProof | undefined;
 };
 
 /**
@@ -219,4 +234,50 @@ export type Epoch = Message<"iota.grpc.v1.epoch.Epoch"> & {
  */
 export const EpochSchema: GenMessage<Epoch> = /*@__PURE__*/
   messageDesc(file_iota_grpc_v1_epoch, 6);
+
+/**
+ * @generated from message iota.grpc.v1.epoch.EpochCloseProof
+ */
+export type EpochCloseProof = Message<"iota.grpc.v1.epoch.EpochCloseProof"> & {
+  /**
+   * The certified checkpoint that closed the epoch.
+   *
+   * @generated from field: optional iota.grpc.v1.checkpoint.Checkpoint checkpoint = 1;
+   */
+  checkpoint?: Checkpoint | undefined;
+
+  /**
+   * Effects of the epoch-change transaction (the last transaction of the
+   * closing checkpoint).
+   *
+   * @generated from field: optional iota.grpc.v1.transaction.TransactionEffects end_of_epoch_transaction_effects = 2;
+   */
+  endOfEpochTransactionEffects?: TransactionEffects | undefined;
+
+  /**
+   * Events emitted by the epoch-change transaction. Empty on safe-mode
+   * boundaries, which mutate the system state without emitting events.
+   *
+   * @generated from field: optional iota.grpc.v1.transaction.TransactionEvents end_of_epoch_transaction_events = 3;
+   */
+  endOfEpochTransactionEvents?: TransactionEvents | undefined;
+
+  /**
+   * Raw BCS bytes of the system-state wrapper object (`0x5`) and its inner
+   * state object, as written by this epoch boundary — byte-for-byte as
+   * originally written (not wrapped, unlike `Object.bcs` elsewhere in this
+   * API), so their digests can be verified against the written-object
+   * digests in `end_of_epoch_transaction_effects`.
+   *
+   * @generated from field: repeated iota.grpc.v1.bcs.BcsData bcs_next_epoch_system_state_objects = 4;
+   */
+  bcsNextEpochSystemStateObjects: BcsData[];
+};
+
+/**
+ * Describes the message iota.grpc.v1.epoch.EpochCloseProof.
+ * Use `create(EpochCloseProofSchema)` to create a new message.
+ */
+export const EpochCloseProofSchema: GenMessage<EpochCloseProof> = /*@__PURE__*/
+  messageDesc(file_iota_grpc_v1_epoch, 7);
 

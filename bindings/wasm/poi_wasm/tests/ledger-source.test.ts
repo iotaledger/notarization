@@ -30,15 +30,27 @@ test("returns the BCS evidence needed by poi-rs", async () => {
   const checkpointSignatureBcs = bytes(0x0a);
   const contentsBcs = bytes(0x0b);
   const committeePublicKey = new Uint8Array(96).fill(0x0c);
+  const epochCloseSummaryBcs = bytes(0x0d);
+  const epochCloseSignatureBcs = bytes(0x0e);
+  let serviceInfoRequest = 0;
+  let epochRequest = 0;
 
   const transport = createRouterTransport((router) => {
     router.service(LedgerService, {
       getServiceInfo(request) {
-        assert.deepEqual(request.readMask?.paths, ["chain_id"]);
+        serviceInfoRequest += 1;
 
-        return create(GetServiceInfoResponseSchema, {
-          chainId: { digest: chainId },
-        });
+        if (serviceInfoRequest === 1) {
+          assert.deepEqual(request.readMask?.paths, ["chain_id"]);
+
+          return create(GetServiceInfoResponseSchema, {
+            chainId: { digest: chainId },
+          });
+        }
+
+        assert.deepEqual(request.readMask?.paths, ["epoch"]);
+
+        return create(GetServiceInfoResponseSchema, { epoch: 9n });
       },
       async *getTransactions(request) {
         assert.deepEqual(request.readMask?.paths, [
@@ -129,15 +141,34 @@ test("returns the BCS evidence needed by poi-rs", async () => {
         });
       },
       getEpoch(request) {
+        epochRequest += 1;
         assert.equal(request.epoch, 7n);
-        assert.deepEqual(request.readMask?.paths, ["committee"]);
+
+        if (epochRequest === 1) {
+          assert.deepEqual(request.readMask?.paths, ["committee"]);
+
+          return create(GetEpochResponseSchema, {
+            epoch: {
+              committee: {
+                epoch: 7n,
+                members: {
+                  members: [{ publicKey: committeePublicKey, weight: 10_000n }],
+                },
+              },
+            },
+          });
+        }
+
+        assert.deepEqual(request.readMask?.paths, [
+          "epoch_close_proof.checkpoint",
+        ]);
 
         return create(GetEpochResponseSchema, {
           epoch: {
-            committee: {
-              epoch: 7n,
-              members: {
-                members: [{ publicKey: committeePublicKey, weight: 10_000n }],
+            epochCloseProof: {
+              checkpoint: {
+                summary: { bcs: { data: epochCloseSummaryBcs } },
+                signature: { bcs: { data: epochCloseSignatureBcs } },
               },
             },
           },
@@ -163,6 +194,11 @@ test("returns the BCS evidence needed by poi-rs", async () => {
   });
   assert.deepEqual(await source.committee(7n), {
     members: [{ publicKey: committeePublicKey, weight: 10_000n }],
+  });
+  assert.equal(await source.currentEpoch(), 9n);
+  assert.deepEqual(await source.epochCloseSummary(7n), {
+    summaryBcs: epochCloseSummaryBcs,
+    signatureBcs: epochCloseSignatureBcs,
   });
 });
 

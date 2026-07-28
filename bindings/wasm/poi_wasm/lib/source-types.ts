@@ -22,6 +22,12 @@ export interface CheckpointEvidence {
   contentsBcs: Uint8Array;
 }
 
+/** Serialized certified checkpoint summary used to authenticate an epoch handoff. */
+export interface CheckpointSummaryEvidence {
+  summaryBcs: Uint8Array;
+  signatureBcs: Uint8Array;
+}
+
 /** A validator entry reported by a trusted IOTA node. */
 export interface CommitteeMember {
   publicKey: Uint8Array;
@@ -42,4 +48,8 @@ export interface LedgerSource {
   object(objectId: Uint8Array, version?: bigint): Promise<Uint8Array | undefined>;
   checkpoint(sequenceNumber: bigint): Promise<CheckpointEvidence>;
   committee(epoch: bigint): Promise<Committee>;
+  currentEpoch(): Promise<bigint>;
+  epochCloseSummary(
+    epoch: bigint,
+  ): Promise<CheckpointSummaryEvidence | undefined>;
 }

@@ -1,8 +1,8 @@
 // Copyright 2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use iota_sdk_types::ObjectId;
-use iota_types::{digests::TransactionDigest, event::EventID};
+use iota_sdk_types::{ObjectId, TransactionDigest};
+use iota_types::event::EventID;
 use js_sys::Uint8Array;
 use poi_rs::{Proof, ProofBuilder};
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};

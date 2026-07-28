@@ -10,6 +10,7 @@ import {
 } from "./client.js";
 import type {
   CheckpointEvidence,
+  CheckpointSummaryEvidence,
   Committee,
   LedgerSource as LedgerSourceContract,
   TransactionEvidence,
@@ -17,6 +18,8 @@ import type {
 
 const CHAIN_IDENTIFIER_FIELDS = ["chain_id"];
 const COMMITTEE_FIELDS = ["committee"];
+const CURRENT_EPOCH_FIELDS = ["epoch"];
+const EPOCH_CLOSE_SUMMARY_FIELDS = ["epoch_close_proof.checkpoint"];
 const OBJECT_PROOF_FIELDS = ["bcs"];
 const TRANSACTION_PROOF_FIELDS = [
   "transaction.bcs",
@@ -223,6 +226,33 @@ export class LedgerSource implements LedgerSourceContract {
         publicKey: member.publicKey!,
         weight: member.weight!,
       })),
+    };
+  }
+
+  public async currentEpoch(): Promise<bigint> {
+    const response = await this.#client.getServiceInfo({
+      readMask: { paths: CURRENT_EPOCH_FIELDS },
+    });
+
+    return response.epoch!;
+  }
+
+  public async epochCloseSummary(
+    epoch: bigint,
+  ): Promise<CheckpointSummaryEvidence | undefined> {
+    const response = await this.#client.getEpoch({
+      epoch,
+      readMask: { paths: EPOCH_CLOSE_SUMMARY_FIELDS },
+    });
+    const checkpoint = response.epoch?.epochCloseProof?.checkpoint;
+
+    if (!checkpoint) {
+      return undefined;
+    }
+
+    return {
+      summaryBcs: checkpoint.summary!.bcs!.data!,
+      signatureBcs: checkpoint.signature!.bcs!.data!,
     };
   }
 }

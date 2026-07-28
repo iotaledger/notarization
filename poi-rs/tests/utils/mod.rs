@@ -7,28 +7,25 @@
 
 use iota_config::{IOTA_GENESIS_FILENAME, genesis::Genesis};
 use iota_grpc_client::Client as GrpcClient;
-use iota_types::{
-    base_types::ObjectRef,
-    committee::Committee,
-    digests::{ChainIdentifier, TransactionDigest},
-};
+use iota_sdk_types::{ObjectReference, TransactionDigest};
+use iota_types::{committee::Committee, digests::ChainIdentifier};
 use test_cluster::{TestCluster, TestClusterBuilder};
 
 pub mod proofs;
 
 pub struct CheckpointedTransfer {
     pub digest: TransactionDigest,
-    pub gas_object: ObjectRef,
+    pub gas_object: ObjectReference,
 }
 
 pub struct CheckpointedStaking {
     pub digest: TransactionDigest,
-    pub gas_object: ObjectRef,
+    pub gas_object: ObjectReference,
 }
 
 pub struct CheckpointedObjectTransfer {
     pub digest: TransactionDigest,
-    pub objects: [ObjectRef; 2],
+    pub objects: [ObjectReference; 2],
 }
 
 pub async fn start_test_cluster() -> TestCluster {

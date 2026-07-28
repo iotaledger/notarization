@@ -22,11 +22,11 @@ bcs = "0.1"
 chrono = { version = "0.4", default-features = false }
 clap = { version = "4.6.1", features = ["derive"] }
 hyper = "1"
-iota-grpc-client = { git = "https://github.com/iotaledger/iota-rust-sdk.git", package = "iota-sdk-grpc-client", rev = "36bffd625e1b1d38307eb9e49bd2cb7dd988bb11" }
-iota-grpc-types = { git = "https://github.com/iotaledger/iota-rust-sdk.git", package = "iota-sdk-grpc-types", rev = "36bffd625e1b1d38307eb9e49bd2cb7dd988bb11" }
+iota-grpc-client = { git = "https://github.com/iotaledger/iota-rust-sdk.git", package = "iota-sdk-grpc-client", rev = "b77fcd5ac5fedb3dfbc77ba7d183140e43512339" }
+iota-grpc-types = { git = "https://github.com/iotaledger/iota-rust-sdk.git", package = "iota-sdk-grpc-types", rev = "b77fcd5ac5fedb3dfbc77ba7d183140e43512339" }
 iota-sdk = { git = "https://github.com/iotaledger/iota.git", package = "iota-sdk", tag = "v1.26.1" }
-iota-sdk-types = { git = "https://github.com/iotaledger/iota-rust-sdk.git", rev = "36bffd625e1b1d38307eb9e49bd2cb7dd988bb11", default-features = false }
-iota-types = { git = "https://github.com/iotaledger/iota.git", tag = "v1.26.1" }
+iota-sdk-types = { git = "https://github.com/iotaledger/iota-rust-sdk.git", rev = "b77fcd5ac5fedb3dfbc77ba7d183140e43512339", default-features = false }
+iota-types = { git = "https://github.com/iotaledger/iota.git", rev = "420df58ea50ce916a927ebba2dcaee192832e436" }
 iota_interaction = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.22", default-features = false, package = "iota_interaction" }
 iota_interaction_rust = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.22", default-features = false, package = "iota_interaction_rust" }
 iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.22", default-features = false, package = "iota_interaction_ts" }
@@ -41,6 +41,9 @@ strum = { version = "0.27", default-features = false, features = ["std", "derive
 tempfile = "3.27.0"
 thiserror = { version = "2.0", default-features = false }
 tokio = { version = "1.52.2", default-features = false, features = ["macros", "sync", "rt", "process"] }
+
+[patch."https://github.com/MystenLabs/fastcrypto"]
+fastcrypto = "=0.1.11"
 
 [profile.release.package.iota_interaction_ts]
 opt-level = 's'

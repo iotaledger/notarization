@@ -71,7 +71,8 @@ export class PoiClient {
   /**
    * Creates a resolver anchored at an already trusted committee.
    *
-   * Committee walking is reserved by this API but not implemented yet.
+   * The resolver authenticates each epoch-close checkpoint before accepting
+   * and caching the next committee.
    */
   public anchoredCommitteeResolver(
     committee: Committee,

@@ -81,16 +81,18 @@ proof checkpoint epoch. Rust validates the returned committee representation
 and performs proof verification locally with `poi-rs`.
 
 This mode places the node inside the caller's trust boundary. It does not
-authenticate committee lineage from genesis. Genesis-anchored committee
-resolution is reserved by the following API but is not implemented yet:
+authenticate committee lineage from genesis. To authenticate committee
+lineage from an already trusted committee:
 
 ```ts
 const resolver = client.anchoredCommitteeResolver(trustedGenesisCommittee);
 await resolver.resolve(proof.checkpointEpoch);
 ```
 
-Until epoch-close walking is connected, `resolve()` rejects with an explicit
-not-implemented error in anchored mode.
+The resolver fetches the certified checkpoint in each epoch-close proof,
+verifies it with the current committee, and only then accepts and caches the
+next committee. The node supplies evidence but is not trusted to choose the
+committee.
 
 ## Package verification
 
