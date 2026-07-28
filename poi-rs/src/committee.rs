@@ -3,23 +3,15 @@
 
 use std::sync::Arc;
 
-use async_trait::async_trait;
 #[cfg(feature = "native-grpc")]
-use iota_grpc_client::{
-    Client as GrpcClient, ReadMask,
-    read_mask_fields::{EpochField, ServiceInfoField},
-};
-#[cfg(feature = "native-grpc")]
-use iota_grpc_types::proto::TryFromProtoError;
-#[cfg(feature = "native-grpc")]
-use iota_sdk_types::SignedCheckpointSummary;
+use iota_grpc_client::Client as GrpcClient;
 use iota_types::{
     committee::{Committee, EpochId},
     error::IotaError,
     messages_checkpoint::CertifiedCheckpointSummary,
 };
 
-use crate::{BoxError, CommitteeCache, CommitteeCacheError, MemoryCommitteeCache};
+use crate::{BoxError, CommitteeCache, CommitteeCacheError, MemoryCommitteeCache, Source};
 
 /// Error returned when a committee cannot be resolved for an epoch.
 #[derive(Debug, thiserror::Error)]
@@ -124,27 +116,6 @@ pub enum CommitteeResolutionErrorKind {
     },
 }
 
-/// Ledger-read boundary used to resolve validator committees.
-///
-/// Implementations may use native gRPC, a JavaScript client, fixtures, or
-/// another source. Committee authentication and caching remain centralized in
-/// [`CommitteeResolver`].
-#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
-#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
-pub trait CommitteeSource {
-    /// Error returned when the source cannot provide committee evidence.
-    type Error: std::error::Error + Send + Sync + 'static;
-
-    /// Fetches the committee reported for `epoch`.
-    async fn committee(&self, epoch: EpochId) -> Result<Committee, Self::Error>;
-
-    /// Fetches the current epoch reported by the source.
-    async fn current_epoch(&self) -> Result<Option<EpochId>, Self::Error>;
-
-    /// Fetches the certified checkpoint summary that closed `epoch`.
-    async fn epoch_close_summary(&self, epoch: EpochId) -> Result<Option<CertifiedCheckpointSummary>, Self::Error>;
-}
-
 /// Selects how a resolver establishes trust in committee data.
 #[derive(Clone)]
 enum CommitteeResolution {
@@ -170,7 +141,7 @@ pub struct CommitteeResolver<S> {
 
 impl<S> CommitteeResolver<S>
 where
-    S: CommitteeSource,
+    S: Source,
 {
     /// Creates a resolver that trusts the connected node for committee data.
     ///
@@ -449,84 +420,6 @@ impl CommitteeResolver<GrpcClient> {
     /// Returns the underlying SDK gRPC client.
     pub const fn grpc_client(&self) -> &GrpcClient {
         &self.source
-    }
-}
-
-/// Error returned by the native SDK gRPC committee source.
-#[cfg(feature = "native-grpc")]
-#[derive(Debug, thiserror::Error)]
-#[error("gRPC committee source failed")]
-pub struct GrpcCommitteeSourceError {
-    #[source]
-    source: BoxError,
-}
-
-#[cfg(feature = "native-grpc")]
-impl GrpcCommitteeSourceError {
-    fn new(source: impl std::error::Error + Send + Sync + 'static) -> Self {
-        Self {
-            source: Box::new(source),
-        }
-    }
-}
-
-#[cfg(feature = "native-grpc")]
-#[async_trait]
-impl CommitteeSource for GrpcClient {
-    type Error = GrpcCommitteeSourceError;
-
-    async fn committee(&self, epoch: EpochId) -> Result<Committee, Self::Error> {
-        let epoch = self
-            .get_epoch(Some(epoch), Some(ReadMask::from(EpochField::COMMITTEE)))
-            .await
-            .map_err(GrpcCommitteeSourceError::new)?
-            .into_inner();
-        let committee = epoch.committee().map_err(GrpcCommitteeSourceError::new)?;
-
-        Ok(committee.into())
-    }
-
-    async fn current_epoch(&self) -> Result<Option<EpochId>, Self::Error> {
-        self.get_service_info(Some(ReadMask::from(ServiceInfoField::EPOCH)))
-            .await
-            .map(|response| response.body().epoch)
-            .map_err(GrpcCommitteeSourceError::new)
-    }
-
-    async fn epoch_close_summary(&self, epoch: EpochId) -> Result<Option<CertifiedCheckpointSummary>, Self::Error> {
-        let epoch_info = self
-            .get_epoch(
-                Some(epoch),
-                Some(ReadMask::from(EpochField::EPOCH_CLOSE_PROOF_CHECKPOINT)),
-            )
-            .await
-            .map_err(GrpcCommitteeSourceError::new)?
-            .into_inner();
-        let Some(epoch_close_proof) = epoch_info.epoch_close_proof().map_err(GrpcCommitteeSourceError::new)? else {
-            return Ok(None);
-        };
-        let checkpoint = epoch_close_proof.checkpoint().map_err(GrpcCommitteeSourceError::new)?;
-        let summary = checkpoint
-            .summary
-            .as_ref()
-            .ok_or_else(|| TryFromProtoError::missing("summary"))
-            .map_err(GrpcCommitteeSourceError::new)?;
-        let checkpoint_summary = summary.summary().map_err(GrpcCommitteeSourceError::new)?;
-        let signature = checkpoint
-            .signature
-            .as_ref()
-            .ok_or_else(|| TryFromProtoError::missing("signature"))
-            .map_err(GrpcCommitteeSourceError::new)?;
-        let checkpoint_signature = signature.signature().map_err(GrpcCommitteeSourceError::new)?;
-        let signed_summary = SignedCheckpointSummary {
-            checkpoint: checkpoint_summary,
-            signature: checkpoint_signature,
-        };
-
-        signed_summary
-            .try_into()
-            .map(Some)
-            .map_err(GrpcCommitteeSourceError::new)
     }
 }
 

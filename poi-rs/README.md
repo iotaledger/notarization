@@ -33,15 +33,16 @@ A builder can stack multiple object and event targets by calling `object()` and 
 `objects()` and `events()` batch methods. Every target must belong to the same transaction. The builder ignores exact
 duplicates and reuses one transaction and one checkpoint for the complete target set.
 
-`Source` is the transport boundary: it fetches decoded transaction, object, checkpoint, and chain evidence.
-`ProofBuilder` owns target resolution, consistency checks, and proof construction, so custom sources do not reimplement
-that logic.
+`Source` is the transport boundary: it fetches decoded transaction, object, checkpoint, chain, and committee evidence.
+`ProofBuilder` owns target resolution, consistency checks, and proof construction, while `CommitteeResolver` owns
+committee authentication and caching, so custom sources do not reimplement either workflow.
 
 Network selection configures only the proof source. It does not make the returned proof trusted or select an authoritative
 committee for verification.
 
-The default `native-grpc` feature provides `GrpcSource`, the public-network constructors, and `CommitteeResolver`.
-WASM packages can disable default features and supply a JavaScript-backed `Source` without compiling native gRPC.
+The default `native-grpc` feature implements `Source` directly for the SDK `GrpcClient` and provides the public-network
+constructors. WASM packages can disable default features and supply a JavaScript-backed `Source` without compiling native
+gRPC.
 
 ## Proof Model
 

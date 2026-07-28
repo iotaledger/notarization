@@ -4,19 +4,9 @@
 use std::fmt;
 
 use async_trait::async_trait;
-#[cfg(feature = "native-grpc")]
-use iota_grpc_client::{
-    CheckpointResponse, Client as GrpcClient, ReadMask,
-    read_mask_fields::{CheckpointResponseField, ObjectField, ServiceInfoField, TransactionField},
-};
-#[cfg(feature = "native-grpc")]
-use iota_grpc_types::v1::transaction::ExecutedTransaction;
 use iota_sdk_types::{CheckpointContents, ObjectId, TransactionDigest, Version};
-#[cfg(feature = "native-grpc")]
-use iota_sdk_types::{CheckpointDigest, SignedTransaction};
-#[cfg(feature = "native-grpc")]
-use iota_types::effects::TransactionEffectsAPI;
 use iota_types::{
+    committee::{Committee, EpochId},
     digests::ChainIdentifier,
     effects::{TransactionEffects, TransactionEvents},
     event::EventID,
@@ -26,6 +16,11 @@ use iota_types::{
 };
 
 use crate::BoxError;
+
+#[cfg(feature = "native-grpc")]
+mod grpc;
+#[cfg(feature = "native-grpc")]
+pub use grpc::GrpcSourceError;
 
 /// Source target requested by the caller.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -92,25 +87,6 @@ impl SourceError {
     }
 }
 
-/// Transactions involved when stacked proof targets do not share one owner.
-#[derive(Debug)]
-pub struct TransactionMismatch {
-    /// Transaction selected by the first proof target.
-    pub expected: TransactionDigest,
-    /// Transaction that owns the conflicting target.
-    pub actual: TransactionDigest,
-}
-
-impl fmt::Display for TransactionMismatch {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "target belongs to transaction {}, expected transaction {}",
-            self.actual, self.expected
-        )
-    }
-}
-
 /// Kind of proof source failure.
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
@@ -169,10 +145,12 @@ pub enum SourceErrorKind {
     #[error("event was not found")]
     EventNotFound,
     /// A requested target belongs to a different transaction than the other targets.
-    #[error("{mismatch}")]
+    #[error("{actual} does not match expected transaction {expected}")]
     TargetTransactionMismatch {
-        /// Conflicting transaction details.
-        mismatch: Box<TransactionMismatch>,
+        /// Transaction selected by the first proof target.
+        expected: TransactionDigest,
+        /// Transaction that owns the conflicting target.
+        actual: TransactionDigest,
     },
     /// The transaction response did not expose a checkpoint sequence number.
     #[error("transaction response is missing checkpoint sequence")]
@@ -267,14 +245,17 @@ pub struct SourceCheckpoint {
     pub contents: CheckpointContents,
 }
 
-/// Ledger-read boundary used by [`crate::ProofBuilder`].
+/// Ledger-read boundary used by [`crate::ProofBuilder`] and [`crate::CommitteeResolver`].
 ///
 /// Implementations may fetch evidence from native gRPC, a JavaScript client,
-/// archive storage, fixtures, or another source. Proof assembly and target
-/// validation remain centralized in [`crate::ProofBuilder`].
+/// archive storage, fixtures, or another source. Proof assembly, target
+/// validation, committee authentication, and caching remain outside the source.
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
 pub trait Source {
+    /// Error returned when the source cannot provide committee evidence.
+    type CommitteeError: std::error::Error + Send + Sync + 'static;
+
     /// Fetches the genesis-checkpoint digest that identifies the source chain.
     async fn chain_identifier(&self, transaction_digest: TransactionDigest) -> Result<ChainIdentifier, SourceError>;
 
@@ -293,323 +274,16 @@ pub trait Source {
         transaction_digest: TransactionDigest,
         sequence_number: u64,
     ) -> Result<SourceCheckpoint, SourceError>;
-}
 
-/// Proof source backed by an SDK gRPC client.
-///
-/// Applications normally construct this source through the network and client
-/// convenience constructors on [`crate::ProofBuilder`].
-#[cfg(feature = "native-grpc")]
-pub struct GrpcSource {
-    client: GrpcClient,
-}
+    /// Fetches the committee reported for `epoch`.
+    async fn committee(&self, epoch: EpochId) -> Result<Committee, Self::CommitteeError>;
 
-#[cfg(feature = "native-grpc")]
-impl GrpcSource {
-    /// Wraps an SDK gRPC client as a Proof of Inclusion source.
-    pub(crate) fn new(client: GrpcClient) -> Self {
-        Self { client }
-    }
+    /// Fetches the current epoch reported by the source.
+    async fn current_epoch(&self) -> Result<Option<EpochId>, Self::CommitteeError>;
 
-    /// Returns the underlying client for endpoint-selection tests.
-    #[cfg(test)]
-    pub(crate) const fn grpc_client(&self) -> &GrpcClient {
-        &self.client
-    }
-
-    /// Reads the certified summary and contents from a checkpoint response.
-    fn parse_checkpoint(
-        transaction_digest: TransactionDigest,
-        checkpoint: &CheckpointResponse,
-    ) -> Result<(CertifiedCheckpointSummary, CheckpointContents), SourceError> {
-        let checkpoint_summary: CertifiedCheckpointSummary = checkpoint
-            .signed_summary()
-            .map_err(|source| {
-                SourceError::transaction(
-                    transaction_digest,
-                    SourceErrorKind::CheckpointSummary {
-                        source: Box::new(source),
-                    },
-                )
-            })?
-            .try_into()
-            .map_err(|source| {
-                SourceError::transaction(
-                    transaction_digest,
-                    SourceErrorKind::CheckpointSummary {
-                        source: Box::new(source),
-                    },
-                )
-            })?;
-        let checkpoint_contents: CheckpointContents = checkpoint
-            .contents()
-            .map_err(|source| {
-                SourceError::transaction(
-                    transaction_digest,
-                    SourceErrorKind::CheckpointContents {
-                        source: Box::new(source),
-                    },
-                )
-            })?
-            .contents()
-            .map_err(|source| {
-                SourceError::transaction(
-                    transaction_digest,
-                    SourceErrorKind::CheckpointContents {
-                        source: Box::new(source),
-                    },
-                )
-            })?;
-
-        Ok((checkpoint_summary, checkpoint_contents))
-    }
-
-    /// Reads transaction effects before resolving transaction-scoped object IDs.
-    fn parse_effects(
-        transaction_digest: TransactionDigest,
-        executed_transaction: &ExecutedTransaction,
-    ) -> Result<TransactionEffects, SourceError> {
-        executed_transaction
-            .effects()
-            .map_err(|source| {
-                SourceError::transaction(
-                    transaction_digest,
-                    SourceErrorKind::Effects {
-                        source: Box::new(source),
-                    },
-                )
-            })?
-            .effects()
-            .map_err(|source| {
-                SourceError::transaction(
-                    transaction_digest,
-                    SourceErrorKind::Effects {
-                        source: Box::new(source),
-                    },
-                )
-            })
-    }
-
-    /// Decodes the transaction evidence needed by the transport-independent builder.
-    fn parse_transaction(
-        transaction_digest: TransactionDigest,
-        executed_transaction: &ExecutedTransaction,
-        effects: TransactionEffects,
-    ) -> Result<SourceTransaction, SourceError> {
-        let transaction = executed_transaction
-            .transaction()
-            .map_err(|source| {
-                SourceError::transaction(
-                    transaction_digest,
-                    SourceErrorKind::Transaction {
-                        source: Box::new(source),
-                    },
-                )
-            })?
-            .transaction()
-            .map_err(|source| {
-                SourceError::transaction(
-                    transaction_digest,
-                    SourceErrorKind::Transaction {
-                        source: Box::new(source),
-                    },
-                )
-            })?;
-        let signatures = executed_transaction
-            .signatures()
-            .map_err(|source| {
-                SourceError::transaction(
-                    transaction_digest,
-                    SourceErrorKind::Signatures {
-                        source: Box::new(source),
-                    },
-                )
-            })?
-            .signatures
-            .iter()
-            .map(|signature| {
-                signature.signature().map_err(|source| {
-                    SourceError::transaction(
-                        transaction_digest,
-                        SourceErrorKind::Signatures {
-                            source: Box::new(source),
-                        },
-                    )
-                })
-            })
-            .collect::<Result<Vec<_>, SourceError>>()?;
-        let transaction: Transaction = SignedTransaction {
-            transaction,
-            signatures,
-        }
-        .into();
-        let events = if effects.events_digest().is_some() {
-            executed_transaction
-                .events()
-                .map_err(|source| {
-                    SourceError::transaction(
-                        transaction_digest,
-                        SourceErrorKind::MissingEvents {
-                            source: Box::new(source),
-                        },
-                    )
-                })?
-                .events()
-                .map_err(|source| {
-                    SourceError::transaction(
-                        transaction_digest,
-                        SourceErrorKind::Events {
-                            source: Box::new(source),
-                        },
-                    )
-                })
-                .map(Some)?
-        } else {
-            None
-        };
-
-        let checkpoint_sequence_number = executed_transaction.checkpoint_sequence_number().map_err(|source| {
-            SourceError::transaction(
-                transaction_digest,
-                SourceErrorKind::MissingCheckpointSequence {
-                    source: Box::new(source),
-                },
-            )
-        })?;
-
-        Ok(SourceTransaction {
-            transaction,
-            effects,
-            events,
-            checkpoint_sequence_number,
-        })
-    }
-}
-
-#[cfg(feature = "native-grpc")]
-#[async_trait]
-impl Source for GrpcSource {
-    async fn chain_identifier(&self, transaction_digest: TransactionDigest) -> Result<ChainIdentifier, SourceError> {
-        let service_info = self
-            .client
-            .get_service_info(Some(ReadMask::from(ServiceInfoField::CHAIN_ID)))
-            .await
-            .map_err(|source| {
-                SourceError::transaction(
-                    transaction_digest,
-                    SourceErrorKind::FetchChainIdentifier {
-                        source: Box::new(source),
-                    },
-                )
-            })?;
-        let chain_identifier = service_info.body().chain_identifier().map_err(|source| {
-            SourceError::transaction(
-                transaction_digest,
-                SourceErrorKind::ChainIdentifier {
-                    source: Box::new(source),
-                },
-            )
-        })?;
-
-        Ok(ChainIdentifier::from(CheckpointDigest::new(
-            chain_identifier.into_inner(),
-        )))
-    }
-
-    async fn transaction(
+    /// Fetches the certified checkpoint summary that closed `epoch`.
+    async fn epoch_close_summary(
         &self,
-        transaction_digest: TransactionDigest,
-    ) -> Result<Option<SourceTransaction>, SourceError> {
-        let transactions = self
-            .client
-            .get_transactions(
-                &[transaction_digest],
-                Some(ReadMask::from(&[
-                    TransactionField::TRANSACTION_BCS,
-                    TransactionField::SIGNATURES,
-                    TransactionField::EFFECTS_BCS,
-                    TransactionField::EVENTS_DIGEST,
-                    TransactionField::EVENTS_EVENTS_BCS,
-                    TransactionField::CHECKPOINT,
-                ])),
-            )
-            .await
-            .map_err(|source| {
-                SourceError::transaction(
-                    transaction_digest,
-                    SourceErrorKind::FetchTransaction {
-                        source: Box::new(source),
-                    },
-                )
-            })?;
-        let Some(executed_transaction) = transactions.body().first() else {
-            return Ok(None);
-        };
-        let effects = Self::parse_effects(transaction_digest, executed_transaction)?;
-
-        Self::parse_transaction(transaction_digest, executed_transaction, effects).map(Some)
-    }
-
-    async fn object(&self, object_id: ObjectId, version: Option<Version>) -> Result<Option<Object>, SourceError> {
-        let objects = self
-            .client
-            .get_objects(&[(object_id, version)], Some(ReadMask::from(ObjectField::BCS)))
-            .await
-            .map_err(|source| {
-                SourceError::object(
-                    object_id,
-                    SourceErrorKind::FetchObject {
-                        source: Box::new(source),
-                    },
-                )
-            })?;
-        let Some(response) = objects.body().first() else {
-            return Ok(None);
-        };
-        let object: Object = response
-            .object()
-            .map_err(|source| {
-                SourceError::object(
-                    object_id,
-                    SourceErrorKind::Object {
-                        source: Box::new(source),
-                    },
-                )
-            })?
-            .into();
-        Ok(Some(object))
-    }
-
-    async fn checkpoint(
-        &self,
-        transaction_digest: TransactionDigest,
-        sequence_number: u64,
-    ) -> Result<SourceCheckpoint, SourceError> {
-        let checkpoint = self
-            .client
-            .get_checkpoint_by_sequence_number(
-                sequence_number,
-                Some(ReadMask::from(&[
-                    CheckpointResponseField::CHECKPOINT_SUMMARY_BCS,
-                    CheckpointResponseField::CHECKPOINT_SIGNATURE,
-                    CheckpointResponseField::CHECKPOINT_CONTENTS_BCS,
-                ])),
-                None,
-                None,
-            )
-            .await
-            .map(|response| response.into_inner())
-            .map_err(|source| {
-                SourceError::transaction(
-                    transaction_digest,
-                    SourceErrorKind::FetchCheckpoint {
-                        sequence_number,
-                        source: Box::new(source),
-                    },
-                )
-            })?;
-        let (summary, contents) = Self::parse_checkpoint(transaction_digest, &checkpoint)?;
-
-        Ok(SourceCheckpoint { summary, contents })
-    }
+        epoch: EpochId,
+    ) -> Result<Option<CertifiedCheckpointSummary>, Self::CommitteeError>;
 }

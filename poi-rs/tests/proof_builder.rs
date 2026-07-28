@@ -11,7 +11,13 @@ use std::sync::{
 use async_trait::async_trait;
 use iota_sdk_types::{ObjectId, TransactionDigest, Version};
 use iota_types::base_types::dbg_object_id;
-use iota_types::{digests::ChainIdentifier, event::EventID, object::Object};
+use iota_types::{
+    committee::{Committee, EpochId},
+    digests::ChainIdentifier,
+    event::EventID,
+    messages_checkpoint::CertifiedCheckpointSummary,
+    object::Object,
+};
 use poi_rs::{
     ProofBuilder, ProofBuilderError, Source, SourceCheckpoint, SourceError, SourceErrorKind, SourceTarget,
     SourceTransaction,
@@ -22,6 +28,8 @@ struct RejectingSource;
 
 #[async_trait]
 impl Source for RejectingSource {
+    type CommitteeError = std::convert::Infallible;
+
     async fn chain_identifier(&self, _transaction_digest: TransactionDigest) -> Result<ChainIdentifier, SourceError> {
         unreachable!("rejected transactions do not resolve a chain identifier")
     }
@@ -47,6 +55,21 @@ impl Source for RejectingSource {
     ) -> Result<SourceCheckpoint, SourceError> {
         unreachable!("rejected transactions do not resolve a checkpoint")
     }
+
+    async fn committee(&self, _epoch: EpochId) -> Result<Committee, Self::CommitteeError> {
+        unreachable!("proof-only test source does not resolve committees")
+    }
+
+    async fn current_epoch(&self) -> Result<Option<EpochId>, Self::CommitteeError> {
+        unreachable!("proof-only test source does not resolve the current epoch")
+    }
+
+    async fn epoch_close_summary(
+        &self,
+        _epoch: EpochId,
+    ) -> Result<Option<CertifiedCheckpointSummary>, Self::CommitteeError> {
+        unreachable!("proof-only test source does not resolve epoch-close summaries")
+    }
 }
 
 struct RecordingSource {
@@ -56,6 +79,8 @@ struct RecordingSource {
 
 #[async_trait]
 impl Source for RecordingSource {
+    type CommitteeError = std::convert::Infallible;
+
     async fn chain_identifier(&self, _transaction_digest: TransactionDigest) -> Result<ChainIdentifier, SourceError> {
         unreachable!("rejected transactions do not resolve a chain identifier")
     }
@@ -86,6 +111,21 @@ impl Source for RecordingSource {
         _sequence_number: u64,
     ) -> Result<SourceCheckpoint, SourceError> {
         unreachable!("rejected transactions do not resolve a checkpoint")
+    }
+
+    async fn committee(&self, _epoch: EpochId) -> Result<Committee, Self::CommitteeError> {
+        unreachable!("proof-only test source does not resolve committees")
+    }
+
+    async fn current_epoch(&self) -> Result<Option<EpochId>, Self::CommitteeError> {
+        unreachable!("proof-only test source does not resolve the current epoch")
+    }
+
+    async fn epoch_close_summary(
+        &self,
+        _epoch: EpochId,
+    ) -> Result<Option<CertifiedCheckpointSummary>, Self::CommitteeError> {
+        unreachable!("proof-only test source does not resolve epoch-close summaries")
     }
 }
 
@@ -272,7 +312,7 @@ async fn object_targets_from_different_transactions_are_rejected() {
     assert_eq!(source.target, SourceTarget::Object(second_object_id));
     assert!(matches!(
         source.kind,
-        SourceErrorKind::TargetTransactionMismatch { mismatch }
-            if mismatch.expected == first.digest && mismatch.actual == second.digest
+        SourceErrorKind::TargetTransactionMismatch { expected, actual }
+            if expected == first.digest && actual == second.digest
     ));
 }

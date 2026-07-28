@@ -6,11 +6,7 @@ use iota_grpc_client::Client as GrpcClient;
 use iota_sdk_types::{ObjectId, ObjectReference, TransactionDigest};
 use iota_types::{effects::TransactionEffectsExt, event::EventID, object::Object};
 
-#[cfg(feature = "native-grpc")]
-use crate::source::GrpcSource;
-use crate::{
-    Proof, ProofTargets, Source, SourceError, SourceErrorKind, SourceTarget, TransactionMismatch, TransactionProof,
-};
+use crate::{Proof, ProofTargets, Source, SourceError, SourceErrorKind, SourceTarget, TransactionProof};
 
 /// Error returned when a proof cannot be constructed by [`ProofBuilder`].
 #[derive(Debug, thiserror::Error)]
@@ -39,7 +35,7 @@ pub struct ProofBuilder<S> {
 }
 
 #[cfg(feature = "native-grpc")]
-impl ProofBuilder<GrpcSource> {
+impl ProofBuilder<GrpcClient> {
     /// Creates a proof builder connected to the public IOTA mainnet gRPC endpoint.
     ///
     /// Selecting an endpoint does not establish verification trust. Verify the
@@ -66,7 +62,7 @@ impl ProofBuilder<GrpcSource> {
 
     /// Creates a proof builder backed by an existing SDK gRPC client.
     pub fn from_grpc_client(client: GrpcClient) -> Self {
-        Self::new(GrpcSource::new(client))
+        Self::new(client)
     }
 }
 
@@ -262,10 +258,8 @@ impl<S: Source> ProofBuilder<S> {
                 return Err(SourceError {
                     target,
                     kind: SourceErrorKind::TargetTransactionMismatch {
-                        mismatch: Box::new(TransactionMismatch {
-                            expected: *expected,
-                            actual: transaction_digest,
-                        }),
+                        expected: *expected,
+                        actual: transaction_digest,
                     },
                 });
             }
@@ -293,7 +287,7 @@ mod tests {
         let builder = ProofBuilder::mainnet().expect("mainnet builder must be configured");
         let expected = GrpcClient::new_mainnet().expect("SDK mainnet client must be configured");
 
-        assert_eq!(builder.source.grpc_client().uri(), expected.uri());
+        assert_eq!(builder.source.uri(), expected.uri());
     }
 
     #[tokio::test]
@@ -301,7 +295,7 @@ mod tests {
         let builder = ProofBuilder::testnet().expect("testnet builder must be configured");
         let expected = GrpcClient::new_testnet().expect("SDK testnet client must be configured");
 
-        assert_eq!(builder.source.grpc_client().uri(), expected.uri());
+        assert_eq!(builder.source.uri(), expected.uri());
     }
 
     #[tokio::test]
@@ -309,6 +303,6 @@ mod tests {
         let builder = ProofBuilder::devnet().expect("devnet builder must be configured");
         let expected = GrpcClient::new_devnet().expect("SDK devnet client must be configured");
 
-        assert_eq!(builder.source.grpc_client().uri(), expected.uri());
+        assert_eq!(builder.source.uri(), expected.uri());
     }
 }

@@ -22,16 +22,12 @@ pub mod target;
 
 pub use builder::{ProofBuilder, ProofBuilderError};
 pub use cache::{CommitteeCache, CommitteeCacheError, MemoryCommitteeCache};
-#[cfg(feature = "native-grpc")]
-pub use committee::GrpcCommitteeSourceError;
-pub use committee::{CommitteeResolutionError, CommitteeResolutionErrorKind, CommitteeResolver, CommitteeSource};
+pub use committee::{CommitteeResolutionError, CommitteeResolutionErrorKind, CommitteeResolver};
 pub use proof::{
     Proof, ProofVerifier, ProofVersion, SerializationError, SerializationErrorKind, TransactionProof, VerifyError,
     VerifyErrorKind, VersionError,
 };
 #[cfg(feature = "native-grpc")]
-pub use source::GrpcSource;
-pub use source::{
-    Source, SourceCheckpoint, SourceError, SourceErrorKind, SourceTarget, SourceTransaction, TransactionMismatch,
-};
+pub use source::GrpcSourceError;
+pub use source::{Source, SourceCheckpoint, SourceError, SourceErrorKind, SourceTarget, SourceTransaction};
 pub use target::ProofTargets;
