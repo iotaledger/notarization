@@ -15,19 +15,17 @@ pub mod cache;
 pub mod committee;
 /// Proof data types and offline verification.
 pub mod proof;
-/// Sources for constructing proofs.
+/// Ledger evidence source abstraction.
 pub mod source;
 /// Target claims authenticated by a proof.
 pub mod target;
 
-pub use builder::{ProofBuilder, ProofBuilderError};
+pub use builder::{ProofBuilder, ProofBuilderError, ProofTarget};
 pub use cache::{CommitteeCache, CommitteeCacheError, MemoryCommitteeCache};
 pub use committee::{CommitteeResolutionError, CommitteeResolutionErrorKind, CommitteeResolver};
 pub use proof::{
     Proof, ProofVerifier, ProofVersion, SerializationError, SerializationErrorKind, TransactionProof, VerifyError,
     VerifyErrorKind, VersionError,
 };
-#[cfg(feature = "native-grpc")]
-pub use source::GrpcSourceError;
-pub use source::{Source, SourceCheckpoint, SourceError, SourceErrorKind, SourceTarget, SourceTransaction};
+pub use source::{Source, SourceCheckpoint, SourceError, SourceTransaction};
 pub use target::ProofTargets;

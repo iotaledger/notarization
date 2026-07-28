@@ -87,9 +87,12 @@ trust the authenticated target claims relative to the supplied committee.
 - `ProofVersion`: Proof format version used for compatibility checks.
 - `TransactionProof`: Transaction, effects, events, and checkpoint contents used to prove inclusion.
 - `ProofTargets`: Object, event, and committee claims to authenticate.
+- `ProofTarget`: Transaction, object, or event requested from a `ProofBuilder`.
 - `ProofBuilder`: Network-aware or custom-source proof construction.
 - `Source`: Ledger-read boundary for gRPC nodes, JavaScript clients, archives, fixtures, and other evidence sources.
 - `SourceTransaction` and `SourceCheckpoint`: Transport-independent decoded evidence returned by a `Source`.
 - `CommitteeResolver`: Trusted-node or anchored committee resolution.
 - `ProofVerifier`: Offline verifier for `Proof` values.
-- `VerifyError`, `SourceError`, `SerializationError`, and `VersionError`: Operation-specific errors.
+- `SourceError`: Transport and response failures from a ledger source.
+- `ProofBuilderError`, `CommitteeResolutionError`, `VerifyError`, `SerializationError`, and `VersionError`:
+  Operation-specific errors.

@@ -18,56 +18,41 @@ use iota_types::{
     messages_checkpoint::CertifiedCheckpointSummary,
     object::Object,
 };
-use poi_rs::{
-    ProofBuilder, ProofBuilderError, Source, SourceCheckpoint, SourceError, SourceErrorKind, SourceTarget,
-    SourceTransaction,
-};
+use poi_rs::{ProofBuilder, ProofBuilderError, ProofTarget, Source, SourceCheckpoint, SourceError, SourceTransaction};
 use utils::{genesis_chain_identifier, grpc_client, object_transfer_tx, staking_tx, start_test_cluster, transfer_tx};
 
 struct RejectingSource;
 
 #[async_trait]
 impl Source for RejectingSource {
-    type CommitteeError = std::convert::Infallible;
-
-    async fn chain_identifier(&self, _transaction_digest: TransactionDigest) -> Result<ChainIdentifier, SourceError> {
+    async fn chain_identifier(&self) -> Result<ChainIdentifier, SourceError> {
         unreachable!("rejected transactions do not resolve a chain identifier")
     }
 
     async fn transaction(
         &self,
-        transaction_digest: TransactionDigest,
-    ) -> Result<Option<SourceTransaction>, SourceError> {
-        Err(SourceError::transaction(
-            transaction_digest,
-            SourceErrorKind::TransactionNotFound,
-        ))
-    }
-
-    async fn object(&self, object_id: ObjectId, _version: Option<Version>) -> Result<Option<Object>, SourceError> {
-        Err(SourceError::object(object_id, SourceErrorKind::ObjectNotFound))
-    }
-
-    async fn checkpoint(
-        &self,
         _transaction_digest: TransactionDigest,
-        _sequence_number: u64,
-    ) -> Result<SourceCheckpoint, SourceError> {
+    ) -> Result<Option<SourceTransaction>, SourceError> {
+        Err(SourceError::request(std::io::Error::other("transaction rejected")))
+    }
+
+    async fn object(&self, _object_id: ObjectId, _version: Option<Version>) -> Result<Option<Object>, SourceError> {
+        Ok(None)
+    }
+
+    async fn checkpoint(&self, _sequence_number: u64) -> Result<SourceCheckpoint, SourceError> {
         unreachable!("rejected transactions do not resolve a checkpoint")
     }
 
-    async fn committee(&self, _epoch: EpochId) -> Result<Committee, Self::CommitteeError> {
+    async fn committee(&self, _epoch: EpochId) -> Result<Committee, SourceError> {
         unreachable!("proof-only test source does not resolve committees")
     }
 
-    async fn current_epoch(&self) -> Result<Option<EpochId>, Self::CommitteeError> {
+    async fn current_epoch(&self) -> Result<Option<EpochId>, SourceError> {
         unreachable!("proof-only test source does not resolve the current epoch")
     }
 
-    async fn epoch_close_summary(
-        &self,
-        _epoch: EpochId,
-    ) -> Result<Option<CertifiedCheckpointSummary>, Self::CommitteeError> {
+    async fn epoch_close_summary(&self, _epoch: EpochId) -> Result<Option<CertifiedCheckpointSummary>, SourceError> {
         unreachable!("proof-only test source does not resolve epoch-close summaries")
     }
 }
@@ -79,9 +64,7 @@ struct RecordingSource {
 
 #[async_trait]
 impl Source for RecordingSource {
-    type CommitteeError = std::convert::Infallible;
-
-    async fn chain_identifier(&self, _transaction_digest: TransactionDigest) -> Result<ChainIdentifier, SourceError> {
+    async fn chain_identifier(&self) -> Result<ChainIdentifier, SourceError> {
         unreachable!("rejected transactions do not resolve a chain identifier")
     }
 
@@ -95,36 +78,26 @@ impl Source for RecordingSource {
             .expect("recorded transactions lock must not be poisoned")
             .push(transaction_digest);
 
-        Err(SourceError::transaction(
-            transaction_digest,
-            SourceErrorKind::TransactionNotFound,
-        ))
+        Ok(None)
     }
 
-    async fn object(&self, object_id: ObjectId, _version: Option<Version>) -> Result<Option<Object>, SourceError> {
-        Err(SourceError::object(object_id, SourceErrorKind::ObjectNotFound))
+    async fn object(&self, _object_id: ObjectId, _version: Option<Version>) -> Result<Option<Object>, SourceError> {
+        Ok(None)
     }
 
-    async fn checkpoint(
-        &self,
-        _transaction_digest: TransactionDigest,
-        _sequence_number: u64,
-    ) -> Result<SourceCheckpoint, SourceError> {
+    async fn checkpoint(&self, _sequence_number: u64) -> Result<SourceCheckpoint, SourceError> {
         unreachable!("rejected transactions do not resolve a checkpoint")
     }
 
-    async fn committee(&self, _epoch: EpochId) -> Result<Committee, Self::CommitteeError> {
+    async fn committee(&self, _epoch: EpochId) -> Result<Committee, SourceError> {
         unreachable!("proof-only test source does not resolve committees")
     }
 
-    async fn current_epoch(&self) -> Result<Option<EpochId>, Self::CommitteeError> {
+    async fn current_epoch(&self) -> Result<Option<EpochId>, SourceError> {
         unreachable!("proof-only test source does not resolve the current epoch")
     }
 
-    async fn epoch_close_summary(
-        &self,
-        _epoch: EpochId,
-    ) -> Result<Option<CertifiedCheckpointSummary>, Self::CommitteeError> {
+    async fn epoch_close_summary(&self, _epoch: EpochId) -> Result<Option<CertifiedCheckpointSummary>, SourceError> {
         unreachable!("proof-only test source does not resolve epoch-close summaries")
     }
 }
@@ -139,11 +112,11 @@ async fn builder_accepts_a_custom_source() {
         .await
         .unwrap_err();
 
-    let ProofBuilderError::Source { source } = error else {
+    let ProofBuilderError::Source { target, source } = error else {
         panic!("custom source error must be preserved");
     };
-    assert_eq!(source.target, SourceTarget::Transaction(transaction_digest));
-    assert!(matches!(source.kind, SourceErrorKind::TransactionNotFound));
+    assert_eq!(target, ProofTarget::Transaction(transaction_digest));
+    assert!(matches!(source, SourceError::Request { .. }));
 }
 
 #[tokio::test]
@@ -192,7 +165,7 @@ async fn stacked_targets_reuse_one_transaction_request() {
 }
 
 #[tokio::test]
-async fn unknown_transaction_returns_a_fetch_error() {
+async fn unknown_transaction_returns_a_request_error() {
     let cluster = start_test_cluster().await;
     let transaction_digest = TransactionDigest::random();
 
@@ -202,11 +175,11 @@ async fn unknown_transaction_returns_a_fetch_error() {
         .await
         .unwrap_err();
 
-    let ProofBuilderError::Source { source } = error else {
+    let ProofBuilderError::Source { target, source } = error else {
         panic!("missing transaction must return a source error");
     };
-    assert_eq!(source.target, SourceTarget::Transaction(transaction_digest));
-    assert!(matches!(source.kind, SourceErrorKind::FetchTransaction { .. }));
+    assert_eq!(target, ProofTarget::Transaction(transaction_digest));
+    assert!(matches!(source, SourceError::Request { .. }));
 }
 
 #[tokio::test]
@@ -224,7 +197,7 @@ async fn proof_uses_the_genesis_checkpoint_as_its_chain_identifier() {
 }
 
 #[tokio::test]
-async fn unknown_object_returns_a_fetch_error() {
+async fn unknown_object_returns_a_request_error() {
     let cluster = start_test_cluster().await;
     let object_id = Object::immutable_for_testing().id();
 
@@ -234,11 +207,11 @@ async fn unknown_object_returns_a_fetch_error() {
         .await
         .unwrap_err();
 
-    let ProofBuilderError::Source { source } = error else {
+    let ProofBuilderError::Source { target, source } = error else {
         panic!("missing object must return a source error");
     };
-    assert_eq!(source.target, SourceTarget::Object(object_id));
-    assert!(matches!(source.kind, SourceErrorKind::FetchObject { .. }));
+    assert_eq!(target, ProofTarget::Object(object_id));
+    assert!(matches!(source, SourceError::Request { .. }));
 }
 
 #[tokio::test]
@@ -256,11 +229,10 @@ async fn event_sequence_outside_the_transaction_is_rejected() {
         .await
         .unwrap_err();
 
-    let ProofBuilderError::Source { source } = error else {
-        panic!("missing event must return a source error");
+    let ProofBuilderError::TargetNotFound { target } = error else {
+        panic!("missing event must return a target-not-found error");
     };
-    assert_eq!(source.target, SourceTarget::Event(event_id));
-    assert!(matches!(source.kind, SourceErrorKind::EventNotFound));
+    assert_eq!(target, ProofTarget::Event(event_id));
 }
 
 #[tokio::test]
@@ -281,15 +253,15 @@ async fn object_outside_the_event_transaction_is_rejected() {
         .await
         .unwrap_err();
 
-    let ProofBuilderError::Source { source } = error else {
-        panic!("mixed transactions must return a source error");
+    let ProofBuilderError::ObjectNotChangedByTransaction {
+        object_id: returned_object_id,
+        transaction_digest,
+    } = error
+    else {
+        panic!("unrelated object must return a proof-builder error");
     };
-    assert_eq!(source.target, SourceTarget::Object(object_id));
-    assert!(matches!(
-        source.kind,
-        SourceErrorKind::ObjectNotChangedByTransaction { transaction_digest }
-            if transaction_digest == staking.digest
-    ));
+    assert_eq!(returned_object_id, object_id);
+    assert_eq!(transaction_digest, staking.digest);
 }
 
 #[tokio::test]
@@ -306,13 +278,15 @@ async fn object_targets_from_different_transactions_are_rejected() {
         .await
         .unwrap_err();
 
-    let ProofBuilderError::Source { source } = error else {
-        panic!("mixed transactions must return a source error");
+    let ProofBuilderError::TargetTransactionMismatch {
+        target,
+        expected,
+        actual,
+    } = error
+    else {
+        panic!("mixed transactions must return a proof-builder error");
     };
-    assert_eq!(source.target, SourceTarget::Object(second_object_id));
-    assert!(matches!(
-        source.kind,
-        SourceErrorKind::TargetTransactionMismatch { expected, actual }
-            if expected == first.digest && actual == second.digest
-    ));
+    assert_eq!(target, ProofTarget::Object(second_object_id));
+    assert_eq!(expected, first.digest);
+    assert_eq!(actual, second.digest);
 }
