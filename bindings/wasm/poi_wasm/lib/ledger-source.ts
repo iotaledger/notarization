@@ -229,12 +229,12 @@ export class LedgerSource implements LedgerSourceContract {
     };
   }
 
-  public async currentEpoch(): Promise<bigint> {
+  public async currentEpoch(): Promise<bigint | undefined> {
     const response = await this.#client.getServiceInfo({
       readMask: { paths: CURRENT_EPOCH_FIELDS },
     });
 
-    return response.epoch!;
+    return response.epoch;
   }
 
   public async epochCloseSummary(

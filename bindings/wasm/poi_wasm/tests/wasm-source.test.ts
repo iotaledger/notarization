@@ -28,7 +28,7 @@ test("the WASM builder reads transaction evidence from the ledger source", async
 
   await assert.rejects(
     new ProofBuilder(source).transaction(transactionDigest).build(),
-    /failed to read signed transaction/,
+    /source failed while reading transaction .*: source returned an invalid response/,
   );
   assert.deepEqual(requestedDigest, transactionDigest);
 });
@@ -104,6 +104,39 @@ test("the anchored resolver returns its trusted committee without fetching it ag
   const anchored = await CommitteeResolver.anchor(source, committee).resolve(0n);
 
   assert.equal(anchored.epoch, 0n);
+});
+
+test("the anchored resolver reports a missing current epoch", async () => {
+  const fixture = JSON.parse(
+    await readFile(
+      new URL(
+        "../../../../poi-rs/tests/fixtures/current/committee.json",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  ) as {
+    voting_rights: [string, number][];
+  };
+  const source = {
+    async committee() {
+      return {
+        members: fixture.voting_rights.map(([publicKey, weight]) => ({
+          publicKey: Buffer.from(publicKey, "base64"),
+          weight: BigInt(weight),
+        })),
+      };
+    },
+    async currentEpoch() {
+      return undefined;
+    },
+  } as unknown as LedgerSource;
+  const committee = await CommitteeResolver.node(source).resolve(0n);
+
+  await assert.rejects(
+    CommitteeResolver.anchor(source, committee).resolve(1n),
+    /service information is missing the current epoch/,
+  );
 });
 
 test("the anchored resolver requests epoch-close evidence through the JavaScript source", async () => {

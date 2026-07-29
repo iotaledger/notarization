@@ -18,7 +18,7 @@ use iota_types::{
     object::Object,
 };
 use js_sys::Uint8Array;
-use poi_rs::{CommitteeSource, Source, SourceCheckpoint, SourceError, SourceErrorKind, SourceTransaction};
+use poi_rs::{Source, SourceCheckpoint, SourceError, SourceTransaction};
 use serde::Deserialize;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
@@ -103,69 +103,19 @@ struct JsCommitteeMember {
 }
 
 #[async_trait(?Send)]
-impl CommitteeSource for SourceAdapter {
-    type Error = PoiError;
-
-    async fn committee(&self, epoch: EpochId) -> Result<Committee, Self::Error> {
-        let value = self.source.committee(epoch).await.map_err(PoiError::from_js)?;
-        let evidence: JsCommittee =
-            serde_wasm_bindgen::from_value(value).map_err(|source| PoiError::invalid_response(source.to_string()))?;
-
-        decode_committee(epoch, evidence)
-    }
-
-    async fn current_epoch(&self) -> Result<Option<EpochId>, Self::Error> {
-        let value = self.source.current_epoch().await.map_err(PoiError::from_js)?;
-        let epoch =
-            serde_wasm_bindgen::from_value(value).map_err(|source| PoiError::invalid_response(source.to_string()))?;
-
-        Ok(Some(epoch))
-    }
-
-    async fn epoch_close_summary(&self, epoch: EpochId) -> Result<Option<CertifiedCheckpointSummary>, Self::Error> {
-        let value = self
-            .source
-            .epoch_close_summary(epoch)
-            .await
-            .map_err(PoiError::from_js)?;
-
-        if value.is_undefined() || value.is_null() {
-            return Ok(None);
-        }
-
-        let evidence: JsCheckpointSummaryEvidence =
-            serde_wasm_bindgen::from_value(value).map_err(|source| PoiError::invalid_response(source.to_string()))?;
-
-        decode_certified_summary(&evidence.summary_bcs, &evidence.signature_bcs).map(Some)
-    }
-}
-
-#[async_trait(?Send)]
 impl Source for SourceAdapter {
-    async fn chain_identifier(&self, transaction_digest: TransactionDigest) -> Result<ChainIdentifier, SourceError> {
+    async fn chain_identifier(&self) -> Result<ChainIdentifier, SourceError> {
         let bytes = self
             .source
             .chain_identifier()
             .await
-            .map_err(|source| {
-                SourceError::transaction(
-                    transaction_digest,
-                    SourceErrorKind::FetchChainIdentifier {
-                        source: Box::new(PoiError::from_js(source)),
-                    },
-                )
-            })?
+            .map_err(|source| SourceError::request(PoiError::from_js(source)))?
             .to_vec();
         let digest = bytes.try_into().map_err(|bytes: Vec<u8>| {
-            SourceError::transaction(
-                transaction_digest,
-                SourceErrorKind::ChainIdentifier {
-                    source: Box::new(PoiError::invalid_response(format!(
-                        "chain identifier must contain 32 bytes, received {}",
-                        bytes.len()
-                    ))),
-                },
-            )
+            SourceError::invalid_response(PoiError::invalid_response(format!(
+                "chain identifier must contain 32 bytes, received {}",
+                bytes.len()
+            )))
         })?;
 
         Ok(ChainIdentifier::from(CheckpointDigest::new(digest)))
@@ -176,29 +126,20 @@ impl Source for SourceAdapter {
         transaction_digest: TransactionDigest,
     ) -> Result<Option<SourceTransaction>, SourceError> {
         let digest = Uint8Array::from(transaction_digest.as_ref());
-        let value = self.source.transaction(digest).await.map_err(|source| {
-            SourceError::transaction(
-                transaction_digest,
-                SourceErrorKind::FetchTransaction {
-                    source: Box::new(PoiError::from_js(source)),
-                },
-            )
-        })?;
+        let value = self
+            .source
+            .transaction(digest)
+            .await
+            .map_err(|source| SourceError::request(PoiError::from_js(source)))?;
 
         if value.is_undefined() || value.is_null() {
             return Ok(None);
         }
 
-        let evidence: JsTransactionEvidence = serde_wasm_bindgen::from_value(value).map_err(|source| {
-            SourceError::transaction(
-                transaction_digest,
-                SourceErrorKind::Transaction {
-                    source: Box::new(PoiError::invalid_response(source.to_string())),
-                },
-            )
-        })?;
+        let evidence: JsTransactionEvidence = serde_wasm_bindgen::from_value(value)
+            .map_err(|source| SourceError::invalid_response(PoiError::invalid_response(source.to_string())))?;
 
-        decode_transaction(transaction_digest, evidence).map(Some)
+        decode_transaction(evidence).map(Some)
     }
 
     async fn object(&self, object_id: ObjectId, version: Option<Version>) -> Result<Option<Object>, SourceError> {
@@ -207,108 +148,99 @@ impl Source for SourceAdapter {
             .source
             .object(object_id_bytes, version.map(|version| version.as_u64()))
             .await
-            .map_err(|source| {
-                SourceError::object(
-                    object_id,
-                    SourceErrorKind::FetchObject {
-                        source: Box::new(PoiError::from_js(source)),
-                    },
-                )
-            })?;
+            .map_err(|source| SourceError::request(PoiError::from_js(source)))?;
 
         if value.is_undefined() || value.is_null() {
             return Ok(None);
         }
 
         let bytes = Uint8Array::new(&value).to_vec();
-        let versioned: VersionedObject = decode_bcs(&bytes).map_err(|source| {
-            SourceError::object(
-                object_id,
-                SourceErrorKind::Object {
-                    source: Box::new(source),
-                },
-            )
-        })?;
+        let versioned: VersionedObject = decode_bcs(&bytes).map_err(SourceError::invalid_response)?;
         let VersionedObject::V1(object) = versioned;
 
         Ok(Some(object.into()))
     }
 
-    async fn checkpoint(
-        &self,
-        transaction_digest: TransactionDigest,
-        sequence_number: u64,
-    ) -> Result<SourceCheckpoint, SourceError> {
-        let value = self.source.checkpoint(sequence_number).await.map_err(|source| {
-            SourceError::transaction(
-                transaction_digest,
-                SourceErrorKind::FetchCheckpoint {
-                    sequence_number,
-                    source: Box::new(PoiError::from_js(source)),
-                },
-            )
-        })?;
-        let evidence: JsCheckpointEvidence = serde_wasm_bindgen::from_value(value).map_err(|source| {
-            SourceError::transaction(
-                transaction_digest,
-                SourceErrorKind::CheckpointSummary {
-                    source: Box::new(PoiError::invalid_response(source.to_string())),
-                },
-            )
-        })?;
+    async fn checkpoint(&self, sequence_number: u64) -> Result<SourceCheckpoint, SourceError> {
+        let value = self
+            .source
+            .checkpoint(sequence_number)
+            .await
+            .map_err(|source| SourceError::request(PoiError::from_js(source)))?;
+        let evidence: JsCheckpointEvidence = serde_wasm_bindgen::from_value(value)
+            .map_err(|source| SourceError::invalid_response(PoiError::invalid_response(source.to_string())))?;
 
-        decode_checkpoint(transaction_digest, evidence)
+        decode_checkpoint(evidence)
+    }
+
+    async fn committee(&self, epoch: EpochId) -> Result<Committee, SourceError> {
+        let value = self
+            .source
+            .committee(epoch)
+            .await
+            .map_err(|source| SourceError::request(PoiError::from_js(source)))?;
+        let evidence: JsCommittee = serde_wasm_bindgen::from_value(value)
+            .map_err(|source| SourceError::invalid_response(PoiError::invalid_response(source.to_string())))?;
+
+        decode_committee(epoch, evidence).map_err(SourceError::invalid_response)
+    }
+
+    async fn current_epoch(&self) -> Result<Option<EpochId>, SourceError> {
+        let value = self
+            .source
+            .current_epoch()
+            .await
+            .map_err(|source| SourceError::request(PoiError::from_js(source)))?;
+
+        if value.is_undefined() || value.is_null() {
+            return Ok(None);
+        }
+
+        let epoch = serde_wasm_bindgen::from_value(value)
+            .map_err(|source| SourceError::invalid_response(PoiError::invalid_response(source.to_string())))?;
+
+        Ok(Some(epoch))
+    }
+
+    async fn epoch_close_summary(&self, epoch: EpochId) -> Result<Option<CertifiedCheckpointSummary>, SourceError> {
+        let value = self
+            .source
+            .epoch_close_summary(epoch)
+            .await
+            .map_err(|source| SourceError::request(PoiError::from_js(source)))?;
+
+        if value.is_undefined() || value.is_null() {
+            return Ok(None);
+        }
+
+        let evidence: JsCheckpointSummaryEvidence = serde_wasm_bindgen::from_value(value)
+            .map_err(|source| SourceError::invalid_response(PoiError::invalid_response(source.to_string())))?;
+
+        decode_certified_summary(&evidence.summary_bcs, &evidence.signature_bcs)
+            .map(Some)
+            .map_err(SourceError::invalid_response)
     }
 }
 
-fn decode_transaction(
-    transaction_digest: TransactionDigest,
-    evidence: JsTransactionEvidence,
-) -> Result<SourceTransaction, SourceError> {
-    let transaction: Transaction = decode_bcs(&evidence.transaction_bcs).map_err(|source| {
-        SourceError::transaction(
-            transaction_digest,
-            SourceErrorKind::Transaction {
-                source: Box::new(source),
-            },
-        )
-    })?;
+fn decode_transaction(evidence: JsTransactionEvidence) -> Result<SourceTransaction, SourceError> {
+    let transaction: Transaction = decode_bcs(&evidence.transaction_bcs).map_err(SourceError::invalid_response)?;
     let signatures = evidence
         .signatures_bcs
         .iter()
         .map(|bytes| decode_bcs::<UserSignature>(bytes))
         .collect::<Result<Vec<_>, _>>()
-        .map_err(|source| {
-            SourceError::transaction(
-                transaction_digest,
-                SourceErrorKind::Signatures {
-                    source: Box::new(source),
-                },
-            )
-        })?;
+        .map_err(SourceError::invalid_response)?;
     let transaction: iota_types::transaction::Transaction = SignedTransaction {
         transaction,
         signatures,
     }
     .into();
-    let effects: TransactionEffects = decode_bcs(&evidence.effects_bcs).map_err(|source| {
-        SourceError::transaction(
-            transaction_digest,
-            SourceErrorKind::Effects {
-                source: Box::new(source),
-            },
-        )
-    })?;
+    let effects: TransactionEffects = decode_bcs(&evidence.effects_bcs).map_err(SourceError::invalid_response)?;
     let events = if effects.events_digest().is_some() {
         let events_bcs = evidence.events_bcs.ok_or_else(|| {
-            SourceError::transaction(
-                transaction_digest,
-                SourceErrorKind::MissingEvents {
-                    source: Box::new(PoiError::invalid_response(
-                        "transaction effects commit to events but eventsBcs is missing".to_owned(),
-                    )),
-                },
-            )
+            SourceError::missing_data(PoiError::invalid_response(
+                "transaction effects commit to events but eventsBcs is missing",
+            ))
         })?;
         let events = events_bcs
             .iter()
@@ -317,14 +249,7 @@ fn decode_transaction(
                 Ok(event)
             })
             .collect::<Result<Vec<_>, bcs::Error>>()
-            .map_err(|source| {
-                SourceError::transaction(
-                    transaction_digest,
-                    SourceErrorKind::Events {
-                        source: Box::new(source),
-                    },
-                )
-            })?;
+            .map_err(SourceError::invalid_response)?;
 
         Some(TransactionEvents(events))
     } else {
@@ -339,26 +264,10 @@ fn decode_transaction(
     })
 }
 
-fn decode_checkpoint(
-    transaction_digest: TransactionDigest,
-    evidence: JsCheckpointEvidence,
-) -> Result<SourceCheckpoint, SourceError> {
-    let summary = decode_certified_summary(&evidence.summary_bcs, &evidence.signature_bcs).map_err(|source| {
-        SourceError::transaction(
-            transaction_digest,
-            SourceErrorKind::CheckpointSummary {
-                source: Box::new(source),
-            },
-        )
-    })?;
-    let contents: CheckpointContents = decode_bcs(&evidence.contents_bcs).map_err(|source| {
-        SourceError::transaction(
-            transaction_digest,
-            SourceErrorKind::CheckpointContents {
-                source: Box::new(source),
-            },
-        )
-    })?;
+fn decode_checkpoint(evidence: JsCheckpointEvidence) -> Result<SourceCheckpoint, SourceError> {
+    let summary = decode_certified_summary(&evidence.summary_bcs, &evidence.signature_bcs)
+        .map_err(SourceError::invalid_response)?;
+    let contents: CheckpointContents = decode_bcs(&evidence.contents_bcs).map_err(SourceError::invalid_response)?;
 
     Ok(SourceCheckpoint { summary, contents })
 }
@@ -416,7 +325,6 @@ mod tests {
     fn decodes_the_grpc_bcs_evidence_into_existing_iota_types() {
         let proof = Proof::from_json_slice(include_bytes!("../../../../poi-rs/tests/fixtures/current/event.json"))
             .expect("fixture must deserialize");
-        let transaction_digest = *proof.transaction_proof.transaction.digest();
         let signed_transaction: SdkSignedTransaction = proof
             .transaction_proof
             .transaction
@@ -431,20 +339,17 @@ mod tests {
                 .map(|event| bcs::to_bytes(&VersionedEvent::V1(event)).expect("event must serialize"))
                 .collect()
         });
-        let transaction = decode_transaction(
-            transaction_digest,
-            JsTransactionEvidence {
-                transaction_bcs: bcs::to_bytes(&signed_transaction.transaction).expect("transaction must serialize"),
-                signatures_bcs: signed_transaction
-                    .signatures
-                    .iter()
-                    .map(|signature| bcs::to_bytes(signature).expect("signature must serialize"))
-                    .collect(),
-                effects_bcs: bcs::to_bytes(&proof.transaction_proof.effects).expect("effects must serialize"),
-                events_bcs,
-                checkpoint_sequence_number: proof.checkpoint_summary.sequence_number,
-            },
-        )
+        let transaction = decode_transaction(JsTransactionEvidence {
+            transaction_bcs: bcs::to_bytes(&signed_transaction.transaction).expect("transaction must serialize"),
+            signatures_bcs: signed_transaction
+                .signatures
+                .iter()
+                .map(|signature| bcs::to_bytes(signature).expect("signature must serialize"))
+                .collect(),
+            effects_bcs: bcs::to_bytes(&proof.transaction_proof.effects).expect("effects must serialize"),
+            events_bcs,
+            checkpoint_sequence_number: proof.checkpoint_summary.sequence_number,
+        })
         .expect("transaction evidence must decode");
 
         assert_eq!(transaction.transaction, proof.transaction_proof.transaction);
@@ -458,16 +363,13 @@ mod tests {
             .expect("checkpoint summary must convert to SDK types");
         let contents = SdkCheckpointContents::try_from(proof.transaction_proof.checkpoint_contents.clone())
             .expect("checkpoint contents must convert to SDK types");
-        let checkpoint = decode_checkpoint(
-            transaction_digest,
-            JsCheckpointEvidence {
-                summary_bcs: bcs::to_bytes(&VersionedCheckpointSummary::V1(signed_summary.checkpoint))
-                    .expect("checkpoint summary must serialize"),
-                signature_bcs: bcs::to_bytes(&VersionedValidatorAggregatedSignature::V1(signed_summary.signature))
-                    .expect("checkpoint signature must serialize"),
-                contents_bcs: bcs::to_bytes(&contents).expect("checkpoint contents must serialize"),
-            },
-        )
+        let checkpoint = decode_checkpoint(JsCheckpointEvidence {
+            summary_bcs: bcs::to_bytes(&VersionedCheckpointSummary::V1(signed_summary.checkpoint))
+                .expect("checkpoint summary must serialize"),
+            signature_bcs: bcs::to_bytes(&VersionedValidatorAggregatedSignature::V1(signed_summary.signature))
+                .expect("checkpoint signature must serialize"),
+            contents_bcs: bcs::to_bytes(&contents).expect("checkpoint contents must serialize"),
+        })
         .expect("checkpoint evidence must decode");
 
         assert_eq!(

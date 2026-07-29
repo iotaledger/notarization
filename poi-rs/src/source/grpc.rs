@@ -3,10 +3,10 @@
 
 use async_trait::async_trait;
 use iota_grpc_client::{
-    CheckpointResponse, Client as GrpcClient, ReadMask,
+    Client as GrpcClient, ReadMask,
     read_mask_fields::{CheckpointResponseField, EpochField, ObjectField, ServiceInfoField, TransactionField},
 };
-use iota_grpc_types::{proto::TryFromProtoError, v1::transaction::ExecutedTransaction};
+use iota_grpc_types::proto::TryFromProtoError;
 use iota_sdk_types::{
     CheckpointContents, CheckpointDigest, ObjectId, SignedCheckpointSummary, SignedTransaction, TransactionDigest,
     Version,
@@ -14,7 +14,7 @@ use iota_sdk_types::{
 use iota_types::{
     committee::{Committee, EpochId},
     digests::ChainIdentifier,
-    effects::{TransactionEffects, TransactionEffectsAPI},
+    effects::TransactionEffectsAPI,
     messages_checkpoint::CertifiedCheckpointSummary,
     object::Object,
     transaction::Transaction,
@@ -60,9 +60,49 @@ impl Source for GrpcClient {
         let Some(executed_transaction) = transactions.body().first() else {
             return Ok(None);
         };
-        let effects = parse_effects(executed_transaction)?;
+        let effects = executed_transaction
+            .effects()
+            .map_err(SourceError::invalid_response)?
+            .effects()
+            .map_err(SourceError::invalid_response)?;
 
-        parse_transaction(executed_transaction, effects).map(Some)
+        let transaction = executed_transaction
+            .transaction()
+            .map_err(SourceError::invalid_response)?
+            .transaction()
+            .map_err(SourceError::invalid_response)?;
+        let signatures = executed_transaction
+            .signatures()
+            .map_err(SourceError::invalid_response)?
+            .signatures
+            .iter()
+            .map(|signature| signature.signature().map_err(SourceError::invalid_response))
+            .collect::<Result<Vec<_>, SourceError>>()?;
+        let transaction: Transaction = SignedTransaction {
+            transaction,
+            signatures,
+        }
+        .into();
+        let events = if effects.events_digest().is_some() {
+            executed_transaction
+                .events()
+                .map_err(SourceError::missing_data)?
+                .events()
+                .map_err(SourceError::invalid_response)
+                .map(Some)?
+        } else {
+            None
+        };
+        let checkpoint_sequence_number = executed_transaction
+            .checkpoint_sequence_number()
+            .map_err(SourceError::missing_data)?;
+
+        Ok(Some(SourceTransaction {
+            transaction,
+            effects,
+            events,
+            checkpoint_sequence_number,
+        }))
     }
 
     async fn object(&self, object_id: ObjectId, version: Option<Version>) -> Result<Option<Object>, SourceError> {
@@ -93,7 +133,16 @@ impl Source for GrpcClient {
             .await
             .map(|response| response.into_inner())
             .map_err(SourceError::request)?;
-        let (summary, contents) = parse_checkpoint(&checkpoint)?;
+        let summary: CertifiedCheckpointSummary = checkpoint
+            .signed_summary()
+            .map_err(SourceError::invalid_response)?
+            .try_into()
+            .map_err(SourceError::invalid_response)?;
+        let contents: CheckpointContents = checkpoint
+            .contents()
+            .map_err(SourceError::invalid_response)?
+            .contents()
+            .map_err(SourceError::invalid_response)?;
 
         Ok(SourceCheckpoint { summary, contents })
     }
@@ -149,72 +198,4 @@ impl Source for GrpcClient {
 
         Ok(Some(certified_summary))
     }
-}
-
-fn parse_checkpoint(
-    checkpoint: &CheckpointResponse,
-) -> Result<(CertifiedCheckpointSummary, CheckpointContents), SourceError> {
-    let checkpoint_summary: CertifiedCheckpointSummary = checkpoint
-        .signed_summary()
-        .map_err(SourceError::invalid_response)?
-        .try_into()
-        .map_err(SourceError::invalid_response)?;
-    let checkpoint_contents: CheckpointContents = checkpoint
-        .contents()
-        .map_err(SourceError::invalid_response)?
-        .contents()
-        .map_err(SourceError::invalid_response)?;
-
-    Ok((checkpoint_summary, checkpoint_contents))
-}
-
-fn parse_effects(executed_transaction: &ExecutedTransaction) -> Result<TransactionEffects, SourceError> {
-    executed_transaction
-        .effects()
-        .map_err(SourceError::invalid_response)?
-        .effects()
-        .map_err(SourceError::invalid_response)
-}
-
-fn parse_transaction(
-    executed_transaction: &ExecutedTransaction,
-    effects: TransactionEffects,
-) -> Result<SourceTransaction, SourceError> {
-    let transaction = executed_transaction
-        .transaction()
-        .map_err(SourceError::invalid_response)?
-        .transaction()
-        .map_err(SourceError::invalid_response)?;
-    let signatures = executed_transaction
-        .signatures()
-        .map_err(SourceError::invalid_response)?
-        .signatures
-        .iter()
-        .map(|signature| signature.signature().map_err(SourceError::invalid_response))
-        .collect::<Result<Vec<_>, SourceError>>()?;
-    let transaction: Transaction = SignedTransaction {
-        transaction,
-        signatures,
-    }
-    .into();
-    let events = if effects.events_digest().is_some() {
-        executed_transaction
-            .events()
-            .map_err(SourceError::missing_data)?
-            .events()
-            .map_err(SourceError::invalid_response)
-            .map(Some)?
-    } else {
-        None
-    };
-    let checkpoint_sequence_number = executed_transaction
-        .checkpoint_sequence_number()
-        .map_err(SourceError::missing_data)?;
-
-    Ok(SourceTransaction {
-        transaction,
-        effects,
-        events,
-        checkpoint_sequence_number,
-    })
 }
