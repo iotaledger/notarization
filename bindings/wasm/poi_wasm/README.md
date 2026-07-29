@@ -72,15 +72,13 @@ IOTA domain types and delegates target resolution and proof construction to
 ## Trusted-node verification
 
 ```ts
-const resolver = client.committeeResolver();
-const committee = await resolver.resolve(proof.checkpointEpoch);
-
-proof.verify(committee);
+const verifier = client.trustedNodeVerifier();
+await verifier.verify(proof);
 ```
 
-`CommitteeResolver` asks the client's node for the committee governing the
-proof checkpoint epoch. Rust validates the returned committee representation
-and performs proof verification locally with `poi-rs`.
+The verifier asks the client's node for the committee governing the proof
+checkpoint epoch. Rust validates the returned committee representation and
+performs proof verification locally with `poi-rs`.
 
 This mode places the node inside the caller's trust boundary. It does not
 authenticate committee lineage from genesis. To authenticate committee
@@ -92,10 +90,9 @@ import { Committee } from "@iota/poi-wasm";
 
 const committeeJson = await readFile("trusted-committee.json", "utf8");
 const trustedGenesisCommittee = Committee.fromJSON(committeeJson);
-const resolver = client.anchoredCommitteeResolver(trustedGenesisCommittee);
-const committee = await resolver.resolve(proof.checkpointEpoch);
+const verifier = client.anchoredVerifier(trustedGenesisCommittee);
 
-proof.verify(committee);
+await verifier.verify(proof);
 ```
 
 The committee JSON uses the Rust `Committee` fields `epoch` and
@@ -103,10 +100,15 @@ The committee JSON uses the Rust `Committee` fields `epoch` and
 requires total voting power to equal 10,000, and reconstructs the committee's
 derived lookup state.
 
-The resolver fetches the certified checkpoint in each epoch-close proof,
+The verifier fetches the certified checkpoint in each epoch-close proof,
 verifies it with the current committee, and only then accepts and caches the
 next committee. The node supplies evidence but is not trusted to choose the
 committee.
+
+Retain the verifier when checking multiple proofs so its authenticated
+committee cache is reused. `CommitteeResolver.resolve(epoch)` and
+`Proof.verify(committee)` remain available for callers that need the
+lower-level committee or offline-verification APIs.
 
 ## Package verification
 

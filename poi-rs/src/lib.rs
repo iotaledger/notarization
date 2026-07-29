@@ -11,6 +11,8 @@ pub(crate) type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
 pub mod builder;
 /// Verified committee lineage caches for anchored resolution.
 pub mod cache;
+/// Convenient source-backed client for proof construction and verification.
+pub mod client;
 /// Committee resolution for checkpoint verification.
 pub mod committee;
 /// Proof data types and offline verification.
@@ -22,7 +24,10 @@ pub mod target;
 
 pub use builder::{ProofBuilder, ProofBuilderError, ProofTarget};
 pub use cache::{CommitteeCache, CommitteeCacheError, MemoryCommitteeCache};
-pub use committee::{CommitteeResolutionError, CommitteeResolutionErrorKind, CommitteeResolver};
+pub use client::PoiClient;
+pub use committee::{
+    CommitteeResolutionError, CommitteeResolutionErrorKind, CommitteeResolver, ProofVerificationError,
+};
 pub use proof::{
     Proof, ProofVerifier, ProofVersion, SerializationError, SerializationErrorKind, TransactionProof, VerifyError,
     VerifyErrorKind, VersionError,

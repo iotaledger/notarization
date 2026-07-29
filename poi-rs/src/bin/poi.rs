@@ -15,7 +15,7 @@ use iota_config::{IOTA_GENESIS_FILENAME, genesis::Genesis, iota_config_dir};
 use iota_grpc_client::Client as GrpcClient;
 use iota_sdk_types::{ObjectId, TransactionDigest};
 use iota_types::event::EventID;
-use poi_rs::{CommitteeResolver, Proof, ProofBuilder, ProofVerifier};
+use poi_rs::{PoiClient, Proof};
 
 const GENESIS_CACHE_DIR: &str = "poi";
 const MAINNET_GENESIS_URL: &str = "https://dbfiles.mainnet.iota.cafe/genesis.blob";
@@ -103,7 +103,8 @@ impl CreateArgs {
             event,
             output,
         } = self;
-        let mut builder = ProofBuilder::from_grpc_client(endpoint.client()?);
+        let client = PoiClient::from_grpc_client(endpoint.client()?);
+        let mut builder = client.proof();
 
         if let Some(transaction) = transaction {
             builder = builder.transaction(transaction);
@@ -172,14 +173,10 @@ impl VerifyArgs {
         let trusted_committee = genesis
             .committee()
             .context("failed to read committee from genesis blob")?;
-        let resolver = CommitteeResolver::anchor(self.endpoint.client()?, trusted_committee);
-        let committee = resolver
-            .resolve(proof.checkpoint_summary.epoch())
-            .await
-            .context("failed to authenticate the proof checkpoint committee")?;
-
-        ProofVerifier::new(&committee)
+        PoiClient::from_grpc_client(self.endpoint.client()?)
+            .anchored_verifier(trusted_committee)
             .verify(&proof)
+            .await
             .context("proof verification failed")?;
         writeln!(io::stdout().lock(), "valid").context("failed to write verification result to stdout")
     }

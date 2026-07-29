@@ -62,23 +62,21 @@ export class PoiClient {
   }
 
   /**
-   * Creates a resolver that trusts this client's node for committee data.
+   * Creates a verifier that trusts this client's node for committee data.
    *
-   * The resolver does not authenticate committee lineage from genesis.
+   * The verifier does not authenticate committee lineage from genesis.
    */
-  public committeeResolver(): CommitteeResolver {
+  public trustedNodeVerifier(): CommitteeResolver {
     return new CommitteeResolver(this.#source);
   }
 
   /**
-   * Creates a resolver anchored at an already trusted committee.
+   * Creates a verifier anchored at an already trusted committee.
    *
-   * The resolver authenticates each epoch-close checkpoint before accepting
+   * The verifier authenticates each epoch-close checkpoint before accepting
    * and caching the next committee.
    */
-  public anchoredCommitteeResolver(
-    committee: Committee,
-  ): CommitteeResolver {
+  public anchoredVerifier(committee: Committee): CommitteeResolver {
     return CommitteeResolver.anchor(this.#source, committee);
   }
 }

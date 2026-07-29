@@ -11,7 +11,9 @@ use iota_types::{
     messages_checkpoint::CertifiedCheckpointSummary,
 };
 
-use crate::{BoxError, CommitteeCache, CommitteeCacheError, MemoryCommitteeCache, Source};
+use crate::{
+    BoxError, CommitteeCache, CommitteeCacheError, MemoryCommitteeCache, Proof, ProofVerifier, Source, VerifyError,
+};
 
 /// Error returned when a committee cannot be resolved for an epoch.
 #[derive(Debug, thiserror::Error)]
@@ -116,6 +118,26 @@ pub enum CommitteeResolutionErrorKind {
     },
 }
 
+/// Error returned when committee resolution or proof verification fails.
+#[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
+pub enum ProofVerificationError {
+    /// The committee required by the proof could not be resolved.
+    #[error("failed to resolve the committee required by the proof")]
+    CommitteeResolution {
+        /// Committee-resolution failure.
+        #[source]
+        source: CommitteeResolutionError,
+    },
+    /// Offline proof verification failed.
+    #[error("proof verification failed")]
+    Proof {
+        /// Offline verification failure.
+        #[source]
+        source: VerifyError,
+    },
+}
+
 /// Selects how a resolver establishes trust in committee data.
 #[derive(Clone)]
 enum CommitteeResolution {
@@ -192,6 +214,22 @@ where
                 self.resolve_from_anchor(committee, cache.as_ref(), target_epoch).await
             }
         }
+    }
+
+    /// Resolves the committee required by `proof` and verifies the proof with it.
+    ///
+    /// Committee resolution may fetch committee or epoch-close evidence from
+    /// the source. The final proof verification is performed locally by
+    /// [`ProofVerifier`].
+    pub async fn verify(&self, proof: &Proof) -> Result<(), ProofVerificationError> {
+        let committee = self
+            .resolve(proof.checkpoint_summary.epoch())
+            .await
+            .map_err(|source| ProofVerificationError::CommitteeResolution { source })?;
+
+        ProofVerifier::new(&committee)
+            .verify(proof)
+            .map_err(|source| ProofVerificationError::Proof { source })
     }
 
     /// Fetches a committee directly from a node inside the caller's trust boundary.

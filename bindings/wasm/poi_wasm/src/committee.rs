@@ -13,6 +13,7 @@ use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 use crate::{
     error::{PoiError, WasmResult},
+    proof::WasmProof,
     source::LedgerSource,
 };
 
@@ -102,5 +103,10 @@ impl WasmCommitteeResolver {
     /// Resolves the committee governing `epoch`.
     pub async fn resolve(&self, epoch: u64) -> Result<WasmCommittee, JsValue> {
         self.0.resolve(epoch).await.map(WasmCommittee).wasm_result()
+    }
+
+    /// Resolves the committee required by `proof` and verifies the proof with it.
+    pub async fn verify(&self, proof: &WasmProof) -> Result<(), JsValue> {
+        self.0.verify(&proof.0).await.wasm_result()
     }
 }

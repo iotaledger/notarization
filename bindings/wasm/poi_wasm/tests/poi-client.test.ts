@@ -22,4 +22,5 @@ test("creates a client for an explicit endpoint", () => {
   const client = new PoiClient("http://localhost:9000");
 
   assert.equal(typeof client.proof().transaction, "function");
+  assert.equal(typeof client.trustedNodeVerifier().verify, "function");
 });

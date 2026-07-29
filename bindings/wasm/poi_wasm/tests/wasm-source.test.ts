@@ -115,6 +115,26 @@ test("the WASM proof can be deserialized for verification", async () => {
   assert.doesNotThrow(() => proof.validate());
 });
 
+test("the anchored verifier resolves the committee and verifies the proof", async () => {
+  const [committeeJson, proofJson] = await Promise.all([
+    readFile(
+      new URL("../../../../poi-rs/tests/fixtures/current/committee.json", import.meta.url),
+      "utf8",
+    ),
+    readFile(
+      new URL("../../../../poi-rs/tests/fixtures/current/transaction.json", import.meta.url),
+      "utf8",
+    ),
+  ]);
+  const committee = Committee.fromJSON(committeeJson);
+  const proof = Proof.fromJSON(proofJson);
+  const source = {} as LedgerSource;
+
+  await assert.doesNotReject(
+    CommitteeResolver.anchor(source, committee).verify(proof),
+  );
+});
+
 test("the anchored resolver returns its trusted committee without fetching it again", async () => {
   const fixture = JSON.parse(
     await readFile(
