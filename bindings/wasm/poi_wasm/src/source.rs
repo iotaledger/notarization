@@ -54,16 +54,6 @@ extern "C" {
     async fn epoch_close_summary(this: &LedgerSource, epoch: u64) -> Result<JsValue, JsValue>;
 }
 
-pub(crate) struct SourceAdapter {
-    source: LedgerSource,
-}
-
-impl SourceAdapter {
-    pub(crate) fn new(source: LedgerSource) -> Self {
-        Self { source }
-    }
-}
-
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct JsTransactionEvidence {
@@ -103,10 +93,9 @@ struct JsCommitteeMember {
 }
 
 #[async_trait(?Send)]
-impl Source for SourceAdapter {
+impl Source for LedgerSource {
     async fn chain_identifier(&self) -> Result<ChainIdentifier, SourceError> {
         let bytes = self
-            .source
             .chain_identifier()
             .await
             .map_err(|source| SourceError::request(PoiError::from_js(source)))?
@@ -127,7 +116,6 @@ impl Source for SourceAdapter {
     ) -> Result<Option<SourceTransaction>, SourceError> {
         let digest = Uint8Array::from(transaction_digest.as_ref());
         let value = self
-            .source
             .transaction(digest)
             .await
             .map_err(|source| SourceError::request(PoiError::from_js(source)))?;
@@ -145,7 +133,6 @@ impl Source for SourceAdapter {
     async fn object(&self, object_id: ObjectId, version: Option<Version>) -> Result<Option<Object>, SourceError> {
         let object_id_bytes = Uint8Array::from(object_id.as_ref());
         let value = self
-            .source
             .object(object_id_bytes, version.map(|version| version.as_u64()))
             .await
             .map_err(|source| SourceError::request(PoiError::from_js(source)))?;
@@ -163,7 +150,6 @@ impl Source for SourceAdapter {
 
     async fn checkpoint(&self, sequence_number: u64) -> Result<SourceCheckpoint, SourceError> {
         let value = self
-            .source
             .checkpoint(sequence_number)
             .await
             .map_err(|source| SourceError::request(PoiError::from_js(source)))?;
@@ -175,7 +161,6 @@ impl Source for SourceAdapter {
 
     async fn committee(&self, epoch: EpochId) -> Result<Committee, SourceError> {
         let value = self
-            .source
             .committee(epoch)
             .await
             .map_err(|source| SourceError::request(PoiError::from_js(source)))?;
@@ -187,7 +172,6 @@ impl Source for SourceAdapter {
 
     async fn current_epoch(&self) -> Result<Option<EpochId>, SourceError> {
         let value = self
-            .source
             .current_epoch()
             .await
             .map_err(|source| SourceError::request(PoiError::from_js(source)))?;
@@ -204,7 +188,6 @@ impl Source for SourceAdapter {
 
     async fn epoch_close_summary(&self, epoch: EpochId) -> Result<Option<CertifiedCheckpointSummary>, SourceError> {
         let value = self
-            .source
             .epoch_close_summary(epoch)
             .await
             .map_err(|source| SourceError::request(PoiError::from_js(source)))?;

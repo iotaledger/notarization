@@ -17,3 +17,9 @@ test("creates clients for every supported public network", () => {
     assert.equal(typeof client.proof().transaction, "function");
   }
 });
+
+test("creates a client for an explicit endpoint", () => {
+  const client = new PoiClient("http://localhost:9000");
+
+  assert.equal(typeof client.proof().transaction, "function");
+});

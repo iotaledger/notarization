@@ -38,10 +38,12 @@ import { PoiClient } from "@iota/poi-wasm";
 const mainnet = PoiClient.mainnet();
 const testnet = PoiClient.testnet();
 const devnet = PoiClient.devnet();
+const custom = new PoiClient("http://localhost:9000");
 ```
 
 No network is selected implicitly. The named constructors use the public IOTA
-gRPC endpoints.
+gRPC endpoints. Construct `PoiClient` with an explicit endpoint for private
+nodes, archives, local networks, or alternative endpoints.
 
 ## Proof construction
 
@@ -85,9 +87,21 @@ authenticate committee lineage from genesis. To authenticate committee
 lineage from an already trusted committee:
 
 ```ts
+import { readFile } from "node:fs/promises";
+import { Committee } from "@iota/poi-wasm";
+
+const committeeJson = await readFile("trusted-committee.json", "utf8");
+const trustedGenesisCommittee = Committee.fromJSON(committeeJson);
 const resolver = client.anchoredCommitteeResolver(trustedGenesisCommittee);
-await resolver.resolve(proof.checkpointEpoch);
+const committee = await resolver.resolve(proof.checkpointEpoch);
+
+proof.verify(committee);
 ```
+
+The committee JSON uses the Rust `Committee` fields `epoch` and
+`voting_rights`. Rust/WASM validates public keys, rejects duplicate authorities,
+requires total voting power to equal 10,000, and reconstructs the committee's
+derived lookup state.
 
 The resolver fetches the certified checkpoint in each epoch-close proof,
 verifies it with the current committee, and only then accepts and caches the

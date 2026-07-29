@@ -9,7 +9,7 @@ use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 use crate::committee::WasmCommittee;
 use crate::error::WasmResult;
-use crate::source::{LedgerSource, SourceAdapter};
+use crate::source::LedgerSource;
 
 /// Proof of Inclusion evidence constructed by `poi-rs`.
 #[wasm_bindgen(js_name = Proof)]
@@ -57,14 +57,14 @@ impl WasmProof {
 
 /// Builds Proof of Inclusion evidence with an internal JavaScript ledger source.
 #[wasm_bindgen(js_name = ProofBuilder)]
-pub struct WasmProofBuilder(ProofBuilder<SourceAdapter>);
+pub struct WasmProofBuilder(ProofBuilder<LedgerSource>);
 
 #[wasm_bindgen(js_class = ProofBuilder)]
 impl WasmProofBuilder {
     /// Creates a builder backed by the provided JavaScript ledger source.
     #[wasm_bindgen(constructor)]
     pub fn new(source: LedgerSource) -> Self {
-        Self(ProofBuilder::new(SourceAdapter::new(source)))
+        Self(ProofBuilder::new(source))
     }
 
     /// Adds a transaction target.

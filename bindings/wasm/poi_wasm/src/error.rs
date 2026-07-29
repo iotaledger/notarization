@@ -10,6 +10,8 @@ pub(crate) enum PoiError {
     #[error("{0}")]
     JavaScript(String),
     #[error("{0}")]
+    InvalidInput(String),
+    #[error("{0}")]
     InvalidResponse(String),
 }
 
@@ -27,6 +29,10 @@ impl PoiError {
 
     pub(crate) fn invalid_response(message: impl Into<String>) -> Self {
         Self::InvalidResponse(message.into())
+    }
+
+    pub(crate) fn invalid_input(message: impl Into<String>) -> Self {
+        Self::InvalidInput(message.into())
     }
 }
 

@@ -29,13 +29,15 @@ export interface PoiClientOptions {
 /**
  * Creates Proof of Inclusion builders backed by an IOTA ledger endpoint.
  *
- * Use one of the named public-network constructors, or {@link PoiClient.custom}
- * for a private node, archive, local network, or alternative endpoint.
+ * Use one of the named public-network constructors, or construct a client with
+ * an explicit endpoint for a private node, archive, local network, or
+ * alternative endpoint.
  */
 export class PoiClient {
   readonly #source: LedgerSource;
 
-  private constructor(endpoint: string, options: PoiClientOptions = {}) {
+  /** Creates a client connected to an explicit IOTA gRPC endpoint. */
+  public constructor(endpoint: string, options: PoiClientOptions = {}) {
     this.#source = new LedgerSource(endpoint, options);
   }
 
