@@ -3,16 +3,18 @@
 
 mod utils;
 
+use std::fs::File;
+
+use iota_config::IOTA_GENESIS_FILENAME;
 use iota_types::event::EventID;
 use poi_rs::PoiClient;
-use utils::{
-    advance_to_epoch, genesis_committee, grpc_client, object_transfer_tx, staking_tx, start_test_cluster, transfer_tx,
-};
+use utils::{advance_to_epoch, grpc_client, object_transfer_tx, staking_tx, start_test_cluster, transfer_tx};
 
 #[tokio::test]
-async fn anchored_verifier_walks_from_genesis_and_verifies_the_proof() {
+async fn anchored_verification_walks_from_genesis_and_verifies_the_proof() {
     let cluster = start_test_cluster().await;
-    let trusted_committee = genesis_committee(&cluster);
+    let genesis = File::open(cluster.swarm.dir().join(IOTA_GENESIS_FILENAME))
+        .expect("test cluster genesis blob must be available");
     advance_to_epoch(&cluster, 1).await;
     let transfer = transfer_tx(&cluster).await;
     let client = PoiClient::from_grpc_client(grpc_client(&cluster));
@@ -24,10 +26,11 @@ async fn anchored_verifier_walks_from_genesis_and_verifies_the_proof() {
         .expect("transaction proof must be constructed");
 
     client
-        .anchored_verifier(trusted_committee)
+        .anchored_at_genesis(genesis)
+        .expect("test cluster genesis blob must load")
         .verify(&proof)
         .await
-        .expect("anchored verifier must authenticate the committee and verify the proof");
+        .expect("anchored verification must authenticate the committee and verify the proof");
 }
 
 #[tokio::test]
@@ -44,7 +47,7 @@ async fn transaction_proof_verifies_with_the_resolved_committee() {
         .expect("transaction proof must be constructed");
 
     client
-        .trusted_node_verifier()
+        .trusted_node()
         .verify(&proof)
         .await
         .expect("transaction proof must verify");
@@ -65,7 +68,7 @@ async fn object_proof_verifies_with_the_resolved_committee() {
 
     assert_eq!(proof.target.objects[0].0, transfer.gas_object);
     client
-        .trusted_node_verifier()
+        .trusted_node()
         .verify(&proof)
         .await
         .expect("object proof must verify");
@@ -89,7 +92,7 @@ async fn event_proof_verifies_with_the_resolved_committee() {
         .expect("event proof must be constructed");
 
     client
-        .trusted_node_verifier()
+        .trusted_node()
         .verify(&proof)
         .await
         .expect("event proof must verify");
@@ -111,7 +114,7 @@ async fn multiple_object_targets_share_one_verified_transaction_proof() {
     assert_eq!(proof.transaction_proof.transaction.digest(), &transfer.digest);
     assert_eq!(proof.target.objects.len(), 2);
     client
-        .trusted_node_verifier()
+        .trusted_node()
         .verify(&proof)
         .await
         .expect("stacked object proof must verify");
@@ -140,7 +143,7 @@ async fn object_and_event_targets_share_one_verified_transaction_proof() {
     assert_eq!(proof.target.objects.len(), 1);
     assert_eq!(proof.target.events.len(), 1);
     client
-        .trusted_node_verifier()
+        .trusted_node()
         .verify(&proof)
         .await
         .expect("mixed target proof must verify");

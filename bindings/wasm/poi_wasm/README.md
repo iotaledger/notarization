@@ -72,7 +72,7 @@ IOTA domain types and delegates target resolution and proof construction to
 ## Trusted-node verification
 
 ```ts
-const verifier = client.trustedNodeVerifier();
+const verifier = client.trustedNode();
 await verifier.verify(proof);
 ```
 
@@ -86,19 +86,19 @@ lineage from an already trusted committee:
 
 ```ts
 import { readFile } from "node:fs/promises";
-import { Committee } from "@iota/poi-wasm";
 
-const committeeJson = await readFile("trusted-committee.json", "utf8");
-const trustedGenesisCommittee = Committee.fromJSON(committeeJson);
-const verifier = client.anchoredVerifier(trustedGenesisCommittee);
+const trustedGenesisBlob = await readFile("genesis.blob");
+const verifier = client.anchoredAtGenesis(trustedGenesisBlob);
 
 await verifier.verify(proof);
 ```
 
-The committee JSON uses the Rust `Committee` fields `epoch` and
-`voting_rights`. Rust/WASM validates public keys, rejects duplicate authorities,
-requires total voting power to equal 10,000, and reconstructs the committee's
-derived lookup state.
+`anchoredAtGenesis()` decodes the BCS-encoded IOTA genesis blob and extracts its
+committee in Rust. Callers that already possess an extracted trusted committee
+can use `anchoredAt(committee)` instead. `Committee.fromJSON()` accepts the Rust
+`Committee` fields `epoch` and `voting_rights`, validates public keys, rejects
+duplicate authorities, requires total voting power to equal 10,000, and
+reconstructs the committee's derived lookup state.
 
 The verifier fetches the certified checkpoint in each epoch-close proof,
 verifies it with the current committee, and only then accepts and caches the

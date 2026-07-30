@@ -29,6 +29,7 @@ use crate::versioned::{VersionedCheckpointSummary, VersionedEvent, VersionedVali
 #[wasm_bindgen]
 extern "C" {
     /// JavaScript source that owns the generated ledger client.
+    #[derive(Clone)]
     #[wasm_bindgen(typescript_type = "LedgerSource")]
     pub type LedgerSource;
 

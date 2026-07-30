@@ -8,7 +8,6 @@ use iota_grpc_client::Client as GrpcClient;
 use iota_types::{
     committee::{Committee, EpochId},
     error::IotaError,
-    messages_checkpoint::CertifiedCheckpointSummary,
 };
 
 use crate::{
@@ -384,60 +383,52 @@ where
                 )
             })?;
 
-        Self::authenticate_and_store_next_committee(target_epoch, current_committee, summary, cache).await
-    }
-
-    /// Verifies an end-of-epoch summary before accepting its next committee.
-    fn authenticate_next_committee(
-        current_committee: &Committee,
-        summary: CertifiedCheckpointSummary,
-    ) -> Result<Committee, CommitteeResolutionErrorKind> {
         let sequence_number = summary.sequence_number;
         let summary_epoch = summary.epoch();
         if summary_epoch != current_committee.epoch {
-            return Err(CommitteeResolutionErrorKind::InvalidEndOfEpochCheckpoint {
-                epoch: current_committee.epoch,
-                sequence_number,
-                source: Box::new(IotaError::WrongEpoch {
-                    expected_epoch: current_committee.epoch,
-                    actual_epoch: summary_epoch,
-                }),
-            });
+            return Err(CommitteeResolutionError::new(
+                target_epoch,
+                CommitteeResolutionErrorKind::InvalidEndOfEpochCheckpoint {
+                    epoch: current_committee.epoch,
+                    sequence_number,
+                    source: Box::new(IotaError::WrongEpoch {
+                        expected_epoch: current_committee.epoch,
+                        actual_epoch: summary_epoch,
+                    }),
+                },
+            ));
         }
 
         if summary.end_of_epoch_data.is_none() {
-            return Err(CommitteeResolutionErrorKind::NotEndOfEpoch { sequence_number });
+            return Err(CommitteeResolutionError::new(
+                target_epoch,
+                CommitteeResolutionErrorKind::NotEndOfEpoch { sequence_number },
+            ));
         }
 
-        let next_epoch = summary_epoch
-            .checked_add(1)
-            .ok_or(CommitteeResolutionErrorKind::NextEpochOverflow { epoch: summary_epoch })?;
+        let next_epoch = summary_epoch.checked_add(1).ok_or_else(|| {
+            CommitteeResolutionError::new(
+                target_epoch,
+                CommitteeResolutionErrorKind::NextEpochOverflow { epoch: summary_epoch },
+            )
+        })?;
 
         let verified = summary.try_into_verified(current_committee).map_err(|source| {
-            CommitteeResolutionErrorKind::InvalidEndOfEpochCheckpoint {
-                epoch: current_committee.epoch,
-                sequence_number,
-                source: Box::new(source),
-            }
+            CommitteeResolutionError::new(
+                target_epoch,
+                CommitteeResolutionErrorKind::InvalidEndOfEpochCheckpoint {
+                    epoch: current_committee.epoch,
+                    sequence_number,
+                    source: Box::new(source),
+                },
+            )
         })?;
         let next_epoch_committee = &verified
             .end_of_epoch_data
             .as_ref()
             .expect("checked before signature verification")
             .next_epoch_committee;
-
-        Ok(Committee::from_committee_members(next_epoch, next_epoch_committee))
-    }
-
-    /// Authenticates a committee handoff before exposing it through the cache.
-    async fn authenticate_and_store_next_committee(
-        target_epoch: EpochId,
-        current_committee: &Committee,
-        summary: CertifiedCheckpointSummary,
-        cache: &dyn CommitteeCache,
-    ) -> Result<Committee, CommitteeResolutionError> {
-        let next_committee = Self::authenticate_next_committee(current_committee, summary)
-            .map_err(|kind| CommitteeResolutionError::new(target_epoch, kind))?;
+        let next_committee = Committee::from_committee_members(next_epoch, next_epoch_committee);
 
         cache.store(&next_committee).await.map_err(|source| {
             CommitteeResolutionError::new(
@@ -465,12 +456,58 @@ impl CommitteeResolver<GrpcClient> {
 mod tests {
     use std::sync::Mutex;
 
-    use iota_sdk_types::{CheckpointSummary, EndOfEpochData, gas::GasCostSummary};
+    use iota_sdk_types::{
+        CheckpointSummary, EndOfEpochData, ObjectId, TransactionDigest, Version, gas::GasCostSummary,
+    };
+    use iota_types::{digests::ChainIdentifier, messages_checkpoint::CertifiedCheckpointSummary, object::Object};
 
     use super::*;
+    use crate::{SourceCheckpoint, SourceError, SourceTransaction};
 
     struct StaticCache {
         committee: Committee,
+    }
+
+    #[derive(Clone)]
+    struct EpochCloseSource {
+        summary: CertifiedCheckpointSummary,
+    }
+
+    #[async_trait::async_trait]
+    impl Source for EpochCloseSource {
+        async fn chain_identifier(&self) -> Result<ChainIdentifier, SourceError> {
+            unreachable!("committee transition does not resolve a chain identifier")
+        }
+
+        async fn transaction(
+            &self,
+            _transaction_digest: TransactionDigest,
+        ) -> Result<Option<SourceTransaction>, SourceError> {
+            unreachable!("committee transition does not resolve transactions")
+        }
+
+        async fn object(&self, _object_id: ObjectId, _version: Option<Version>) -> Result<Option<Object>, SourceError> {
+            unreachable!("committee transition does not resolve objects")
+        }
+
+        async fn checkpoint(&self, _sequence_number: u64) -> Result<SourceCheckpoint, SourceError> {
+            unreachable!("committee transition does not resolve checkpoints")
+        }
+
+        async fn committee(&self, _epoch: EpochId) -> Result<Committee, SourceError> {
+            unreachable!("anchored committee transition does not trust node committees")
+        }
+
+        async fn current_epoch(&self) -> Result<Option<EpochId>, SourceError> {
+            unreachable!("direct committee transition test does not resolve the current epoch")
+        }
+
+        async fn epoch_close_summary(
+            &self,
+            _epoch: EpochId,
+        ) -> Result<Option<CertifiedCheckpointSummary>, SourceError> {
+            Ok(Some(self.summary.clone()))
+        }
     }
 
     #[derive(Clone, Default)]
@@ -546,15 +583,12 @@ mod tests {
     async fn authenticated_summary_stores_exactly_the_verified_committee() {
         let (current_committee, expected_committee, summary) = signed_end_of_epoch_summary(3, true);
         let cache = RecordingCache::default();
+        let resolver = CommitteeResolver::anchor(EpochCloseSource { summary }, current_committee.clone());
 
-        let committee = CommitteeResolver::<GrpcClient>::authenticate_and_store_next_committee(
-            4,
-            &current_committee,
-            summary,
-            &cache,
-        )
-        .await
-        .unwrap();
+        let committee = resolver
+            .fetch_next_committee(4, &current_committee, &cache)
+            .await
+            .unwrap();
 
         assert_eq!(committee, expected_committee);
         assert_eq!(cache.stored(), vec![expected_committee]);
@@ -566,15 +600,12 @@ mod tests {
         let (wrong_committee, _) = Committee::new_simple_test_committee_of_size(6);
         let wrong_committee = Committee::new(3, wrong_committee.voting_rights.iter().cloned().collect());
         let cache = RecordingCache::default();
+        let resolver = CommitteeResolver::anchor(EpochCloseSource { summary }, wrong_committee.clone());
 
-        let error = CommitteeResolver::<GrpcClient>::authenticate_and_store_next_committee(
-            4,
-            &wrong_committee,
-            summary,
-            &cache,
-        )
-        .await
-        .unwrap_err();
+        let error = resolver
+            .fetch_next_committee(4, &wrong_committee, &cache)
+            .await
+            .unwrap_err();
 
         assert!(matches!(
             error.kind,
@@ -591,15 +622,12 @@ mod tests {
     async fn checkpoint_without_end_of_epoch_data_never_reaches_the_cache() {
         let (current_committee, _, summary) = signed_end_of_epoch_summary(3, false);
         let cache = RecordingCache::default();
+        let resolver = CommitteeResolver::anchor(EpochCloseSource { summary }, current_committee.clone());
 
-        let error = CommitteeResolver::<GrpcClient>::authenticate_and_store_next_committee(
-            4,
-            &current_committee,
-            summary,
-            &cache,
-        )
-        .await
-        .unwrap_err();
+        let error = resolver
+            .fetch_next_committee(4, &current_committee, &cache)
+            .await
+            .unwrap_err();
 
         assert!(matches!(
             error.kind,
@@ -614,15 +642,12 @@ mod tests {
         let (wrong_committee, _) = Committee::new_simple_test_committee_of_size(6);
         let wrong_committee = Committee::new(3, wrong_committee.voting_rights.iter().cloned().collect());
         let cache = RecordingCache::default();
+        let resolver = CommitteeResolver::anchor(EpochCloseSource { summary }, wrong_committee.clone());
 
-        let error = CommitteeResolver::<GrpcClient>::authenticate_and_store_next_committee(
-            4,
-            &wrong_committee,
-            summary,
-            &cache,
-        )
-        .await
-        .unwrap_err();
+        let error = resolver
+            .fetch_next_committee(4, &wrong_committee, &cache)
+            .await
+            .unwrap_err();
 
         assert!(matches!(
             error.kind,
@@ -636,15 +661,12 @@ mod tests {
         let (signing_committee, _, summary) = signed_end_of_epoch_summary(4, true);
         let expected_committee = Committee::new(3, signing_committee.voting_rights.iter().cloned().collect());
         let cache = RecordingCache::default();
+        let resolver = CommitteeResolver::anchor(EpochCloseSource { summary }, expected_committee.clone());
 
-        let error = CommitteeResolver::<GrpcClient>::authenticate_and_store_next_committee(
-            4,
-            &expected_committee,
-            summary,
-            &cache,
-        )
-        .await
-        .unwrap_err();
+        let error = resolver
+            .fetch_next_committee(4, &expected_committee, &cache)
+            .await
+            .unwrap_err();
 
         assert!(matches!(
             error.kind,
@@ -661,15 +683,12 @@ mod tests {
     async fn overflowing_next_epoch_never_reaches_the_cache() {
         let (current_committee, _, summary) = signed_end_of_epoch_summary(EpochId::MAX, true);
         let cache = RecordingCache::default();
+        let resolver = CommitteeResolver::anchor(EpochCloseSource { summary }, current_committee.clone());
 
-        let error = CommitteeResolver::<GrpcClient>::authenticate_and_store_next_committee(
-            EpochId::MAX,
-            &current_committee,
-            summary,
-            &cache,
-        )
-        .await
-        .unwrap_err();
+        let error = resolver
+            .fetch_next_committee(EpochId::MAX, &current_committee, &cache)
+            .await
+            .unwrap_err();
 
         assert!(matches!(
             error.kind,
@@ -687,11 +706,9 @@ mod tests {
 
     #[tokio::test]
     async fn anchored_resolution_resumes_from_an_authenticated_cache() {
-        let (current_committee, next_committee, summary) = signed_end_of_epoch_summary(3, true);
-        let authenticated_committee =
-            CommitteeResolver::<GrpcClient>::authenticate_next_committee(&current_committee, summary).unwrap();
+        let (current_committee, next_committee, _) = signed_end_of_epoch_summary(3, true);
         let cache = crate::MemoryCommitteeCache::new();
-        cache.store(&authenticated_committee).await.unwrap();
+        cache.store(&next_committee).await.unwrap();
         let client = GrpcClient::new("http://127.0.0.1:1").unwrap();
         let resolver = CommitteeResolver::anchor_with_cache(client, current_committee, cache);
 
@@ -702,15 +719,13 @@ mod tests {
 
     #[tokio::test]
     async fn anchor_mode_uses_a_committee_cache_by_default() {
-        let (current_committee, next_committee, summary) = signed_end_of_epoch_summary(3, true);
-        let authenticated_committee =
-            CommitteeResolver::<GrpcClient>::authenticate_next_committee(&current_committee, summary).unwrap();
+        let (current_committee, next_committee, _) = signed_end_of_epoch_summary(3, true);
         let client = GrpcClient::new("http://127.0.0.1:1").unwrap();
         let resolver = CommitteeResolver::anchor(client, current_committee);
         let CommitteeResolution::Anchor { cache, .. } = &resolver.mode else {
             panic!("anchor resolver must have a committee cache");
         };
-        cache.store(&authenticated_committee).await.unwrap();
+        cache.store(&next_committee).await.unwrap();
 
         let resolved = resolver.resolve(4).await.unwrap();
 

@@ -3,11 +3,14 @@
 
 mod utils;
 
-use iota_config::genesis::Genesis;
+use std::fs::File;
+
 use iota_grpc_client::{Client as GrpcClient, ReadMask, read_mask_fields::ServiceInfoField};
 use iota_types::committee::Committee;
 use poi_rs::{CommitteeCache, CommitteeResolutionErrorKind, CommitteeResolver, MemoryCommitteeCache};
 use utils::{advance_to_epoch, genesis_committee, grpc_client, start_test_cluster};
+
+use crate::utils::committee_from_genesis;
 
 fn committee_at(epoch: u64) -> Committee {
     let (committee, _) = Committee::new_simple_test_committee();
@@ -104,10 +107,8 @@ async fn live_endpoint_authenticates_committees_from_genesis() {
         "the live network must have at least one closed epoch"
     );
     let target_epoch = current_epoch.min(10);
-    let trusted_committee = Genesis::load(genesis_path)
-        .expect("trusted genesis blob must load")
-        .committee()
-        .expect("trusted genesis blob must contain a committee");
+    let genesis = File::open(genesis_path).expect("trusted genesis blob must be available");
+    let trusted_committee = committee_from_genesis(genesis).expect("trusted genesis committee must load");
     let expected = CommitteeResolver::node(client.clone())
         .resolve(target_epoch)
         .await

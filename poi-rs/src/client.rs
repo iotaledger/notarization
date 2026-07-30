@@ -1,9 +1,20 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+use std::io::Read;
+
 #[cfg(feature = "native-grpc")]
 use iota_grpc_client::Client as GrpcClient;
-use iota_types::committee::Committee;
+use iota_sdk_types::CheckpointContents;
+use iota_types::{
+    committee::Committee,
+    effects::{TransactionEffects, TransactionEvents},
+    iota_system_state::{IotaSystemStateTrait, get_iota_system_state},
+    messages_checkpoint::CertifiedCheckpointSummary,
+    object::Object,
+    transaction::Transaction,
+};
+use serde::Deserialize;
 
 use crate::{CommitteeResolver, ProofBuilder, Source};
 
@@ -29,20 +40,48 @@ where
         ProofBuilder::new(self.source.clone())
     }
 
-    /// Creates a verifier that trusts this client's source for committee data.
+    /// Configures verification to trust this client's source for committee data.
     ///
-    /// This mode does not authenticate committee lineage. Use it only when the
+    /// This does not authenticate committee lineage. Use it only when the
     /// source is inside the caller's trust boundary.
-    pub fn trusted_node_verifier(&self) -> CommitteeResolver<S> {
+    pub fn trusted_node(&self) -> CommitteeResolver<S> {
         CommitteeResolver::node(self.source.clone())
     }
 
-    /// Creates a verifier anchored at an already trusted committee.
+    /// Configures verification to anchor at an already trusted committee.
     ///
-    /// The verifier authenticates every epoch-close checkpoint from the trusted
-    /// committee up to the epoch required by each proof.
-    pub fn anchored_verifier(&self, trusted_committee: Committee) -> CommitteeResolver<S> {
+    /// Every epoch-close checkpoint from the trusted committee up to the epoch
+    /// required by each proof is authenticated before that proof is verified.
+    pub fn anchored_at(&self, trusted_committee: Committee) -> CommitteeResolver<S> {
         CommitteeResolver::anchor(self.source.clone(), trusted_committee)
+    }
+
+    /// Configures verification to anchor at the committee contained in a trusted genesis blob.
+    ///
+    /// The reader must contain the BCS-encoded `genesis.blob` for the proof's
+    /// network. The blob establishes the caller's trust anchor.
+    pub fn anchored_at_genesis(
+        &self,
+        reader: impl Read,
+    ) -> Result<CommitteeResolver<S>, Box<dyn std::error::Error + 'static>> {
+        #[allow(dead_code)]
+        #[derive(Deserialize)]
+        struct GenesisBlob {
+            checkpoint: CertifiedCheckpointSummary,
+            checkpoint_contents: CheckpointContents,
+            transaction: Transaction,
+            effects: TransactionEffects,
+            events: TransactionEvents,
+            objects: Vec<Object>,
+        }
+
+        let genesis: GenesisBlob = bcs::from_reader(reader)?;
+        let objects = genesis.objects.as_slice();
+
+        let system_state = get_iota_system_state(&objects)?;
+        let committee = system_state.get_current_epoch_committee().committee().clone();
+
+        Ok(CommitteeResolver::anchor(self.source.clone(), committee))
     }
 }
 

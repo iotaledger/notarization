@@ -7,7 +7,8 @@ use iota_types::{
     base_types::AuthorityName,
     committee::{Committee, EpochId, StakeUnit, TOTAL_VOTING_POWER},
 };
-use poi_rs::CommitteeResolver;
+use js_sys::Uint8Array;
+use poi_rs::{CommitteeResolver, PoiClient};
 use serde::Deserialize;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
@@ -98,6 +99,18 @@ impl WasmCommitteeResolver {
     /// committee up to the requested epoch.
     pub fn anchor(source: LedgerSource, committee: &WasmCommittee) -> Self {
         Self(CommitteeResolver::anchor(source, committee.0.clone()))
+    }
+
+    /// Creates a resolver anchored at the committee contained in a trusted genesis blob.
+    #[wasm_bindgen(js_name = anchorAtGenesis)]
+    pub fn anchor_at_genesis(source: LedgerSource, genesis_blob: Uint8Array) -> Result<Self, JsValue> {
+        let bytes = genesis_blob.to_vec();
+        let resolver = PoiClient::new(source)
+            .anchored_at_genesis(bytes.as_slice())
+            .map_err(|error| PoiError::invalid_input(format!("failed to load trusted genesis blob: {error}")))
+            .wasm_result()?;
+
+        Ok(Self(resolver))
     }
 
     /// Resolves the committee governing `epoch`.

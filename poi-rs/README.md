@@ -64,20 +64,22 @@ For the common source-backed workflow, create a verifier from the same `PoiClien
 required by the proof and then performs offline proof verification:
 
 ```rust,no_run
-use iota_types::committee::Committee;
+use std::fs::File;
+
 use poi_rs::{PoiClient, Proof};
 
-# async fn example(proof: &Proof, trusted_genesis_committee: Committee) -> Result<(), Box<dyn std::error::Error>> {
+# async fn example(proof: &Proof) -> Result<(), Box<dyn std::error::Error>> {
 let client = PoiClient::testnet()?;
-let verifier = client.anchored_verifier(trusted_genesis_committee);
+let verifier = client.anchored_at_genesis(File::open("genesis.blob")?)?;
 
 verifier.verify(proof).await?;
 # Ok(())
 # }
 ```
 
-`PoiClient::trusted_node_verifier()` is available when the connected node is explicitly inside the caller's trust
-boundary. `PoiClient::anchored_verifier()` instead authenticates committee lineage from the supplied trusted committee.
+`PoiClient::trusted_node()` is available when the connected node is explicitly inside the caller's trust boundary.
+`PoiClient::anchored_at_genesis()` loads the anchor committee from a trusted BCS-encoded genesis blob.
+`PoiClient::anchored_at()` accepts an already extracted trusted committee instead.
 Retain the verifier when checking multiple proofs so its authenticated committee cache is reused.
 
 `ProofVerifier` remains the offline verification entry point for callers that already possess the authoritative

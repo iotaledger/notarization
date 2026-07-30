@@ -28,6 +28,7 @@ cli = [
 [dependencies]
 anyhow = { workspace = true, optional = true }
 async-trait.workspace = true
+bcs.workspace = true
 clap = { workspace = true, optional = true }
 iota-grpc-client = { workspace = true, optional = true }
 iota-grpc-types = { workspace = true, optional = true }
