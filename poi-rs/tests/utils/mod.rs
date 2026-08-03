@@ -15,6 +15,7 @@ use iota_types::{committee::Committee, digests::ChainIdentifier};
 use test_cluster::{TestCluster, TestClusterBuilder};
 
 pub mod proofs;
+pub mod sources;
 
 pub fn committee_at(epoch: u64) -> Committee {
     let (committee, _) = Committee::new_simple_test_committee();

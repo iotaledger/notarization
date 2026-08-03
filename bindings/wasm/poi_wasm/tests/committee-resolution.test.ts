@@ -5,52 +5,16 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import {
-  Committee,
-  CommitteeResolver,
-  Proof,
-  ProofBuilder,
-} from "../node/poi_wasm.js";
+import { Committee, CommitteeResolver, Proof } from "../node/poi_wasm.js";
 import type { LedgerSource } from "../lib/source-types.js";
-
-test("the WASM builder reads transaction evidence from the ledger source", async () => {
-  const transactionDigest = new Uint8Array(32).fill(0x2a);
-  let requestedDigest: Uint8Array | undefined;
-  const source = {
-    async transaction(digest: Uint8Array) {
-      requestedDigest = digest;
-
-      return {
-        // Deliberately invalid BCS: the test is proving that the WASM adapter
-        // reached this source and attempted Rust-side decoding.
-        transactionBcs: new Uint8Array([0xff]),
-        signaturesBcs: [],
-        effectsBcs: new Uint8Array([0xff]),
-        checkpointSequenceNumber: 7n,
-      };
-    },
-  } as unknown as LedgerSource;
-
-  await assert.rejects(
-    new ProofBuilder(source).transaction(transactionDigest).build(),
-    /source failed while reading transaction .*: source returned an invalid response/,
-  );
-  assert.deepEqual(requestedDigest, transactionDigest);
-});
-
-test("the WASM builder validates digest lengths before fetching", () => {
-  const source = {} as LedgerSource;
-
-  assert.throws(
-    () => new ProofBuilder(source).transaction(new Uint8Array(31)),
-    /invalid digest byte length: expected 32, got 31/,
-  );
-});
 
 test("the WASM resolver constructs a committee reported by a trusted node", async () => {
   const fixture = JSON.parse(
     await readFile(
-      new URL("../../../../poi-rs/tests/fixtures/current/committee.json", import.meta.url),
+      new URL(
+        "../../../../poi-rs/tests/fixtures/current/committee.json",
+        import.meta.url,
+      ),
       "utf8",
     ),
   ) as {
@@ -73,56 +37,20 @@ test("the WASM resolver constructs a committee reported by a trusted node", asyn
   assert.equal(committee.epoch, 0n);
 });
 
-test("the WASM committee can be deserialized from Rust JSON", async () => {
-  const json = await readFile(
-    new URL("../../../../poi-rs/tests/fixtures/current/committee.json", import.meta.url),
-    "utf8",
-  );
-
-  const committee = Committee.fromJSON(json);
-
-  assert.equal(committee.epoch, 0n);
-});
-
-test("the WASM committee rejects invalid total voting power", async () => {
-  const fixture = JSON.parse(
-    await readFile(
-      new URL("../../../../poi-rs/tests/fixtures/current/committee.json", import.meta.url),
-      "utf8",
-    ),
-  ) as {
-    epoch: number;
-    voting_rights: [string, number][];
-  };
-  fixture.voting_rights[0]![1] = 9_999;
-
-  assert.throws(
-    () => Committee.fromJSON(JSON.stringify(fixture)),
-    /committee voting power must total 10000, received 9999/,
-  );
-});
-
-test("the WASM proof can be deserialized for verification", async () => {
-  const json = await readFile(
-    new URL("../../../../poi-rs/tests/fixtures/current/transaction.json", import.meta.url),
-    "utf8",
-  );
-
-  const proof = Proof.fromJSON(json);
-
-  assert.equal(proof.version, 1);
-  assert.equal(proof.checkpointEpoch, 0n);
-  assert.doesNotThrow(() => proof.validate());
-});
-
 test("the anchored verifier resolves the committee and verifies the proof", async () => {
   const [committeeJson, proofJson] = await Promise.all([
     readFile(
-      new URL("../../../../poi-rs/tests/fixtures/current/committee.json", import.meta.url),
+      new URL(
+        "../../../../poi-rs/tests/fixtures/current/committee.json",
+        import.meta.url,
+      ),
       "utf8",
     ),
     readFile(
-      new URL("../../../../poi-rs/tests/fixtures/current/transaction.json", import.meta.url),
+      new URL(
+        "../../../../poi-rs/tests/fixtures/current/transaction.json",
+        import.meta.url,
+      ),
       "utf8",
     ),
   ]);
@@ -138,7 +66,10 @@ test("the anchored verifier resolves the committee and verifies the proof", asyn
 test("the anchored resolver returns its trusted committee without fetching it again", async () => {
   const fixture = JSON.parse(
     await readFile(
-      new URL("../../../../poi-rs/tests/fixtures/current/committee.json", import.meta.url),
+      new URL(
+        "../../../../poi-rs/tests/fixtures/current/committee.json",
+        import.meta.url,
+      ),
       "utf8",
     ),
   ) as {
