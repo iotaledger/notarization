@@ -18,9 +18,9 @@ use utils::proofs::{
 fn valid_transaction_proof_is_accepted() {
     let (committee, proof) = valid_transaction_proof();
 
-    let result = ProofVerifier::new(&committee).verify(&proof);
-
-    assert!(result.is_ok());
+    ProofVerifier::new(&committee)
+        .verify(&proof)
+        .expect("a valid transaction proof must verify");
 }
 
 #[test]
@@ -28,7 +28,9 @@ fn transaction_digest_must_match_the_effects() {
     let (committee, mut proof) = valid_transaction_proof();
     proof.transaction_proof.effects = execution_data().effects;
 
-    let error = ProofVerifier::new(&committee).verify(&proof).unwrap_err();
+    let error = ProofVerifier::new(&committee)
+        .verify(&proof)
+        .expect_err("mismatched transaction effects must be rejected");
 
     assert!(matches!(error.kind, VerifyErrorKind::TransactionDigestMismatch));
 }
@@ -38,7 +40,9 @@ fn events_digest_must_match_the_effects() {
     let (committee, mut proof) = valid_transaction_proof();
     proof.transaction_proof.events = Some(TransactionEvents(Vec::new()));
 
-    let error = ProofVerifier::new(&committee).verify(&proof).unwrap_err();
+    let error = ProofVerifier::new(&committee)
+        .verify(&proof)
+        .expect_err("mismatched transaction events must be rejected");
 
     assert!(matches!(error.kind, VerifyErrorKind::EventsDigestMismatch));
 }
@@ -50,7 +54,9 @@ fn checkpoint_contents_must_match_the_signed_summary() {
     proof.transaction_proof.checkpoint_contents =
         CheckpointContents::new_with_digests_only_for_tests([alternate.digests()]);
 
-    let error = ProofVerifier::new(&committee).verify(&proof).unwrap_err();
+    let error = ProofVerifier::new(&committee)
+        .verify(&proof)
+        .expect_err("checkpoint contents outside the signed summary must be rejected");
 
     assert!(matches!(error.kind, VerifyErrorKind::CheckpointSummary { .. }));
 }
@@ -62,7 +68,9 @@ fn transaction_must_be_present_in_the_checkpoint() {
     proof.transaction_proof.transaction = alternate.transaction;
     proof.transaction_proof.effects = alternate.effects;
 
-    let error = ProofVerifier::new(&committee).verify(&proof).unwrap_err();
+    let error = ProofVerifier::new(&committee)
+        .verify(&proof)
+        .expect_err("a transaction outside the checkpoint must be rejected");
 
     assert!(matches!(error.kind, VerifyErrorKind::TransactionNotInCheckpoint));
 }
@@ -73,7 +81,9 @@ fn committee_target_requires_end_of_epoch_data() {
     let target = next_epoch_committee(&committee);
     let (verifying_committee, proof) = proof_with_targets(ProofTargets::new().set_committee(target), None);
 
-    let error = ProofVerifier::new(&verifying_committee).verify(&proof).unwrap_err();
+    let error = ProofVerifier::new(&verifying_committee)
+        .verify(&proof)
+        .expect_err("a committee target without end-of-epoch data must be rejected");
 
     assert!(matches!(error.kind, VerifyErrorKind::MissingEndOfEpochCommittee));
 }
@@ -87,7 +97,9 @@ fn committee_target_must_match_end_of_epoch_data() {
     let targets = ProofTargets::new().set_committee(wrong);
     let (committee, proof) = proof_with_targets(targets, Some(end_of_epoch_data(&actual)));
 
-    let error = ProofVerifier::new(&committee).verify(&proof).unwrap_err();
+    let error = ProofVerifier::new(&committee)
+        .verify(&proof)
+        .expect_err("a committee target not committed by end-of-epoch data must be rejected");
 
     assert!(matches!(error.kind, VerifyErrorKind::CommitteeMismatch));
 }
@@ -100,7 +112,9 @@ fn object_target_must_match_its_reference() {
     let targets = ProofTargets::new().add_object(object_ref, object);
     let (committee, proof) = proof_with_targets(targets, None);
 
-    let error = ProofVerifier::new(&committee).verify(&proof).unwrap_err();
+    let error = ProofVerifier::new(&committee)
+        .verify(&proof)
+        .expect_err("an object that does not match its reference must be rejected");
 
     assert!(matches!(error.kind, VerifyErrorKind::ObjectReferenceMismatch));
 }
@@ -112,7 +126,9 @@ fn object_target_must_appear_in_the_transaction_effects() {
     let targets = ProofTargets::new().add_object(object_ref, object);
     let (committee, proof) = proof_with_targets(targets, None);
 
-    let error = ProofVerifier::new(&committee).verify(&proof).unwrap_err();
+    let error = ProofVerifier::new(&committee)
+        .verify(&proof)
+        .expect_err("an object absent from the transaction effects must be rejected");
 
     assert!(matches!(error.kind, VerifyErrorKind::ObjectNotFound));
 }
@@ -128,7 +144,9 @@ fn event_target_must_match_the_packaged_event() {
     };
     proof.target = ProofTargets::new().add_event(event_id, target);
 
-    let error = ProofVerifier::new(&committee).verify(&proof).unwrap_err();
+    let error = ProofVerifier::new(&committee)
+        .verify(&proof)
+        .expect_err("an event that does not match the packaged event must be rejected");
 
     assert!(matches!(error.kind, VerifyErrorKind::EventContentsMismatch));
 }
@@ -143,7 +161,9 @@ fn event_target_must_belong_to_the_proven_transaction() {
     };
     proof.target = ProofTargets::new().add_event(event_id, target);
 
-    let error = ProofVerifier::new(&committee).verify(&proof).unwrap_err();
+    let error = ProofVerifier::new(&committee)
+        .verify(&proof)
+        .expect_err("an event from another transaction must be rejected");
 
     assert!(matches!(error.kind, VerifyErrorKind::EventTransactionMismatch));
 }
@@ -158,7 +178,9 @@ fn event_sequence_must_exist_in_the_transaction() {
     };
     proof.target = ProofTargets::new().add_event(event_id, target);
 
-    let error = ProofVerifier::new(&committee).verify(&proof).unwrap_err();
+    let error = ProofVerifier::new(&committee)
+        .verify(&proof)
+        .expect_err("an event sequence outside the transaction must be rejected");
 
     assert!(matches!(
         error.kind,

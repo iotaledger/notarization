@@ -3,14 +3,11 @@
 
 mod utils;
 
-use std::sync::{
-    Arc, Mutex,
-    atomic::{AtomicUsize, Ordering},
-};
+use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
+use iota_grpc_client::Client as GrpcClient;
 use iota_sdk_types::{ObjectId, TransactionDigest, Version};
-use iota_types::base_types::dbg_object_id;
 use iota_types::{
     committee::{Committee, EpochId},
     digests::ChainIdentifier,
@@ -18,9 +15,12 @@ use iota_types::{
     messages_checkpoint::CertifiedCheckpointSummary,
     object::Object,
 };
-use poi_rs::{ProofBuilder, ProofBuilderError, ProofTarget, Source, SourceCheckpoint, SourceError, SourceTransaction};
+use poi_rs::{
+    PoiClient, ProofBuilderError, ProofTarget, ProofVerifier, Source, SourceCheckpoint, SourceError, SourceTransaction,
+};
 use utils::{genesis_chain_identifier, grpc_client, object_transfer_tx, staking_tx, start_test_cluster, transfer_tx};
 
+#[derive(Clone)]
 struct RejectingSource;
 
 #[async_trait]
@@ -57,27 +57,84 @@ impl Source for RejectingSource {
     }
 }
 
+#[derive(Clone)]
 struct RecordingSource {
-    requests: Arc<AtomicUsize>,
+    source: GrpcClient,
     transactions: Arc<Mutex<Vec<TransactionDigest>>>,
+    object_override: Option<Object>,
+}
+
+impl RecordingSource {
+    fn new(source: GrpcClient, transactions: Arc<Mutex<Vec<TransactionDigest>>>) -> Self {
+        Self {
+            source,
+            transactions,
+            object_override: None,
+        }
+    }
+
+    fn with_object_override(mut self, object: Object) -> Self {
+        self.object_override = Some(object);
+        self
+    }
 }
 
 #[async_trait]
 impl Source for RecordingSource {
     async fn chain_identifier(&self) -> Result<ChainIdentifier, SourceError> {
-        unreachable!("rejected transactions do not resolve a chain identifier")
+        self.source.chain_identifier().await
     }
 
     async fn transaction(
         &self,
         transaction_digest: TransactionDigest,
     ) -> Result<Option<SourceTransaction>, SourceError> {
-        self.requests.fetch_add(1, Ordering::Relaxed);
         self.transactions
             .lock()
             .expect("recorded transactions lock must not be poisoned")
             .push(transaction_digest);
 
+        self.source.transaction(transaction_digest).await
+    }
+
+    async fn object(&self, object_id: ObjectId, version: Option<Version>) -> Result<Option<Object>, SourceError> {
+        if let Some(object) = &self.object_override {
+            return Ok(Some(object.clone()));
+        }
+
+        self.source.object(object_id, version).await
+    }
+
+    async fn checkpoint(&self, sequence_number: u64) -> Result<SourceCheckpoint, SourceError> {
+        self.source.checkpoint(sequence_number).await
+    }
+
+    async fn committee(&self, epoch: EpochId) -> Result<Committee, SourceError> {
+        self.source.committee(epoch).await
+    }
+
+    async fn current_epoch(&self) -> Result<Option<EpochId>, SourceError> {
+        self.source.current_epoch().await
+    }
+
+    async fn epoch_close_summary(&self, epoch: EpochId) -> Result<Option<CertifiedCheckpointSummary>, SourceError> {
+        self.source.epoch_close_summary(epoch).await
+    }
+}
+
+#[derive(Clone)]
+struct MissingSource;
+
+#[async_trait]
+impl Source for MissingSource {
+    async fn chain_identifier(&self) -> Result<ChainIdentifier, SourceError> {
+        unreachable!("missing targets do not resolve a chain identifier")
+    }
+
+    async fn transaction(
+        &self,
+        _transaction_digest: TransactionDigest,
+    ) -> Result<Option<SourceTransaction>, SourceError> {
         Ok(None)
     }
 
@@ -86,7 +143,7 @@ impl Source for RecordingSource {
     }
 
     async fn checkpoint(&self, _sequence_number: u64) -> Result<SourceCheckpoint, SourceError> {
-        unreachable!("rejected transactions do not resolve a checkpoint")
+        unreachable!("missing targets do not resolve a checkpoint")
     }
 
     async fn committee(&self, _epoch: EpochId) -> Result<Committee, SourceError> {
@@ -103,14 +160,15 @@ impl Source for RecordingSource {
 }
 
 #[tokio::test]
-async fn builder_accepts_a_custom_source() {
+async fn client_uses_a_custom_source_for_proof_building() {
     let transaction_digest = TransactionDigest::random();
 
-    let error = ProofBuilder::new(RejectingSource)
+    let error = PoiClient::new(RejectingSource)
+        .proof()
         .transaction(transaction_digest)
         .build()
         .await
-        .unwrap_err();
+        .expect_err("the custom source error must be returned");
 
     let ProofBuilderError::Source { target, source } = error else {
         panic!("custom source error must be preserved");
@@ -120,66 +178,67 @@ async fn builder_accepts_a_custom_source() {
 }
 
 #[tokio::test]
-async fn builder_without_a_target_is_rejected() {
-    let error = ProofBuilder::new(RejectingSource).build().await.unwrap_err();
+async fn proof_requires_at_least_one_target() {
+    let error = PoiClient::new(RejectingSource)
+        .proof()
+        .build()
+        .await
+        .expect_err("a proof without a target must be rejected");
 
     assert!(matches!(error, ProofBuilderError::MissingTarget));
 }
 
 #[tokio::test]
-async fn stacked_targets_reuse_one_transaction_request() {
-    let transaction_digest = TransactionDigest::random();
-    let object_a = dbg_object_id(1);
-    let object_b = dbg_object_id(2);
-    let event_a = EventID {
-        tx_digest: transaction_digest,
+async fn stacked_targets_are_deduplicated_and_reuse_transaction_evidence() {
+    let cluster = start_test_cluster().await;
+    let staking = staking_tx(&cluster).await;
+    let object_id = staking.gas_object.object_id;
+    let event_id = EventID {
+        tx_digest: staking.digest,
         event_seq: 0,
     };
-    let event_b = EventID {
-        tx_digest: transaction_digest,
-        event_seq: 1,
-    };
-    let requests = Arc::new(AtomicUsize::new(0));
     let transactions = Arc::new(Mutex::new(Vec::new()));
+    let source = RecordingSource::new(grpc_client(&cluster), transactions.clone());
 
-    let _ = ProofBuilder::new(RecordingSource {
-        requests: requests.clone(),
-        transactions: transactions.clone(),
-    })
-    .transaction(transaction_digest)
-    .objects([object_a, object_b, object_a])
-    .object(object_b)
-    .events([event_a, event_b, event_a])
-    .event(event_b)
-    .build()
-    .await
-    .unwrap_err();
+    let proof = PoiClient::new(source)
+        .proof()
+        .transaction(staking.digest)
+        .objects([object_id, object_id])
+        .object(object_id)
+        .events([event_id, event_id])
+        .event(event_id)
+        .build()
+        .await
+        .expect("stacked targets from one transaction must produce a proof");
 
-    assert_eq!(requests.load(Ordering::Relaxed), 1);
     assert_eq!(
         *transactions
             .lock()
             .expect("recorded transactions lock must not be poisoned"),
-        vec![transaction_digest]
+        vec![staking.digest]
     );
+    assert_eq!(proof.target.objects.len(), 1);
+    assert_eq!(proof.target.events.len(), 1);
+    ProofVerifier::new(&cluster.committee())
+        .verify(&proof)
+        .expect("the stacked-target proof must verify offline");
 }
 
 #[tokio::test]
-async fn unknown_transaction_returns_a_request_error() {
-    let cluster = start_test_cluster().await;
+async fn transaction_not_returned_by_the_source_is_reported_as_missing() {
     let transaction_digest = TransactionDigest::random();
 
-    let error = ProofBuilder::from_grpc_client(grpc_client(&cluster))
+    let error = PoiClient::new(MissingSource)
+        .proof()
         .transaction(transaction_digest)
         .build()
         .await
-        .unwrap_err();
+        .expect_err("a transaction omitted by the source must be rejected");
 
-    let ProofBuilderError::Source { target, source } = error else {
-        panic!("missing transaction must return a source error");
+    let ProofBuilderError::TargetNotFound { target } = error else {
+        panic!("an omitted transaction must return a target-not-found error");
     };
     assert_eq!(target, ProofTarget::Transaction(transaction_digest));
-    assert!(matches!(source, SourceError::Request { .. }));
 }
 
 #[tokio::test]
@@ -187,7 +246,8 @@ async fn proof_uses_the_genesis_checkpoint_as_its_chain_identifier() {
     let cluster = start_test_cluster().await;
     let transfer = transfer_tx(&cluster).await;
 
-    let proof = ProofBuilder::from_grpc_client(grpc_client(&cluster))
+    let proof = PoiClient::from_grpc_client(grpc_client(&cluster))
+        .proof()
         .transaction(transfer.digest)
         .build()
         .await
@@ -197,21 +257,71 @@ async fn proof_uses_the_genesis_checkpoint_as_its_chain_identifier() {
 }
 
 #[tokio::test]
-async fn unknown_object_returns_a_request_error() {
-    let cluster = start_test_cluster().await;
+async fn object_not_returned_by_the_source_is_reported_as_missing() {
     let object_id = Object::immutable_for_testing().id();
 
-    let error = ProofBuilder::from_grpc_client(grpc_client(&cluster))
+    let error = PoiClient::new(MissingSource)
+        .proof()
         .object(object_id)
         .build()
         .await
-        .unwrap_err();
+        .expect_err("an object omitted by the source must be rejected");
 
-    let ProofBuilderError::Source { target, source } = error else {
-        panic!("missing object must return a source error");
+    let ProofBuilderError::TargetNotFound { target } = error else {
+        panic!("an omitted object must return a target-not-found error");
     };
     assert_eq!(target, ProofTarget::Object(object_id));
-    assert!(matches!(source, SourceError::Request { .. }));
+}
+
+#[tokio::test]
+async fn object_that_does_not_match_the_requested_reference_is_rejected() {
+    let cluster = start_test_cluster().await;
+    let transfer = transfer_tx(&cluster).await;
+    let object_id = transfer.gas_object.object_id;
+    let transactions = Arc::new(Mutex::new(Vec::new()));
+    let source =
+        RecordingSource::new(grpc_client(&cluster), transactions).with_object_override(Object::immutable_for_testing());
+
+    let error = PoiClient::new(source)
+        .proof()
+        .transaction(transfer.digest)
+        .object(object_id)
+        .build()
+        .await
+        .expect_err("an object that does not match the effects reference must be rejected");
+
+    assert!(matches!(
+        error,
+        ProofBuilderError::ObjectReferenceMismatch {
+            object_id: returned_object_id
+        } if returned_object_id == object_id
+    ));
+}
+
+#[tokio::test]
+async fn explicit_transaction_and_event_from_different_transactions_are_rejected_without_fetching() {
+    let transaction_digest = TransactionDigest::new([1; 32]);
+    let event_id = EventID {
+        tx_digest: TransactionDigest::new([2; 32]),
+        event_seq: 0,
+    };
+
+    let error = PoiClient::new(MissingSource)
+        .proof()
+        .transaction(transaction_digest)
+        .event(event_id)
+        .build()
+        .await
+        .expect_err("targets from different transactions must be rejected");
+
+    assert!(matches!(
+        error,
+        ProofBuilderError::TargetTransactionMismatch {
+            target: ProofTarget::Event(target),
+            expected,
+            actual,
+        } if target == event_id && expected == transaction_digest && actual == event_id.tx_digest
+    ));
 }
 
 #[tokio::test]
@@ -223,11 +333,12 @@ async fn event_sequence_outside_the_transaction_is_rejected() {
         event_seq: u64::MAX,
     };
 
-    let error = ProofBuilder::from_grpc_client(grpc_client(&cluster))
+    let error = PoiClient::from_grpc_client(grpc_client(&cluster))
+        .proof()
         .event(event_id)
         .build()
         .await
-        .unwrap_err();
+        .expect_err("an event sequence outside the transaction must be rejected");
 
     let ProofBuilderError::TargetNotFound { target } = error else {
         panic!("missing event must return a target-not-found error");
@@ -246,12 +357,13 @@ async fn object_outside_the_event_transaction_is_rejected() {
         event_seq: 0,
     };
 
-    let error = ProofBuilder::from_grpc_client(grpc_client(&cluster))
+    let error = PoiClient::from_grpc_client(grpc_client(&cluster))
+        .proof()
         .object(object_id)
         .event(event_id)
         .build()
         .await
-        .unwrap_err();
+        .expect_err("an object outside the event transaction must be rejected");
 
     let ProofBuilderError::ObjectNotChangedByTransaction {
         object_id: returned_object_id,
@@ -272,11 +384,12 @@ async fn object_targets_from_different_transactions_are_rejected() {
     let first_object_id = first.objects[1].object_id;
     let second_object_id = second.objects[1].object_id;
 
-    let error = ProofBuilder::from_grpc_client(grpc_client(&cluster))
+    let error = PoiClient::from_grpc_client(grpc_client(&cluster))
+        .proof()
         .objects([first_object_id, second_object_id])
         .build()
         .await
-        .unwrap_err();
+        .expect_err("objects from different transactions must be rejected");
 
     let ProofBuilderError::TargetTransactionMismatch {
         target,

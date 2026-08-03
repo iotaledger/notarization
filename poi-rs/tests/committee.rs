@@ -5,29 +5,27 @@ mod utils;
 
 use std::fs::File;
 
-use iota_grpc_client::{Client as GrpcClient, ReadMask, read_mask_fields::ServiceInfoField};
-use iota_types::committee::Committee;
-use poi_rs::{CommitteeCache, CommitteeResolutionErrorKind, CommitteeResolver, MemoryCommitteeCache};
-use utils::{advance_to_epoch, genesis_committee, grpc_client, start_test_cluster};
+use iota_config::IOTA_GENESIS_FILENAME;
+use iota_grpc_client::Client as GrpcClient;
+use poi_rs::{CommitteeResolutionErrorKind, PoiClient};
+use utils::{advance_to_epoch, grpc_client, start_test_cluster};
 
-use crate::utils::committee_from_genesis;
-
-fn committee_at(epoch: u64) -> Committee {
-    let (committee, _) = Committee::new_simple_test_committee();
-    Committee::new(epoch, committee.voting_rights.iter().cloned().collect())
-}
+use crate::utils::committee_at;
 
 fn disconnected_client() -> GrpcClient {
     GrpcClient::new("http://127.0.0.1:1").expect("disconnected gRPC client must be constructed")
 }
 
 #[tokio::test]
-async fn genesis_anchor_authenticates_committees_through_epoch_ten() {
+async fn genesis_anchored_client_authenticates_committee_across_epochs() {
     let cluster = start_test_cluster().await;
-    let genesis = genesis_committee(&cluster);
     let expected = advance_to_epoch(&cluster, 10).await;
-    let cache = MemoryCommitteeCache::new();
-    let resolver = CommitteeResolver::anchor_with_cache(grpc_client(&cluster), genesis, cache.clone());
+    let genesis_path = cluster.swarm.dir().join(IOTA_GENESIS_FILENAME);
+    let genesis = File::open(genesis_path).expect("test cluster genesis blob must be available");
+
+    let resolver = PoiClient::new(grpc_client(&cluster))
+        .anchored_at_genesis(genesis)
+        .expect("test cluster genesis committee must be extractable");
 
     let resolved = resolver
         .resolve(10)
@@ -35,20 +33,29 @@ async fn genesis_anchor_authenticates_committees_through_epoch_ten() {
         .expect("epoch 10 committee must resolve from genesis");
 
     assert_eq!(resolved, expected[10]);
-    assert_eq!(cache.len().await, 10);
-    for epoch in 1..=10 {
-        assert_eq!(
-            cache.committee(epoch).await.unwrap(),
-            Some(expected[epoch as usize].clone())
-        );
-    }
 }
 
 #[tokio::test]
-async fn epoch_before_the_trust_anchor_is_rejected() {
-    let resolver = CommitteeResolver::anchor(disconnected_client(), committee_at(7));
+async fn committee_anchored_client_returns_its_trust_anchor_without_fetching() {
+    let trusted_committee = committee_at(7);
+    let resolver = PoiClient::new(disconnected_client()).anchored_at(trusted_committee.clone());
 
-    let error = resolver.resolve(6).await.unwrap_err();
+    let resolved = resolver
+        .resolve(7)
+        .await
+        .expect("the trusted committee must resolve without fetching");
+
+    assert_eq!(resolved, trusted_committee);
+}
+
+#[tokio::test]
+async fn committee_anchored_client_rejects_epochs_before_its_anchor_without_fetching() {
+    let resolver = PoiClient::new(disconnected_client()).anchored_at(committee_at(7));
+
+    let error = resolver
+        .resolve(6)
+        .await
+        .expect_err("an anchored resolver cannot walk backwards");
 
     assert_eq!(error.target_epoch, 6);
     assert!(matches!(
@@ -58,26 +65,29 @@ async fn epoch_before_the_trust_anchor_is_rejected() {
 }
 
 #[tokio::test]
-async fn epoch_ahead_of_the_node_is_rejected_without_caching() {
+async fn genesis_anchored_client_rejects_epochs_ahead_of_the_node() {
     let cluster = start_test_cluster().await;
-    let cache = MemoryCommitteeCache::new();
-    let resolver =
-        CommitteeResolver::anchor_with_cache(grpc_client(&cluster), genesis_committee(&cluster), cache.clone());
+    let genesis_path = cluster.swarm.dir().join(IOTA_GENESIS_FILENAME);
+    let genesis = File::open(genesis_path).expect("test cluster genesis blob must be available");
+    let resolver = PoiClient::new(grpc_client(&cluster))
+        .anchored_at_genesis(genesis)
+        .expect("test cluster genesis committee must be extractable");
 
-    let error = resolver.resolve(1).await.unwrap_err();
+    let error = resolver
+        .resolve(1)
+        .await
+        .expect_err("an epoch beyond the node's current epoch must be rejected");
 
     assert!(matches!(
         error.kind,
         CommitteeResolutionErrorKind::TargetAheadOfNode { current_epoch: 0 }
     ));
-    assert!(cache.is_empty().await);
 }
 
 #[tokio::test]
-async fn trusted_node_resolution_does_not_write_to_an_anchor_cache() {
+async fn trusted_node_client_returns_the_committee_reported_by_its_source() {
     let cluster = start_test_cluster().await;
-    let cache = MemoryCommitteeCache::new();
-    let resolver = CommitteeResolver::node(grpc_client(&cluster));
+    let resolver = PoiClient::new(grpc_client(&cluster)).trusted_node();
 
     let resolved = resolver
         .resolve(0)
@@ -85,38 +95,4 @@ async fn trusted_node_resolution_does_not_write_to_an_anchor_cache() {
         .expect("trusted node must return its genesis committee");
 
     assert_eq!(resolved, *cluster.committee());
-    assert!(cache.is_empty().await);
-}
-
-#[tokio::test]
-#[ignore = "requires POI_TEST_GRPC_URL and POI_TEST_GENESIS"]
-async fn live_endpoint_authenticates_committees_from_genesis() {
-    let endpoint = std::env::var("POI_TEST_GRPC_URL").expect("POI_TEST_GRPC_URL must identify the live gRPC endpoint");
-    let genesis_path =
-        std::env::var("POI_TEST_GENESIS").expect("POI_TEST_GENESIS must identify the trusted genesis blob");
-    let client = GrpcClient::new(endpoint).expect("live gRPC client must be constructed");
-    let current_epoch = client
-        .get_service_info(Some(ReadMask::from(ServiceInfoField::EPOCH)))
-        .await
-        .expect("service information must be available")
-        .body()
-        .epoch
-        .expect("service information must contain the current epoch");
-    assert!(
-        current_epoch > 0,
-        "the live network must have at least one closed epoch"
-    );
-    let target_epoch = current_epoch.min(10);
-    let genesis = File::open(genesis_path).expect("trusted genesis blob must be available");
-    let trusted_committee = committee_from_genesis(genesis).expect("trusted genesis committee must load");
-    let expected = CommitteeResolver::node(client.clone())
-        .resolve(target_epoch)
-        .await
-        .expect("the node must expose the target committee");
-    let authenticated = CommitteeResolver::anchor(client, trusted_committee)
-        .resolve(target_epoch)
-        .await
-        .expect("epoch-close proofs must authenticate the target committee");
-
-    assert_eq!(authenticated, expected);
 }

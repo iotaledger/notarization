@@ -11,7 +11,7 @@ use poi_rs::PoiClient;
 use utils::{advance_to_epoch, grpc_client, object_transfer_tx, staking_tx, start_test_cluster, transfer_tx};
 
 #[tokio::test]
-async fn anchored_verification_walks_from_genesis_and_verifies_the_proof() {
+async fn client_builds_and_verifies_a_transaction_proof_from_genesis() {
     let cluster = start_test_cluster().await;
     let genesis = File::open(cluster.swarm.dir().join(IOTA_GENESIS_FILENAME))
         .expect("test cluster genesis blob must be available");
@@ -34,27 +34,7 @@ async fn anchored_verification_walks_from_genesis_and_verifies_the_proof() {
 }
 
 #[tokio::test]
-async fn transaction_proof_verifies_with_the_resolved_committee() {
-    let cluster = start_test_cluster().await;
-    let transfer = transfer_tx(&cluster).await;
-    let client = PoiClient::from_grpc_client(grpc_client(&cluster));
-
-    let proof = client
-        .proof()
-        .transaction(transfer.digest)
-        .build()
-        .await
-        .expect("transaction proof must be constructed");
-
-    client
-        .trusted_node()
-        .verify(&proof)
-        .await
-        .expect("transaction proof must verify");
-}
-
-#[tokio::test]
-async fn object_proof_verifies_with_the_resolved_committee() {
+async fn client_builds_and_verifies_an_object_proof_with_a_trusted_node() {
     let cluster = start_test_cluster().await;
     let transfer = transfer_tx(&cluster).await;
     let client = PoiClient::from_grpc_client(grpc_client(&cluster));
@@ -75,7 +55,7 @@ async fn object_proof_verifies_with_the_resolved_committee() {
 }
 
 #[tokio::test]
-async fn event_proof_verifies_with_the_resolved_committee() {
+async fn client_builds_and_verifies_an_event_proof_with_a_trusted_node() {
     let cluster = start_test_cluster().await;
     let staking = staking_tx(&cluster).await;
     let client = PoiClient::from_grpc_client(grpc_client(&cluster));
@@ -99,7 +79,7 @@ async fn event_proof_verifies_with_the_resolved_committee() {
 }
 
 #[tokio::test]
-async fn multiple_object_targets_share_one_verified_transaction_proof() {
+async fn client_builds_one_verified_proof_for_multiple_objects() {
     let cluster = start_test_cluster().await;
     let transfer = object_transfer_tx(&cluster).await;
     let client = PoiClient::from_grpc_client(grpc_client(&cluster));
@@ -121,7 +101,7 @@ async fn multiple_object_targets_share_one_verified_transaction_proof() {
 }
 
 #[tokio::test]
-async fn object_and_event_targets_share_one_verified_transaction_proof() {
+async fn client_builds_one_verified_proof_for_object_and_event_targets() {
     let cluster = start_test_cluster().await;
     let staking = staking_tx(&cluster).await;
     let client = PoiClient::from_grpc_client(grpc_client(&cluster));

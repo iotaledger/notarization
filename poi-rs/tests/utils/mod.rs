@@ -16,6 +16,11 @@ use test_cluster::{TestCluster, TestClusterBuilder};
 
 pub mod proofs;
 
+pub fn committee_at(epoch: u64) -> Committee {
+    let (committee, _) = Committee::new_simple_test_committee();
+    Committee::new(epoch, committee.voting_rights.iter().cloned().collect())
+}
+
 pub struct CheckpointedTransfer {
     pub digest: TransactionDigest,
     pub gas_object: ObjectReference,
@@ -64,7 +69,11 @@ pub async fn transfer_tx(cluster: &TestCluster) -> CheckpointedTransfer {
 }
 
 pub async fn object_transfer_tx(cluster: &TestCluster) -> CheckpointedObjectTransfer {
-    let (sender, mut coins) = cluster.wallet.get_one_account().await.unwrap();
+    let (sender, mut coins) = cluster
+        .wallet
+        .get_one_account()
+        .await
+        .expect("test cluster must contain a funded account");
     let gas = coins.pop().expect("funded account must have a gas coin");
     let object = coins.pop().expect("funded account must have an object to transfer");
     let gas_object_id = gas.object_id;
@@ -95,7 +104,11 @@ pub async fn object_transfer_tx(cluster: &TestCluster) -> CheckpointedObjectTran
 }
 
 pub async fn staking_tx(cluster: &TestCluster) -> CheckpointedStaking {
-    let (sender, mut coins) = cluster.wallet.get_one_account().await.unwrap();
+    let (sender, mut coins) = cluster
+        .wallet
+        .get_one_account()
+        .await
+        .expect("test cluster must contain a funded account");
     let gas = coins.pop().expect("funded account must have a gas coin");
     let stake = coins.pop().expect("funded account must have a stake coin");
     let gas_object_id = gas.object_id;

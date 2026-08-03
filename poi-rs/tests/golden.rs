@@ -9,7 +9,7 @@ const TRANSACTION: &str = include_str!("fixtures/current/transaction.json");
 const OBJECT: &str = include_str!("fixtures/current/object.json");
 const EVENT: &str = include_str!("fixtures/current/event.json");
 
-fn assert_current_format(fixture: &str) -> Proof {
+fn assert_fixture_round_trips_and_verifies(fixture: &str) -> Proof {
     let committee: Committee = serde_json::from_str(COMMITTEE).expect("committee fixture must deserialize");
     let proof = Proof::from_json_slice(fixture.as_bytes()).expect("proof fixture must deserialize");
 
@@ -27,24 +27,24 @@ fn assert_current_format(fixture: &str) -> Proof {
 }
 
 #[test]
-fn current_transaction_fixture_remains_stable() {
-    let proof = assert_current_format(TRANSACTION);
+fn transaction_fixture_round_trips_and_verifies() {
+    let proof = assert_fixture_round_trips_and_verifies(TRANSACTION);
 
     assert!(proof.target().objects.is_empty());
     assert!(proof.target().events.is_empty());
 }
 
 #[test]
-fn current_object_fixture_remains_stable() {
-    let proof = assert_current_format(OBJECT);
+fn object_fixture_round_trips_and_verifies() {
+    let proof = assert_fixture_round_trips_and_verifies(OBJECT);
 
     assert_eq!(proof.target().objects.len(), 1);
     assert!(proof.target().events.is_empty());
 }
 
 #[test]
-fn current_event_fixture_remains_stable() {
-    let proof = assert_current_format(EVENT);
+fn event_fixture_round_trips_and_verifies() {
+    let proof = assert_fixture_round_trips_and_verifies(EVENT);
 
     assert!(proof.target().objects.is_empty());
     assert_eq!(proof.target().events.len(), 1);
@@ -57,7 +57,9 @@ fn unsupported_fixture_version_returns_the_version_number() {
     fixture["version"] = serde_json::json!(2);
     let proof: Proof = serde_json::from_value(fixture).expect("unsupported proof version must deserialize");
 
-    let error = ProofVerifier::new(&committee).verify(&proof).unwrap_err();
+    let error = ProofVerifier::new(&committee)
+        .verify(&proof)
+        .expect_err("an unsupported proof version must be rejected");
     let VerifyErrorKind::Version { source } = error.kind else {
         panic!("unsupported proof version must return a version error");
     };
