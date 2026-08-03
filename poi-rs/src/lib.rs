@@ -26,7 +26,8 @@ pub use builder::{ProofBuilder, ProofBuilderError, ProofTarget};
 pub use cache::{CommitteeCache, CommitteeCacheError, MemoryCommitteeCache};
 pub use client::PoiClient;
 pub use committee::{
-    CommitteeResolutionError, CommitteeResolutionErrorKind, CommitteeResolver, ProofVerificationError,
+    CommitteeResolution, CommitteeResolutionError, CommitteeResolutionErrorKind, CommitteeResolver,
+    ProofVerificationError,
 };
 pub use proof::{
     Proof, ProofVerifier, ProofVersion, SerializationError, SerializationErrorKind, TransactionProof, VerifyError,
@@ -34,3 +35,13 @@ pub use proof::{
 };
 pub use source::{Source, SourceCheckpoint, SourceError, SourceTransaction};
 pub use target::ProofTargets;
+
+#[cfg(test)]
+mod tests {
+    use crate::{PoiClient, Proof};
+
+    pub fn client_building_test() {
+        // Proof
+        let client = PoiClient::devnet().unwrap();
+    }
+}

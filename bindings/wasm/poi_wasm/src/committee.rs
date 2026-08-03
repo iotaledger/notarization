@@ -8,7 +8,7 @@ use iota_types::{
     committee::{Committee, EpochId, StakeUnit, TOTAL_VOTING_POWER},
 };
 use js_sys::Uint8Array;
-use poi_rs::{CommitteeResolver, PoiClient};
+use poi_rs::{CommitteeResolution, CommitteeResolver};
 use serde::Deserialize;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
@@ -72,6 +72,37 @@ impl WasmCommittee {
     }
 }
 
+/// Selects how a resolver establishes trust in committee data.
+#[wasm_bindgen(js_name = CommitteeResolution)]
+pub struct WasmCommitteeResolution(CommitteeResolution);
+
+#[wasm_bindgen(js_class = CommitteeResolution)]
+impl WasmCommitteeResolution {
+    /// Accepts committee data returned directly by the JavaScript source.
+    ///
+    /// This does not authenticate committee lineage. Use it only when the
+    /// source is inside the caller's trust boundary.
+    #[wasm_bindgen(js_name = trustedNode)]
+    pub fn trusted_node() -> Self {
+        Self(CommitteeResolution::TrustedNode)
+    }
+
+    /// Authenticates committee lineage from an already trusted committee.
+    pub fn anchored(committee: &WasmCommittee) -> Self {
+        Self(CommitteeResolution::anchored(committee.0.clone()))
+    }
+
+    /// Authenticates committee lineage from the committee in a trusted genesis blob.
+    #[wasm_bindgen(js_name = fromGenesis)]
+    pub fn from_genesis(genesis_blob: Uint8Array) -> Result<Self, JsValue> {
+        let bytes = genesis_blob.to_vec();
+        CommitteeResolution::from_genesis(bytes.as_slice())
+            .map(Self)
+            .map_err(|error| PoiError::invalid_input(format!("failed to load trusted genesis blob: {error}")))
+            .wasm_result()
+    }
+}
+
 /// Resolves the committee required to verify a Proof of Inclusion proof.
 ///
 /// Node mode trusts the JavaScript source for committee data. Anchored mode
@@ -82,35 +113,10 @@ pub struct WasmCommitteeResolver(CommitteeResolver<LedgerSource>);
 
 #[wasm_bindgen(js_class = CommitteeResolver)]
 impl WasmCommitteeResolver {
-    /// Creates a trusted-node resolver backed by a JavaScript ledger source.
+    /// Creates a resolver backed by a JavaScript ledger source.
     #[wasm_bindgen(constructor)]
-    pub fn new(source: LedgerSource) -> Self {
-        Self::node(source)
-    }
-
-    /// Creates a resolver that trusts the JavaScript source for committee data.
-    pub fn node(source: LedgerSource) -> Self {
-        Self(CommitteeResolver::node(source))
-    }
-
-    /// Creates a resolver anchored at an already trusted committee.
-    ///
-    /// The resolver authenticates every epoch-close checkpoint from the trusted
-    /// committee up to the requested epoch.
-    pub fn anchor(source: LedgerSource, committee: &WasmCommittee) -> Self {
-        Self(CommitteeResolver::anchor(source, committee.0.clone()))
-    }
-
-    /// Creates a resolver anchored at the committee contained in a trusted genesis blob.
-    #[wasm_bindgen(js_name = anchorAtGenesis)]
-    pub fn anchor_at_genesis(source: LedgerSource, genesis_blob: Uint8Array) -> Result<Self, JsValue> {
-        let bytes = genesis_blob.to_vec();
-        let resolver = PoiClient::new(source)
-            .anchored_at_genesis(bytes.as_slice())
-            .map_err(|error| PoiError::invalid_input(format!("failed to load trusted genesis blob: {error}")))
-            .wasm_result()?;
-
-        Ok(Self(resolver))
+    pub fn new(source: LedgerSource, resolution: &WasmCommitteeResolution) -> Self {
+        Self(CommitteeResolver::new(source, resolution.0.clone()))
     }
 
     /// Resolves the committee governing `epoch`.

@@ -15,7 +15,7 @@ use iota_config::{IOTA_GENESIS_FILENAME, iota_config_dir};
 use iota_grpc_client::Client as GrpcClient;
 use iota_sdk_types::{ObjectId, TransactionDigest};
 use iota_types::event::EventID;
-use poi_rs::{PoiClient, Proof};
+use poi_rs::{CommitteeResolution, PoiClient, Proof};
 
 const GENESIS_CACHE_DIR: &str = "poi";
 const MAINNET_GENESIS_URL: &str = "https://dbfiles.mainnet.iota.cafe/genesis.blob";
@@ -170,9 +170,10 @@ impl VerifyArgs {
                 .await?
             }
         };
+        let resolution = CommitteeResolution::from_genesis(genesis)
+            .map_err(|error| anyhow::anyhow!("failed to load trusted genesis blob: {error}"))?;
         PoiClient::from_grpc_client(self.endpoint.client()?)
-            .anchored_at_genesis(genesis)
-            .map_err(|error| anyhow::anyhow!("failed to load trusted genesis blob: {error}"))?
+            .verifier(resolution)
             .verify(&proof)
             .await
             .context("proof verification failed")?;

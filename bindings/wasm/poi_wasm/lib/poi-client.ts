@@ -4,7 +4,7 @@
 import type { Transport } from "@connectrpc/connect";
 
 import {
-  type Committee,
+  type CommitteeResolution,
   CommitteeResolver,
   ProofBuilder,
 } from "../node/poi_wasm.js";
@@ -61,30 +61,8 @@ export class PoiClient {
     return new ProofBuilder(this.#source);
   }
 
-  /**
-   * Configures verification to trust this client's node for committee data.
-   *
-   * This does not authenticate committee lineage from genesis.
-   */
-  public trustedNode(): CommitteeResolver {
-    return new CommitteeResolver(this.#source);
-  }
-
-  /**
-   * Configures verification to anchor at an already trusted committee.
-   *
-   * Each epoch-close checkpoint is authenticated before the next committee is
-   * accepted and cached.
-   */
-  public anchoredAt(committee: Committee): CommitteeResolver {
-    return CommitteeResolver.anchor(this.#source, committee);
-  }
-
-  /**
-   * Configures verification to anchor at the committee contained in a trusted
-   * IOTA genesis blob.
-   */
-  public anchoredAtGenesis(genesisBlob: Uint8Array): CommitteeResolver {
-    return CommitteeResolver.anchorAtGenesis(this.#source, genesisBlob);
+  /** Creates a verifier using the selected committee-resolution strategy. */
+  public verifier(resolution: CommitteeResolution): CommitteeResolver {
+    return new CommitteeResolver(this.#source, resolution);
   }
 }

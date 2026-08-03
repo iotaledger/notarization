@@ -4,6 +4,7 @@
 export { PoiClient, type PoiClientOptions } from "./poi-client.js";
 export {
   Committee,
+  CommitteeResolution,
   CommitteeResolver,
   Proof,
   type ProofBuilder,

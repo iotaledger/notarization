@@ -7,7 +7,7 @@ use std::fs::File;
 
 use iota_config::IOTA_GENESIS_FILENAME;
 use iota_grpc_client::Client as GrpcClient;
-use poi_rs::{CommitteeResolutionErrorKind, PoiClient};
+use poi_rs::{CommitteeCache, CommitteeResolution, CommitteeResolutionErrorKind, MemoryCommitteeCache, PoiClient};
 use utils::{advance_to_epoch, grpc_client, start_test_cluster};
 
 use crate::utils::committee_at;
@@ -22,10 +22,11 @@ async fn genesis_anchored_client_authenticates_committee_across_epochs() {
     let expected = advance_to_epoch(&cluster, 10).await;
     let genesis_path = cluster.swarm.dir().join(IOTA_GENESIS_FILENAME);
     let genesis = File::open(genesis_path).expect("test cluster genesis blob must be available");
+    let cache = MemoryCommitteeCache::new();
 
-    let resolver = PoiClient::new(grpc_client(&cluster))
-        .anchored_at_genesis(genesis)
+    let resolution = CommitteeResolution::from_genesis_with_cache(genesis, cache.clone())
         .expect("test cluster genesis committee must be extractable");
+    let resolver = PoiClient::new(grpc_client(&cluster)).verifier(resolution);
 
     let resolved = resolver
         .resolve(10)
@@ -33,12 +34,20 @@ async fn genesis_anchored_client_authenticates_committee_across_epochs() {
         .expect("epoch 10 committee must resolve from genesis");
 
     assert_eq!(resolved, expected[10]);
+    assert_eq!(
+        cache
+            .committee(10)
+            .await
+            .expect("caller-provided cache must remain readable"),
+        Some(expected[10].clone())
+    );
 }
 
 #[tokio::test]
 async fn committee_anchored_client_returns_its_trust_anchor_without_fetching() {
     let trusted_committee = committee_at(7);
-    let resolver = PoiClient::new(disconnected_client()).anchored_at(trusted_committee.clone());
+    let resolver =
+        PoiClient::new(disconnected_client()).verifier(CommitteeResolution::anchored(trusted_committee.clone()));
 
     let resolved = resolver
         .resolve(7)
@@ -50,7 +59,7 @@ async fn committee_anchored_client_returns_its_trust_anchor_without_fetching() {
 
 #[tokio::test]
 async fn committee_anchored_client_rejects_epochs_before_its_anchor_without_fetching() {
-    let resolver = PoiClient::new(disconnected_client()).anchored_at(committee_at(7));
+    let resolver = PoiClient::new(disconnected_client()).verifier(CommitteeResolution::anchored(committee_at(7)));
 
     let error = resolver
         .resolve(6)
@@ -69,9 +78,9 @@ async fn genesis_anchored_client_rejects_epochs_ahead_of_the_node() {
     let cluster = start_test_cluster().await;
     let genesis_path = cluster.swarm.dir().join(IOTA_GENESIS_FILENAME);
     let genesis = File::open(genesis_path).expect("test cluster genesis blob must be available");
-    let resolver = PoiClient::new(grpc_client(&cluster))
-        .anchored_at_genesis(genesis)
-        .expect("test cluster genesis committee must be extractable");
+    let resolution =
+        CommitteeResolution::from_genesis(genesis).expect("test cluster genesis committee must be extractable");
+    let resolver = PoiClient::new(grpc_client(&cluster)).verifier(resolution);
 
     let error = resolver
         .resolve(1)
@@ -87,7 +96,7 @@ async fn genesis_anchored_client_rejects_epochs_ahead_of_the_node() {
 #[tokio::test]
 async fn trusted_node_client_returns_the_committee_reported_by_its_source() {
     let cluster = start_test_cluster().await;
-    let resolver = PoiClient::new(grpc_client(&cluster)).trusted_node();
+    let resolver = PoiClient::new(grpc_client(&cluster)).verifier(CommitteeResolution::TrustedNode);
 
     let resolved = resolver
         .resolve(0)

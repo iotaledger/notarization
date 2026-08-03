@@ -1,14 +1,21 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use std::sync::Arc;
+use std::{io::Read, sync::Arc};
 
 #[cfg(feature = "native-grpc")]
 use iota_grpc_client::Client as GrpcClient;
+use iota_sdk_types::CheckpointContents;
 use iota_types::{
     committee::{Committee, EpochId},
+    effects::{TransactionEffects, TransactionEvents},
     error::IotaError,
+    iota_system_state::{IotaSystemStateTrait, get_iota_system_state},
+    messages_checkpoint::CertifiedCheckpointSummary,
+    object::Object,
+    transaction::Transaction,
 };
+use serde::Deserialize;
 
 use crate::{
     BoxError, CommitteeCache, CommitteeCacheError, MemoryCommitteeCache, Proof, ProofVerifier, Source, VerifyError,
@@ -37,6 +44,13 @@ impl CommitteeResolutionError {
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum CommitteeResolutionErrorKind {
+    /// Loading the initial committee from the trusted genesis blob failed.
+    #[error("failed to load the committee from the trusted genesis blob")]
+    LoadGenesisCommittee {
+        /// Genesis decoding or system-state extraction failure.
+        #[source]
+        source: BoxError,
+    },
     /// Fetching a committee directly from the trusted node failed.
     #[error("failed to fetch committee for epoch {epoch} from the trusted node")]
     FetchCommittee {
@@ -139,14 +153,81 @@ pub enum ProofVerificationError {
 
 /// Selects how a resolver establishes trust in committee data.
 #[derive(Clone)]
-enum CommitteeResolution {
+#[non_exhaustive]
+pub enum CommitteeResolution {
     /// Accept committee data returned directly by the connected node.
-    Node,
+    ///
+    /// This does not authenticate committee lineage. Use it only when the node
+    /// is inside the caller's trust boundary.
+    TrustedNode,
     /// Authenticate committee lineage from an existing trust anchor.
-    Anchor {
+    Anchored {
+        /// First committee trusted by the caller.
         committee: Committee,
+        /// Cache containing only committees authenticated for the same network.
         cache: Arc<dyn CommitteeCache>,
     },
+}
+
+impl CommitteeResolution {
+    /// Anchors committee resolution at an already trusted committee.
+    ///
+    /// Authenticated committees are retained in a fresh in-memory cache.
+    pub fn anchored(committee: Committee) -> Self {
+        Self::anchored_with_cache(committee, MemoryCommitteeCache::new())
+    }
+
+    /// Anchors committee resolution using a caller-provided committee cache.
+    ///
+    /// The cache is part of the caller's trust boundary and must return only
+    /// committees authenticated for the same network.
+    pub fn anchored_with_cache(committee: Committee, cache: impl CommitteeCache + 'static) -> Self {
+        Self::Anchored {
+            committee,
+            cache: Arc::new(cache),
+        }
+    }
+
+    /// Anchors committee resolution at the committee contained in a trusted genesis blob.
+    ///
+    /// The reader must contain the BCS-encoded `genesis.blob` for the proof's
+    /// network. Authenticated committees are retained in a fresh in-memory cache.
+    pub fn from_genesis(reader: impl Read) -> Result<Self, CommitteeResolutionErrorKind> {
+        Self::from_genesis_with_cache(reader, MemoryCommitteeCache::new())
+    }
+
+    /// Anchors committee resolution from a trusted genesis blob using a caller-provided cache.
+    ///
+    /// The reader must contain the BCS-encoded `genesis.blob` for the proof's
+    /// network. The cache is part of the caller's trust boundary.
+    pub fn from_genesis_with_cache(
+        reader: impl Read,
+        cache: impl CommitteeCache + 'static,
+    ) -> Result<Self, CommitteeResolutionErrorKind> {
+        #[allow(dead_code)]
+        #[derive(Deserialize)]
+        struct GenesisBlob {
+            checkpoint: CertifiedCheckpointSummary,
+            checkpoint_contents: CheckpointContents,
+            transaction: Transaction,
+            effects: TransactionEffects,
+            events: TransactionEvents,
+            objects: Vec<Object>,
+        }
+
+        let genesis: GenesisBlob =
+            bcs::from_reader(reader).map_err(|source| CommitteeResolutionErrorKind::LoadGenesisCommittee {
+                source: Box::new(source),
+            })?;
+        let objects = genesis.objects.as_slice();
+        let system_state =
+            get_iota_system_state(&objects).map_err(|source| CommitteeResolutionErrorKind::LoadGenesisCommittee {
+                source: Box::new(source),
+            })?;
+        let committee = system_state.get_current_epoch_committee().committee().clone();
+
+        Ok(Self::anchored_with_cache(committee, cache))
+    }
 }
 
 /// Resolves the committee required to verify a checkpoint from a ledger source.
@@ -164,40 +245,11 @@ impl<S> CommitteeResolver<S>
 where
     S: Source,
 {
-    /// Creates a resolver that trusts the connected node for committee data.
-    ///
-    /// This mode does not authenticate committee lineage. Use it only when the
-    /// node is inside the caller's trust boundary, such as local development or
-    /// explicitly trusted infrastructure.
-    pub fn node(source: S) -> Self {
+    /// Creates a resolver backed by `source` using `resolution` to establish committee trust.
+    pub const fn new(source: S, resolution: CommitteeResolution) -> Self {
         Self {
             source,
-            mode: CommitteeResolution::Node,
-        }
-    }
-
-    /// Creates a resolver anchored at an already trusted committee.
-    ///
-    /// The trusted committee should be obtained from the network genesis blob
-    /// or from a previously authenticated checkpoint. The connected node is
-    /// treated only as a source of epoch and checkpoint data. Authenticated
-    /// committees are retained in memory for subsequent resolutions.
-    pub fn anchor(source: S, committee: Committee) -> Self {
-        Self::anchor_with_cache(source, committee, MemoryCommitteeCache::new())
-    }
-
-    /// Creates an anchored resolver backed by a caller-provided committee cache.
-    ///
-    /// The cache is part of the caller's trust boundary and must return only
-    /// committees authenticated for the same network. Committees fetched by
-    /// this resolver are cached only after successful authentication.
-    pub fn anchor_with_cache(source: S, committee: Committee, cache: impl CommitteeCache + 'static) -> Self {
-        Self {
-            source,
-            mode: CommitteeResolution::Anchor {
-                committee,
-                cache: Arc::new(cache),
-            },
+            mode: resolution,
         }
     }
 
@@ -208,8 +260,8 @@ where
     /// before accepting its successor.
     pub async fn resolve(&self, target_epoch: EpochId) -> Result<Committee, CommitteeResolutionError> {
         match &self.mode {
-            CommitteeResolution::Node => self.resolve_from_node(target_epoch).await,
-            CommitteeResolution::Anchor { committee, cache } => {
+            CommitteeResolution::TrustedNode => self.resolve_from_node(target_epoch).await,
+            CommitteeResolution::Anchored { committee, cache } => {
                 self.resolve_from_anchor(committee, cache.as_ref(), target_epoch).await
             }
         }
@@ -583,7 +635,10 @@ mod tests {
     async fn authenticated_summary_stores_exactly_the_verified_committee() {
         let (current_committee, expected_committee, summary) = signed_end_of_epoch_summary(3, true);
         let cache = RecordingCache::default();
-        let resolver = CommitteeResolver::anchor(EpochCloseSource { summary }, current_committee.clone());
+        let resolver = CommitteeResolver::new(
+            EpochCloseSource { summary },
+            CommitteeResolution::anchored(current_committee.clone()),
+        );
 
         let committee = resolver
             .fetch_next_committee(4, &current_committee, &cache)
@@ -600,7 +655,10 @@ mod tests {
         let (wrong_committee, _) = Committee::new_simple_test_committee_of_size(6);
         let wrong_committee = Committee::new(3, wrong_committee.voting_rights.iter().cloned().collect());
         let cache = RecordingCache::default();
-        let resolver = CommitteeResolver::anchor(EpochCloseSource { summary }, wrong_committee.clone());
+        let resolver = CommitteeResolver::new(
+            EpochCloseSource { summary },
+            CommitteeResolution::anchored(wrong_committee.clone()),
+        );
 
         let error = resolver
             .fetch_next_committee(4, &wrong_committee, &cache)
@@ -622,7 +680,10 @@ mod tests {
     async fn checkpoint_without_end_of_epoch_data_never_reaches_the_cache() {
         let (current_committee, _, summary) = signed_end_of_epoch_summary(3, false);
         let cache = RecordingCache::default();
-        let resolver = CommitteeResolver::anchor(EpochCloseSource { summary }, current_committee.clone());
+        let resolver = CommitteeResolver::new(
+            EpochCloseSource { summary },
+            CommitteeResolution::anchored(current_committee.clone()),
+        );
 
         let error = resolver
             .fetch_next_committee(4, &current_committee, &cache)
@@ -642,7 +703,10 @@ mod tests {
         let (wrong_committee, _) = Committee::new_simple_test_committee_of_size(6);
         let wrong_committee = Committee::new(3, wrong_committee.voting_rights.iter().cloned().collect());
         let cache = RecordingCache::default();
-        let resolver = CommitteeResolver::anchor(EpochCloseSource { summary }, wrong_committee.clone());
+        let resolver = CommitteeResolver::new(
+            EpochCloseSource { summary },
+            CommitteeResolution::anchored(wrong_committee.clone()),
+        );
 
         let error = resolver
             .fetch_next_committee(4, &wrong_committee, &cache)
@@ -661,7 +725,10 @@ mod tests {
         let (signing_committee, _, summary) = signed_end_of_epoch_summary(4, true);
         let expected_committee = Committee::new(3, signing_committee.voting_rights.iter().cloned().collect());
         let cache = RecordingCache::default();
-        let resolver = CommitteeResolver::anchor(EpochCloseSource { summary }, expected_committee.clone());
+        let resolver = CommitteeResolver::new(
+            EpochCloseSource { summary },
+            CommitteeResolution::anchored(expected_committee.clone()),
+        );
 
         let error = resolver
             .fetch_next_committee(4, &expected_committee, &cache)
@@ -683,7 +750,10 @@ mod tests {
     async fn overflowing_next_epoch_never_reaches_the_cache() {
         let (current_committee, _, summary) = signed_end_of_epoch_summary(EpochId::MAX, true);
         let cache = RecordingCache::default();
-        let resolver = CommitteeResolver::anchor(EpochCloseSource { summary }, current_committee.clone());
+        let resolver = CommitteeResolver::new(
+            EpochCloseSource { summary },
+            CommitteeResolution::anchored(current_committee.clone()),
+        );
 
         let error = resolver
             .fetch_next_committee(EpochId::MAX, &current_committee, &cache)
@@ -699,9 +769,12 @@ mod tests {
 
     #[tokio::test]
     async fn node_resolution_mode_carries_no_anchored_cache() {
-        let resolver = CommitteeResolver::node(GrpcClient::new("http://127.0.0.1:1").unwrap());
+        let resolver = CommitteeResolver::new(
+            GrpcClient::new("http://127.0.0.1:1").unwrap(),
+            CommitteeResolution::TrustedNode,
+        );
 
-        assert!(matches!(resolver.mode, CommitteeResolution::Node));
+        assert!(matches!(resolver.mode, CommitteeResolution::TrustedNode));
     }
 
     #[tokio::test]
@@ -710,7 +783,8 @@ mod tests {
         let cache = crate::MemoryCommitteeCache::new();
         cache.store(&next_committee).await.unwrap();
         let client = GrpcClient::new("http://127.0.0.1:1").unwrap();
-        let resolver = CommitteeResolver::anchor_with_cache(client, current_committee, cache);
+        let resolver =
+            crate::PoiClient::new(client).verifier(CommitteeResolution::anchored_with_cache(current_committee, cache));
 
         let resolved = resolver.resolve(4).await.unwrap();
 
@@ -721,8 +795,8 @@ mod tests {
     async fn anchor_mode_uses_a_committee_cache_by_default() {
         let (current_committee, next_committee, _) = signed_end_of_epoch_summary(3, true);
         let client = GrpcClient::new("http://127.0.0.1:1").unwrap();
-        let resolver = CommitteeResolver::anchor(client, current_committee);
-        let CommitteeResolution::Anchor { cache, .. } = &resolver.mode else {
+        let resolver = CommitteeResolver::new(client, CommitteeResolution::anchored(current_committee));
+        let CommitteeResolution::Anchored { cache, .. } = &resolver.mode else {
             panic!("anchor resolver must have a committee cache");
         };
         cache.store(&next_committee).await.unwrap();
@@ -752,7 +826,10 @@ mod tests {
             committee: next_committee.clone(),
         };
         let client = GrpcClient::new("http://127.0.0.1:1").unwrap();
-        let resolver = CommitteeResolver::anchor_with_cache(client, current_committee, cache);
+        let resolver = CommitteeResolver::new(
+            client,
+            CommitteeResolution::anchored_with_cache(current_committee, cache),
+        );
 
         let resolved = resolver.resolve(4).await.unwrap();
 

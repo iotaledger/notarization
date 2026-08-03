@@ -5,7 +5,12 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { Committee, CommitteeResolver, Proof } from "../node/poi_wasm.js";
+import {
+  Committee,
+  CommitteeResolution,
+  CommitteeResolver,
+  Proof,
+} from "../node/poi_wasm.js";
 import type { LedgerSource } from "../lib/source-types.js";
 
 test("the WASM resolver constructs a committee reported by a trusted node", async () => {
@@ -32,7 +37,10 @@ test("the WASM resolver constructs a committee reported by a trusted node", asyn
     },
   } as unknown as LedgerSource;
 
-  const committee = await new CommitteeResolver(source).resolve(0n);
+  const committee = await new CommitteeResolver(
+    source,
+    CommitteeResolution.trustedNode(),
+  ).resolve(0n);
 
   assert.equal(committee.epoch, 0n);
 });
@@ -59,7 +67,10 @@ test("the anchored verifier resolves the committee and verifies the proof", asyn
   const source = {} as LedgerSource;
 
   await assert.doesNotReject(
-    CommitteeResolver.anchor(source, committee).verify(proof),
+    new CommitteeResolver(
+      source,
+      CommitteeResolution.anchored(committee),
+    ).verify(proof),
   );
 });
 
@@ -85,8 +96,14 @@ test("the anchored resolver returns its trusted committee without fetching it ag
       };
     },
   } as unknown as LedgerSource;
-  const committee = await CommitteeResolver.node(source).resolve(0n);
-  const anchored = await CommitteeResolver.anchor(source, committee).resolve(0n);
+  const committee = await new CommitteeResolver(
+    source,
+    CommitteeResolution.trustedNode(),
+  ).resolve(0n);
+  const anchored = await new CommitteeResolver(
+    source,
+    CommitteeResolution.anchored(committee),
+  ).resolve(0n);
 
   assert.equal(anchored.epoch, 0n);
 });
@@ -116,10 +133,16 @@ test("the anchored resolver reports a missing current epoch", async () => {
       return undefined;
     },
   } as unknown as LedgerSource;
-  const committee = await CommitteeResolver.node(source).resolve(0n);
+  const committee = await new CommitteeResolver(
+    source,
+    CommitteeResolution.trustedNode(),
+  ).resolve(0n);
 
   await assert.rejects(
-    CommitteeResolver.anchor(source, committee).resolve(1n),
+    new CommitteeResolver(
+      source,
+      CommitteeResolution.anchored(committee),
+    ).resolve(1n),
     /service information is missing the current epoch/,
   );
 });
@@ -160,10 +183,16 @@ test("the anchored resolver requests epoch-close evidence through the JavaScript
       };
     },
   } as unknown as LedgerSource;
-  const committee = await CommitteeResolver.node(source).resolve(0n);
+  const committee = await new CommitteeResolver(
+    source,
+    CommitteeResolution.trustedNode(),
+  ).resolve(0n);
 
   await assert.rejects(
-    CommitteeResolver.anchor(source, committee).resolve(1n),
+    new CommitteeResolver(
+      source,
+      CommitteeResolution.anchored(committee),
+    ).resolve(1n),
     /failed to fetch end-of-epoch checkpoint information for epoch 0/,
   );
   assert.equal(requestedEpoch, 0n);

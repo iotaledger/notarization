@@ -7,7 +7,7 @@ use std::fs::File;
 
 use iota_config::IOTA_GENESIS_FILENAME;
 use iota_types::event::EventID;
-use poi_rs::PoiClient;
+use poi_rs::{CommitteeResolution, PoiClient};
 use utils::{advance_to_epoch, grpc_client, object_transfer_tx, staking_tx, start_test_cluster, transfer_tx};
 
 #[tokio::test]
@@ -25,9 +25,9 @@ async fn client_builds_and_verifies_a_transaction_proof_from_genesis() {
         .await
         .expect("transaction proof must be constructed");
 
+    let resolution = CommitteeResolution::from_genesis(genesis).expect("test cluster genesis blob must load");
     client
-        .anchored_at_genesis(genesis)
-        .expect("test cluster genesis blob must load")
+        .verifier(resolution)
         .verify(&proof)
         .await
         .expect("anchored verification must authenticate the committee and verify the proof");
@@ -48,7 +48,7 @@ async fn client_builds_and_verifies_an_object_proof_with_a_trusted_node() {
 
     assert_eq!(proof.target.objects[0].0, transfer.gas_object);
     client
-        .trusted_node()
+        .verifier(CommitteeResolution::TrustedNode)
         .verify(&proof)
         .await
         .expect("object proof must verify");
@@ -72,7 +72,7 @@ async fn client_builds_and_verifies_an_event_proof_with_a_trusted_node() {
         .expect("event proof must be constructed");
 
     client
-        .trusted_node()
+        .verifier(CommitteeResolution::TrustedNode)
         .verify(&proof)
         .await
         .expect("event proof must verify");
@@ -94,7 +94,7 @@ async fn client_builds_one_verified_proof_for_multiple_objects() {
     assert_eq!(proof.transaction_proof.transaction.digest(), &transfer.digest);
     assert_eq!(proof.target.objects.len(), 2);
     client
-        .trusted_node()
+        .verifier(CommitteeResolution::TrustedNode)
         .verify(&proof)
         .await
         .expect("stacked object proof must verify");
@@ -123,7 +123,7 @@ async fn client_builds_one_verified_proof_for_object_and_event_targets() {
     assert_eq!(proof.target.objects.len(), 1);
     assert_eq!(proof.target.events.len(), 1);
     client
-        .trusted_node()
+        .verifier(CommitteeResolution::TrustedNode)
         .verify(&proof)
         .await
         .expect("mixed target proof must verify");

@@ -69,10 +69,12 @@ checkpoint sequence numbers into WASM. Rust decodes those values into existing
 IOTA domain types and delegates target resolution and proof construction to
 `poi-rs`.
 
-## Trusted-node verification
+## Verification
 
 ```ts
-const verifier = client.trustedNode();
+import { CommitteeResolution } from "@iota/poi-wasm";
+
+const verifier = client.verifier(CommitteeResolution.trustedNode());
 await verifier.verify(proof);
 ```
 
@@ -88,14 +90,16 @@ lineage from an already trusted committee:
 import { readFile } from "node:fs/promises";
 
 const trustedGenesisBlob = await readFile("genesis.blob");
-const verifier = client.anchoredAtGenesis(trustedGenesisBlob);
+const resolution = CommitteeResolution.fromGenesis(trustedGenesisBlob);
+const verifier = client.verifier(resolution);
 
 await verifier.verify(proof);
 ```
 
-`anchoredAtGenesis()` decodes the BCS-encoded IOTA genesis blob and extracts its
-committee in Rust. Callers that already possess an extracted trusted committee
-can use `anchoredAt(committee)` instead. `Committee.fromJSON()` accepts the Rust
+`CommitteeResolution.fromGenesis()` decodes the BCS-encoded IOTA genesis blob
+and extracts its committee in Rust. Callers that already possess an extracted
+trusted committee can use `CommitteeResolution.anchored(committee)` instead.
+`Committee.fromJSON()` accepts the Rust
 `Committee` fields `epoch` and `voting_rights`, validates public keys, rejects
 duplicate authorities, requires total voting power to equal 10,000, and
 reconstructs the committee's derived lookup state.

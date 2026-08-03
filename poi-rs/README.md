@@ -66,20 +66,23 @@ required by the proof and then performs offline proof verification:
 ```rust,no_run
 use std::fs::File;
 
-use poi_rs::{PoiClient, Proof};
+use poi_rs::{CommitteeResolution, PoiClient, Proof};
 
 # async fn example(proof: &Proof) -> Result<(), Box<dyn std::error::Error>> {
 let client = PoiClient::testnet()?;
-let verifier = client.anchored_at_genesis(File::open("genesis.blob")?)?;
+let resolution = CommitteeResolution::from_genesis(File::open("genesis.blob")?)?;
+let verifier = client.verifier(resolution);
 
 verifier.verify(proof).await?;
 # Ok(())
 # }
 ```
 
-`PoiClient::trusted_node()` is available when the connected node is explicitly inside the caller's trust boundary.
-`PoiClient::anchored_at_genesis()` loads the anchor committee from a trusted BCS-encoded genesis blob.
-`PoiClient::anchored_at()` accepts an already extracted trusted committee instead.
+`CommitteeResolution::TrustedNode` is available when the connected node is explicitly inside the caller's trust
+boundary. `CommitteeResolution::from_genesis()` loads an anchor committee from a trusted BCS-encoded genesis blob,
+while `CommitteeResolution::anchored()` accepts an already extracted trusted committee. Use
+`CommitteeResolution::anchored_with_cache()` or `CommitteeResolution::from_genesis_with_cache()` to supply a cache
+that contains committees authenticated for the same network.
 Retain the verifier when checking multiple proofs so its authenticated committee cache is reused.
 
 `ProofVerifier` remains the offline verification entry point for callers that already possess the authoritative
@@ -113,11 +116,12 @@ trust the authenticated target claims relative to the supplied committee.
 - `TransactionProof`: Transaction, effects, events, and checkpoint contents used to prove inclusion.
 - `ProofTargets`: Object, event, and committee claims to authenticate.
 - `ProofTarget`: Transaction, object, or event requested from a `ProofBuilder`.
-- `PoiClient`: Source-backed entry point for proof construction and trusted-node or anchored verification.
+- `PoiClient`: Source-backed entry point for proof construction and committee-aware verification.
+- `CommitteeResolution`: Trusted-node or anchored committee-resolution configuration, including the committee cache.
 - `ProofBuilder`: Network-aware or custom-source proof construction.
 - `Source`: Ledger-read boundary for gRPC nodes, JavaScript clients, archives, fixtures, and other evidence sources.
 - `SourceTransaction` and `SourceCheckpoint`: Transport-independent decoded evidence returned by a `Source`.
-- `CommitteeResolver`: Trusted-node or anchored committee resolution and source-backed proof verification.
+- `CommitteeResolver`: Committee resolution and source-backed proof verification configured by `CommitteeResolution`.
 - `ProofVerifier`: Offline verifier for `Proof` values.
 - `SourceError`: Transport and response failures from a ledger source.
 - `ProofBuilderError`, `CommitteeResolutionError`, `ProofVerificationError`, `VerifyError`, `SerializationError`, and
