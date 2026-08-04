@@ -19,8 +19,6 @@ pub mod committee;
 pub mod proof;
 /// Ledger evidence source abstraction.
 pub mod source;
-/// Target claims authenticated by a proof.
-pub mod target;
 
 pub use builder::{ProofBuilder, ProofBuilderError, ProofTarget};
 pub use cache::{CommitteeCache, CommitteeCacheError, MemoryCommitteeCache};
@@ -30,11 +28,10 @@ pub use committee::{
     ProofVerificationError,
 };
 pub use proof::{
-    Proof, ProofVerifier, ProofVersion, SerializationError, SerializationErrorKind, TransactionProof, VerifyError,
-    VerifyErrorKind, VersionError,
+    Proof, ProofTargets, ProofVerifier, ProofVersion, SerializationError, SerializationErrorKind, TransactionProof,
+    VerifyError, VerifyErrorKind, VersionError,
 };
 pub use source::{Source, SourceCheckpoint, SourceError, SourceTransaction};
-pub use target::ProofTargets;
 
 #[cfg(test)]
 mod tests {
