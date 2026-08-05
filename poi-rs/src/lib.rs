@@ -20,7 +20,7 @@ pub mod proof;
 /// Ledger evidence source abstraction.
 pub mod source;
 
-pub use builder::{ProofBuilder, ProofBuilderError, ProofTarget};
+pub use builder::{ProofBuilder, ProofBuilderError};
 pub use cache::{CommitteeCache, CommitteeCacheError, MemoryCommitteeCache};
 pub use client::PoiClient;
 pub use committee::{

@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 
 use iota_sdk_types::TransactionDigest;
 use iota_types::{event::EventID, object::Object};
-use poi_rs::{PoiClient, ProofBuilderError, ProofTarget, ProofVerifier, SourceError};
+use poi_rs::{PoiClient, ProofBuilderError, ProofVerifier, SourceError};
 use utils::{
     genesis_chain_identifier, grpc_client, object_transfer_tx,
     sources::{MissingSource, RecordingSource, RejectingSource},
@@ -25,26 +25,25 @@ async fn client_uses_a_custom_source_for_proof_building() {
         .await
         .expect_err("the custom source error must be returned");
 
-    let ProofBuilderError::Source { target, source } = error else {
+    let ProofBuilderError::Source { source } = error else {
         panic!("custom source error must be preserved");
     };
-    assert_eq!(target, ProofTarget::Transaction(transaction_digest));
     assert!(matches!(source, SourceError::Request { .. }));
 }
 
 #[tokio::test]
-async fn proof_requires_at_least_one_target() {
+async fn proof_requires_at_least_one_request() {
     let error = PoiClient::new(RejectingSource)
         .proof()
         .build()
         .await
-        .expect_err("a proof without a target must be rejected");
+        .expect_err("a proof without a request must be rejected");
 
-    assert!(matches!(error, ProofBuilderError::MissingTarget));
+    assert!(matches!(error, ProofBuilderError::MissingRequest));
 }
 
 #[tokio::test]
-async fn stacked_targets_are_deduplicated_and_reuse_transaction_evidence() {
+async fn stacked_requests_are_deduplicated_and_reuse_transaction_evidence() {
     let cluster = start_test_cluster().await;
     let staking = staking_tx(&cluster).await;
     let object_id = staking.gas_object.object_id;
@@ -64,7 +63,7 @@ async fn stacked_targets_are_deduplicated_and_reuse_transaction_evidence() {
         .event(event_id)
         .build()
         .await
-        .expect("stacked targets from one transaction must produce a proof");
+        .expect("stacked requests from one transaction must produce a proof");
 
     assert_eq!(
         *transactions
@@ -91,10 +90,13 @@ async fn transaction_not_returned_by_the_source_is_reported_as_missing() {
         .await
         .expect_err("a transaction omitted by the source must be rejected");
 
-    let ProofBuilderError::TargetNotFound { target } = error else {
-        panic!("an omitted transaction must return a target-not-found error");
+    let ProofBuilderError::TransactionNotFound {
+        transaction_digest: missing_transaction,
+    } = error
+    else {
+        panic!("an omitted transaction must return a transaction-not-found error");
     };
-    assert_eq!(target, ProofTarget::Transaction(transaction_digest));
+    assert_eq!(missing_transaction, transaction_digest);
 }
 
 #[tokio::test]
@@ -123,10 +125,13 @@ async fn object_not_returned_by_the_source_is_reported_as_missing() {
         .await
         .expect_err("an object omitted by the source must be rejected");
 
-    let ProofBuilderError::TargetNotFound { target } = error else {
-        panic!("an omitted object must return a target-not-found error");
+    let ProofBuilderError::ObjectNotFound {
+        object_id: missing_object,
+    } = error
+    else {
+        panic!("an omitted object must return an object-not-found error");
     };
-    assert_eq!(target, ProofTarget::Object(object_id));
+    assert_eq!(missing_object, object_id);
 }
 
 #[tokio::test]
@@ -168,15 +173,12 @@ async fn explicit_transaction_and_event_from_different_transactions_are_rejected
         .event(event_id)
         .build()
         .await
-        .expect_err("targets from different transactions must be rejected");
+        .expect_err("requests from different transactions must be rejected");
 
     assert!(matches!(
         error,
-        ProofBuilderError::TargetTransactionMismatch {
-            target: ProofTarget::Event(target),
-            expected,
-            actual,
-        } if target == event_id && expected == transaction_digest && actual == event_id.tx_digest
+        ProofBuilderError::TransactionMismatch { expected, actual }
+            if expected == transaction_digest && actual == event_id.tx_digest
     ));
 }
 
@@ -196,10 +198,13 @@ async fn event_sequence_outside_the_transaction_is_rejected() {
         .await
         .expect_err("an event sequence outside the transaction must be rejected");
 
-    let ProofBuilderError::TargetNotFound { target } = error else {
-        panic!("missing event must return a target-not-found error");
+    let ProofBuilderError::EventNotFound {
+        event_id: missing_event,
+    } = error
+    else {
+        panic!("missing event must return an event-not-found error");
     };
-    assert_eq!(target, ProofTarget::Event(event_id));
+    assert_eq!(missing_event, event_id);
 }
 
 #[tokio::test]
@@ -233,7 +238,7 @@ async fn object_outside_the_event_transaction_is_rejected() {
 }
 
 #[tokio::test]
-async fn object_targets_from_different_transactions_are_rejected() {
+async fn object_requests_from_different_transactions_are_rejected() {
     let cluster = start_test_cluster().await;
     let first = object_transfer_tx(&cluster).await;
     let second = object_transfer_tx(&cluster).await;
@@ -247,15 +252,9 @@ async fn object_targets_from_different_transactions_are_rejected() {
         .await
         .expect_err("objects from different transactions must be rejected");
 
-    let ProofBuilderError::TargetTransactionMismatch {
-        target,
-        expected,
-        actual,
-    } = error
-    else {
+    let ProofBuilderError::TransactionMismatch { expected, actual } = error else {
         panic!("mixed transactions must return a proof-builder error");
     };
-    assert_eq!(target, ProofTarget::Object(second_object_id));
     assert_eq!(expected, first.digest);
     assert_eq!(actual, second.digest);
 }

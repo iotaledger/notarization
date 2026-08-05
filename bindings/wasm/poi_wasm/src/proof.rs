@@ -67,19 +67,19 @@ impl WasmProofBuilder {
         Self(ProofBuilder::new(source))
     }
 
-    /// Adds a transaction target.
+    /// Adds a transaction proof request.
     pub fn transaction(self, transaction_digest: Uint8Array) -> Result<Self, JsValue> {
         let digest = TransactionDigest::from_bytes(transaction_digest.to_vec()).wasm_result()?;
         Ok(Self(self.0.transaction(digest)))
     }
 
-    /// Adds an object target.
+    /// Adds an object proof request.
     pub fn object(self, object_id: Uint8Array) -> Result<Self, JsValue> {
         let object_id = ObjectId::from_bytes(object_id.to_vec()).wasm_result()?;
         Ok(Self(self.0.object(object_id)))
     }
 
-    /// Adds an event target.
+    /// Adds an event proof request.
     pub fn event(self, transaction_digest: Uint8Array, event_sequence: u64) -> Result<Self, JsValue> {
         let tx_digest = TransactionDigest::from_bytes(transaction_digest.to_vec()).wasm_result()?;
         Ok(Self(self.0.event(EventID {

@@ -118,7 +118,6 @@ trust the authenticated target claims relative to the supplied committee.
 - `ProofVersion`: Proof format version used for compatibility checks.
 - `TransactionProof`: Transaction, effects, and optional event evidence used to prove inclusion.
 - `ProofTargets`: Transaction, object, and event claims explicitly selected by the caller.
-- `ProofTarget`: Transaction, object, or event requested from a `ProofBuilder`.
 - `PoiClient`: Source-backed entry point for proof construction and committee-aware verification.
 - `CommitteeResolution`: Trusted-node or anchored committee-resolution configuration, including the committee cache.
 - `ProofBuilder`: Network-aware or custom-source proof construction.

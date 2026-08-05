@@ -28,7 +28,7 @@ test("the WASM builder reads transaction evidence from the ledger source", async
 
   await assert.rejects(
     new ProofBuilder(source).transaction(transactionDigest).build(),
-    /source failed while reading transaction .*: source returned an invalid response/,
+    /source failed while reading proof evidence: source returned an invalid response/,
   );
   assert.deepEqual(requestedDigest, transactionDigest);
 });

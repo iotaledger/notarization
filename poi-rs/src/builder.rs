@@ -1,8 +1,6 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use std::fmt;
-
 #[cfg(feature = "native-grpc")]
 use iota_grpc_client::Client as GrpcClient;
 use iota_sdk_types::{ObjectId, ObjectReference, TransactionDigest};
@@ -10,49 +8,37 @@ use iota_types::{effects::TransactionEffectsExt, event::EventID, object::Object}
 
 use crate::{Proof, ProofTargets, Source, SourceError, TransactionProof};
 
-/// Ledger target requested from a [`ProofBuilder`].
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-#[non_exhaustive]
-pub enum ProofTarget {
-    /// A transaction proof request.
-    Transaction(TransactionDigest),
-    /// An object proof request identified by object ID.
-    Object(ObjectId),
-    /// An event proof request.
-    Event(EventID),
-}
-
-impl fmt::Display for ProofTarget {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Transaction(transaction_digest) => write!(f, "transaction {transaction_digest}"),
-            Self::Object(object_id) => write!(f, "object {object_id}"),
-            Self::Event(event_id) => write!(f, "event {event_id:?}"),
-        }
-    }
-}
-
 /// Error returned when a proof cannot be constructed by [`ProofBuilder`].
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum ProofBuilderError {
-    /// No proof target was selected before building.
-    #[error("proof builder requires a target")]
-    MissingTarget,
-    /// The configured source failed while reading evidence for a target.
-    #[error("source failed while reading {target}")]
+    /// No proof request was selected before building.
+    #[error("proof builder requires a request")]
+    MissingRequest,
+    /// The configured source failed while reading proof evidence.
+    #[error("source failed while reading proof evidence")]
     Source {
-        /// Proof target whose evidence was being read.
-        target: ProofTarget,
         /// Underlying source failure.
         #[source]
         source: SourceError,
     },
-    /// The source did not return evidence for a requested target.
-    #[error("{target} was not found")]
-    TargetNotFound {
-        /// Proof target that was not returned.
-        target: ProofTarget,
+    /// The source did not return a requested transaction.
+    #[error("transaction {transaction_digest} was not found")]
+    TransactionNotFound {
+        /// Transaction digest that was not returned.
+        transaction_digest: TransactionDigest,
+    },
+    /// The source did not return a requested object.
+    #[error("object {object_id} was not found")]
+    ObjectNotFound {
+        /// Object ID that was not returned.
+        object_id: ObjectId,
+    },
+    /// The requested event was not present in its transaction.
+    #[error("event {event_id:?} was not found")]
+    EventNotFound {
+        /// Event ID that was not present.
+        event_id: EventID,
     },
     /// The returned object does not match the requested ID or transaction effects.
     #[error("object {object_id} reference does not match the requested object")]
@@ -65,17 +51,15 @@ pub enum ProofBuilderError {
     ObjectNotChangedByTransaction {
         /// Requested object ID.
         object_id: ObjectId,
-        /// Transaction selected by the other proof targets.
+        /// Transaction selected by the other proof requests.
         transaction_digest: TransactionDigest,
     },
-    /// A requested target belongs to a different transaction than the other targets.
-    #[error("{target} belongs to transaction {actual}, expected {expected}")]
-    TargetTransactionMismatch {
-        /// Target that conflicts with the previously selected transaction.
-        target: ProofTarget,
-        /// Transaction selected by the first proof target.
+    /// The requests belong to different transactions.
+    #[error("proof requests belong to different transactions: {actual}, expected {expected}")]
+    TransactionMismatch {
+        /// Transaction selected by the first request.
         expected: TransactionDigest,
-        /// Transaction that owns the conflicting target.
+        /// Transaction selected by a conflicting request.
         actual: TransactionDigest,
     },
 }
@@ -87,7 +71,9 @@ pub enum ProofBuilderError {
 /// through `ProofBuilder::from_grpc_client`.
 pub struct ProofBuilder<S> {
     source: S,
-    targets: Vec<ProofTarget>,
+    transaction_digests: Vec<TransactionDigest>,
+    object_ids: Vec<ObjectId>,
+    event_ids: Vec<EventID>,
 }
 
 #[cfg(feature = "native-grpc")]
@@ -127,50 +113,52 @@ impl<S: Source> ProofBuilder<S> {
     pub fn new(source: S) -> Self {
         Self {
             source,
-            targets: Vec::new(),
+            transaction_digests: Vec::new(),
+            object_ids: Vec::new(),
+            event_ids: Vec::new(),
         }
     }
 
-    /// Adds a transaction proof target.
+    /// Adds a transaction proof request.
     pub fn transaction(mut self, transaction_digest: TransactionDigest) -> Self {
-        self.push_target(ProofTarget::Transaction(transaction_digest));
+        Self::push_unique(&mut self.transaction_digests, transaction_digest);
         self
     }
 
-    /// Adds an object proof target by object ID.
+    /// Adds an object proof request by object ID.
     ///
     /// The source resolves the ID to the exact object reference packaged in the proof.
     pub fn object(mut self, object_id: ObjectId) -> Self {
-        self.push_target(ProofTarget::Object(object_id));
+        Self::push_unique(&mut self.object_ids, object_id);
         self
     }
 
-    /// Adds multiple object proof targets by object ID.
+    /// Adds multiple object proof requests by object ID.
     pub fn objects(mut self, object_ids: impl IntoIterator<Item = ObjectId>) -> Self {
         for object_id in object_ids {
-            self.push_target(ProofTarget::Object(object_id));
+            Self::push_unique(&mut self.object_ids, object_id);
         }
         self
     }
 
-    /// Adds an event proof target.
+    /// Adds an event proof request.
     pub fn event(mut self, event_id: EventID) -> Self {
-        self.push_target(ProofTarget::Event(event_id));
+        Self::push_unique(&mut self.event_ids, event_id);
         self
     }
 
-    /// Adds multiple event proof targets.
+    /// Adds multiple event proof requests.
     pub fn events(mut self, event_ids: impl IntoIterator<Item = EventID>) -> Self {
         for event_id in event_ids {
-            self.push_target(ProofTarget::Event(event_id));
+            Self::push_unique(&mut self.event_ids, event_id);
         }
         self
     }
 
     /// Builds the requested proof from the configured source.
     pub async fn build(self) -> Result<Proof, ProofBuilderError> {
-        if self.targets.is_empty() {
-            return Err(ProofBuilderError::MissingTarget);
+        if self.transaction_digests.is_empty() && self.object_ids.is_empty() && self.event_ids.is_empty() {
+            return Err(ProofBuilderError::MissingRequest);
         }
 
         self.build_proof().await
@@ -178,30 +166,20 @@ impl<S: Source> ProofBuilder<S> {
 
     async fn build_proof(&self) -> Result<Proof, ProofBuilderError> {
         let mut selected_transaction = None;
-        let mut transaction_target = None;
-        let mut object_ids = Vec::new();
-        let mut event_targets = Vec::new();
 
-        for target in self.targets.iter().copied() {
-            match target {
-                ProofTarget::Transaction(transaction_digest) => {
-                    Self::ensure_same_transaction(&mut selected_transaction, target, transaction_digest)?;
-                    transaction_target = Some(transaction_digest);
-                }
-                ProofTarget::Object(object_id) => object_ids.push(object_id),
-                ProofTarget::Event(event_id) => {
-                    Self::ensure_same_transaction(&mut selected_transaction, target, event_id.tx_digest)?;
-                    event_targets.push(event_id);
-                }
-            }
+        for transaction_digest in self.transaction_digests.iter().copied() {
+            Self::ensure_same_transaction(&mut selected_transaction, transaction_digest)?;
+        }
+        for event_id in &self.event_ids {
+            Self::ensure_same_transaction(&mut selected_transaction, event_id.tx_digest)?;
         }
 
-        let (transaction_digest, transaction, objects) = if let Some(transaction_digest) = selected_transaction {
+        let (transaction, objects) = if let Some(transaction_digest) = selected_transaction {
             let transaction = self.fetch_transaction(transaction_digest).await?;
             let changed_objects = transaction.effects.all_changed_objects();
-            let mut objects = Vec::with_capacity(object_ids.len());
+            let mut objects = Vec::with_capacity(self.object_ids.len());
 
-            for object_id in object_ids {
+            for object_id in self.object_ids.iter().copied() {
                 let object_ref = changed_objects
                     .iter()
                     .find_map(|(object_ref, _, _)| (object_ref.object_id == object_id).then_some(*object_ref))
@@ -212,53 +190,46 @@ impl<S: Source> ProofBuilder<S> {
                 objects.push(self.fetch_object(object_id, Some(object_ref)).await?);
             }
 
-            (transaction_digest, transaction, objects)
+            (transaction, objects)
         } else {
-            let mut objects = Vec::with_capacity(object_ids.len());
+            let mut objects = Vec::with_capacity(self.object_ids.len());
 
-            for object_id in object_ids {
+            for object_id in self.object_ids.iter().copied() {
                 let object = self.fetch_object(object_id, None).await?;
-                Self::ensure_same_transaction(
-                    &mut selected_transaction,
-                    ProofTarget::Object(object_id),
-                    object.previous_transaction,
-                )?;
+                Self::ensure_same_transaction(&mut selected_transaction, object.previous_transaction)?;
                 objects.push(object);
             }
 
             let transaction_digest =
-                selected_transaction.expect("ProofBuilder only builds a proof for non-empty targets");
+                selected_transaction.expect("ProofBuilder only builds a proof for non-empty requests");
             let transaction = self.fetch_transaction(transaction_digest).await?;
 
-            (transaction_digest, transaction, objects)
+            (transaction, objects)
         };
 
-        let target = ProofTarget::Transaction(transaction_digest);
         let chain_identifier = self
             .source
             .chain_identifier()
             .await
-            .map_err(|source| ProofBuilderError::Source { target, source })?;
+            .map_err(|source| ProofBuilderError::Source { source })?;
         let checkpoint = self
             .source
             .checkpoint(transaction.checkpoint_sequence_number)
             .await
-            .map_err(|source| ProofBuilderError::Source { target, source })?;
-        let transaction_events = if event_targets.is_empty() {
+            .map_err(|source| ProofBuilderError::Source { source })?;
+        let transaction_events = if self.event_ids.is_empty() {
             None
         } else {
-            let events = transaction.events.ok_or_else(|| ProofBuilderError::TargetNotFound {
-                target: ProofTarget::Event(event_targets[0]),
+            let events = transaction.events.ok_or_else(|| ProofBuilderError::EventNotFound {
+                event_id: self.event_ids[0],
             })?;
 
-            for event_id in &event_targets {
+            for event_id in &self.event_ids {
                 let event_exists = usize::try_from(event_id.event_seq)
                     .ok()
                     .is_some_and(|index| events.get(index).is_some());
                 if !event_exists {
-                    return Err(ProofBuilderError::TargetNotFound {
-                        target: ProofTarget::Event(*event_id),
-                    });
+                    return Err(ProofBuilderError::EventNotFound { event_id: *event_id });
                 }
             }
 
@@ -266,13 +237,13 @@ impl<S: Source> ProofBuilder<S> {
         };
         let transaction_proof = TransactionProof::new(transaction.transaction, transaction.effects, transaction_events);
         let mut targets = ProofTargets::new();
-        if let Some(transaction_digest) = transaction_target {
+        if let Some(transaction_digest) = self.transaction_digests.first().copied() {
             targets = targets.set_transaction(transaction_digest);
         }
         for object in objects {
             targets = targets.add_object(object);
         }
-        for event_id in event_targets {
+        for event_id in self.event_ids.iter().copied() {
             targets = targets.add_event(event_id);
         }
 
@@ -289,12 +260,11 @@ impl<S: Source> ProofBuilder<S> {
         &self,
         transaction_digest: TransactionDigest,
     ) -> Result<crate::SourceTransaction, ProofBuilderError> {
-        let target = ProofTarget::Transaction(transaction_digest);
         self.source
             .transaction(transaction_digest)
             .await
-            .map_err(|source| ProofBuilderError::Source { target, source })?
-            .ok_or(ProofBuilderError::TargetNotFound { target })
+            .map_err(|source| ProofBuilderError::Source { source })?
+            .ok_or(ProofBuilderError::TransactionNotFound { transaction_digest })
     }
 
     async fn fetch_object(
@@ -302,13 +272,12 @@ impl<S: Source> ProofBuilder<S> {
         object_id: ObjectId,
         expected_ref: Option<ObjectReference>,
     ) -> Result<Object, ProofBuilderError> {
-        let target = ProofTarget::Object(object_id);
         let object = self
             .source
             .object(object_id, expected_ref.map(|object_ref| object_ref.version))
             .await
-            .map_err(|source| ProofBuilderError::Source { target, source })?
-            .ok_or(ProofBuilderError::TargetNotFound { target })?;
+            .map_err(|source| ProofBuilderError::Source { source })?
+            .ok_or(ProofBuilderError::ObjectNotFound { object_id })?;
         let object_ref = object.as_inner().object_ref();
 
         if object_ref.object_id != object_id || expected_ref.is_some_and(|expected| expected != object_ref) {
@@ -320,13 +289,11 @@ impl<S: Source> ProofBuilder<S> {
 
     fn ensure_same_transaction(
         selected: &mut Option<TransactionDigest>,
-        target: ProofTarget,
         transaction_digest: TransactionDigest,
     ) -> Result<(), ProofBuilderError> {
         if let Some(expected) = selected {
             if *expected != transaction_digest {
-                return Err(ProofBuilderError::TargetTransactionMismatch {
-                    target,
+                return Err(ProofBuilderError::TransactionMismatch {
                     expected: *expected,
                     actual: transaction_digest,
                 });
@@ -338,9 +305,9 @@ impl<S: Source> ProofBuilder<S> {
         Ok(())
     }
 
-    fn push_target(&mut self, target: ProofTarget) {
-        if !self.targets.contains(&target) {
-            self.targets.push(target);
+    fn push_unique<T: PartialEq>(values: &mut Vec<T>, value: T) {
+        if !values.contains(&value) {
+            values.push(value);
         }
     }
 }
