@@ -1,22 +1,14 @@
 {
   "version": 1,
   "chain": "J3x3hNka6L8T5y8VwEBHgJYLm5XgLm4FCQwmDcUpNAf5",
-  "target": {
+  "targets": {
+    "transaction": null,
     "objects": [],
     "events": [
-      [
-        {
-          "txDigest": "25zdMVEMRtg7pDGqgLgL1Hf3s8sL9YGuN9UVeo3dECG6",
-          "eventSeq": "0"
-        },
-        {
-          "package_id": "0x0000000000000000000000000000000000000000000000000000000000000003",
-          "module": "iota_system",
-          "sender": "0xc9d530a1332da708bfad2d4b634cafa265b65b5d4de29e552d9200e4f117fc0b",
-          "type": "0x3::validator::StakingRequestEvent",
-          "contents": "Ls9FicZo2wce3fWuF76Ozh9MHFqDi/lbNDQo5sI7qjGMRV8ikXw5a0aj9OvWJ3KGimZuazhPTwzuaNAE3kXuz8nVMKEzLacIv60tS2NMr6JltltdTeKeVS2SAOTxF/wLAAAAAAAAAAAAAENP15RqAA=="
-        }
-      ]
+      {
+        "txDigest": "25zdMVEMRtg7pDGqgLgL1Hf3s8sL9YGuN9UVeo3dECG6",
+        "eventSeq": "0"
+      }
     ]
   },
   "checkpoint_summary": {
@@ -63,88 +55,88 @@
       ]
     }
   },
+  "checkpoint_contents": {
+    "V1": [
+      {
+        "transaction": "123ugpG5FWSQZ3yZkxVxNyw3RjDobNMGTXDom6aJsnDU",
+        "effects": "BBbiQ6R1A9QTCg4u3KrQw7nXtNJN9o4TFLZ3az93BEYJ",
+        "signatures": [
+          {
+            "scheme": "ed25519",
+            "signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+            "public_key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+          }
+        ]
+      },
+      {
+        "transaction": "6Sjy1JpAgvYWp9NFZ6tYY3AMxjsB8d8Wjr7o7YDoThP6",
+        "effects": "JBMBLxwJWvnRaAbHVM1x1LRizxE8LqPmoLrfG1ZEikkv",
+        "signatures": [
+          {
+            "scheme": "ed25519",
+            "signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+            "public_key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+          }
+        ]
+      },
+      {
+        "transaction": "5a2akdP8QpYw5Tr7d4iE4NbybHeJw8JgRQ3PPiPfJuk7",
+        "effects": "G8r2qRw4cCWx5zet4RE3qpHRGyywKHB378kQ9Ku1vdVe",
+        "signatures": [
+          {
+            "scheme": "ed25519",
+            "signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+            "public_key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+          }
+        ]
+      },
+      {
+        "transaction": "25zdMVEMRtg7pDGqgLgL1Hf3s8sL9YGuN9UVeo3dECG6",
+        "effects": "fG1qHEADjgH1rbEMBy3kvLDhFcBi6akkRBf5eBsYHTt",
+        "signatures": [
+          {
+            "scheme": "ed25519",
+            "signature": "ny3sKc8wQfcK3jOtxov8TvX3FsAQmaNE+/Kmhl5ODZyPrbiwog63/67vek1SpJqCLI8HU122VxiSuKB7G8NHDA==",
+            "public_key": "3tudne38ft4blQx4QMgi89Dbud82vs9JX0wqZJjR61k="
+          }
+        ]
+      },
+      {
+        "transaction": "B1yr1zybhNUwKeadAxCRvhnYdZhhk1BDLgkjRx693bbu",
+        "effects": "73QeVLRjs57CqEzR7Za1pSbFNJurnYZiZw8wbDwNcMsK",
+        "signatures": [
+          {
+            "scheme": "ed25519",
+            "signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+            "public_key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+          }
+        ]
+      },
+      {
+        "transaction": "5JQhS5my3KrapKu2hKsbLRyqtHrLcB9RTggGsd5Pyx3F",
+        "effects": "CBqkCM2cP3xVHb9nEwNFk1QJ8veELTtBPdQYJGUxvvun",
+        "signatures": [
+          {
+            "scheme": "ed25519",
+            "signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+            "public_key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+          }
+        ]
+      },
+      {
+        "transaction": "GbemSdr6vTaJ5q6KanqizjNQCy59fJgkHpexCRBfTHrp",
+        "effects": "EN4LoN2V7ffkQ2LoDnvXNL72pSbPb3335VYtVjScxULv",
+        "signatures": [
+          {
+            "scheme": "ed25519",
+            "signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+            "public_key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+          }
+        ]
+      }
+    ]
+  },
   "transaction_proof": {
-    "checkpoint_contents": {
-      "V1": [
-        {
-          "transaction": "123ugpG5FWSQZ3yZkxVxNyw3RjDobNMGTXDom6aJsnDU",
-          "effects": "BBbiQ6R1A9QTCg4u3KrQw7nXtNJN9o4TFLZ3az93BEYJ",
-          "signatures": [
-            {
-              "scheme": "ed25519",
-              "signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "public_key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
-            }
-          ]
-        },
-        {
-          "transaction": "6Sjy1JpAgvYWp9NFZ6tYY3AMxjsB8d8Wjr7o7YDoThP6",
-          "effects": "JBMBLxwJWvnRaAbHVM1x1LRizxE8LqPmoLrfG1ZEikkv",
-          "signatures": [
-            {
-              "scheme": "ed25519",
-              "signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "public_key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
-            }
-          ]
-        },
-        {
-          "transaction": "5a2akdP8QpYw5Tr7d4iE4NbybHeJw8JgRQ3PPiPfJuk7",
-          "effects": "G8r2qRw4cCWx5zet4RE3qpHRGyywKHB378kQ9Ku1vdVe",
-          "signatures": [
-            {
-              "scheme": "ed25519",
-              "signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "public_key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
-            }
-          ]
-        },
-        {
-          "transaction": "25zdMVEMRtg7pDGqgLgL1Hf3s8sL9YGuN9UVeo3dECG6",
-          "effects": "fG1qHEADjgH1rbEMBy3kvLDhFcBi6akkRBf5eBsYHTt",
-          "signatures": [
-            {
-              "scheme": "ed25519",
-              "signature": "ny3sKc8wQfcK3jOtxov8TvX3FsAQmaNE+/Kmhl5ODZyPrbiwog63/67vek1SpJqCLI8HU122VxiSuKB7G8NHDA==",
-              "public_key": "3tudne38ft4blQx4QMgi89Dbud82vs9JX0wqZJjR61k="
-            }
-          ]
-        },
-        {
-          "transaction": "B1yr1zybhNUwKeadAxCRvhnYdZhhk1BDLgkjRx693bbu",
-          "effects": "73QeVLRjs57CqEzR7Za1pSbFNJurnYZiZw8wbDwNcMsK",
-          "signatures": [
-            {
-              "scheme": "ed25519",
-              "signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "public_key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
-            }
-          ]
-        },
-        {
-          "transaction": "5JQhS5my3KrapKu2hKsbLRyqtHrLcB9RTggGsd5Pyx3F",
-          "effects": "CBqkCM2cP3xVHb9nEwNFk1QJ8veELTtBPdQYJGUxvvun",
-          "signatures": [
-            {
-              "scheme": "ed25519",
-              "signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "public_key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
-            }
-          ]
-        },
-        {
-          "transaction": "GbemSdr6vTaJ5q6KanqizjNQCy59fJgkHpexCRBfTHrp",
-          "effects": "EN4LoN2V7ffkQ2LoDnvXNL72pSbPb3335VYtVjScxULv",
-          "signatures": [
-            {
-              "scheme": "ed25519",
-              "signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "public_key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
-            }
-          ]
-        }
-      ]
-    },
     "transaction": {
       "data": {
         "transaction": {

@@ -11,7 +11,7 @@
 //! [`CertifiedCheckpointSummary`]: iota_types::messages_checkpoint::CertifiedCheckpointSummary
 //! [`Committee`]: iota_types::committee::Committee
 
-use iota_sdk_types::{CheckpointContents, Event, ObjectReference};
+use iota_sdk_types::{CheckpointContents, TransactionDigest};
 use iota_types::{
     committee::Committee,
     digests::ChainIdentifier,
@@ -85,6 +85,12 @@ pub enum VerifyErrorKind {
         #[source]
         source: BoxError,
     },
+    /// The proof does not declare a transaction, object, or event target.
+    #[error("proof does not contain a target")]
+    MissingTarget,
+    /// The selected transaction differs from the transaction packaged in the proof.
+    #[error("transaction target does not match the packaged transaction")]
+    TransactionTargetMismatch,
     /// The packaged transaction does not match the transaction digest in its effects.
     #[error("transaction digest does not match the execution digest")]
     TransactionDigestMismatch,
@@ -94,8 +100,8 @@ pub enum VerifyErrorKind {
     /// The packaged events do not match the events digest in the transaction effects.
     #[error("events digest does not match the execution digest")]
     EventsDigestMismatch,
-    /// Event claims are present but the proof does not contain transaction events.
-    #[error("transaction effects refer to events but event data is missing")]
+    /// Event targets are present but the proof does not contain transaction events.
+    #[error("event targets require transaction event data")]
     MissingEvents,
     /// An event claim identifies a transaction other than the one proven by the envelope.
     #[error("event target does not belong to the transaction")]
@@ -106,12 +112,6 @@ pub enum VerifyErrorKind {
         /// Transaction-local event index requested by the claim.
         sequence: u64,
     },
-    /// The claimed event differs from the event at the requested transaction-local index.
-    #[error("event target contents do not match")]
-    EventContentsMismatch,
-    /// A claimed object does not compute to its packaged object reference.
-    #[error("object target reference does not match the object")]
-    ObjectReferenceMismatch,
     /// A claimed object reference is absent from the packaged transaction effects.
     #[error("object target was not found in the transaction effects")]
     ObjectNotFound,
@@ -167,16 +167,19 @@ impl TryFrom<u16> for ProofVersion {
     }
 }
 
-/// Values whose inclusion is claimed by a [`Proof`].
+/// Values the caller selected for a [`Proof`].
 ///
 /// Objects and events must belong to the proven transaction.
 #[derive(Default, Debug, Serialize, Deserialize, Clone)]
 pub struct ProofTargets {
-    /// Objects claimed to have been changed by the transaction.
-    pub objects: Vec<(ObjectReference, Object)>,
+    /// Transaction explicitly selected by the caller.
+    pub transaction: Option<TransactionDigest>,
 
-    /// Events claimed to have been emitted by the transaction.
-    pub events: Vec<(EventID, Event)>,
+    /// Objects explicitly selected by the caller.
+    pub objects: Vec<Object>,
+
+    /// Events explicitly selected by the caller.
+    pub events: Vec<EventID>,
 }
 
 impl ProofTargets {
@@ -185,52 +188,48 @@ impl ProofTargets {
         Self::default()
     }
 
-    /// Adds an object claim.
-    ///
-    /// During verification, `object` must compute to `object_ref`, and
-    /// `object_ref` must appear among the objects changed by the proven
-    /// transaction.
-    pub fn add_object(mut self, object_ref: ObjectReference, object: Object) -> Self {
-        self.objects.push((object_ref, object));
+    /// Sets the selected transaction.
+    pub fn set_transaction(mut self, transaction: TransactionDigest) -> Self {
+        self.transaction = Some(transaction);
         self
     }
 
-    /// Adds an event claim.
-    ///
-    /// During verification, `event_id` must identify the proven transaction, and
-    /// `event` must equal the event at its transaction-local sequence number.
-    pub fn add_event(mut self, event_id: EventID, event: Event) -> Self {
-        self.events.push((event_id, event));
+    /// Adds a selected object.
+    pub fn add_object(mut self, object: Object) -> Self {
+        self.objects.push(object);
         self
+    }
+
+    /// Adds a selected event.
+    pub fn add_event(mut self, event_id: EventID) -> Self {
+        self.events.push(event_id);
+        self
+    }
+
+    /// Returns whether no target has been selected.
+    pub fn is_empty(&self) -> bool {
+        self.transaction.is_none() && self.objects.is_empty() && self.events.is_empty()
     }
 }
 
-/// The data required to prove that a transaction belongs to a checkpoint.
+/// Transaction-specific evidence carried by a [`Proof`].
 ///
-/// The transaction effects link the transaction to `checkpoint_contents` and,
-/// when present, commit to `events`.
+/// The effects identify the transaction in its checkpoint. Event data is
+/// included when the proof declares event targets.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TransactionProof {
-    /// The contents of the checkpoint containing the transaction.
-    pub checkpoint_contents: CheckpointContents,
     /// The transaction being proven.
     pub transaction: Transaction,
     /// The transaction's execution effects.
     pub effects: TransactionEffects,
-    /// Events emitted by the transaction, if any.
+    /// Complete event list included when the proof declares event targets.
     pub events: Option<TransactionEvents>,
 }
 
 impl TransactionProof {
     /// Creates transaction proof data.
-    pub fn new(
-        checkpoint_contents: CheckpointContents,
-        transaction: Transaction,
-        effects: TransactionEffects,
-        events: Option<TransactionEvents>,
-    ) -> Self {
+    pub fn new(transaction: Transaction, effects: TransactionEffects, events: Option<TransactionEvents>) -> Self {
         Self {
-            checkpoint_contents,
             transaction,
             effects,
             events,
@@ -240,8 +239,8 @@ impl TransactionProof {
 
 /// Evidence that a transaction is included in a certified checkpoint.
 ///
-/// Every proof contains [`TransactionProof`] and may additionally claim objects
-/// or events. Call [`ProofVerifier::verify`] to verify these claims.
+/// [`ProofTargets`] records the values selected by the caller. The checkpoint
+/// and transaction proof fields contain the evidence for those targets.
 ///
 /// [`Proof::chain`] identifies the network reported by the proof source. It is
 /// informational and is not checked during verification.
@@ -251,11 +250,13 @@ pub struct Proof {
     pub version: ProofVersion,
     /// The network reported by the proof source.
     pub chain: ChainIdentifier,
-    /// The values claimed by the proof.
-    pub target: ProofTargets,
+    /// The values selected for this proof.
+    pub targets: ProofTargets,
     /// The certified summary of the checkpoint containing the transaction.
     pub checkpoint_summary: CertifiedCheckpointSummary,
-    /// The transaction and its checkpoint inclusion data.
+    /// Contents committed to by the checkpoint summary.
+    pub checkpoint_contents: CheckpointContents,
+    /// The transaction and its execution data
     pub transaction_proof: TransactionProof,
 }
 
@@ -263,15 +264,17 @@ impl Proof {
     /// Creates a proof using [`ProofVersion::CURRENT`].
     pub fn new(
         chain: ChainIdentifier,
-        target: ProofTargets,
+        targets: ProofTargets,
         checkpoint_summary: CertifiedCheckpointSummary,
+        checkpoint_contents: CheckpointContents,
         transaction_proof: TransactionProof,
     ) -> Self {
         Self {
             version: ProofVersion::CURRENT,
             chain,
-            target,
+            targets,
             checkpoint_summary,
+            checkpoint_contents,
             transaction_proof,
         }
     }
@@ -281,9 +284,9 @@ impl Proof {
         self.version
     }
 
-    /// Returns the values claimed by the proof.
-    pub const fn target(&self) -> &ProofTargets {
-        &self.target
+    /// Returns the values selected for this proof.
+    pub const fn targets(&self) -> &ProofTargets {
+        &self.targets
     }
 
     /// Serializes the proof as JSON.
@@ -351,7 +354,7 @@ impl<'committee> ProofVerifier<'committee> {
     /// - the checkpoint contents match the digest in that summary;
     /// - the transaction, effects, and optional events are internally consistent;
     /// - the transaction effects occur in the authenticated checkpoint contents;
-    /// - every object and event claim matches the proof data.
+    /// - every selected target matches the authenticated proof data.
     ///
     /// # Errors
     ///
@@ -361,8 +364,14 @@ impl<'committee> ProofVerifier<'committee> {
             kind: VerifyErrorKind::Version { source },
         })?;
 
+        if proof.targets.is_empty() {
+            return Err(VerifyError {
+                kind: VerifyErrorKind::MissingTarget,
+            });
+        }
+
         let summary = &proof.checkpoint_summary;
-        let contents = Some(&proof.transaction_proof.checkpoint_contents);
+        let contents = Some(&proof.checkpoint_contents);
 
         summary
             .verify_with_contents(self.committee, contents)
@@ -372,9 +381,8 @@ impl<'committee> ProofVerifier<'committee> {
                 },
             })?;
 
-        self.verify_transaction_proof(summary, &proof.transaction_proof)?;
-        self.verify_event_targets(&proof.target, &proof.transaction_proof)?;
-        self.verify_object_targets(&proof.target, &proof.transaction_proof)?;
+        self.verify_transaction_proof(summary, &proof.checkpoint_contents, &proof.transaction_proof)?;
+        self.verify_targets(&proof.targets, &proof.transaction_proof)?;
 
         Ok(())
     }
@@ -383,6 +391,7 @@ impl<'committee> ProofVerifier<'committee> {
     fn verify_transaction_proof(
         &self,
         summary: &CertifiedCheckpointSummary,
+        checkpoint_contents: &CheckpointContents,
         transaction_proof: &TransactionProof,
     ) -> Result<(), VerifyError> {
         let execution_digests = transaction_proof.effects.execution_digests();
@@ -393,8 +402,7 @@ impl<'committee> ProofVerifier<'committee> {
             });
         }
 
-        let transaction_is_in_checkpoint = transaction_proof
-            .checkpoint_contents
+        let transaction_is_in_checkpoint = checkpoint_contents
             .enumerate_transactions(summary)
             .any(|(_, digests)| digests == execution_digests);
 
@@ -404,18 +412,32 @@ impl<'committee> ProofVerifier<'committee> {
             });
         }
 
-        if transaction_proof.effects.events_digest()
-            != transaction_proof.events.as_ref().map(|events| events.digest()).as_ref()
-        {
-            return Err(VerifyError {
-                kind: VerifyErrorKind::EventsDigestMismatch,
-            });
+        if let Some(events) = &transaction_proof.events {
+            if transaction_proof.effects.events_digest() != Some(&events.digest()) {
+                return Err(VerifyError {
+                    kind: VerifyErrorKind::EventsDigestMismatch,
+                });
+            }
         }
 
         Ok(())
     }
 
-    /// Checks each event claim against the proven transaction and its packaged events.
+    /// Checks every declared target against the transaction proof.
+    fn verify_targets(&self, targets: &ProofTargets, transaction_proof: &TransactionProof) -> Result<(), VerifyError> {
+        let transaction_digest = transaction_proof.effects.execution_digests().transaction;
+
+        if targets.transaction.is_some_and(|target| target != transaction_digest) {
+            return Err(VerifyError {
+                kind: VerifyErrorKind::TransactionTargetMismatch,
+            });
+        }
+
+        self.verify_event_targets(targets, transaction_proof)?;
+        self.verify_object_targets(targets, transaction_proof)
+    }
+
+    /// Checks each event target against the proven transaction and its packaged events.
     fn verify_event_targets(
         &self,
         targets: &ProofTargets,
@@ -432,7 +454,7 @@ impl<'committee> ProofVerifier<'committee> {
         };
 
         let execution_digests = transaction_proof.effects.execution_digests();
-        for (event_id, event) in &targets.events {
+        for event_id in &targets.events {
             if event_id.tx_digest != execution_digests.transaction {
                 return Err(VerifyError {
                     kind: VerifyErrorKind::EventTransactionMismatch,
@@ -440,25 +462,19 @@ impl<'committee> ProofVerifier<'committee> {
             }
 
             let event_index = event_id.event_seq as usize;
-            let Some(actual_event) = events.get(event_index) else {
+            let Some(_) = events.get(event_index) else {
                 return Err(VerifyError {
                     kind: VerifyErrorKind::EventSequenceOutOfBounds {
                         sequence: event_id.event_seq,
                     },
                 });
             };
-
-            if actual_event != event {
-                return Err(VerifyError {
-                    kind: VerifyErrorKind::EventContentsMismatch,
-                });
-            }
         }
 
         Ok(())
     }
 
-    /// Checks each object claim against its reference and the transaction effects.
+    /// Checks each object target against the transaction effects.
     fn verify_object_targets(
         &self,
         targets: &ProofTargets,
@@ -469,16 +485,11 @@ impl<'committee> ProofVerifier<'committee> {
         }
 
         let changed_objects = transaction_proof.effects.all_changed_objects();
-        for (object_ref, object) in &targets.objects {
-            if object_ref != &object.as_inner().object_ref() {
-                return Err(VerifyError {
-                    kind: VerifyErrorKind::ObjectReferenceMismatch,
-                });
-            }
-
+        for object in &targets.objects {
+            let object_ref = object.as_inner().object_ref();
             changed_objects
                 .iter()
-                .find(|changed_object_ref| &changed_object_ref.0 == object_ref)
+                .find(|changed_object_ref| changed_object_ref.0 == object_ref)
                 .ok_or(VerifyError {
                     kind: VerifyErrorKind::ObjectNotFound,
                 })?;

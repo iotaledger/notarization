@@ -63,6 +63,13 @@ The same builder also exposes `object(objectId)` and
 `event(transactionDigest, eventSequence)`. All 64-bit values use JavaScript
 `bigint`.
 
+The serialized proof records the targets explicitly selected by the caller.
+Its checkpoint summary and checkpoint contents are sibling fields, while the
+required transaction proof contains the transaction, effects, and optional
+event evidence. Object targets contain the selected object values; event
+targets contain event IDs whose contents are selected from the authenticated
+transaction event list.
+
 `PoiClient` hides the generated protobuf client, gRPC transport, and
 JavaScript/WASM source adapter. The adapter passes only opaque BCS bytes and
 checkpoint sequence numbers into WASM. Rust decodes those values into existing

@@ -25,6 +25,11 @@ async fn client_builds_and_verifies_a_transaction_proof_from_genesis() {
         .await
         .expect("transaction proof must be constructed");
 
+    assert_eq!(proof.targets.transaction, Some(transfer.digest));
+    assert!(proof.targets.objects.is_empty());
+    assert!(proof.targets.events.is_empty());
+    assert!(proof.transaction_proof.events.is_none());
+
     let resolution = CommitteeResolution::from_genesis(genesis).expect("test cluster genesis blob must load");
     client
         .verifier(resolution)
@@ -46,7 +51,10 @@ async fn client_builds_and_verifies_an_object_proof_with_a_trusted_node() {
         .await
         .expect("object proof must be constructed");
 
-    assert_eq!(proof.target.objects[0].0, transfer.gas_object);
+    assert!(proof.targets.transaction.is_none());
+    assert_eq!(proof.targets.objects[0].as_inner().object_ref(), transfer.gas_object);
+    assert!(proof.targets.events.is_empty());
+    assert!(proof.transaction_proof.events.is_none());
     client
         .verifier(CommitteeResolution::TrustedNode)
         .verify(&proof)
@@ -71,6 +79,11 @@ async fn client_builds_and_verifies_an_event_proof_with_a_trusted_node() {
         .await
         .expect("event proof must be constructed");
 
+    assert!(proof.targets.transaction.is_none());
+    assert!(proof.targets.objects.is_empty());
+    assert_eq!(proof.targets.events, vec![event_id]);
+    assert!(proof.transaction_proof.events.is_some());
+
     client
         .verifier(CommitteeResolution::TrustedNode)
         .verify(&proof)
@@ -92,7 +105,7 @@ async fn client_builds_one_verified_proof_for_multiple_objects() {
         .expect("stacked object proof must be constructed");
 
     assert_eq!(proof.transaction_proof.transaction.digest(), &transfer.digest);
-    assert_eq!(proof.target.objects.len(), 2);
+    assert_eq!(proof.targets.objects.len(), 2);
     client
         .verifier(CommitteeResolution::TrustedNode)
         .verify(&proof)
@@ -119,9 +132,9 @@ async fn client_builds_one_verified_proof_for_object_and_event_targets() {
         .expect("mixed target proof must be constructed");
 
     assert_eq!(proof.transaction_proof.transaction.digest(), &staking.digest);
-    assert_eq!(proof.target.objects[0].0, staking.gas_object);
-    assert_eq!(proof.target.objects.len(), 1);
-    assert_eq!(proof.target.events.len(), 1);
+    assert_eq!(proof.targets.objects[0].as_inner().object_ref(), staking.gas_object);
+    assert_eq!(proof.targets.objects.len(), 1);
+    assert_eq!(proof.targets.events.len(), 1);
     client
         .verifier(CommitteeResolution::TrustedNode)
         .verify(&proof)

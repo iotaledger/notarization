@@ -51,12 +51,15 @@ gRPC.
 
 A `Proof` contains three layers of evidence:
 
-- A `CertifiedCheckpointSummary` signed by the committee for the checkpoint epoch.
-- A `TransactionProof` containing the checkpoint contents, transaction, effects, and optional events.
-- `ProofTargets` describing the object or event claims the caller wants to authenticate.
+- `ProofTargets` recording the transaction, objects, and events explicitly selected by the caller.
+- A `CertifiedCheckpointSummary` and its `CheckpointContents` linking the transaction to a committee-certified
+  checkpoint.
+- A required `TransactionProof` containing the transaction, its effects, and event data when event targets are present.
 
-The transaction proof is required. A Proof of Inclusion proves inclusion in a certified checkpoint, so the proof envelope
-must carry the transaction evidence that links the target claim to the checkpoint contents.
+Object targets contain their exact object values; verification derives each object reference and finds it in the
+transaction effects. Event targets contain `EventID` values, while the transaction proof carries the complete event list
+needed to verify the effects' event digest. A transaction target is present only when the caller explicitly requested the
+transaction itself, although transaction evidence supports every proof.
 
 ## Verification
 
@@ -95,9 +98,10 @@ Verification checks:
 - the checkpoint contents match the certified checkpoint summary
 - the transaction digest matches the transaction effects
 - the transaction effects are included in the checkpoint contents
-- packaged events match the event digest recorded in the effects
-- requested event targets belong to the transaction and match the packaged event contents
-- requested object targets match their object references and appear in the transaction effects
+- an explicitly requested transaction matches the packaged transaction
+- requested object targets derive references present in the transaction effects
+- event data, when required, matches the event digest recorded in the effects
+- requested event targets belong to the transaction and select events in the authenticated event list
 
 ## Trust Boundaries
 
@@ -112,8 +116,8 @@ trust the authenticated target claims relative to the supplied committee.
 
 - `Proof`: Versioned Proof of Inclusion envelope.
 - `ProofVersion`: Proof format version used for compatibility checks.
-- `TransactionProof`: Transaction, effects, events, and checkpoint contents used to prove inclusion.
-- `ProofTargets`: Object and event claims to authenticate.
+- `TransactionProof`: Transaction, effects, and optional event evidence used to prove inclusion.
+- `ProofTargets`: Transaction, object, and event claims explicitly selected by the caller.
 - `ProofTarget`: Transaction, object, or event requested from a `ProofBuilder`.
 - `PoiClient`: Source-backed entry point for proof construction and committee-aware verification.
 - `CommitteeResolution`: Trusted-node or anchored committee-resolution configuration, including the committee cache.

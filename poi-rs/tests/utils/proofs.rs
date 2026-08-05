@@ -39,11 +39,21 @@ fn signed_checkpoint(contents: &CheckpointContents) -> (Committee, CertifiedChec
 }
 
 pub fn valid_transaction_proof() -> (Committee, Proof) {
-    proof_with_targets(ProofTargets::new())
+    let execution = execution_data();
+    let transaction_digest = *execution.transaction.digest();
+    proof_from_execution(ProofTargets::new().set_transaction(transaction_digest), execution, None)
 }
 
 pub fn proof_with_targets(targets: ProofTargets) -> (Committee, Proof) {
     let execution = execution_data();
+    proof_from_execution(targets, execution, None)
+}
+
+fn proof_from_execution(
+    targets: ProofTargets,
+    execution: ExecutionData,
+    events: Option<TransactionEvents>,
+) -> (Committee, Proof) {
     let contents = CheckpointContents::new_with_digests_only_for_tests([execution.digests()]);
     let (committee, summary) = signed_checkpoint(&contents);
     let chain = ChainIdentifier::from(*summary.digest());
@@ -51,7 +61,8 @@ pub fn proof_with_targets(targets: ProofTargets) -> (Committee, Proof) {
         chain,
         targets,
         summary,
-        TransactionProof::new(contents, execution.transaction, execution.effects, None),
+        contents,
+        TransactionProof::new(execution.transaction, execution.effects, events),
     );
 
     (committee, proof)
@@ -70,7 +81,8 @@ pub fn proof_with_events(events: TransactionEvents) -> (Committee, TransactionDi
         chain,
         ProofTargets::new(),
         summary,
-        TransactionProof::new(contents, execution.transaction, execution.effects, Some(events)),
+        contents,
+        TransactionProof::new(execution.transaction, execution.effects, Some(events)),
     );
 
     (committee, transaction_digest, proof)

@@ -345,7 +345,7 @@ mod tests {
             .clone()
             .try_into()
             .expect("checkpoint summary must convert to SDK types");
-        let contents = SdkCheckpointContents::try_from(proof.transaction_proof.checkpoint_contents.clone())
+        let contents = SdkCheckpointContents::try_from(proof.checkpoint_contents.clone())
             .expect("checkpoint contents must convert to SDK types");
         let checkpoint = decode_checkpoint(JsCheckpointEvidence {
             summary_bcs: bcs::to_bytes(&VersionedCheckpointSummary::V1(signed_summary.checkpoint))
@@ -360,6 +360,6 @@ mod tests {
             bcs::to_bytes(&checkpoint.summary).expect("decoded checkpoint summary must serialize"),
             bcs::to_bytes(&proof.checkpoint_summary).expect("fixture checkpoint summary must serialize")
         );
-        assert_eq!(checkpoint.contents, proof.transaction_proof.checkpoint_contents);
+        assert_eq!(checkpoint.contents, proof.checkpoint_contents);
     }
 }

@@ -72,8 +72,9 @@ async fn stacked_targets_are_deduplicated_and_reuse_transaction_evidence() {
             .expect("recorded transactions lock must not be poisoned"),
         vec![staking.digest]
     );
-    assert_eq!(proof.target.objects.len(), 1);
-    assert_eq!(proof.target.events.len(), 1);
+    assert_eq!(proof.targets.transaction, Some(staking.digest));
+    assert_eq!(proof.targets.objects.len(), 1);
+    assert_eq!(proof.targets.events.len(), 1);
     ProofVerifier::new(&cluster.committee())
         .verify(&proof)
         .expect("the stacked-target proof must verify offline");

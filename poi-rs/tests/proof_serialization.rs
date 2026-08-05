@@ -30,24 +30,27 @@ fn assert_fixture_round_trips_and_verifies(fixture: &str) -> Proof {
 fn transaction_fixture_round_trips_and_verifies() {
     let proof = assert_fixture_round_trips_and_verifies(TRANSACTION);
 
-    assert!(proof.target().objects.is_empty());
-    assert!(proof.target().events.is_empty());
+    assert!(proof.targets().transaction.is_some());
+    assert!(proof.targets().objects.is_empty());
+    assert!(proof.targets().events.is_empty());
 }
 
 #[test]
 fn object_fixture_round_trips_and_verifies() {
     let proof = assert_fixture_round_trips_and_verifies(OBJECT);
 
-    assert_eq!(proof.target().objects.len(), 1);
-    assert!(proof.target().events.is_empty());
+    assert!(proof.targets().transaction.is_none());
+    assert_eq!(proof.targets().objects.len(), 1);
+    assert!(proof.targets().events.is_empty());
 }
 
 #[test]
 fn event_fixture_round_trips_and_verifies() {
     let proof = assert_fixture_round_trips_and_verifies(EVENT);
 
-    assert!(proof.target().objects.is_empty());
-    assert_eq!(proof.target().events.len(), 1);
+    assert!(proof.targets().transaction.is_none());
+    assert!(proof.targets().objects.is_empty());
+    assert_eq!(proof.targets().events.len(), 1);
 }
 
 #[test]
