@@ -5,13 +5,22 @@
 // by sibling test crates otherwise appear unused.
 #![allow(dead_code)]
 
+use std::fs::File;
+
 use iota_config::{IOTA_GENESIS_FILENAME, genesis::Genesis};
 use iota_grpc_client::Client as GrpcClient;
 use iota_sdk_types::{ObjectReference, TransactionDigest};
+use iota_types::iota_system_state::{IotaSystemStateTrait, get_iota_system_state};
 use iota_types::{committee::Committee, digests::ChainIdentifier};
 use test_cluster::{TestCluster, TestClusterBuilder};
 
 pub mod proofs;
+pub mod sources;
+
+pub fn committee_at(epoch: u64) -> Committee {
+    let (committee, _) = Committee::new_simple_test_committee();
+    Committee::new(epoch, committee.voting_rights.iter().cloned().collect())
+}
 
 pub struct CheckpointedTransfer {
     pub digest: TransactionDigest,
@@ -61,7 +70,11 @@ pub async fn transfer_tx(cluster: &TestCluster) -> CheckpointedTransfer {
 }
 
 pub async fn object_transfer_tx(cluster: &TestCluster) -> CheckpointedObjectTransfer {
-    let (sender, mut coins) = cluster.wallet.get_one_account().await.unwrap();
+    let (sender, mut coins) = cluster
+        .wallet
+        .get_one_account()
+        .await
+        .expect("test cluster must contain a funded account");
     let gas = coins.pop().expect("funded account must have a gas coin");
     let object = coins.pop().expect("funded account must have an object to transfer");
     let gas_object_id = gas.object_id;
@@ -92,7 +105,11 @@ pub async fn object_transfer_tx(cluster: &TestCluster) -> CheckpointedObjectTran
 }
 
 pub async fn staking_tx(cluster: &TestCluster) -> CheckpointedStaking {
-    let (sender, mut coins) = cluster.wallet.get_one_account().await.unwrap();
+    let (sender, mut coins) = cluster
+        .wallet
+        .get_one_account()
+        .await
+        .expect("test cluster must contain a funded account");
     let gas = coins.pop().expect("funded account must have a gas coin");
     let stake = coins.pop().expect("funded account must have a stake coin");
     let gas_object_id = gas.object_id;
@@ -125,10 +142,16 @@ pub async fn staking_tx(cluster: &TestCluster) -> CheckpointedStaking {
 
 pub fn genesis_committee(cluster: &TestCluster) -> Committee {
     let genesis_path = cluster.swarm.dir().join(IOTA_GENESIS_FILENAME);
-    Genesis::load(genesis_path)
-        .expect("test cluster genesis blob must load")
-        .committee()
-        .expect("genesis blob must contain a committee")
+    let genesis = File::open(genesis_path).expect("test cluster genesis blob must be available");
+
+    committee_from_genesis(genesis).expect("test cluster genesis committee must be extractable")
+}
+
+pub fn committee_from_genesis(genesis: impl std::io::Read) -> Result<Committee, ()> {
+    let genesis: iota_config::genesis::Genesis = bcs::from_reader(genesis).map_err(|_| ())?;
+    let system_state = get_iota_system_state(&genesis.objects()).map_err(|_| ())?;
+
+    Ok(system_state.get_current_epoch_committee().committee().clone())
 }
 
 pub fn genesis_chain_identifier(cluster: &TestCluster) -> ChainIdentifier {

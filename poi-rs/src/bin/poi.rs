@@ -11,11 +11,11 @@ use std::{
 
 use anyhow::{Context, Result, bail};
 use clap::{ArgGroup, Args, Parser, Subcommand, ValueEnum};
-use iota_config::{IOTA_GENESIS_FILENAME, genesis::Genesis, iota_config_dir};
+use iota_config::{IOTA_GENESIS_FILENAME, iota_config_dir};
 use iota_grpc_client::Client as GrpcClient;
 use iota_sdk_types::{ObjectId, TransactionDigest};
 use iota_types::event::EventID;
-use poi_rs::{CommitteeResolver, Proof, ProofBuilder, ProofVerifier};
+use poi_rs::{CommitteeResolution, PoiClient, Proof};
 
 const GENESIS_CACHE_DIR: &str = "poi";
 const MAINNET_GENESIS_URL: &str = "https://dbfiles.mainnet.iota.cafe/genesis.blob";
@@ -103,7 +103,8 @@ impl CreateArgs {
             event,
             output,
         } = self;
-        let mut builder = ProofBuilder::from_grpc_client(endpoint.client()?);
+        let client = PoiClient::from_grpc_client(endpoint.client()?);
+        let mut builder = client.proof();
 
         if let Some(transaction) = transaction {
             builder = builder.transaction(transaction);
@@ -158,7 +159,7 @@ impl VerifyArgs {
 
         let genesis = match self.genesis.as_deref() {
             Some(path) => {
-                Genesis::load(path).with_context(|| format!("failed to load genesis blob '{}'", path.display()))?
+                fs::File::open(path).with_context(|| format!("failed to open genesis blob '{}'", path.display()))?
             }
             None => {
                 load_genesis(
@@ -169,17 +170,12 @@ impl VerifyArgs {
                 .await?
             }
         };
-        let trusted_committee = genesis
-            .committee()
-            .context("failed to read committee from genesis blob")?;
-        let resolver = CommitteeResolver::anchor(self.endpoint.client()?, trusted_committee);
-        let committee = resolver
-            .resolve(proof.checkpoint_summary.epoch())
-            .await
-            .context("failed to authenticate the proof checkpoint committee")?;
-
-        ProofVerifier::new(&committee)
+        let resolution = CommitteeResolution::from_genesis(genesis)
+            .map_err(|error| anyhow::anyhow!("failed to load trusted genesis blob: {error}"))?;
+        PoiClient::from_grpc_client(self.endpoint.client()?)
+            .verifier(resolution)
             .verify(&proof)
+            .await
             .context("proof verification failed")?;
         writeln!(io::stdout().lock(), "valid").context("failed to write verification result to stdout")
     }
@@ -247,7 +243,7 @@ impl Network {
     }
 }
 
-async fn load_genesis(network: Network) -> Result<Genesis> {
+async fn load_genesis(network: Network) -> Result<fs::File> {
     let path = iota_config_dir()
         .context("failed to locate the IOTA configuration directory")?
         .join(GENESIS_CACHE_DIR)
@@ -271,7 +267,7 @@ async fn load_genesis(network: Network) -> Result<Genesis> {
         fs::write(&path, bytes).with_context(|| format!("failed to cache genesis blob at '{}'", path.display()))?;
     }
 
-    Genesis::load(&path).with_context(|| format!("failed to load genesis blob '{}'", path.display()))
+    fs::File::open(&path).with_context(|| format!("failed to open genesis blob '{}'", path.display()))
 }
 
 #[tokio::main(flavor = "current_thread")]

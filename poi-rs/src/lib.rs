@@ -11,21 +11,34 @@ pub(crate) type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
 pub mod builder;
 /// Verified committee lineage caches for anchored resolution.
 pub mod cache;
+/// Convenient source-backed client for proof construction and verification.
+pub mod client;
 /// Committee resolution for checkpoint verification.
 pub mod committee;
 /// Proof data types and offline verification.
 pub mod proof;
-/// Sources for constructing proofs.
+/// Ledger evidence source abstraction.
 pub mod source;
-/// Target claims authenticated by a proof.
-pub mod target;
 
-pub use builder::{ProofBuilder, ProofBuilderError};
+pub use builder::{ProofBuilder, ProofBuilderError, ProofTarget};
 pub use cache::{CommitteeCache, CommitteeCacheError, MemoryCommitteeCache};
-pub use committee::{CommitteeResolutionError, CommitteeResolutionErrorKind, CommitteeResolver};
-pub use proof::{
-    Proof, ProofVerifier, ProofVersion, SerializationError, SerializationErrorKind, TransactionProof, VerifyError,
-    VerifyErrorKind, VersionError,
+pub use client::PoiClient;
+pub use committee::{
+    CommitteeResolution, CommitteeResolutionError, CommitteeResolutionErrorKind, CommitteeResolver,
+    ProofVerificationError,
 };
-pub use source::{Source, SourceError, SourceErrorKind, SourceTarget, TransactionMismatch};
-pub use target::ProofTargets;
+pub use proof::{
+    Proof, ProofTargets, ProofVerifier, ProofVersion, SerializationError, SerializationErrorKind, TransactionProof,
+    VerifyError, VerifyErrorKind, VersionError,
+};
+pub use source::{Source, SourceCheckpoint, SourceError, SourceTransaction};
+
+#[cfg(test)]
+mod tests {
+    use crate::{PoiClient, Proof};
+
+    pub fn client_building_test() {
+        // Proof
+        let client = PoiClient::devnet().unwrap();
+    }
+}

@@ -1,141 +1,155 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use iota_sdk_types::{CheckpointContents, EndOfEpochData};
+//! Proof types and verification.
+//!
+//! A [`Proof`] contains a certified checkpoint and the data needed to prove that
+//! a transaction, and optionally its objects or events, belong to that
+//! checkpoint. [`ProofVerifier`] verifies this data against a caller-provided
+//! [`Committee`] without making network requests.
+//!
+//! [`CertifiedCheckpointSummary`]: iota_types::messages_checkpoint::CertifiedCheckpointSummary
+//! [`Committee`]: iota_types::committee::Committee
+
+use iota_sdk_types::{CheckpointContents, TransactionDigest};
 use iota_types::{
     committee::Committee,
     digests::ChainIdentifier,
     effects::{TransactionEffects, TransactionEffectsAPI, TransactionEffectsExt, TransactionEvents},
+    event::EventID,
     messages_checkpoint::{CertifiedCheckpointSummary, CheckpointContentsExt},
+    object::Object,
     transaction::Transaction,
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{BoxError, target::ProofTargets};
+use crate::BoxError;
 
-/// Error returned when a proof-format version is not supported.
+/// An unsupported proof format version.
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 #[error("unsupported Proof of Inclusion proof format version: {version}")]
 pub struct VersionError {
-    /// Unsupported proof-format version.
+    /// The unsupported version.
     pub version: u16,
 }
 
-/// Error returned when a proof cannot be serialized or deserialized.
+/// An error serializing or deserializing a proof.
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 #[error("failed to serialize or deserialize Proof of Inclusion proof")]
 pub struct SerializationError {
-    /// Serialization failure details.
+    /// The underlying error.
     #[source]
     pub kind: SerializationErrorKind,
 }
 
-/// Kind of proof serialization or deserialization failure.
+/// The cause of a [`SerializationError`].
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum SerializationErrorKind {
-    /// JSON serialization or deserialization failed.
+    /// JSON encoding or decoding failed.
     #[error("json serialization or deserialization failed")]
     Json {
-        /// Underlying JSON serialization or deserialization error.
+        /// Error reported by `serde_json`.
         #[source]
         source: serde_json::Error,
     },
 }
 
-/// Error returned when offline proof verification fails.
+/// An error verifying a proof.
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 #[error("failed to verify Proof of Inclusion proof")]
 pub struct VerifyError {
-    /// Verification failure details.
+    /// The reason verification failed.
     #[source]
     pub kind: VerifyErrorKind,
 }
 
-/// Kind of offline proof-verification failure.
+/// The cause of a [`VerifyError`].
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum VerifyErrorKind {
-    /// The proof-format version is not supported.
+    /// The proof uses an unsupported wire-format version.
     #[error("proof format version is not supported")]
     Version {
-        /// Unsupported version error.
+        /// The version error.
         #[source]
         source: VersionError,
     },
-    /// The checkpoint summary or its contents failed verification.
+    /// The committee signature or checkpoint-contents commitment is invalid.
     #[error("checkpoint summary verification failed")]
     CheckpointSummary {
-        /// Underlying checkpoint-verification error.
+        /// The checkpoint verification error.
         #[source]
         source: BoxError,
     },
-    /// A committee target was requested but the checkpoint is not an end-of-epoch checkpoint.
-    #[error("checkpoint summary does not contain an end-of-epoch committee")]
-    MissingEndOfEpochCommittee,
-    /// The next epoch value overflowed while checking a committee target.
-    #[error("next epoch overflows u64")]
-    NextEpochOverflow,
-    /// The committee target does not match the checkpoint's next committee.
-    #[error("committee target does not match the checkpoint summary")]
-    CommitteeMismatch,
-    /// Transaction data does not match the transaction digest in the effects.
+    /// The proof does not declare a transaction, object, or event target.
+    #[error("proof does not contain a target")]
+    MissingTarget,
+    /// The selected transaction differs from the transaction packaged in the proof.
+    #[error("transaction target does not match the packaged transaction")]
+    TransactionTargetMismatch,
+    /// The packaged transaction does not match the transaction digest in its effects.
     #[error("transaction digest does not match the execution digest")]
     TransactionDigestMismatch,
-    /// The transaction effects are not included in the checkpoint contents.
+    /// The packaged transaction effects are absent from the authenticated checkpoint contents.
     #[error("transaction digest not found in the checkpoint contents")]
     TransactionNotInCheckpoint,
-    /// Packaged events do not match the digest recorded in the effects.
+    /// The packaged events do not match the events digest in the transaction effects.
     #[error("events digest does not match the execution digest")]
     EventsDigestMismatch,
-    /// Event targets require packaged transaction events.
-    #[error("transaction effects refer to events but event data is missing")]
+    /// Event targets are present but the proof does not contain transaction events.
+    #[error("event targets require transaction event data")]
     MissingEvents,
-    /// The event target belongs to a different transaction.
+    /// An event claim identifies a transaction other than the one proven by the envelope.
     #[error("event target does not belong to the transaction")]
     EventTransactionMismatch,
-    /// The event target sequence number is outside the packaged event list.
+    /// An event claim refers to an index outside the packaged transaction events.
     #[error("event sequence number {sequence} is out of bounds")]
     EventSequenceOutOfBounds {
-        /// Requested event sequence.
+        /// Transaction-local event index requested by the claim.
         sequence: u64,
     },
-    /// The packaged event does not match the event target.
-    #[error("event target contents do not match")]
-    EventContentsMismatch,
-    /// The object content does not compute to the requested object reference.
-    #[error("object target reference does not match the object")]
-    ObjectReferenceMismatch,
-    /// The transaction effects do not include the requested object reference.
+    /// A claimed object reference is absent from the packaged transaction effects.
     #[error("object target was not found in the transaction effects")]
     ObjectNotFound,
 }
 
-/// Proof-format version used for compatibility checks and verifier dispatch.
+/// The format version of a serialized [`Proof`].
+///
+/// Versions are encoded as unsigned integers. This crate currently supports
+/// only [`ProofVersion::CURRENT`].
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct ProofVersion(u16);
 
 impl ProofVersion {
-    /// Current Proof of Inclusion proof-format version.
+    /// The version produced and accepted by this crate.
     pub const CURRENT: Self = Self(1);
 
-    /// Creates a supported proof-format version.
+    /// Creates a supported proof version.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`VersionError`] when `version` is not [`Self::CURRENT`].
     pub fn new(version: u16) -> Result<Self, VersionError> {
         let version = Self(version);
         version.validate()?;
         Ok(version)
     }
 
-    /// Returns the numeric proof-format version.
+    /// Returns the numeric version.
     pub const fn value(self) -> u16 {
         self.0
     }
 
-    /// Returns an error when this version is not supported.
+    /// Checks that this version is supported.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`VersionError`] when the value is not [`Self::CURRENT`].
     pub fn validate(self) -> Result<(), VersionError> {
         if self == Self::CURRENT {
             Ok(())
@@ -153,33 +167,69 @@ impl TryFrom<u16> for ProofVersion {
     }
 }
 
-/// Transaction evidence packaged in a Proof of Inclusion envelope.
+/// Values the caller selected for a [`Proof`].
 ///
-/// A transaction proof links one transaction to a certified checkpoint. It carries
-/// the checkpoint contents, the transaction, its effects, and the transaction
-/// events when the transaction emitted events.
+/// Objects and events must belong to the proven transaction.
+#[derive(Default, Debug, Serialize, Deserialize, Clone)]
+pub struct ProofTargets {
+    /// Transaction explicitly selected by the caller.
+    pub transaction: Option<TransactionDigest>,
+
+    /// Objects explicitly selected by the caller.
+    pub objects: Vec<Object>,
+
+    /// Events explicitly selected by the caller.
+    pub events: Vec<EventID>,
+}
+
+impl ProofTargets {
+    /// Creates an empty set of claims.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Sets the selected transaction.
+    pub fn set_transaction(mut self, transaction: TransactionDigest) -> Self {
+        self.transaction = Some(transaction);
+        self
+    }
+
+    /// Adds a selected object.
+    pub fn add_object(mut self, object: Object) -> Self {
+        self.objects.push(object);
+        self
+    }
+
+    /// Adds a selected event.
+    pub fn add_event(mut self, event_id: EventID) -> Self {
+        self.events.push(event_id);
+        self
+    }
+
+    /// Returns whether no target has been selected.
+    pub fn is_empty(&self) -> bool {
+        self.transaction.is_none() && self.objects.is_empty() && self.events.is_empty()
+    }
+}
+
+/// Transaction-specific evidence carried by a [`Proof`].
+///
+/// The effects identify the transaction in its checkpoint. Event data is
+/// included when the proof declares event targets.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TransactionProof {
-    /// Checkpoint contents including the transaction.
-    pub checkpoint_contents: CheckpointContents,
-    /// Transaction being authenticated.
+    /// The transaction being proven.
     pub transaction: Transaction,
-    /// Effects of the transaction being authenticated.
+    /// The transaction's execution effects.
     pub effects: TransactionEffects,
-    /// Events of the transaction being authenticated, when present.
+    /// Complete event list included when the proof declares event targets.
     pub events: Option<TransactionEvents>,
 }
 
 impl TransactionProof {
-    /// Creates transaction proof evidence.
-    pub fn new(
-        checkpoint_contents: CheckpointContents,
-        transaction: Transaction,
-        effects: TransactionEffects,
-        events: Option<TransactionEvents>,
-    ) -> Self {
+    /// Creates transaction proof data.
+    pub fn new(transaction: Transaction, effects: TransactionEffects, events: Option<TransactionEvents>) -> Self {
         Self {
-            checkpoint_contents,
             transaction,
             effects,
             events,
@@ -187,105 +237,141 @@ impl TransactionProof {
     }
 }
 
-/// Proof of Inclusion evidence for targets included in a certified checkpoint.
+/// Evidence that a transaction is included in a certified checkpoint.
 ///
-/// The envelope always carries transaction evidence. This keeps the public Proof
-/// of Inclusion contract focused on inclusion claims rather than generic
-/// checkpoint-only verification.
+/// [`ProofTargets`] records the values selected by the caller. The checkpoint
+/// and transaction proof fields contain the evidence for those targets.
+///
+/// [`Proof::chain`] identifies the network reported by the proof source. It is
+/// informational and is not checked during verification.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Proof {
-    /// Proof-format version.
+    /// The proof format version.
     pub version: ProofVersion,
-    /// Chain or network identity.
+    /// The network reported by the proof source.
     pub chain: ChainIdentifier,
-    /// Target claim authenticated by this proof.
-    pub target: ProofTargets,
-    /// Certified checkpoint summary.
+    /// The values selected for this proof.
+    pub targets: ProofTargets,
+    /// The certified summary of the checkpoint containing the transaction.
     pub checkpoint_summary: CertifiedCheckpointSummary,
-    /// Transaction evidence for the inclusion target.
+    /// Contents committed to by the checkpoint summary.
+    pub checkpoint_contents: CheckpointContents,
+    /// The transaction and its execution data
     pub transaction_proof: TransactionProof,
 }
 
 impl Proof {
-    /// Creates a proof envelope from an explicit target and transaction proof.
-    ///
-    /// The constructor sets [`ProofVersion::CURRENT`] automatically.
+    /// Creates a proof using [`ProofVersion::CURRENT`].
     pub fn new(
         chain: ChainIdentifier,
-        target: ProofTargets,
+        targets: ProofTargets,
         checkpoint_summary: CertifiedCheckpointSummary,
+        checkpoint_contents: CheckpointContents,
         transaction_proof: TransactionProof,
     ) -> Self {
         Self {
             version: ProofVersion::CURRENT,
             chain,
-            target,
+            targets,
             checkpoint_summary,
+            checkpoint_contents,
             transaction_proof,
         }
     }
 
-    /// Returns the proof-format version.
+    /// Returns the proof format version.
     pub const fn version(&self) -> ProofVersion {
         self.version
     }
 
-    /// Returns the proof target.
-    pub const fn target(&self) -> &ProofTargets {
-        &self.target
+    /// Returns the values selected for this proof.
+    pub const fn targets(&self) -> &ProofTargets {
+        &self.targets
     }
 
-    /// Serializes this proof envelope as JSON.
+    /// Serializes the proof as JSON.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the proof cannot be serialized.
     pub fn to_json_vec(&self) -> Result<Vec<u8>, SerializationError> {
         serde_json::to_vec(self).map_err(|source| SerializationError {
             kind: SerializationErrorKind::Json { source },
         })
     }
 
-    /// Deserializes a proof envelope from JSON bytes.
+    /// Deserializes a proof from JSON.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `bytes` do not contain a valid JSON representation of
+    /// a [`Proof`].
     pub fn from_json_slice(bytes: &[u8]) -> Result<Self, SerializationError> {
         serde_json::from_slice(bytes).map_err(|source| SerializationError {
             kind: SerializationErrorKind::Json { source },
         })
     }
 
-    /// Validates proof-format version.
+    /// Checks that the proof format version is supported.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`VersionError`] when [`Self::version`] is unsupported.
     pub fn validate(&self) -> Result<(), VersionError> {
         self.version.validate()
     }
 }
 
-/// Offline Proof of Inclusion verifier.
+/// Verifies proofs against a trusted committee.
 ///
-/// `ProofVerifier` verifies only the proof material supplied by the caller. It
-/// does not fetch data, resolve committees, or trust a node.
+/// Verification is offline. The verifier does not resolve committee history or
+/// fetch missing proof data. The caller is responsible for supplying the
+/// committee that certified the proof's checkpoint.
+///
+/// The value of [`Proof::chain`] is not used to select or validate the committee.
 #[derive(Clone, Copy, Debug)]
 pub struct ProofVerifier<'committee> {
     committee: &'committee Committee,
 }
 
 impl<'committee> ProofVerifier<'committee> {
-    /// Creates a verifier for proofs certified by `committee`.
+    /// Creates a verifier using `committee` as its trust root.
     pub const fn new(committee: &'committee Committee) -> Self {
         Self { committee }
     }
 
-    /// Returns the committee used by this verifier.
+    /// Returns the committee used to verify checkpoint signatures.
     pub const fn committee(&self) -> &'committee Committee {
         self.committee
     }
 
-    /// Verifies a Proof of Inclusion.
+    /// Verifies a proof and all of its claims.
     ///
-    /// The verifier checks the checkpoint summary and all transaction evidence
-    /// before authenticating object, event, or committee targets.
+    /// Verification checks that:
+    ///
+    /// - the proof uses a supported format version;
+    /// - the committee certifies the checkpoint summary;
+    /// - the checkpoint contents match the digest in that summary;
+    /// - the transaction, effects, and optional events are internally consistent;
+    /// - the transaction effects occur in the authenticated checkpoint contents;
+    /// - every selected target matches the authenticated proof data.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any check fails.
     pub fn verify(&self, proof: &Proof) -> Result<(), VerifyError> {
         proof.validate().map_err(|source| VerifyError {
             kind: VerifyErrorKind::Version { source },
         })?;
 
+        if proof.targets.is_empty() {
+            return Err(VerifyError {
+                kind: VerifyErrorKind::MissingTarget,
+            });
+        }
+
         let summary = &proof.checkpoint_summary;
-        let contents = Some(&proof.transaction_proof.checkpoint_contents);
+        let contents = Some(&proof.checkpoint_contents);
 
         summary
             .verify_with_contents(self.committee, contents)
@@ -295,55 +381,17 @@ impl<'committee> ProofVerifier<'committee> {
                 },
             })?;
 
-        self.verify_committee_target(summary, &proof.target)?;
-        self.verify_transaction_proof(summary, &proof.transaction_proof)?;
-        self.verify_event_targets(&proof.target, &proof.transaction_proof)?;
-        self.verify_object_targets(&proof.target, &proof.transaction_proof)?;
+        self.verify_transaction_proof(summary, &proof.checkpoint_contents, &proof.transaction_proof)?;
+        self.verify_targets(&proof.targets, &proof.transaction_proof)?;
 
         Ok(())
     }
 
-    /// Verifies an optional next-epoch committee target against the authenticated
-    /// end-of-epoch data in the checkpoint summary.
-    fn verify_committee_target(
-        &self,
-        summary: &CertifiedCheckpointSummary,
-        targets: &ProofTargets,
-    ) -> Result<(), VerifyError> {
-        let Some(expected_committee) = &targets.committee else {
-            return Ok(());
-        };
-
-        let Some(EndOfEpochData {
-            next_epoch_committee, ..
-        }) = &summary.end_of_epoch_data
-        else {
-            return Err(VerifyError {
-                kind: VerifyErrorKind::MissingEndOfEpochCommittee,
-            });
-        };
-
-        let actual_committee = Committee::from_committee_members(
-            summary.epoch().checked_add(1).ok_or(VerifyError {
-                kind: VerifyErrorKind::NextEpochOverflow,
-            })?,
-            next_epoch_committee,
-        );
-
-        if actual_committee != *expected_committee {
-            return Err(VerifyError {
-                kind: VerifyErrorKind::CommitteeMismatch,
-            });
-        }
-
-        Ok(())
-    }
-
-    /// Verifies that the transaction matches its effects, appears in the
-    /// authenticated checkpoint contents, and carries the committed events.
+    /// Checks the transaction-to-effects, effects-to-checkpoint, and effects-to-events links.
     fn verify_transaction_proof(
         &self,
         summary: &CertifiedCheckpointSummary,
+        checkpoint_contents: &CheckpointContents,
         transaction_proof: &TransactionProof,
     ) -> Result<(), VerifyError> {
         let execution_digests = transaction_proof.effects.execution_digests();
@@ -354,8 +402,7 @@ impl<'committee> ProofVerifier<'committee> {
             });
         }
 
-        let transaction_is_in_checkpoint = transaction_proof
-            .checkpoint_contents
+        let transaction_is_in_checkpoint = checkpoint_contents
             .enumerate_transactions(summary)
             .any(|(_, digests)| digests == execution_digests);
 
@@ -365,19 +412,32 @@ impl<'committee> ProofVerifier<'committee> {
             });
         }
 
-        if transaction_proof.effects.events_digest()
-            != transaction_proof.events.as_ref().map(|events| events.digest()).as_ref()
-        {
-            return Err(VerifyError {
-                kind: VerifyErrorKind::EventsDigestMismatch,
-            });
+        if let Some(events) = &transaction_proof.events {
+            if transaction_proof.effects.events_digest() != Some(&events.digest()) {
+                return Err(VerifyError {
+                    kind: VerifyErrorKind::EventsDigestMismatch,
+                });
+            }
         }
 
         Ok(())
     }
 
-    /// Verifies that every event target belongs to the proven transaction and
-    /// matches the event committed at its transaction-local sequence number.
+    /// Checks every declared target against the transaction proof.
+    fn verify_targets(&self, targets: &ProofTargets, transaction_proof: &TransactionProof) -> Result<(), VerifyError> {
+        let transaction_digest = transaction_proof.effects.execution_digests().transaction;
+
+        if targets.transaction.is_some_and(|target| target != transaction_digest) {
+            return Err(VerifyError {
+                kind: VerifyErrorKind::TransactionTargetMismatch,
+            });
+        }
+
+        self.verify_event_targets(targets, transaction_proof)?;
+        self.verify_object_targets(targets, transaction_proof)
+    }
+
+    /// Checks each event target against the proven transaction and its packaged events.
     fn verify_event_targets(
         &self,
         targets: &ProofTargets,
@@ -394,7 +454,7 @@ impl<'committee> ProofVerifier<'committee> {
         };
 
         let execution_digests = transaction_proof.effects.execution_digests();
-        for (event_id, event) in &targets.events {
+        for event_id in &targets.events {
             if event_id.tx_digest != execution_digests.transaction {
                 return Err(VerifyError {
                     kind: VerifyErrorKind::EventTransactionMismatch,
@@ -402,26 +462,19 @@ impl<'committee> ProofVerifier<'committee> {
             }
 
             let event_index = event_id.event_seq as usize;
-            let Some(actual_event) = events.get(event_index) else {
+            let Some(_) = events.get(event_index) else {
                 return Err(VerifyError {
                     kind: VerifyErrorKind::EventSequenceOutOfBounds {
                         sequence: event_id.event_seq,
                     },
                 });
             };
-
-            if actual_event != event {
-                return Err(VerifyError {
-                    kind: VerifyErrorKind::EventContentsMismatch,
-                });
-            }
         }
 
         Ok(())
     }
 
-    /// Verifies that every object target computes to its claimed reference and
-    /// appears among the objects changed by the proven transaction.
+    /// Checks each object target against the transaction effects.
     fn verify_object_targets(
         &self,
         targets: &ProofTargets,
@@ -432,16 +485,11 @@ impl<'committee> ProofVerifier<'committee> {
         }
 
         let changed_objects = transaction_proof.effects.all_changed_objects();
-        for (object_ref, object) in &targets.objects {
-            if object_ref != &object.as_inner().object_ref() {
-                return Err(VerifyError {
-                    kind: VerifyErrorKind::ObjectReferenceMismatch,
-                });
-            }
-
+        for object in &targets.objects {
+            let object_ref = object.as_inner().object_ref();
             changed_objects
                 .iter()
-                .find(|changed_object_ref| &changed_object_ref.0 == object_ref)
+                .find(|changed_object_ref| changed_object_ref.0 == object_ref)
                 .ok_or(VerifyError {
                     kind: VerifyErrorKind::ObjectNotFound,
                 })?;

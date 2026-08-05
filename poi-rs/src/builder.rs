@@ -1,11 +1,36 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use iota_grpc_client::Client as GrpcClient;
-use iota_sdk_types::{ObjectId, TransactionDigest};
-use iota_types::event::EventID;
+use std::fmt;
 
-use crate::{Proof, Source, SourceError, SourceTarget, source::GrpcSource};
+#[cfg(feature = "native-grpc")]
+use iota_grpc_client::Client as GrpcClient;
+use iota_sdk_types::{ObjectId, ObjectReference, TransactionDigest};
+use iota_types::{effects::TransactionEffectsExt, event::EventID, object::Object};
+
+use crate::{Proof, ProofTargets, Source, SourceError, TransactionProof};
+
+/// Ledger target requested from a [`ProofBuilder`].
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[non_exhaustive]
+pub enum ProofTarget {
+    /// A transaction proof request.
+    Transaction(TransactionDigest),
+    /// An object proof request identified by object ID.
+    Object(ObjectId),
+    /// An event proof request.
+    Event(EventID),
+}
+
+impl fmt::Display for ProofTarget {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Transaction(transaction_digest) => write!(f, "transaction {transaction_digest}"),
+            Self::Object(object_id) => write!(f, "object {object_id}"),
+            Self::Event(event_id) => write!(f, "event {event_id:?}"),
+        }
+    }
+}
 
 /// Error returned when a proof cannot be constructed by [`ProofBuilder`].
 #[derive(Debug, thiserror::Error)]
@@ -14,25 +39,59 @@ pub enum ProofBuilderError {
     /// No proof target was selected before building.
     #[error("proof builder requires a target")]
     MissingTarget,
-    /// The configured source failed to construct the requested proof.
-    #[error("proof source failed")]
+    /// The configured source failed while reading evidence for a target.
+    #[error("source failed while reading {target}")]
     Source {
+        /// Proof target whose evidence was being read.
+        target: ProofTarget,
         /// Underlying source failure.
         #[source]
         source: SourceError,
+    },
+    /// The source did not return evidence for a requested target.
+    #[error("{target} was not found")]
+    TargetNotFound {
+        /// Proof target that was not returned.
+        target: ProofTarget,
+    },
+    /// The returned object does not match the requested ID or transaction effects.
+    #[error("object {object_id} reference does not match the requested object")]
+    ObjectReferenceMismatch {
+        /// Requested object ID.
+        object_id: ObjectId,
+    },
+    /// The requested object was not changed by the selected transaction.
+    #[error("object {object_id} was not changed by transaction {transaction_digest}")]
+    ObjectNotChangedByTransaction {
+        /// Requested object ID.
+        object_id: ObjectId,
+        /// Transaction selected by the other proof targets.
+        transaction_digest: TransactionDigest,
+    },
+    /// A requested target belongs to a different transaction than the other targets.
+    #[error("{target} belongs to transaction {actual}, expected {expected}")]
+    TargetTransactionMismatch {
+        /// Target that conflicts with the previously selected transaction.
+        target: ProofTarget,
+        /// Transaction selected by the first proof target.
+        expected: TransactionDigest,
+        /// Transaction that owns the conflicting target.
+        actual: TransactionDigest,
     },
 }
 
 /// Constructs Proof of Inclusion evidence from a caller-provided [`Source`].
 ///
 /// The builder keeps proof construction independent of a specific transport.
-/// SDK gRPC clients can be adapted through [`ProofBuilder::from_grpc_client`].
+/// With the `native-grpc` feature enabled, SDK gRPC clients can be adapted
+/// through `ProofBuilder::from_grpc_client`.
 pub struct ProofBuilder<S> {
     source: S,
-    targets: Vec<SourceTarget>,
+    targets: Vec<ProofTarget>,
 }
 
-impl ProofBuilder<GrpcSource> {
+#[cfg(feature = "native-grpc")]
+impl ProofBuilder<GrpcClient> {
     /// Creates a proof builder connected to the public IOTA mainnet gRPC endpoint.
     ///
     /// Selecting an endpoint does not establish verification trust. Verify the
@@ -59,7 +118,7 @@ impl ProofBuilder<GrpcSource> {
 
     /// Creates a proof builder backed by an existing SDK gRPC client.
     pub fn from_grpc_client(client: GrpcClient) -> Self {
-        Self::new(GrpcSource::new(client))
+        Self::new(client)
     }
 }
 
@@ -74,7 +133,7 @@ impl<S: Source> ProofBuilder<S> {
 
     /// Adds a transaction proof target.
     pub fn transaction(mut self, transaction_digest: TransactionDigest) -> Self {
-        self.push_target(SourceTarget::Transaction(transaction_digest));
+        self.push_target(ProofTarget::Transaction(transaction_digest));
         self
     }
 
@@ -82,28 +141,28 @@ impl<S: Source> ProofBuilder<S> {
     ///
     /// The source resolves the ID to the exact object reference packaged in the proof.
     pub fn object(mut self, object_id: ObjectId) -> Self {
-        self.push_target(SourceTarget::Object(object_id));
+        self.push_target(ProofTarget::Object(object_id));
         self
     }
 
     /// Adds multiple object proof targets by object ID.
     pub fn objects(mut self, object_ids: impl IntoIterator<Item = ObjectId>) -> Self {
         for object_id in object_ids {
-            self.push_target(SourceTarget::Object(object_id));
+            self.push_target(ProofTarget::Object(object_id));
         }
         self
     }
 
     /// Adds an event proof target.
     pub fn event(mut self, event_id: EventID) -> Self {
-        self.push_target(SourceTarget::Event(event_id));
+        self.push_target(ProofTarget::Event(event_id));
         self
     }
 
     /// Adds multiple event proof targets.
     pub fn events(mut self, event_ids: impl IntoIterator<Item = EventID>) -> Self {
         for event_id in event_ids {
-            self.push_target(SourceTarget::Event(event_id));
+            self.push_target(ProofTarget::Event(event_id));
         }
         self
     }
@@ -114,16 +173,172 @@ impl<S: Source> ProofBuilder<S> {
             return Err(ProofBuilderError::MissingTarget);
         }
 
-        let proof = self
-            .source
-            .proof(&self.targets)
-            .await
-            .map_err(|source| ProofBuilderError::Source { source })?;
-
-        Ok(proof)
+        self.build_proof().await
     }
 
-    fn push_target(&mut self, target: SourceTarget) {
+    async fn build_proof(&self) -> Result<Proof, ProofBuilderError> {
+        let mut selected_transaction = None;
+        let mut transaction_target = None;
+        let mut object_ids = Vec::new();
+        let mut event_targets = Vec::new();
+
+        for target in self.targets.iter().copied() {
+            match target {
+                ProofTarget::Transaction(transaction_digest) => {
+                    Self::ensure_same_transaction(&mut selected_transaction, target, transaction_digest)?;
+                    transaction_target = Some(transaction_digest);
+                }
+                ProofTarget::Object(object_id) => object_ids.push(object_id),
+                ProofTarget::Event(event_id) => {
+                    Self::ensure_same_transaction(&mut selected_transaction, target, event_id.tx_digest)?;
+                    event_targets.push(event_id);
+                }
+            }
+        }
+
+        let (transaction_digest, transaction, objects) = if let Some(transaction_digest) = selected_transaction {
+            let transaction = self.fetch_transaction(transaction_digest).await?;
+            let changed_objects = transaction.effects.all_changed_objects();
+            let mut objects = Vec::with_capacity(object_ids.len());
+
+            for object_id in object_ids {
+                let object_ref = changed_objects
+                    .iter()
+                    .find_map(|(object_ref, _, _)| (object_ref.object_id == object_id).then_some(*object_ref))
+                    .ok_or(ProofBuilderError::ObjectNotChangedByTransaction {
+                        object_id,
+                        transaction_digest,
+                    })?;
+                objects.push(self.fetch_object(object_id, Some(object_ref)).await?);
+            }
+
+            (transaction_digest, transaction, objects)
+        } else {
+            let mut objects = Vec::with_capacity(object_ids.len());
+
+            for object_id in object_ids {
+                let object = self.fetch_object(object_id, None).await?;
+                Self::ensure_same_transaction(
+                    &mut selected_transaction,
+                    ProofTarget::Object(object_id),
+                    object.previous_transaction,
+                )?;
+                objects.push(object);
+            }
+
+            let transaction_digest =
+                selected_transaction.expect("ProofBuilder only builds a proof for non-empty targets");
+            let transaction = self.fetch_transaction(transaction_digest).await?;
+
+            (transaction_digest, transaction, objects)
+        };
+
+        let target = ProofTarget::Transaction(transaction_digest);
+        let chain_identifier = self
+            .source
+            .chain_identifier()
+            .await
+            .map_err(|source| ProofBuilderError::Source { target, source })?;
+        let checkpoint = self
+            .source
+            .checkpoint(transaction.checkpoint_sequence_number)
+            .await
+            .map_err(|source| ProofBuilderError::Source { target, source })?;
+        let transaction_events = if event_targets.is_empty() {
+            None
+        } else {
+            let events = transaction.events.ok_or_else(|| ProofBuilderError::TargetNotFound {
+                target: ProofTarget::Event(event_targets[0]),
+            })?;
+
+            for event_id in &event_targets {
+                let event_exists = usize::try_from(event_id.event_seq)
+                    .ok()
+                    .is_some_and(|index| events.get(index).is_some());
+                if !event_exists {
+                    return Err(ProofBuilderError::TargetNotFound {
+                        target: ProofTarget::Event(*event_id),
+                    });
+                }
+            }
+
+            Some(events)
+        };
+        let transaction_proof = TransactionProof::new(transaction.transaction, transaction.effects, transaction_events);
+        let mut targets = ProofTargets::new();
+        if let Some(transaction_digest) = transaction_target {
+            targets = targets.set_transaction(transaction_digest);
+        }
+        for object in objects {
+            targets = targets.add_object(object);
+        }
+        for event_id in event_targets {
+            targets = targets.add_event(event_id);
+        }
+
+        Ok(Proof::new(
+            chain_identifier,
+            targets,
+            checkpoint.summary,
+            checkpoint.contents,
+            transaction_proof,
+        ))
+    }
+
+    async fn fetch_transaction(
+        &self,
+        transaction_digest: TransactionDigest,
+    ) -> Result<crate::SourceTransaction, ProofBuilderError> {
+        let target = ProofTarget::Transaction(transaction_digest);
+        self.source
+            .transaction(transaction_digest)
+            .await
+            .map_err(|source| ProofBuilderError::Source { target, source })?
+            .ok_or(ProofBuilderError::TargetNotFound { target })
+    }
+
+    async fn fetch_object(
+        &self,
+        object_id: ObjectId,
+        expected_ref: Option<ObjectReference>,
+    ) -> Result<Object, ProofBuilderError> {
+        let target = ProofTarget::Object(object_id);
+        let object = self
+            .source
+            .object(object_id, expected_ref.map(|object_ref| object_ref.version))
+            .await
+            .map_err(|source| ProofBuilderError::Source { target, source })?
+            .ok_or(ProofBuilderError::TargetNotFound { target })?;
+        let object_ref = object.as_inner().object_ref();
+
+        if object_ref.object_id != object_id || expected_ref.is_some_and(|expected| expected != object_ref) {
+            return Err(ProofBuilderError::ObjectReferenceMismatch { object_id });
+        }
+
+        Ok(object)
+    }
+
+    fn ensure_same_transaction(
+        selected: &mut Option<TransactionDigest>,
+        target: ProofTarget,
+        transaction_digest: TransactionDigest,
+    ) -> Result<(), ProofBuilderError> {
+        if let Some(expected) = selected {
+            if *expected != transaction_digest {
+                return Err(ProofBuilderError::TargetTransactionMismatch {
+                    target,
+                    expected: *expected,
+                    actual: transaction_digest,
+                });
+            }
+        } else {
+            *selected = Some(transaction_digest);
+        }
+
+        Ok(())
+    }
+
+    fn push_target(&mut self, target: ProofTarget) {
         if !self.targets.contains(&target) {
             self.targets.push(target);
         }
@@ -131,6 +346,7 @@ impl<S: Source> ProofBuilder<S> {
 }
 
 #[cfg(test)]
+#[cfg(feature = "native-grpc")]
 mod tests {
     use super::*;
 
@@ -139,7 +355,7 @@ mod tests {
         let builder = ProofBuilder::mainnet().expect("mainnet builder must be configured");
         let expected = GrpcClient::new_mainnet().expect("SDK mainnet client must be configured");
 
-        assert_eq!(builder.source.grpc_client().uri(), expected.uri());
+        assert_eq!(builder.source.uri(), expected.uri());
     }
 
     #[tokio::test]
@@ -147,7 +363,7 @@ mod tests {
         let builder = ProofBuilder::testnet().expect("testnet builder must be configured");
         let expected = GrpcClient::new_testnet().expect("SDK testnet client must be configured");
 
-        assert_eq!(builder.source.grpc_client().uri(), expected.uri());
+        assert_eq!(builder.source.uri(), expected.uri());
     }
 
     #[tokio::test]
@@ -155,6 +371,6 @@ mod tests {
         let builder = ProofBuilder::devnet().expect("devnet builder must be configured");
         let expected = GrpcClient::new_devnet().expect("SDK devnet client must be configured");
 
-        assert_eq!(builder.source.grpc_client().uri(), expected.uri());
+        assert_eq!(builder.source.uri(), expected.uri());
     }
 }
