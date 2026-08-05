@@ -53,7 +53,7 @@ A `Proof` contains three layers of evidence:
 
 - A `CertifiedCheckpointSummary` signed by the committee for the checkpoint epoch.
 - A `TransactionProof` containing the checkpoint contents, transaction, effects, and optional events.
-- `ProofTargets` describing the object, event, or committee claims the caller wants to authenticate.
+- `ProofTargets` describing the object or event claims the caller wants to authenticate.
 
 The transaction proof is required. A Proof of Inclusion proves inclusion in a certified checkpoint, so the proof envelope
 must carry the transaction evidence that links the target claim to the checkpoint contents.
@@ -98,7 +98,6 @@ Verification checks:
 - packaged events match the event digest recorded in the effects
 - requested event targets belong to the transaction and match the packaged event contents
 - requested object targets match their object references and appear in the transaction effects
-- requested committee targets match the next committee recorded in an end-of-epoch checkpoint
 
 ## Trust Boundaries
 
@@ -114,7 +113,7 @@ trust the authenticated target claims relative to the supplied committee.
 - `Proof`: Versioned Proof of Inclusion envelope.
 - `ProofVersion`: Proof format version used for compatibility checks.
 - `TransactionProof`: Transaction, effects, events, and checkpoint contents used to prove inclusion.
-- `ProofTargets`: Object, event, and committee claims to authenticate.
+- `ProofTargets`: Object and event claims to authenticate.
 - `ProofTarget`: Transaction, object, or event requested from a `ProofBuilder`.
 - `PoiClient`: Source-backed entry point for proof construction and committee-aware verification.
 - `CommitteeResolution`: Trusted-node or anchored committee-resolution configuration, including the committee cache.

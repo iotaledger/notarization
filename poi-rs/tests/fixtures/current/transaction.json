@@ -3,8 +3,7 @@
   "chain": "J3x3hNka6L8T5y8VwEBHgJYLm5XgLm4FCQwmDcUpNAf5",
   "target": {
     "objects": [],
-    "events": [],
-    "committee": null
+    "events": []
   },
   "checkpoint_summary": {
     "data": {

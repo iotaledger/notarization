@@ -1,9 +1,7 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use iota_sdk_types::{
-    CheckpointContents, CheckpointSummary, EndOfEpochData, Event, TransactionDigest, gas::GasCostSummary,
-};
+use iota_sdk_types::{CheckpointContents, CheckpointSummary, Event, TransactionDigest, gas::GasCostSummary};
 use iota_types::{
     base_types::ExecutionData,
     committee::Committee,
@@ -21,10 +19,7 @@ pub fn execution_data() -> ExecutionData {
         .expect("test checkpoint contents must include a transaction")
 }
 
-fn signed_checkpoint(
-    contents: &CheckpointContents,
-    end_of_epoch_data: Option<EndOfEpochData>,
-) -> (Committee, CertifiedCheckpointSummary) {
+fn signed_checkpoint(contents: &CheckpointContents) -> (Committee, CertifiedCheckpointSummary) {
     let summary = CheckpointSummary {
         epoch: 0,
         sequence_number: 0,
@@ -34,7 +29,7 @@ fn signed_checkpoint(
         epoch_rolling_gas_cost_summary: GasCostSummary::default(),
         timestamp_ms: 0,
         checkpoint_commitments: Vec::new(),
-        end_of_epoch_data,
+        end_of_epoch_data: None,
         version_specific_data: Vec::new(),
     };
     let (committee, keypairs) = Committee::new_simple_test_committee();
@@ -44,13 +39,13 @@ fn signed_checkpoint(
 }
 
 pub fn valid_transaction_proof() -> (Committee, Proof) {
-    proof_with_targets(ProofTargets::new(), None)
+    proof_with_targets(ProofTargets::new())
 }
 
-pub fn proof_with_targets(targets: ProofTargets, end_of_epoch_data: Option<EndOfEpochData>) -> (Committee, Proof) {
+pub fn proof_with_targets(targets: ProofTargets) -> (Committee, Proof) {
     let execution = execution_data();
     let contents = CheckpointContents::new_with_digests_only_for_tests([execution.digests()]);
-    let (committee, summary) = signed_checkpoint(&contents, end_of_epoch_data);
+    let (committee, summary) = signed_checkpoint(&contents);
     let chain = ChainIdentifier::from(*summary.digest());
     let proof = Proof::new(
         chain,
@@ -69,7 +64,7 @@ pub fn proof_with_events(events: TransactionEvents) -> (Committee, TransactionDi
         .with_events_digest(events.digest())
         .build();
     let contents = CheckpointContents::new_with_digests_only_for_tests([execution.digests()]);
-    let (committee, summary) = signed_checkpoint(&contents, None);
+    let (committee, summary) = signed_checkpoint(&contents);
     let chain = ChainIdentifier::from(*summary.digest());
     let proof = Proof::new(
         chain,
@@ -93,18 +88,5 @@ pub fn event(contents: Vec<u8>) -> Event {
             Vec::new(),
         ),
         contents,
-    }
-}
-
-pub fn next_epoch_committee(committee: &Committee) -> Committee {
-    Committee::new(1, committee.voting_rights.iter().cloned().collect())
-}
-
-pub fn end_of_epoch_data(committee: &Committee) -> EndOfEpochData {
-    EndOfEpochData {
-        next_epoch_committee: committee.committee_members(),
-        next_epoch_protocol_version: 1,
-        epoch_commitments: Vec::new(),
-        epoch_supply_change: 0,
     }
 }

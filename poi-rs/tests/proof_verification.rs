@@ -5,14 +5,11 @@ mod utils;
 
 use iota_sdk_types::CheckpointContents;
 use iota_types::{
-    base_types::dbg_object_id, committee::Committee, effects::TransactionEvents, event::EventID,
-    messages_checkpoint::CheckpointContentsExt, object::Object,
+    base_types::dbg_object_id, effects::TransactionEvents, event::EventID, messages_checkpoint::CheckpointContentsExt,
+    object::Object,
 };
 use poi_rs::{ProofTargets, ProofVerifier, VerifyErrorKind};
-use utils::proofs::{
-    end_of_epoch_data, event, execution_data, next_epoch_committee, proof_with_events, proof_with_targets,
-    valid_transaction_proof,
-};
+use utils::proofs::{event, execution_data, proof_with_events, proof_with_targets, valid_transaction_proof};
 
 #[test]
 fn valid_transaction_proof_is_accepted() {
@@ -76,41 +73,12 @@ fn transaction_must_be_present_in_the_checkpoint() {
 }
 
 #[test]
-fn committee_target_requires_end_of_epoch_data() {
-    let (committee, _) = Committee::new_simple_test_committee();
-    let target = next_epoch_committee(&committee);
-    let (verifying_committee, proof) = proof_with_targets(ProofTargets::new().set_committee(target), None);
-
-    let error = ProofVerifier::new(&verifying_committee)
-        .verify(&proof)
-        .expect_err("a committee target without end-of-epoch data must be rejected");
-
-    assert!(matches!(error.kind, VerifyErrorKind::MissingEndOfEpochCommittee));
-}
-
-#[test]
-fn committee_target_must_match_end_of_epoch_data() {
-    let (actual, _) = Committee::new_simple_test_committee();
-    let actual = next_epoch_committee(&actual);
-    let (wrong, _) = Committee::new_simple_test_committee_of_size(5);
-    let wrong = next_epoch_committee(&wrong);
-    let targets = ProofTargets::new().set_committee(wrong);
-    let (committee, proof) = proof_with_targets(targets, Some(end_of_epoch_data(&actual)));
-
-    let error = ProofVerifier::new(&committee)
-        .verify(&proof)
-        .expect_err("a committee target not committed by end-of-epoch data must be rejected");
-
-    assert!(matches!(error.kind, VerifyErrorKind::CommitteeMismatch));
-}
-
-#[test]
 fn object_target_must_match_its_reference() {
     let object = Object::immutable_for_testing();
     let mut object_ref = object.as_inner().object_ref();
     object_ref.object_id = dbg_object_id(42);
     let targets = ProofTargets::new().add_object(object_ref, object);
-    let (committee, proof) = proof_with_targets(targets, None);
+    let (committee, proof) = proof_with_targets(targets);
 
     let error = ProofVerifier::new(&committee)
         .verify(&proof)
@@ -124,7 +92,7 @@ fn object_target_must_appear_in_the_transaction_effects() {
     let object = Object::immutable_for_testing();
     let object_ref = object.as_inner().object_ref();
     let targets = ProofTargets::new().add_object(object_ref, object);
-    let (committee, proof) = proof_with_targets(targets, None);
+    let (committee, proof) = proof_with_targets(targets);
 
     let error = ProofVerifier::new(&committee)
         .verify(&proof)
