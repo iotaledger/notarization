@@ -15,7 +15,7 @@ use audit_trails::{
         set_config,
         set_delete_record_window,
         set_delete_trail_lock,
-        set_write_lock
+        set_write_lock,
     },
     permission::{Self, Permission},
     record::{Self, Record, InitialRecord},

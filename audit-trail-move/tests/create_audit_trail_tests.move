@@ -12,7 +12,7 @@ use audit_trails::{
         initial_time_for_testing,
         fetch_capability_trail_and_clock,
         cleanup_capability_trail_and_clock,
-        new_capability_for_address
+        new_capability_for_address,
     }
 };
 use iota::{clock, test_scenario as ts};

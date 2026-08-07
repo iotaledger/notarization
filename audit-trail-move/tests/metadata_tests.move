@@ -9,7 +9,7 @@ use audit_trails::{
         Self,
         setup_test_audit_trail,
         fetch_capability_trail_and_clock,
-        cleanup_capability_trail_and_clock
+        cleanup_capability_trail_and_clock,
     }
 };
 use iota::test_scenario as ts;
