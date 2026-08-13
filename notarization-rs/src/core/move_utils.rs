@@ -4,12 +4,11 @@
 use std::str::FromStr;
 
 use iota_interaction::rpc_types::IotaObjectDataOptions;
-use iota_interaction::types::base_types::ObjectRef;
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
-use iota_interaction::types::transaction::{CallArg, SharedObjectRef};
+use iota_interaction::types::transaction::CallArg;
 use iota_interaction::types::{IOTA_CLOCK_OBJECT_ID, IOTA_CLOCK_OBJECT_SHARED_VERSION};
 use iota_interaction::{IotaClientTrait, OptionalSync};
-use iota_sdk_types::{Argument, ObjectId, TypeTag};
+use iota_sdk_types::{Argument, ObjectId, ObjectReference, SharedObjectReference, TypeTag};
 use product_common::core_client::CoreClientReadOnly;
 use serde::Serialize;
 
@@ -17,7 +16,7 @@ use crate::error::Error;
 
 /// Adds a reference to the on-chain clock to `ptb`'s arguments.
 pub(crate) fn get_clock_ref(ptb: &mut Ptb) -> Argument {
-    ptb.obj(CallArg::Shared(SharedObjectRef {
+    ptb.obj(CallArg::Shared(SharedObjectReference {
         object_id: IOTA_CLOCK_OBJECT_ID,
         initial_shared_version: IOTA_CLOCK_OBJECT_SHARED_VERSION,
         mutable: false,
@@ -87,7 +86,7 @@ pub(crate) fn parse_type(full_type: &str) -> Result<String, Error> {
 pub(crate) async fn get_object_ref_by_id(
     iota_client: &impl CoreClientReadOnly,
     obj: &ObjectId,
-) -> Result<ObjectRef, Error> {
+) -> Result<ObjectReference, Error> {
     let res = iota_client
         .client_adapter()
         .read_api()
