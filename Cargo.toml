@@ -8,7 +8,7 @@ rust-version = "1.85"
 
 [workspace]
 resolver = "2"
-members = ["audit-trail-rs", "examples", "notarization-rs", "poi-rs"]
+members = ["audit-trail-rs", "examples", "examples/poi", "notarization-rs", "poi-rs"]
 exclude = [
   "bindings/wasm/notarization_wasm",
   "bindings/wasm/audit_trail_wasm",
