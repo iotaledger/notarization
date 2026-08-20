@@ -24,7 +24,7 @@ fn signed_checkpoint(contents: &CheckpointContents) -> (Committee, CertifiedChec
         epoch: 0,
         sequence_number: 0,
         network_total_transactions: contents.len() as u64,
-        content_digest: contents.digest(),
+        contents_digest: contents.digest(),
         previous_digest: None,
         epoch_rolling_gas_cost_summary: GasCostSummary::default(),
         timestamp_ms: 0,

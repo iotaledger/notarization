@@ -1,6 +1,6 @@
 [package]
 name = "audit_trail_wasm"
-version = "0.1.4-alpha"
+version = "0.1.5-alpha"
 authors = ["IOTA Stiftung"]
 edition = "2021"
 homepage = "https://www.iota.org"
@@ -20,11 +20,11 @@ anyhow = "1.0.95"
 audit_trails = { path = "../../../audit-trail-rs", default-features = false, features = ["gas-station", "default-http-client"] }
 bcs = "0.1.6"
 console_error_panic_hook = { version = "0.1" }
-iota-sdk-types = { git = "https://github.com/iotaledger/iota-rust-sdk.git", rev = "ce81341ac3fdb7204df112182c68319f26d5896b", default-features = false }
-iota_interaction = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.23", default-features = false }
-iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.23" }
+iota-sdk-types = { git = "https://github.com/iotaledger/iota-rust-sdk.git", rev = "2f021d0556e47564e9b04bcd0b3e8347c41a0a26", default-features = false }
+iota_interaction = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.24", default-features = false }
+iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.24" }
 js-sys = { version = "0.3.61" }
-product_common = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.23", features = ["core-client", "transaction", "bindings", "binding-utils", "gas-station", "default-http-client"] }
+product_common = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.24", features = ["core-client", "transaction", "bindings", "binding-utils", "gas-station", "default-http-client"] }
 serde = { version = "1.0", features = ["derive"] }
 serde-wasm-bindgen = "0.6.5"
 tokio = { version = "1.49.0", default-features = false, features = ["sync"] }
@@ -43,3 +43,6 @@ empty_docs = "allow"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(wasm_bindgen_unstable_test_coverage)'] }
+
+[patch."https://github.com/MystenLabs/fastcrypto"]
+fastcrypto = "=0.1.11"

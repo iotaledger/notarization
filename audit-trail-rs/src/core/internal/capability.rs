@@ -8,11 +8,10 @@ use iota_interaction::rpc_types::{
     IotaObjectDataFilter, IotaObjectDataOptions, IotaObjectResponseQuery, IotaParsedData,
 };
 use iota_interaction::types::MoveTypeTagTrait;
-use iota_interaction::types::base_types::ObjectRef;
 use iota_interaction::types::dynamic_field::DynamicFieldName;
 use iota_interaction::types::id::ID;
 use iota_interaction::{IotaClientTrait, OptionalSync};
-use iota_sdk_types::{Address, ObjectId, StructTag};
+use iota_sdk_types::{Address, ObjectId, ObjectReference, StructTag};
 use product_common::core_client::CoreClientReadOnly;
 
 use super::{linked_table, tx};
@@ -29,7 +28,7 @@ pub(crate) async fn find_capable_cap<C>(
     trail_id: ObjectId,
     trail: &OnChainAuditTrail,
     permission: Permission,
-) -> Result<ObjectRef, Error>
+) -> Result<ObjectReference, Error>
 where
     C: CoreClientReadOnly + OptionalSync,
 {
@@ -192,7 +191,7 @@ pub(crate) async fn find_capable_cap_for_tags<'a, C, I>(
     trail: &OnChainAuditTrail,
     permission: Permission,
     tags: I,
-) -> Result<ObjectRef, Error>
+) -> Result<ObjectReference, Error>
 where
     C: CoreClientReadOnly + OptionalSync,
     I: IntoIterator<Item = &'a str>,

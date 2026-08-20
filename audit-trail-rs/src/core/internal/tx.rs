@@ -9,14 +9,16 @@ use iota_interaction::rpc_types::{
     IotaObjectDataOptions, IotaTransactionBlockEffects, IotaTransactionBlockEffectsAPI,
     IotaTransactionBlockResponseOptions,
 };
-use iota_interaction::types::base_types::ObjectRef;
 use iota_interaction::types::programmable_transaction_builder::{
     ProgrammableTransactionBuilder as Ptb, ProgrammableTransactionBuilder,
 };
-use iota_interaction::types::transaction::{CallArg, SharedObjectRef};
+use iota_interaction::types::transaction::CallArg;
 use iota_interaction::types::{IOTA_CLOCK_OBJECT_ID, IOTA_CLOCK_OBJECT_SHARED_VERSION, MOVE_STDLIB_PACKAGE_ID};
 use iota_interaction::{IotaClientTrait, OptionalSend, OptionalSync, ident_str};
-use iota_sdk_types::{Address, Argument, Identifier, ObjectId, Owner, ProgrammableTransaction, TypeTag};
+use iota_sdk_types::{
+    Address, Argument, Identifier, ObjectId, ObjectReference, Owner, ProgrammableTransaction, SharedObjectReference,
+    TypeTag,
+};
 use product_common::core_client::CoreClientReadOnly;
 use product_common::transaction::transaction_builder::Transaction;
 use serde::Serialize;
@@ -52,7 +54,7 @@ where
 
 /// Returns the canonical immutable clock object argument.
 pub(crate) fn get_clock_ref(ptb: &mut Ptb) -> Argument {
-    ptb.obj(CallArg::Shared(SharedObjectRef {
+    ptb.obj(CallArg::Shared(SharedObjectReference {
         object_id: IOTA_CLOCK_OBJECT_ID,
         initial_shared_version: IOTA_CLOCK_OBJECT_SHARED_VERSION,
         mutable: false,
@@ -129,7 +131,7 @@ where
 pub(crate) async fn build_trail_transaction_with_cap_ref<C, F>(
     client: &C,
     trail_id: ObjectId,
-    cap_ref: ObjectRef,
+    cap_ref: ObjectReference,
     method: impl AsRef<str>,
     additional_args: F,
 ) -> Result<ProgrammableTransaction, Error>
@@ -248,7 +250,7 @@ fn parse_type(full_type: &str) -> Result<String, Error> {
 pub(crate) async fn get_object_ref_by_id(
     client: &impl CoreClientReadOnly,
     object_id: &ObjectId,
-) -> Result<ObjectRef, Error> {
+) -> Result<ObjectReference, Error> {
     let res = client
         .client_adapter()
         .read_api()
@@ -284,7 +286,7 @@ pub(crate) async fn get_shared_object_arg(
     };
 
     match data.owner {
-        Some(Owner::Shared(initial_shared_version)) => Ok(CallArg::Shared(SharedObjectRef {
+        Some(Owner::Shared(initial_shared_version)) => Ok(CallArg::Shared(SharedObjectReference {
             object_id: *object_id,
             initial_shared_version,
             mutable,

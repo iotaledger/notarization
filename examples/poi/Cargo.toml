@@ -10,7 +10,7 @@ rust-version.workspace = true
 anyhow.workspace = true
 async-trait.workspace = true
 bcs.workspace = true
-iota-config = { git = "https://github.com/iotaledger/iota.git", rev = "420df58ea50ce916a927ebba2dcaee192832e436" }
+iota-config = { git = "https://github.com/iotaledger/iota.git", tag = "v1.29.0" }
 iota-sdk-types.workspace = true
 iota-types.workspace = true
 poi-rs = { path = "../../poi-rs" }

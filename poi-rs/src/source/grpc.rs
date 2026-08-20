@@ -57,8 +57,13 @@ impl Source for GrpcClient {
             )
             .await
             .map_err(SourceError::request)?;
-        let Some(executed_transaction) = transactions.body().first() else {
+        let Some(executed_transaction) = transactions.into_inner().into_iter().next() else {
             return Ok(None);
+        };
+        let executed_transaction = match executed_transaction {
+            Ok(executed_transaction) => executed_transaction,
+            Err(error) if error.is_not_found() => return Ok(None),
+            Err(error) => return Err(SourceError::request(error)),
         };
         let effects = executed_transaction
             .effects()
@@ -110,8 +115,13 @@ impl Source for GrpcClient {
             .get_objects(&[(object_id, version)], Some(ReadMask::from(ObjectField::BCS)))
             .await
             .map_err(SourceError::request)?;
-        let Some(response) = objects.body().first() else {
+        let Some(response) = objects.into_inner().into_iter().next() else {
             return Ok(None);
+        };
+        let response = match response {
+            Ok(response) => response,
+            Err(error) if error.is_not_found() => return Ok(None),
+            Err(error) => return Err(SourceError::request(error)),
         };
         let object: Object = response.object().map_err(SourceError::invalid_response)?.into();
 
