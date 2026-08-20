@@ -2,10 +2,4 @@
 // SPDX-License-Identifier: Apache-2.0
 
 export { PoiClient, type PoiClientOptions } from "./poi-client.js";
-export {
-  Committee,
-  CommitteeResolution,
-  CommitteeResolver,
-  Proof,
-  type ProofBuilder,
-} from "../node/poi_wasm.js";
+export * from "../node/poi_wasm.js";
