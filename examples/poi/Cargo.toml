@@ -1,0 +1,44 @@
+[package]
+name = "poi-examples"
+version = "0.1.0-alpha"
+authors.workspace = true
+edition.workspace = true
+publish = false
+rust-version.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+async-trait.workspace = true
+bcs.workspace = true
+iota-config = { git = "https://github.com/iotaledger/iota.git", rev = "420df58ea50ce916a927ebba2dcaee192832e436" }
+iota-sdk-types.workspace = true
+iota-types.workspace = true
+poi-rs = { path = "../../poi-rs" }
+reqwest.workspace = true
+tempfile.workspace = true
+tokio.workspace = true
+
+
+[[example]]
+name = "01_create_and_verify_transaction_proof"
+path = "01_create_and_verify_transaction_proof.rs"
+
+[[example]]
+name = "02_create_and_verify_multi_target_proof"
+path = "02_create_and_verify_multi_target_proof.rs"
+
+[[example]]
+name = "03_reuse_verifier_for_multiple_proofs"
+path = "03_reuse_verifier_for_multiple_proofs.rs"
+
+[[example]]
+name = "04_create_and_verify_object_proof"
+path = "04_create_and_verify_object_proof.rs"
+
+[[example]]
+name = "05_create_and_verify_event_proof"
+path = "05_create_and_verify_event_proof.rs"
+
+[[example]]
+name = "advanced_01_file_based_committee_cache"
+path = "advanced/01_file_based_committee_cache.rs"

@@ -4,12 +4,80 @@
 use iota_sdk_types::{ObjectId, TransactionDigest};
 use iota_types::event::EventID;
 use js_sys::Uint8Array;
-use poi_rs::{Proof, ProofBuilder};
+use poi_rs::{Proof, ProofBuilder, ProofTargets};
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 use crate::committee::WasmCommittee;
 use crate::error::WasmResult;
 use crate::source::LedgerSource;
+
+/// An object selected as a Proof of Inclusion target.
+#[wasm_bindgen(js_name = ProofObjectTarget, getter_with_clone, inspectable)]
+#[derive(Clone)]
+pub struct WasmProofObjectTarget {
+    /// Object ID selected by the caller.
+    #[wasm_bindgen(js_name = objectId)]
+    pub object_id: String,
+    /// Exact object version resolved by the proof builder.
+    pub version: u64,
+    /// Digest committing to the selected object version.
+    pub digest: String,
+}
+
+/// An event selected as a Proof of Inclusion target.
+#[wasm_bindgen(js_name = ProofEventTarget, getter_with_clone, inspectable)]
+#[derive(Clone)]
+pub struct WasmProofEventTarget {
+    /// Digest of the transaction that emitted the event.
+    #[wasm_bindgen(js_name = transactionDigest)]
+    pub transaction_digest: String,
+    /// Transaction-local event sequence number.
+    #[wasm_bindgen(js_name = eventSequence)]
+    pub event_sequence: u64,
+}
+
+/// Values explicitly selected for a Proof of Inclusion proof.
+#[wasm_bindgen(js_name = ProofTargets, getter_with_clone, inspectable)]
+#[derive(Clone)]
+pub struct WasmProofTargets {
+    /// Transaction explicitly selected by the caller, when present.
+    pub transaction: Option<String>,
+    /// Exact object versions selected by the caller and resolved by the builder.
+    pub objects: Vec<WasmProofObjectTarget>,
+    /// Events explicitly selected by the caller.
+    pub events: Vec<WasmProofEventTarget>,
+}
+
+impl From<&ProofTargets> for WasmProofTargets {
+    fn from(value: &ProofTargets) -> Self {
+        let objects = value
+            .objects
+            .iter()
+            .map(|object| {
+                let object_ref = object.as_inner().object_ref();
+                WasmProofObjectTarget {
+                    object_id: object_ref.object_id.to_string(),
+                    version: object_ref.version.as_u64(),
+                    digest: object_ref.digest.to_string(),
+                }
+            })
+            .collect();
+        let events = value
+            .events
+            .iter()
+            .map(|event| WasmProofEventTarget {
+                transaction_digest: event.tx_digest.to_string(),
+                event_sequence: event.event_seq,
+            })
+            .collect();
+
+        Self {
+            transaction: value.transaction.map(|transaction| transaction.to_string()),
+            objects,
+            events,
+        }
+    }
+}
 
 /// Proof of Inclusion evidence constructed by `poi-rs`.
 #[wasm_bindgen(js_name = Proof)]
@@ -33,6 +101,12 @@ impl WasmProof {
     #[wasm_bindgen(getter, js_name = checkpointEpoch)]
     pub fn checkpoint_epoch(&self) -> u64 {
         self.0.checkpoint_summary.epoch()
+    }
+
+    /// Returns the transaction, object, and event targets selected for this proof.
+    #[wasm_bindgen(getter)]
+    pub fn targets(&self) -> WasmProofTargets {
+        self.0.targets().into()
     }
 
     /// Verifies this proof locally with the supplied committee.

@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { Proof, ProofBuilder } from "../node/poi_wasm.js";
+import { Proof, ProofBuilder, type ProofTargets } from "../node/poi_wasm.js";
 import type { LedgerSource } from "../lib/source-types.js";
 
 test("the WASM builder reads transaction evidence from the ledger source", async () => {
@@ -52,12 +52,8 @@ test("the WASM proof can be deserialized for verification", async () => {
   );
 
   const proof = Proof.fromJSON(json);
+  const targets: ProofTargets = proof.targets;
   const serialized = JSON.parse(proof.toJSON()) as {
-    targets: {
-      transaction: string | null;
-      objects: unknown[];
-      events: unknown[];
-    };
     checkpoint_contents: unknown;
     transaction_proof: Record<string, unknown>;
   };
@@ -65,9 +61,12 @@ test("the WASM proof can be deserialized for verification", async () => {
   assert.equal(proof.version, 1);
   assert.equal(proof.checkpointEpoch, 0n);
   assert.doesNotThrow(() => proof.validate());
-  assert.equal(typeof serialized.targets.transaction, "string");
-  assert.deepEqual(serialized.targets.objects, []);
-  assert.deepEqual(serialized.targets.events, []);
+  assert.equal(
+    targets.transaction,
+    "W5a5vsCEVHTj5woXy1MymQYpe4UFzwEoor8k8PASDeq",
+  );
+  assert.deepEqual(targets.objects, []);
+  assert.deepEqual(targets.events, []);
   assert.ok(serialized.checkpoint_contents);
   assert.deepEqual(Object.keys(serialized.transaction_proof), [
     "transaction",
@@ -86,19 +85,19 @@ test("the WASM proof keeps selected events separate from event evidence", async 
   );
 
   const proof = Proof.fromJSON(json);
+  const targets = proof.targets;
   const serialized = JSON.parse(proof.toJSON()) as {
-    targets: {
-      transaction: string | null;
-      objects: unknown[];
-      events: Array<{ txDigest: string; eventSeq: string }>;
-    };
     transaction_proof: { events: unknown[] | null };
   };
 
-  assert.equal(serialized.targets.transaction, null);
-  assert.deepEqual(serialized.targets.objects, []);
-  assert.equal(serialized.targets.events.length, 1);
-  assert.equal(serialized.targets.events[0]?.eventSeq, "0");
+  assert.equal(targets.transaction, undefined);
+  assert.deepEqual(targets.objects, []);
+  assert.equal(targets.events.length, 1);
+  assert.equal(
+    targets.events[0]?.transactionDigest,
+    "25zdMVEMRtg7pDGqgLgL1Hf3s8sL9YGuN9UVeo3dECG6",
+  );
+  assert.equal(targets.events[0]?.eventSequence, 0n);
   assert.equal(serialized.transaction_proof.events?.length, 1);
 });
 
@@ -112,17 +111,16 @@ test("the WASM proof stores selected objects only in its targets", async () => {
   );
 
   const proof = Proof.fromJSON(json);
+  const targets = proof.targets;
   const serialized = JSON.parse(proof.toJSON()) as {
-    targets: {
-      transaction: string | null;
-      objects: unknown[];
-      events: unknown[];
-    };
     transaction_proof: { events: unknown[] | null };
   };
 
-  assert.equal(serialized.targets.transaction, null);
-  assert.equal(serialized.targets.objects.length, 1);
-  assert.deepEqual(serialized.targets.events, []);
+  assert.equal(targets.transaction, undefined);
+  assert.equal(targets.objects.length, 1);
+  assert.match(targets.objects[0]?.objectId ?? "", /^0x[0-9a-f]{64}$/);
+  assert.equal(targets.objects[0]?.version, 2n);
+  assert.ok(targets.objects[0]?.digest);
+  assert.deepEqual(targets.events, []);
   assert.equal(serialized.transaction_proof.events, null);
 });

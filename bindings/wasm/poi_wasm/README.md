@@ -137,3 +137,7 @@ endpoint with the development diagnostic:
 ```sh
 npm run example:service-info -- https://grpc.testnet.iota.cafe:443
 ```
+
+See [`examples/README.md`](examples/README.md) for complete mainnet Proof of
+Inclusion examples covering transaction, multi-target, verifier reuse, object,
+and event proofs.
