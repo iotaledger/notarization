@@ -5,16 +5,19 @@
 // @generated from file iota/grpc/v1/bcs.proto (package iota.grpc.v1.bcs, syntax proto3)
 /* eslint-disable */
 
+import type { Message } from "@bufbuild/protobuf";
 import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
 import { file_iota_grpc_options } from "../options_pb.js";
-import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file iota/grpc/v1/bcs.proto.
  */
 export const file_iota_grpc_v1_bcs: GenFile = /*@__PURE__*/
-  fileDesc("ChZpb3RhL2dycGMvdjEvYmNzLnByb3RvEhBpb3RhLmdycGMudjEuYmNzIiEKB0Jjc0RhdGESDAoEZGF0YRgBIAEoDDoIgrUYBHdpdGhiBnByb3RvMw", [file_iota_grpc_options]);
+    fileDesc(
+        "ChZpb3RhL2dycGMvdjEvYmNzLnByb3RvEhBpb3RhLmdycGMudjEuYmNzIiEKB0Jjc0RhdGESDAoEZGF0YRgBIAEoDDoIgrUYBHdpdGhiBnByb3RvMw",
+        [file_iota_grpc_options],
+    );
 
 /**
  * BCS-serialized data container
@@ -22,10 +25,10 @@ export const file_iota_grpc_v1_bcs: GenFile = /*@__PURE__*/
  * @generated from message iota.grpc.v1.bcs.BcsData
  */
 export type BcsData = Message<"iota.grpc.v1.bcs.BcsData"> & {
-  /**
-   * @generated from field: bytes data = 1;
-   */
-  data: Uint8Array;
+    /**
+     * @generated from field: bytes data = 1;
+     */
+    data: Uint8Array;
 };
 
 /**
@@ -33,5 +36,4 @@ export type BcsData = Message<"iota.grpc.v1.bcs.BcsData"> & {
  * Use `create(BcsDataSchema)` to create a new message.
  */
 export const BcsDataSchema: GenMessage<BcsData> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_bcs, 0);
-
+    messageDesc(file_iota_grpc_v1_bcs, 0);

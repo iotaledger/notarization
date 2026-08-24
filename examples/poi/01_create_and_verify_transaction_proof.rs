@@ -82,10 +82,10 @@ async fn main() -> Result<()> {
     );
 
     println!("Proof constructed:");
-    println!("  format version:    {}", proof.version().value());
-    println!("  reported chain:    {:?}", proof.chain);
-    println!("  checkpoint epoch:  {}", proof.checkpoint_summary.epoch());
-    println!("  checkpoint number: {}\n", proof.checkpoint_summary.sequence_number);
+    println!("  format version:    {}", proof.version());
+    println!("  reported chain:    {:?}", proof.chain());
+    println!("  checkpoint epoch:  {}", proof.checkpoint_summary().epoch());
+    println!("  checkpoint number: {}\n", proof.checkpoint_summary().sequence_number);
 
     // -------------------------------------------------------------------------
     // Step 5: Serialize and deserialize the proof as portable JSON

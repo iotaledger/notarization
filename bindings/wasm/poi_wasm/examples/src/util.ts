@@ -138,7 +138,7 @@ export async function createNotarization(
     }
 
     const event = finalized.events?.find((candidate) =>
-        candidate.type.endsWith("::locked_notarization::LockedNotarizationCreated"),
+        candidate.type.endsWith("::locked_notarization::LockedNotarizationCreated")
     );
     if (!event) {
         throw new Error("setup transaction did not emit the expected LockedNotarizationCreated event");
@@ -150,8 +150,8 @@ export async function createNotarization(
     const objectId = normalizeIotaObjectId(readNotarizationId(event.parsedJson), false, true);
     const objectWasCreated = finalized.objectChanges?.some(
         (change) =>
-            change.type === "created" &&
-            normalizeIotaObjectId(change.objectId, false, true) === objectId,
+            change.type === "created"
+            && normalizeIotaObjectId(change.objectId, false, true) === objectId,
     );
     if (!objectWasCreated) {
         throw new Error("setup transaction did not create the Notarization object named by its creation event");
@@ -197,9 +197,9 @@ function createLockedNotarizationTransaction(packageId: string, label: string): 
 
 function readNotarizationId(parsedEvent: unknown): string {
     if (
-        !isRecord(parsedEvent) ||
-        !("notarization_id" in parsedEvent) ||
-        typeof parsedEvent.notarization_id !== "string"
+        !isRecord(parsedEvent)
+        || !("notarization_id" in parsedEvent)
+        || typeof parsedEvent.notarization_id !== "string"
     ) {
         throw new Error("LockedNotarizationCreated event is missing its notarization_id");
     }
@@ -274,10 +274,10 @@ async function activeCliEnvironment(): Promise<CliEnvironment> {
     const activeAlias = parsed[1];
     const environment = parsed[0].find(
         (candidate): candidate is CliEnvironment =>
-            isRecord(candidate) &&
-            candidate.alias === activeAlias &&
-            typeof candidate.rpc === "string" &&
-            (candidate.grpc === undefined || candidate.grpc === null || typeof candidate.grpc === "string"),
+            isRecord(candidate)
+            && candidate.alias === activeAlias
+            && typeof candidate.rpc === "string"
+            && (candidate.grpc === undefined || candidate.grpc === null || typeof candidate.grpc === "string"),
     );
 
     if (!environment) {

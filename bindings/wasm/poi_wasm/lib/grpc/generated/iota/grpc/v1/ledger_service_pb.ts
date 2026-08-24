@@ -6,6 +6,7 @@
 // @generated from file iota/grpc/v1/ledger_service.proto (package iota.grpc.v1.ledger_service, syntax proto3)
 /* eslint-disable */
 
+import type { Message } from "@bufbuild/protobuf";
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
@@ -27,27 +28,31 @@ import type { ExecutedTransaction, ExecutedTransactions } from "./transaction_pb
 import { file_iota_grpc_v1_transaction } from "./transaction_pb.js";
 import type { Digest, ObjectReference } from "./types_pb.js";
 import { file_iota_grpc_v1_types } from "./types_pb.js";
-import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file iota/grpc/v1/ledger_service.proto.
  */
 export const file_iota_grpc_v1_ledger_service: GenFile = /*@__PURE__*/
-  fileDesc("CiFpb3RhL2dycGMvdjEvbGVkZ2VyX3NlcnZpY2UucHJvdG8SG2lvdGEuZ3JwYy52MS5sZWRnZXJfc2VydmljZSJIChBHZXRIZWFsdGhSZXF1ZXN0EhkKDHRocmVzaG9sZF9tcxgBIAEoBEgAiAEBOgiCtRgEd2l0aEIPCg1fdGhyZXNob2xkX21zIrUBChFHZXRIZWFsdGhSZXNwb25zZRInChpleGVjdXRlZF9jaGVja3BvaW50X2hlaWdodBgBIAEoBEgAiAEBEisKHmVzdGltYXRlZF92YWxpZGF0b3JfbGF0ZW5jeV9tcxgCIAEoDUgBiAEBOgiCtRgEd2l0aEIdChtfZXhlY3V0ZWRfY2hlY2twb2ludF9oZWlnaHRCIQofX2VzdGltYXRlZF92YWxpZGF0b3JfbGF0ZW5jeV9tcyJjChVHZXRTZXJ2aWNlSW5mb1JlcXVlc3QSMgoJcmVhZF9tYXNrGAEgASgLMhouZ29vZ2xlLnByb3RvYnVmLkZpZWxkTWFza0gAiAEBOgiCtRgEd2l0aEIMCgpfcmVhZF9tYXNrIpQEChZHZXRTZXJ2aWNlSW5mb1Jlc3BvbnNlEjEKCGNoYWluX2lkGAEgASgLMhouaW90YS5ncnBjLnYxLnR5cGVzLkRpZ2VzdEgAiAEBEhIKBWNoYWluGAIgASgJSAGIAQESEgoFZXBvY2gYAyABKARIAogBARInChpleGVjdXRlZF9jaGVja3BvaW50X2hlaWdodBgEIAEoBEgDiAEBEkYKHWV4ZWN1dGVkX2NoZWNrcG9pbnRfdGltZXN0YW1wGAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgEiAEBEigKG2xvd2VzdF9hdmFpbGFibGVfY2hlY2twb2ludBgGIAEoBEgFiAEBEjAKI2xvd2VzdF9hdmFpbGFibGVfY2hlY2twb2ludF9vYmplY3RzGAcgASgESAaIAQESEwoGc2VydmVyGAggASgJSAeIAQE6CIK1GAR3aXRoQgsKCV9jaGFpbl9pZEIICgZfY2hhaW5CCAoGX2Vwb2NoQh0KG19leGVjdXRlZF9jaGVja3BvaW50X2hlaWdodEIgCh5fZXhlY3V0ZWRfY2hlY2twb2ludF90aW1lc3RhbXBCHgocX2xvd2VzdF9hdmFpbGFibGVfY2hlY2twb2ludEImCiRfbG93ZXN0X2F2YWlsYWJsZV9jaGVja3BvaW50X29iamVjdHNCCQoHX3NlcnZlciJmCg1PYmplY3RSZXF1ZXN0EjwKCm9iamVjdF9yZWYYASABKAsyIy5pb3RhLmdycGMudjEudHlwZXMuT2JqZWN0UmVmZXJlbmNlSACIAQE6CIK1GAR3aXRoQg0KC19vYmplY3RfcmVmIlgKDk9iamVjdFJlcXVlc3RzEjwKCHJlcXVlc3RzGAEgAygLMiouaW90YS5ncnBjLnYxLmxlZGdlcl9zZXJ2aWNlLk9iamVjdFJlcXVlc3Q6CIK1GAR3aXRoIvABChFHZXRPYmplY3RzUmVxdWVzdBJCCghyZXF1ZXN0cxgBIAEoCzIrLmlvdGEuZ3JwYy52MS5sZWRnZXJfc2VydmljZS5PYmplY3RSZXF1ZXN0c0gAiAEBEjIKCXJlYWRfbWFzaxgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5GaWVsZE1hc2tIAYgBARIjChZtYXhfbWVzc2FnZV9zaXplX2J5dGVzGAMgASgNSAKIAQE6CIK1GAR3aXRoQgsKCV9yZXF1ZXN0c0IMCgpfcmVhZF9tYXNrQhkKF19tYXhfbWVzc2FnZV9zaXplX2J5dGVzInYKDE9iamVjdFJlc3VsdBItCgZvYmplY3QYASABKAsyGy5pb3RhLmdycGMudjEub2JqZWN0Lk9iamVjdEgAEiMKBWVycm9yGAIgASgLMhIuZ29vZ2xlLnJwYy5TdGF0dXNIADoIgrUYBHdpdGhCCAoGcmVzdWx0ImwKEkdldE9iamVjdHNSZXNwb25zZRI6CgdvYmplY3RzGAEgAygLMikuaW90YS5ncnBjLnYxLmxlZGdlcl9zZXJ2aWNlLk9iamVjdFJlc3VsdBIQCghoYXNfbmV4dBgCIAEoCDoIgrUYBHdpdGgiWgoSVHJhbnNhY3Rpb25SZXF1ZXN0Ei8KBmRpZ2VzdBgBIAEoCzIaLmlvdGEuZ3JwYy52MS50eXBlcy5EaWdlc3RIAIgBAToIgrUYBHdpdGhCCQoHX2RpZ2VzdCJiChNUcmFuc2FjdGlvblJlcXVlc3RzEkEKCHJlcXVlc3RzGAEgAygLMi8uaW90YS5ncnBjLnYxLmxlZGdlcl9zZXJ2aWNlLlRyYW5zYWN0aW9uUmVxdWVzdDoIgrUYBHdpdGgi+gEKFkdldFRyYW5zYWN0aW9uc1JlcXVlc3QSRwoIcmVxdWVzdHMYASABKAsyMC5pb3RhLmdycGMudjEubGVkZ2VyX3NlcnZpY2UuVHJhbnNhY3Rpb25SZXF1ZXN0c0gAiAEBEjIKCXJlYWRfbWFzaxgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5GaWVsZE1hc2tIAYgBARIjChZtYXhfbWVzc2FnZV9zaXplX2J5dGVzGAMgASgNSAKIAQE6CIK1GAR3aXRoQgsKCV9yZXF1ZXN0c0IMCgpfcmVhZF9tYXNrQhkKF19tYXhfbWVzc2FnZV9zaXplX2J5dGVzIpsBChFUcmFuc2FjdGlvblJlc3VsdBJNChRleGVjdXRlZF90cmFuc2FjdGlvbhgBIAEoCzItLmlvdGEuZ3JwYy52MS50cmFuc2FjdGlvbi5FeGVjdXRlZFRyYW5zYWN0aW9uSAASIwoFZXJyb3IYAiABKAsyEi5nb29nbGUucnBjLlN0YXR1c0gAOgiCtRgEd2l0aEIICgZyZXN1bHQiggEKF0dldFRyYW5zYWN0aW9uc1Jlc3BvbnNlEksKE3RyYW5zYWN0aW9uX3Jlc3VsdHMYASADKAsyLi5pb3RhLmdycGMudjEubGVkZ2VyX3NlcnZpY2UuVHJhbnNhY3Rpb25SZXN1bHQSEAoIaGFzX25leHQYAiABKAg6CIK1GAR3aXRoIsADChRHZXRDaGVja3BvaW50UmVxdWVzdBIQCgZsYXRlc3QYASABKAhIABIZCg9zZXF1ZW5jZV9udW1iZXIYAiABKARIABIsCgZkaWdlc3QYAyABKAsyGi5pb3RhLmdycGMudjEudHlwZXMuRGlnZXN0SAASMgoJcmVhZF9tYXNrGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLkZpZWxkTWFza0gBiAEBEkgKE3RyYW5zYWN0aW9uc19maWx0ZXIYBSABKAsyJi5pb3RhLmdycGMudjEuZmlsdGVyLlRyYW5zYWN0aW9uRmlsdGVySAKIAQESPAoNZXZlbnRzX2ZpbHRlchgGIAEoCzIgLmlvdGEuZ3JwYy52MS5maWx0ZXIuRXZlbnRGaWx0ZXJIA4gBARIjChZtYXhfbWVzc2FnZV9zaXplX2J5dGVzGAcgASgNSASIAQE6CIK1GAR3aXRoQg8KDWNoZWNrcG9pbnRfaWRCDAoKX3JlYWRfbWFza0IWChRfdHJhbnNhY3Rpb25zX2ZpbHRlckIQCg5fZXZlbnRzX2ZpbHRlckIZChdfbWF4X21lc3NhZ2Vfc2l6ZV9ieXRlcyLEBAoYU3RyZWFtQ2hlY2twb2ludHNSZXF1ZXN0EiIKFXN0YXJ0X3NlcXVlbmNlX251bWJlchgBIAEoBEgAiAEBEiAKE2VuZF9zZXF1ZW5jZV9udW1iZXIYAiABKARIAYgBARIyCglyZWFkX21hc2sYAyABKAsyGi5nb29nbGUucHJvdG9idWYuRmllbGRNYXNrSAKIAQESSAoTdHJhbnNhY3Rpb25zX2ZpbHRlchgEIAEoCzImLmlvdGEuZ3JwYy52MS5maWx0ZXIuVHJhbnNhY3Rpb25GaWx0ZXJIA4gBARI8Cg1ldmVudHNfZmlsdGVyGAUgASgLMiAuaW90YS5ncnBjLnYxLmZpbHRlci5FdmVudEZpbHRlckgEiAEBEh8KEmZpbHRlcl9jaGVja3BvaW50cxgGIAEoCEgFiAEBEiEKFHByb2dyZXNzX2ludGVydmFsX21zGAcgASgNSAaIAQESIwoWbWF4X21lc3NhZ2Vfc2l6ZV9ieXRlcxgIIAEoDUgHiAEBOgiCtRgEd2l0aEIYChZfc3RhcnRfc2VxdWVuY2VfbnVtYmVyQhYKFF9lbmRfc2VxdWVuY2VfbnVtYmVyQgwKCl9yZWFkX21hc2tCFgoUX3RyYW5zYWN0aW9uc19maWx0ZXJCEAoOX2V2ZW50c19maWx0ZXJCFQoTX2ZpbHRlcl9jaGVja3BvaW50c0IXChVfcHJvZ3Jlc3NfaW50ZXJ2YWxfbXNCGQoXX21heF9tZXNzYWdlX3NpemVfYnl0ZXMi/QMKDkNoZWNrcG9pbnREYXRhEjkKCmNoZWNrcG9pbnQYASABKAsyIy5pb3RhLmdycGMudjEuY2hlY2twb2ludC5DaGVja3BvaW50SAASTwoVZXhlY3V0ZWRfdHJhbnNhY3Rpb25zGAIgASgLMi4uaW90YS5ncnBjLnYxLnRyYW5zYWN0aW9uLkV4ZWN1dGVkVHJhbnNhY3Rpb25zSAASLAoGZXZlbnRzGAMgASgLMhouaW90YS5ncnBjLnYxLmV2ZW50LkV2ZW50c0gAEkgKCHByb2dyZXNzGAQgASgLMjQuaW90YS5ncnBjLnYxLmxlZGdlcl9zZXJ2aWNlLkNoZWNrcG9pbnREYXRhLlByb2dyZXNzSAASSwoKZW5kX21hcmtlchgFIAEoCzI1LmlvdGEuZ3JwYy52MS5sZWRnZXJfc2VydmljZS5DaGVja3BvaW50RGF0YS5FbmRNYXJrZXJIABo8CghQcm9ncmVzcxImCh5sYXRlc3Rfc2Nhbm5lZF9zZXF1ZW5jZV9udW1iZXIYASABKAQ6CIK1GAR3aXRoGkcKCUVuZE1hcmtlchIcCg9zZXF1ZW5jZV9udW1iZXIYASABKARIAIgBAToIgrUYBHdpdGhCEgoQX3NlcXVlbmNlX251bWJlcjoIgrUYBHdpdGhCCQoHcGF5bG9hZCJ7Cg9HZXRFcG9jaFJlcXVlc3QSEgoFZXBvY2gYASABKARIAIgBARIyCglyZWFkX21hc2sYAiABKAsyGi5nb29nbGUucHJvdG9idWYuRmllbGRNYXNrSAGIAQE6CIK1GAR3aXRoQggKBl9lcG9jaEIMCgpfcmVhZF9tYXNrIlUKEEdldEVwb2NoUmVzcG9uc2USLQoFZXBvY2gYASABKAsyGS5pb3RhLmdycGMudjEuZXBvY2guRXBvY2hIAIgBAToIgrUYBHdpdGhCCAoGX2Vwb2NoMr4GCg1MZWRnZXJTZXJ2aWNlEmoKCUdldEhlYWx0aBItLmlvdGEuZ3JwYy52MS5sZWRnZXJfc2VydmljZS5HZXRIZWFsdGhSZXF1ZXN0Gi4uaW90YS5ncnBjLnYxLmxlZGdlcl9zZXJ2aWNlLkdldEhlYWx0aFJlc3BvbnNlEnkKDkdldFNlcnZpY2VJbmZvEjIuaW90YS5ncnBjLnYxLmxlZGdlcl9zZXJ2aWNlLkdldFNlcnZpY2VJbmZvUmVxdWVzdBozLmlvdGEuZ3JwYy52MS5sZWRnZXJfc2VydmljZS5HZXRTZXJ2aWNlSW5mb1Jlc3BvbnNlEm8KCkdldE9iamVjdHMSLi5pb3RhLmdycGMudjEubGVkZ2VyX3NlcnZpY2UuR2V0T2JqZWN0c1JlcXVlc3QaLy5pb3RhLmdycGMudjEubGVkZ2VyX3NlcnZpY2UuR2V0T2JqZWN0c1Jlc3BvbnNlMAESfgoPR2V0VHJhbnNhY3Rpb25zEjMuaW90YS5ncnBjLnYxLmxlZGdlcl9zZXJ2aWNlLkdldFRyYW5zYWN0aW9uc1JlcXVlc3QaNC5pb3RhLmdycGMudjEubGVkZ2VyX3NlcnZpY2UuR2V0VHJhbnNhY3Rpb25zUmVzcG9uc2UwARJxCg1HZXRDaGVja3BvaW50EjEuaW90YS5ncnBjLnYxLmxlZGdlcl9zZXJ2aWNlLkdldENoZWNrcG9pbnRSZXF1ZXN0GisuaW90YS5ncnBjLnYxLmxlZGdlcl9zZXJ2aWNlLkNoZWNrcG9pbnREYXRhMAESeQoRU3RyZWFtQ2hlY2twb2ludHMSNS5pb3RhLmdycGMudjEubGVkZ2VyX3NlcnZpY2UuU3RyZWFtQ2hlY2twb2ludHNSZXF1ZXN0GisuaW90YS5ncnBjLnYxLmxlZGdlcl9zZXJ2aWNlLkNoZWNrcG9pbnREYXRhMAESZwoIR2V0RXBvY2gSLC5pb3RhLmdycGMudjEubGVkZ2VyX3NlcnZpY2UuR2V0RXBvY2hSZXF1ZXN0Gi0uaW90YS5ncnBjLnYxLmxlZGdlcl9zZXJ2aWNlLkdldEVwb2NoUmVzcG9uc2ViBnByb3RvMw", [file_google_protobuf_field_mask, file_google_protobuf_timestamp, file_google_rpc_status, file_iota_grpc_options, file_iota_grpc_v1_checkpoint, file_iota_grpc_v1_epoch, file_iota_grpc_v1_event, file_iota_grpc_v1_filter, file_iota_grpc_v1_object, file_iota_grpc_v1_transaction, file_iota_grpc_v1_types]);
+    fileDesc(
+        "CiFpb3RhL2dycGMvdjEvbGVkZ2VyX3NlcnZpY2UucHJvdG8SG2lvdGEuZ3JwYy52MS5sZWRnZXJfc2VydmljZSJIChBHZXRIZWFsdGhSZXF1ZXN0EhkKDHRocmVzaG9sZF9tcxgBIAEoBEgAiAEBOgiCtRgEd2l0aEIPCg1fdGhyZXNob2xkX21zIrUBChFHZXRIZWFsdGhSZXNwb25zZRInChpleGVjdXRlZF9jaGVja3BvaW50X2hlaWdodBgBIAEoBEgAiAEBEisKHmVzdGltYXRlZF92YWxpZGF0b3JfbGF0ZW5jeV9tcxgCIAEoDUgBiAEBOgiCtRgEd2l0aEIdChtfZXhlY3V0ZWRfY2hlY2twb2ludF9oZWlnaHRCIQofX2VzdGltYXRlZF92YWxpZGF0b3JfbGF0ZW5jeV9tcyJjChVHZXRTZXJ2aWNlSW5mb1JlcXVlc3QSMgoJcmVhZF9tYXNrGAEgASgLMhouZ29vZ2xlLnByb3RvYnVmLkZpZWxkTWFza0gAiAEBOgiCtRgEd2l0aEIMCgpfcmVhZF9tYXNrIpQEChZHZXRTZXJ2aWNlSW5mb1Jlc3BvbnNlEjEKCGNoYWluX2lkGAEgASgLMhouaW90YS5ncnBjLnYxLnR5cGVzLkRpZ2VzdEgAiAEBEhIKBWNoYWluGAIgASgJSAGIAQESEgoFZXBvY2gYAyABKARIAogBARInChpleGVjdXRlZF9jaGVja3BvaW50X2hlaWdodBgEIAEoBEgDiAEBEkYKHWV4ZWN1dGVkX2NoZWNrcG9pbnRfdGltZXN0YW1wGAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgEiAEBEigKG2xvd2VzdF9hdmFpbGFibGVfY2hlY2twb2ludBgGIAEoBEgFiAEBEjAKI2xvd2VzdF9hdmFpbGFibGVfY2hlY2twb2ludF9vYmplY3RzGAcgASgESAaIAQESEwoGc2VydmVyGAggASgJSAeIAQE6CIK1GAR3aXRoQgsKCV9jaGFpbl9pZEIICgZfY2hhaW5CCAoGX2Vwb2NoQh0KG19leGVjdXRlZF9jaGVja3BvaW50X2hlaWdodEIgCh5fZXhlY3V0ZWRfY2hlY2twb2ludF90aW1lc3RhbXBCHgocX2xvd2VzdF9hdmFpbGFibGVfY2hlY2twb2ludEImCiRfbG93ZXN0X2F2YWlsYWJsZV9jaGVja3BvaW50X29iamVjdHNCCQoHX3NlcnZlciJmCg1PYmplY3RSZXF1ZXN0EjwKCm9iamVjdF9yZWYYASABKAsyIy5pb3RhLmdycGMudjEudHlwZXMuT2JqZWN0UmVmZXJlbmNlSACIAQE6CIK1GAR3aXRoQg0KC19vYmplY3RfcmVmIlgKDk9iamVjdFJlcXVlc3RzEjwKCHJlcXVlc3RzGAEgAygLMiouaW90YS5ncnBjLnYxLmxlZGdlcl9zZXJ2aWNlLk9iamVjdFJlcXVlc3Q6CIK1GAR3aXRoIvABChFHZXRPYmplY3RzUmVxdWVzdBJCCghyZXF1ZXN0cxgBIAEoCzIrLmlvdGEuZ3JwYy52MS5sZWRnZXJfc2VydmljZS5PYmplY3RSZXF1ZXN0c0gAiAEBEjIKCXJlYWRfbWFzaxgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5GaWVsZE1hc2tIAYgBARIjChZtYXhfbWVzc2FnZV9zaXplX2J5dGVzGAMgASgNSAKIAQE6CIK1GAR3aXRoQgsKCV9yZXF1ZXN0c0IMCgpfcmVhZF9tYXNrQhkKF19tYXhfbWVzc2FnZV9zaXplX2J5dGVzInYKDE9iamVjdFJlc3VsdBItCgZvYmplY3QYASABKAsyGy5pb3RhLmdycGMudjEub2JqZWN0Lk9iamVjdEgAEiMKBWVycm9yGAIgASgLMhIuZ29vZ2xlLnJwYy5TdGF0dXNIADoIgrUYBHdpdGhCCAoGcmVzdWx0ImwKEkdldE9iamVjdHNSZXNwb25zZRI6CgdvYmplY3RzGAEgAygLMikuaW90YS5ncnBjLnYxLmxlZGdlcl9zZXJ2aWNlLk9iamVjdFJlc3VsdBIQCghoYXNfbmV4dBgCIAEoCDoIgrUYBHdpdGgiWgoSVHJhbnNhY3Rpb25SZXF1ZXN0Ei8KBmRpZ2VzdBgBIAEoCzIaLmlvdGEuZ3JwYy52MS50eXBlcy5EaWdlc3RIAIgBAToIgrUYBHdpdGhCCQoHX2RpZ2VzdCJiChNUcmFuc2FjdGlvblJlcXVlc3RzEkEKCHJlcXVlc3RzGAEgAygLMi8uaW90YS5ncnBjLnYxLmxlZGdlcl9zZXJ2aWNlLlRyYW5zYWN0aW9uUmVxdWVzdDoIgrUYBHdpdGgi+gEKFkdldFRyYW5zYWN0aW9uc1JlcXVlc3QSRwoIcmVxdWVzdHMYASABKAsyMC5pb3RhLmdycGMudjEubGVkZ2VyX3NlcnZpY2UuVHJhbnNhY3Rpb25SZXF1ZXN0c0gAiAEBEjIKCXJlYWRfbWFzaxgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5GaWVsZE1hc2tIAYgBARIjChZtYXhfbWVzc2FnZV9zaXplX2J5dGVzGAMgASgNSAKIAQE6CIK1GAR3aXRoQgsKCV9yZXF1ZXN0c0IMCgpfcmVhZF9tYXNrQhkKF19tYXhfbWVzc2FnZV9zaXplX2J5dGVzIpsBChFUcmFuc2FjdGlvblJlc3VsdBJNChRleGVjdXRlZF90cmFuc2FjdGlvbhgBIAEoCzItLmlvdGEuZ3JwYy52MS50cmFuc2FjdGlvbi5FeGVjdXRlZFRyYW5zYWN0aW9uSAASIwoFZXJyb3IYAiABKAsyEi5nb29nbGUucnBjLlN0YXR1c0gAOgiCtRgEd2l0aEIICgZyZXN1bHQiggEKF0dldFRyYW5zYWN0aW9uc1Jlc3BvbnNlEksKE3RyYW5zYWN0aW9uX3Jlc3VsdHMYASADKAsyLi5pb3RhLmdycGMudjEubGVkZ2VyX3NlcnZpY2UuVHJhbnNhY3Rpb25SZXN1bHQSEAoIaGFzX25leHQYAiABKAg6CIK1GAR3aXRoIsADChRHZXRDaGVja3BvaW50UmVxdWVzdBIQCgZsYXRlc3QYASABKAhIABIZCg9zZXF1ZW5jZV9udW1iZXIYAiABKARIABIsCgZkaWdlc3QYAyABKAsyGi5pb3RhLmdycGMudjEudHlwZXMuRGlnZXN0SAASMgoJcmVhZF9tYXNrGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLkZpZWxkTWFza0gBiAEBEkgKE3RyYW5zYWN0aW9uc19maWx0ZXIYBSABKAsyJi5pb3RhLmdycGMudjEuZmlsdGVyLlRyYW5zYWN0aW9uRmlsdGVySAKIAQESPAoNZXZlbnRzX2ZpbHRlchgGIAEoCzIgLmlvdGEuZ3JwYy52MS5maWx0ZXIuRXZlbnRGaWx0ZXJIA4gBARIjChZtYXhfbWVzc2FnZV9zaXplX2J5dGVzGAcgASgNSASIAQE6CIK1GAR3aXRoQg8KDWNoZWNrcG9pbnRfaWRCDAoKX3JlYWRfbWFza0IWChRfdHJhbnNhY3Rpb25zX2ZpbHRlckIQCg5fZXZlbnRzX2ZpbHRlckIZChdfbWF4X21lc3NhZ2Vfc2l6ZV9ieXRlcyLEBAoYU3RyZWFtQ2hlY2twb2ludHNSZXF1ZXN0EiIKFXN0YXJ0X3NlcXVlbmNlX251bWJlchgBIAEoBEgAiAEBEiAKE2VuZF9zZXF1ZW5jZV9udW1iZXIYAiABKARIAYgBARIyCglyZWFkX21hc2sYAyABKAsyGi5nb29nbGUucHJvdG9idWYuRmllbGRNYXNrSAKIAQESSAoTdHJhbnNhY3Rpb25zX2ZpbHRlchgEIAEoCzImLmlvdGEuZ3JwYy52MS5maWx0ZXIuVHJhbnNhY3Rpb25GaWx0ZXJIA4gBARI8Cg1ldmVudHNfZmlsdGVyGAUgASgLMiAuaW90YS5ncnBjLnYxLmZpbHRlci5FdmVudEZpbHRlckgEiAEBEh8KEmZpbHRlcl9jaGVja3BvaW50cxgGIAEoCEgFiAEBEiEKFHByb2dyZXNzX2ludGVydmFsX21zGAcgASgNSAaIAQESIwoWbWF4X21lc3NhZ2Vfc2l6ZV9ieXRlcxgIIAEoDUgHiAEBOgiCtRgEd2l0aEIYChZfc3RhcnRfc2VxdWVuY2VfbnVtYmVyQhYKFF9lbmRfc2VxdWVuY2VfbnVtYmVyQgwKCl9yZWFkX21hc2tCFgoUX3RyYW5zYWN0aW9uc19maWx0ZXJCEAoOX2V2ZW50c19maWx0ZXJCFQoTX2ZpbHRlcl9jaGVja3BvaW50c0IXChVfcHJvZ3Jlc3NfaW50ZXJ2YWxfbXNCGQoXX21heF9tZXNzYWdlX3NpemVfYnl0ZXMi/QMKDkNoZWNrcG9pbnREYXRhEjkKCmNoZWNrcG9pbnQYASABKAsyIy5pb3RhLmdycGMudjEuY2hlY2twb2ludC5DaGVja3BvaW50SAASTwoVZXhlY3V0ZWRfdHJhbnNhY3Rpb25zGAIgASgLMi4uaW90YS5ncnBjLnYxLnRyYW5zYWN0aW9uLkV4ZWN1dGVkVHJhbnNhY3Rpb25zSAASLAoGZXZlbnRzGAMgASgLMhouaW90YS5ncnBjLnYxLmV2ZW50LkV2ZW50c0gAEkgKCHByb2dyZXNzGAQgASgLMjQuaW90YS5ncnBjLnYxLmxlZGdlcl9zZXJ2aWNlLkNoZWNrcG9pbnREYXRhLlByb2dyZXNzSAASSwoKZW5kX21hcmtlchgFIAEoCzI1LmlvdGEuZ3JwYy52MS5sZWRnZXJfc2VydmljZS5DaGVja3BvaW50RGF0YS5FbmRNYXJrZXJIABo8CghQcm9ncmVzcxImCh5sYXRlc3Rfc2Nhbm5lZF9zZXF1ZW5jZV9udW1iZXIYASABKAQ6CIK1GAR3aXRoGkcKCUVuZE1hcmtlchIcCg9zZXF1ZW5jZV9udW1iZXIYASABKARIAIgBAToIgrUYBHdpdGhCEgoQX3NlcXVlbmNlX251bWJlcjoIgrUYBHdpdGhCCQoHcGF5bG9hZCJ7Cg9HZXRFcG9jaFJlcXVlc3QSEgoFZXBvY2gYASABKARIAIgBARIyCglyZWFkX21hc2sYAiABKAsyGi5nb29nbGUucHJvdG9idWYuRmllbGRNYXNrSAGIAQE6CIK1GAR3aXRoQggKBl9lcG9jaEIMCgpfcmVhZF9tYXNrIlUKEEdldEVwb2NoUmVzcG9uc2USLQoFZXBvY2gYASABKAsyGS5pb3RhLmdycGMudjEuZXBvY2guRXBvY2hIAIgBAToIgrUYBHdpdGhCCAoGX2Vwb2NoMr4GCg1MZWRnZXJTZXJ2aWNlEmoKCUdldEhlYWx0aBItLmlvdGEuZ3JwYy52MS5sZWRnZXJfc2VydmljZS5HZXRIZWFsdGhSZXF1ZXN0Gi4uaW90YS5ncnBjLnYxLmxlZGdlcl9zZXJ2aWNlLkdldEhlYWx0aFJlc3BvbnNlEnkKDkdldFNlcnZpY2VJbmZvEjIuaW90YS5ncnBjLnYxLmxlZGdlcl9zZXJ2aWNlLkdldFNlcnZpY2VJbmZvUmVxdWVzdBozLmlvdGEuZ3JwYy52MS5sZWRnZXJfc2VydmljZS5HZXRTZXJ2aWNlSW5mb1Jlc3BvbnNlEm8KCkdldE9iamVjdHMSLi5pb3RhLmdycGMudjEubGVkZ2VyX3NlcnZpY2UuR2V0T2JqZWN0c1JlcXVlc3QaLy5pb3RhLmdycGMudjEubGVkZ2VyX3NlcnZpY2UuR2V0T2JqZWN0c1Jlc3BvbnNlMAESfgoPR2V0VHJhbnNhY3Rpb25zEjMuaW90YS5ncnBjLnYxLmxlZGdlcl9zZXJ2aWNlLkdldFRyYW5zYWN0aW9uc1JlcXVlc3QaNC5pb3RhLmdycGMudjEubGVkZ2VyX3NlcnZpY2UuR2V0VHJhbnNhY3Rpb25zUmVzcG9uc2UwARJxCg1HZXRDaGVja3BvaW50EjEuaW90YS5ncnBjLnYxLmxlZGdlcl9zZXJ2aWNlLkdldENoZWNrcG9pbnRSZXF1ZXN0GisuaW90YS5ncnBjLnYxLmxlZGdlcl9zZXJ2aWNlLkNoZWNrcG9pbnREYXRhMAESeQoRU3RyZWFtQ2hlY2twb2ludHMSNS5pb3RhLmdycGMudjEubGVkZ2VyX3NlcnZpY2UuU3RyZWFtQ2hlY2twb2ludHNSZXF1ZXN0GisuaW90YS5ncnBjLnYxLmxlZGdlcl9zZXJ2aWNlLkNoZWNrcG9pbnREYXRhMAESZwoIR2V0RXBvY2gSLC5pb3RhLmdycGMudjEubGVkZ2VyX3NlcnZpY2UuR2V0RXBvY2hSZXF1ZXN0Gi0uaW90YS5ncnBjLnYxLmxlZGdlcl9zZXJ2aWNlLkdldEVwb2NoUmVzcG9uc2ViBnByb3RvMw",
+        [file_google_protobuf_field_mask, file_google_protobuf_timestamp, file_google_rpc_status,
+            file_iota_grpc_options, file_iota_grpc_v1_checkpoint, file_iota_grpc_v1_epoch, file_iota_grpc_v1_event,
+            file_iota_grpc_v1_filter, file_iota_grpc_v1_object, file_iota_grpc_v1_transaction, file_iota_grpc_v1_types],
+    );
 
 /**
  * @generated from message iota.grpc.v1.ledger_service.GetHealthRequest
  */
 export type GetHealthRequest = Message<"iota.grpc.v1.ledger_service.GetHealthRequest"> & {
-  /**
-   * Optional threshold in milliseconds. The node is considered healthy only if
-   * the latest executed checkpoint timestamp is within this many milliseconds of
-   * the current system time. If not provided, the server applies a default
-   * threshold of 5 seconds.
-   *
-   * @generated from field: optional uint64 threshold_ms = 1;
-   */
-  thresholdMs?: bigint | undefined;
+    /**
+     * Optional threshold in milliseconds. The node is considered healthy only if
+     * the latest executed checkpoint timestamp is within this many milliseconds of
+     * the current system time. If not provided, the server applies a default
+     * threshold of 5 seconds.
+     *
+     * @generated from field: optional uint64 threshold_ms = 1;
+     */
+    thresholdMs?: bigint | undefined;
 };
 
 /**
@@ -55,26 +60,26 @@ export type GetHealthRequest = Message<"iota.grpc.v1.ledger_service.GetHealthReq
  * Use `create(GetHealthRequestSchema)` to create a new message.
  */
 export const GetHealthRequestSchema: GenMessage<GetHealthRequest> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_ledger_service, 0);
+    messageDesc(file_iota_grpc_v1_ledger_service, 0);
 
 /**
  * @generated from message iota.grpc.v1.ledger_service.GetHealthResponse
  */
 export type GetHealthResponse = Message<"iota.grpc.v1.ledger_service.GetHealthResponse"> & {
-  /**
-   * Checkpoint height of the most recently executed checkpoint.
-   *
-   * @generated from field: optional uint64 executed_checkpoint_height = 1;
-   */
-  executedCheckpointHeight?: bigint | undefined;
+    /**
+     * Checkpoint height of the most recently executed checkpoint.
+     *
+     * @generated from field: optional uint64 executed_checkpoint_height = 1;
+     */
+    executedCheckpointHeight?: bigint | undefined;
 
-  /**
-   * Estimated validator latency in milliseconds.
-   * Reserved for future use.
-   *
-   * @generated from field: optional uint32 estimated_validator_latency_ms = 2;
-   */
-  estimatedValidatorLatencyMs?: number | undefined;
+    /**
+     * Estimated validator latency in milliseconds.
+     * Reserved for future use.
+     *
+     * @generated from field: optional uint32 estimated_validator_latency_ms = 2;
+     */
+    estimatedValidatorLatencyMs?: number | undefined;
 };
 
 /**
@@ -82,19 +87,19 @@ export type GetHealthResponse = Message<"iota.grpc.v1.ledger_service.GetHealthRe
  * Use `create(GetHealthResponseSchema)` to create a new message.
  */
 export const GetHealthResponseSchema: GenMessage<GetHealthResponse> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_ledger_service, 1);
+    messageDesc(file_iota_grpc_v1_ledger_service, 1);
 
 /**
  * @generated from message iota.grpc.v1.ledger_service.GetServiceInfoRequest
  */
 export type GetServiceInfoRequest = Message<"iota.grpc.v1.ledger_service.GetServiceInfoRequest"> & {
-  /**
-   * Mask specifying which ServiceInfo fields to read.
-   * If no mask is specified, defaults to `chain_id,epoch,checkpoint_height`.
-   *
-   * @generated from field: optional google.protobuf.FieldMask read_mask = 1;
-   */
-  readMask?: FieldMask | undefined;
+    /**
+     * Mask specifying which ServiceInfo fields to read.
+     * If no mask is specified, defaults to `chain_id,epoch,checkpoint_height`.
+     *
+     * @generated from field: optional google.protobuf.FieldMask read_mask = 1;
+     */
+    readMask?: FieldMask | undefined;
 };
 
 /**
@@ -102,72 +107,72 @@ export type GetServiceInfoRequest = Message<"iota.grpc.v1.ledger_service.GetServ
  * Use `create(GetServiceInfoRequestSchema)` to create a new message.
  */
 export const GetServiceInfoRequestSchema: GenMessage<GetServiceInfoRequest> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_ledger_service, 2);
+    messageDesc(file_iota_grpc_v1_ledger_service, 2);
 
 /**
  * @generated from message iota.grpc.v1.ledger_service.GetServiceInfoResponse
  */
 export type GetServiceInfoResponse = Message<"iota.grpc.v1.ledger_service.GetServiceInfoResponse"> & {
-  /**
-   * The chain identifier of the chain that this node is on.
-   *
-   * The chain identifier is the digest of the genesis checkpoint, the
-   * checkpoint with sequence number 0.
-   *
-   * @generated from field: optional iota.grpc.v1.types.Digest chain_id = 1;
-   */
-  chainId?: Digest | undefined;
+    /**
+     * The chain identifier of the chain that this node is on.
+     *
+     * The chain identifier is the digest of the genesis checkpoint, the
+     * checkpoint with sequence number 0.
+     *
+     * @generated from field: optional iota.grpc.v1.types.Digest chain_id = 1;
+     */
+    chainId?: Digest | undefined;
 
-  /**
-   * Human-readable name of the chain that this node is on.
-   *
-   * This is intended to be a human-readable name like `mainnet`, `testnet`, and so on.
-   *
-   * @generated from field: optional string chain = 2;
-   */
-  chain?: string | undefined;
+    /**
+     * Human-readable name of the chain that this node is on.
+     *
+     * This is intended to be a human-readable name like `mainnet`, `testnet`, and so on.
+     *
+     * @generated from field: optional string chain = 2;
+     */
+    chain?: string | undefined;
 
-  /**
-   * Current epoch of the node based on its highest executed checkpoint.
-   *
-   * @generated from field: optional uint64 epoch = 3;
-   */
-  epoch?: bigint | undefined;
+    /**
+     * Current epoch of the node based on its highest executed checkpoint.
+     *
+     * @generated from field: optional uint64 epoch = 3;
+     */
+    epoch?: bigint | undefined;
 
-  /**
-   * Checkpoint height of the most recently executed checkpoint.
-   *
-   * @generated from field: optional uint64 executed_checkpoint_height = 4;
-   */
-  executedCheckpointHeight?: bigint | undefined;
+    /**
+     * Checkpoint height of the most recently executed checkpoint.
+     *
+     * @generated from field: optional uint64 executed_checkpoint_height = 4;
+     */
+    executedCheckpointHeight?: bigint | undefined;
 
-  /**
-   * Unix timestamp of the most recently executed checkpoint.
-   *
-   * @generated from field: optional google.protobuf.Timestamp executed_checkpoint_timestamp = 5;
-   */
-  executedCheckpointTimestamp?: Timestamp | undefined;
+    /**
+     * Unix timestamp of the most recently executed checkpoint.
+     *
+     * @generated from field: optional google.protobuf.Timestamp executed_checkpoint_timestamp = 5;
+     */
+    executedCheckpointTimestamp?: Timestamp | undefined;
 
-  /**
-   * The lowest checkpoint for which checkpoints and transaction data are available.
-   *
-   * @generated from field: optional uint64 lowest_available_checkpoint = 6;
-   */
-  lowestAvailableCheckpoint?: bigint | undefined;
+    /**
+     * The lowest checkpoint for which checkpoints and transaction data are available.
+     *
+     * @generated from field: optional uint64 lowest_available_checkpoint = 6;
+     */
+    lowestAvailableCheckpoint?: bigint | undefined;
 
-  /**
-   * The lowest checkpoint for which object data is available.
-   *
-   * @generated from field: optional uint64 lowest_available_checkpoint_objects = 7;
-   */
-  lowestAvailableCheckpointObjects?: bigint | undefined;
+    /**
+     * The lowest checkpoint for which object data is available.
+     *
+     * @generated from field: optional uint64 lowest_available_checkpoint_objects = 7;
+     */
+    lowestAvailableCheckpointObjects?: bigint | undefined;
 
-  /**
-   * Software version of the service. Similar to the `server` http header.
-   *
-   * @generated from field: optional string server = 8;
-   */
-  server?: string | undefined;
+    /**
+     * Software version of the service. Similar to the `server` http header.
+     *
+     * @generated from field: optional string server = 8;
+     */
+    server?: string | undefined;
 };
 
 /**
@@ -175,20 +180,20 @@ export type GetServiceInfoResponse = Message<"iota.grpc.v1.ledger_service.GetSer
  * Use `create(GetServiceInfoResponseSchema)` to create a new message.
  */
 export const GetServiceInfoResponseSchema: GenMessage<GetServiceInfoResponse> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_ledger_service, 3);
+    messageDesc(file_iota_grpc_v1_ledger_service, 3);
 
 /**
  * @generated from message iota.grpc.v1.ledger_service.ObjectRequest
  */
 export type ObjectRequest = Message<"iota.grpc.v1.ledger_service.ObjectRequest"> & {
-  /**
-   * Required. The `ObjectId` of the requested object.
-   * If no version is specified, and the object is live, then the latest
-   * version of the object is returned.
-   *
-   * @generated from field: optional iota.grpc.v1.types.ObjectReference object_ref = 1;
-   */
-  objectRef?: ObjectReference | undefined;
+    /**
+     * Required. The `ObjectId` of the requested object.
+     * If no version is specified, and the object is live, then the latest
+     * version of the object is returned.
+     *
+     * @generated from field: optional iota.grpc.v1.types.ObjectReference object_ref = 1;
+     */
+    objectRef?: ObjectReference | undefined;
 };
 
 /**
@@ -196,16 +201,16 @@ export type ObjectRequest = Message<"iota.grpc.v1.ledger_service.ObjectRequest">
  * Use `create(ObjectRequestSchema)` to create a new message.
  */
 export const ObjectRequestSchema: GenMessage<ObjectRequest> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_ledger_service, 4);
+    messageDesc(file_iota_grpc_v1_ledger_service, 4);
 
 /**
  * @generated from message iota.grpc.v1.ledger_service.ObjectRequests
  */
 export type ObjectRequests = Message<"iota.grpc.v1.ledger_service.ObjectRequests"> & {
-  /**
-   * @generated from field: repeated iota.grpc.v1.ledger_service.ObjectRequest requests = 1;
-   */
-  requests: ObjectRequest[];
+    /**
+     * @generated from field: repeated iota.grpc.v1.ledger_service.ObjectRequest requests = 1;
+     */
+    requests: ObjectRequest[];
 };
 
 /**
@@ -213,32 +218,32 @@ export type ObjectRequests = Message<"iota.grpc.v1.ledger_service.ObjectRequests
  * Use `create(ObjectRequestsSchema)` to create a new message.
  */
 export const ObjectRequestsSchema: GenMessage<ObjectRequests> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_ledger_service, 5);
+    messageDesc(file_iota_grpc_v1_ledger_service, 5);
 
 /**
  * @generated from message iota.grpc.v1.ledger_service.GetObjectsRequest
  */
 export type GetObjectsRequest = Message<"iota.grpc.v1.ledger_service.GetObjectsRequest"> & {
-  /**
-   * @generated from field: optional iota.grpc.v1.ledger_service.ObjectRequests requests = 1;
-   */
-  requests?: ObjectRequests | undefined;
+    /**
+     * @generated from field: optional iota.grpc.v1.ledger_service.ObjectRequests requests = 1;
+     */
+    requests?: ObjectRequests | undefined;
 
-  /**
-   * Mask specifying which fields to read.
-   * If no mask is specified, defaults to `object_id,version,digest`.
-   *
-   * @generated from field: optional google.protobuf.FieldMask read_mask = 2;
-   */
-  readMask?: FieldMask | undefined;
+    /**
+     * Mask specifying which fields to read.
+     * If no mask is specified, defaults to `object_id,version,digest`.
+     *
+     * @generated from field: optional google.protobuf.FieldMask read_mask = 2;
+     */
+    readMask?: FieldMask | undefined;
 
-  /**
-   * Optional maximum message size the client can receive (1MB - 128MB)
-   * If not specified, server uses default chunking threshold (4MB)
-   *
-   * @generated from field: optional uint32 max_message_size_bytes = 3;
-   */
-  maxMessageSizeBytes?: number | undefined;
+    /**
+     * Optional maximum message size the client can receive (1MB - 128MB)
+     * If not specified, server uses default chunking threshold (4MB)
+     *
+     * @generated from field: optional uint32 max_message_size_bytes = 3;
+     */
+    maxMessageSizeBytes?: number | undefined;
 };
 
 /**
@@ -246,28 +251,28 @@ export type GetObjectsRequest = Message<"iota.grpc.v1.ledger_service.GetObjectsR
  * Use `create(GetObjectsRequestSchema)` to create a new message.
  */
 export const GetObjectsRequestSchema: GenMessage<GetObjectsRequest> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_ledger_service, 6);
+    messageDesc(file_iota_grpc_v1_ledger_service, 6);
 
 /**
  * @generated from message iota.grpc.v1.ledger_service.ObjectResult
  */
 export type ObjectResult = Message<"iota.grpc.v1.ledger_service.ObjectResult"> & {
-  /**
-   * @generated from oneof iota.grpc.v1.ledger_service.ObjectResult.result
-   */
-  result: {
     /**
-     * @generated from field: iota.grpc.v1.object.Object object = 1;
+     * @generated from oneof iota.grpc.v1.ledger_service.ObjectResult.result
      */
-    value: Object$;
-    case: "object";
-  } | {
-    /**
-     * @generated from field: google.rpc.Status error = 2;
-     */
-    value: Status;
-    case: "error";
-  } | { case: undefined; value?: undefined };
+    result: {
+        /**
+         * @generated from field: iota.grpc.v1.object.Object object = 1;
+         */
+        value: Object$;
+        case: "object";
+    } | {
+        /**
+         * @generated from field: google.rpc.Status error = 2;
+         */
+        value: Status;
+        case: "error";
+    } | { case: undefined; value?: undefined };
 };
 
 /**
@@ -275,21 +280,21 @@ export type ObjectResult = Message<"iota.grpc.v1.ledger_service.ObjectResult"> &
  * Use `create(ObjectResultSchema)` to create a new message.
  */
 export const ObjectResultSchema: GenMessage<ObjectResult> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_ledger_service, 7);
+    messageDesc(file_iota_grpc_v1_ledger_service, 7);
 
 /**
  * @generated from message iota.grpc.v1.ledger_service.GetObjectsResponse
  */
 export type GetObjectsResponse = Message<"iota.grpc.v1.ledger_service.GetObjectsResponse"> & {
-  /**
-   * @generated from field: repeated iota.grpc.v1.ledger_service.ObjectResult objects = 1;
-   */
-  objects: ObjectResult[];
+    /**
+     * @generated from field: repeated iota.grpc.v1.ledger_service.ObjectResult objects = 1;
+     */
+    objects: ObjectResult[];
 
-  /**
-   * @generated from field: bool has_next = 2;
-   */
-  hasNext: boolean;
+    /**
+     * @generated from field: bool has_next = 2;
+     */
+    hasNext: boolean;
 };
 
 /**
@@ -297,18 +302,18 @@ export type GetObjectsResponse = Message<"iota.grpc.v1.ledger_service.GetObjects
  * Use `create(GetObjectsResponseSchema)` to create a new message.
  */
 export const GetObjectsResponseSchema: GenMessage<GetObjectsResponse> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_ledger_service, 8);
+    messageDesc(file_iota_grpc_v1_ledger_service, 8);
 
 /**
  * @generated from message iota.grpc.v1.ledger_service.TransactionRequest
  */
 export type TransactionRequest = Message<"iota.grpc.v1.ledger_service.TransactionRequest"> & {
-  /**
-   * Required. The digest of the requested transaction.
-   *
-   * @generated from field: optional iota.grpc.v1.types.Digest digest = 1;
-   */
-  digest?: Digest | undefined;
+    /**
+     * Required. The digest of the requested transaction.
+     *
+     * @generated from field: optional iota.grpc.v1.types.Digest digest = 1;
+     */
+    digest?: Digest | undefined;
 };
 
 /**
@@ -316,16 +321,16 @@ export type TransactionRequest = Message<"iota.grpc.v1.ledger_service.Transactio
  * Use `create(TransactionRequestSchema)` to create a new message.
  */
 export const TransactionRequestSchema: GenMessage<TransactionRequest> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_ledger_service, 9);
+    messageDesc(file_iota_grpc_v1_ledger_service, 9);
 
 /**
  * @generated from message iota.grpc.v1.ledger_service.TransactionRequests
  */
 export type TransactionRequests = Message<"iota.grpc.v1.ledger_service.TransactionRequests"> & {
-  /**
-   * @generated from field: repeated iota.grpc.v1.ledger_service.TransactionRequest requests = 1;
-   */
-  requests: TransactionRequest[];
+    /**
+     * @generated from field: repeated iota.grpc.v1.ledger_service.TransactionRequest requests = 1;
+     */
+    requests: TransactionRequest[];
 };
 
 /**
@@ -333,32 +338,32 @@ export type TransactionRequests = Message<"iota.grpc.v1.ledger_service.Transacti
  * Use `create(TransactionRequestsSchema)` to create a new message.
  */
 export const TransactionRequestsSchema: GenMessage<TransactionRequests> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_ledger_service, 10);
+    messageDesc(file_iota_grpc_v1_ledger_service, 10);
 
 /**
  * @generated from message iota.grpc.v1.ledger_service.GetTransactionsRequest
  */
 export type GetTransactionsRequest = Message<"iota.grpc.v1.ledger_service.GetTransactionsRequest"> & {
-  /**
-   * @generated from field: optional iota.grpc.v1.ledger_service.TransactionRequests requests = 1;
-   */
-  requests?: TransactionRequests | undefined;
+    /**
+     * @generated from field: optional iota.grpc.v1.ledger_service.TransactionRequests requests = 1;
+     */
+    requests?: TransactionRequests | undefined;
 
-  /**
-   * Mask specifying which fields to read.
-   * If no mask is specified, defaults to `transaction.digest`.
-   *
-   * @generated from field: optional google.protobuf.FieldMask read_mask = 2;
-   */
-  readMask?: FieldMask | undefined;
+    /**
+     * Mask specifying which fields to read.
+     * If no mask is specified, defaults to `transaction.digest`.
+     *
+     * @generated from field: optional google.protobuf.FieldMask read_mask = 2;
+     */
+    readMask?: FieldMask | undefined;
 
-  /**
-   * Optional maximum message size the client can receive (1MB - 128MB)
-   * If not specified, server uses default chunking threshold (4MB)
-   *
-   * @generated from field: optional uint32 max_message_size_bytes = 3;
-   */
-  maxMessageSizeBytes?: number | undefined;
+    /**
+     * Optional maximum message size the client can receive (1MB - 128MB)
+     * If not specified, server uses default chunking threshold (4MB)
+     *
+     * @generated from field: optional uint32 max_message_size_bytes = 3;
+     */
+    maxMessageSizeBytes?: number | undefined;
 };
 
 /**
@@ -366,28 +371,28 @@ export type GetTransactionsRequest = Message<"iota.grpc.v1.ledger_service.GetTra
  * Use `create(GetTransactionsRequestSchema)` to create a new message.
  */
 export const GetTransactionsRequestSchema: GenMessage<GetTransactionsRequest> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_ledger_service, 11);
+    messageDesc(file_iota_grpc_v1_ledger_service, 11);
 
 /**
  * @generated from message iota.grpc.v1.ledger_service.TransactionResult
  */
 export type TransactionResult = Message<"iota.grpc.v1.ledger_service.TransactionResult"> & {
-  /**
-   * @generated from oneof iota.grpc.v1.ledger_service.TransactionResult.result
-   */
-  result: {
     /**
-     * @generated from field: iota.grpc.v1.transaction.ExecutedTransaction executed_transaction = 1;
+     * @generated from oneof iota.grpc.v1.ledger_service.TransactionResult.result
      */
-    value: ExecutedTransaction;
-    case: "executedTransaction";
-  } | {
-    /**
-     * @generated from field: google.rpc.Status error = 2;
-     */
-    value: Status;
-    case: "error";
-  } | { case: undefined; value?: undefined };
+    result: {
+        /**
+         * @generated from field: iota.grpc.v1.transaction.ExecutedTransaction executed_transaction = 1;
+         */
+        value: ExecutedTransaction;
+        case: "executedTransaction";
+    } | {
+        /**
+         * @generated from field: google.rpc.Status error = 2;
+         */
+        value: Status;
+        case: "error";
+    } | { case: undefined; value?: undefined };
 };
 
 /**
@@ -395,21 +400,21 @@ export type TransactionResult = Message<"iota.grpc.v1.ledger_service.Transaction
  * Use `create(TransactionResultSchema)` to create a new message.
  */
 export const TransactionResultSchema: GenMessage<TransactionResult> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_ledger_service, 12);
+    messageDesc(file_iota_grpc_v1_ledger_service, 12);
 
 /**
  * @generated from message iota.grpc.v1.ledger_service.GetTransactionsResponse
  */
 export type GetTransactionsResponse = Message<"iota.grpc.v1.ledger_service.GetTransactionsResponse"> & {
-  /**
-   * @generated from field: repeated iota.grpc.v1.ledger_service.TransactionResult transaction_results = 1;
-   */
-  transactionResults: TransactionResult[];
+    /**
+     * @generated from field: repeated iota.grpc.v1.ledger_service.TransactionResult transaction_results = 1;
+     */
+    transactionResults: TransactionResult[];
 
-  /**
-   * @generated from field: bool has_next = 2;
-   */
-  hasNext: boolean;
+    /**
+     * @generated from field: bool has_next = 2;
+     */
+    hasNext: boolean;
 };
 
 /**
@@ -417,70 +422,70 @@ export type GetTransactionsResponse = Message<"iota.grpc.v1.ledger_service.GetTr
  * Use `create(GetTransactionsResponseSchema)` to create a new message.
  */
 export const GetTransactionsResponseSchema: GenMessage<GetTransactionsResponse> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_ledger_service, 13);
+    messageDesc(file_iota_grpc_v1_ledger_service, 13);
 
 /**
  * @generated from message iota.grpc.v1.ledger_service.GetCheckpointRequest
  */
 export type GetCheckpointRequest = Message<"iota.grpc.v1.ledger_service.GetCheckpointRequest"> & {
-  /**
-   * @generated from oneof iota.grpc.v1.ledger_service.GetCheckpointRequest.checkpoint_id
-   */
-  checkpointId: {
     /**
-     * If set to true, the latest checkpoint is requested.
-     *
-     * @generated from field: bool latest = 1;
+     * @generated from oneof iota.grpc.v1.ledger_service.GetCheckpointRequest.checkpoint_id
      */
-    value: boolean;
-    case: "latest";
-  } | {
+    checkpointId: {
+        /**
+         * If set to true, the latest checkpoint is requested.
+         *
+         * @generated from field: bool latest = 1;
+         */
+        value: boolean;
+        case: "latest";
+    } | {
+        /**
+         * The sequence number of the requested checkpoint.
+         *
+         * @generated from field: uint64 sequence_number = 2;
+         */
+        value: bigint;
+        case: "sequenceNumber";
+    } | {
+        /**
+         * The digest of the requested checkpoint.
+         *
+         * @generated from field: iota.grpc.v1.types.Digest digest = 3;
+         */
+        value: Digest;
+        case: "digest";
+    } | { case: undefined; value?: undefined };
+
     /**
-     * The sequence number of the requested checkpoint.
+     * Mask specifying which fields to read.
+     * If no mask is specified, defaults to `summary`.
      *
-     * @generated from field: uint64 sequence_number = 2;
+     * @generated from field: optional google.protobuf.FieldMask read_mask = 4;
      */
-    value: bigint;
-    case: "sequenceNumber";
-  } | {
+    readMask?: FieldMask | undefined;
+
     /**
-     * The digest of the requested checkpoint.
+     * if no filter is passed, all transactions are included (if mentioned in the read_mask)
      *
-     * @generated from field: iota.grpc.v1.types.Digest digest = 3;
+     * @generated from field: optional iota.grpc.v1.filter.TransactionFilter transactions_filter = 5;
      */
-    value: Digest;
-    case: "digest";
-  } | { case: undefined; value?: undefined };
+    transactionsFilter?: TransactionFilter | undefined;
 
-  /**
-   * Mask specifying which fields to read.
-   * If no mask is specified, defaults to `summary`.
-   *
-   * @generated from field: optional google.protobuf.FieldMask read_mask = 4;
-   */
-  readMask?: FieldMask | undefined;
+    /**
+     * if no filter is passed, all events are included (if mentioned in the read_mask)
+     *
+     * @generated from field: optional iota.grpc.v1.filter.EventFilter events_filter = 6;
+     */
+    eventsFilter?: EventFilter | undefined;
 
-  /**
-   * if no filter is passed, all transactions are included (if mentioned in the read_mask)
-   *
-   * @generated from field: optional iota.grpc.v1.filter.TransactionFilter transactions_filter = 5;
-   */
-  transactionsFilter?: TransactionFilter | undefined;
-
-  /**
-   * if no filter is passed, all events are included (if mentioned in the read_mask)
-   *
-   * @generated from field: optional iota.grpc.v1.filter.EventFilter events_filter = 6;
-   */
-  eventsFilter?: EventFilter | undefined;
-
-  /**
-   * Optional maximum message size the client can receive (1MB - 128MB)
-   * If not specified, server uses default chunking threshold (4MB)
-   *
-   * @generated from field: optional uint32 max_message_size_bytes = 7;
-   */
-  maxMessageSizeBytes?: number | undefined;
+    /**
+     * Optional maximum message size the client can receive (1MB - 128MB)
+     * If not specified, server uses default chunking threshold (4MB)
+     *
+     * @generated from field: optional uint32 max_message_size_bytes = 7;
+     */
+    maxMessageSizeBytes?: number | undefined;
 };
 
 /**
@@ -488,72 +493,72 @@ export type GetCheckpointRequest = Message<"iota.grpc.v1.ledger_service.GetCheck
  * Use `create(GetCheckpointRequestSchema)` to create a new message.
  */
 export const GetCheckpointRequestSchema: GenMessage<GetCheckpointRequest> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_ledger_service, 14);
+    messageDesc(file_iota_grpc_v1_ledger_service, 14);
 
 /**
  * @generated from message iota.grpc.v1.ledger_service.StreamCheckpointsRequest
  */
 export type StreamCheckpointsRequest = Message<"iota.grpc.v1.ledger_service.StreamCheckpointsRequest"> & {
-  /**
-   * if no start sequence number is provided, streaming starts from the latest checkpoint
-   *
-   * @generated from field: optional uint64 start_sequence_number = 1;
-   */
-  startSequenceNumber?: bigint | undefined;
+    /**
+     * if no start sequence number is provided, streaming starts from the latest checkpoint
+     *
+     * @generated from field: optional uint64 start_sequence_number = 1;
+     */
+    startSequenceNumber?: bigint | undefined;
 
-  /**
-   * if no end sequence number is provided, streaming continues forever
-   *
-   * @generated from field: optional uint64 end_sequence_number = 2;
-   */
-  endSequenceNumber?: bigint | undefined;
+    /**
+     * if no end sequence number is provided, streaming continues forever
+     *
+     * @generated from field: optional uint64 end_sequence_number = 2;
+     */
+    endSequenceNumber?: bigint | undefined;
 
-  /**
-   * Mask specifying which fields to read.
-   * If no mask is specified, defaults to `summary`.
-   *
-   * @generated from field: optional google.protobuf.FieldMask read_mask = 3;
-   */
-  readMask?: FieldMask | undefined;
+    /**
+     * Mask specifying which fields to read.
+     * If no mask is specified, defaults to `summary`.
+     *
+     * @generated from field: optional google.protobuf.FieldMask read_mask = 3;
+     */
+    readMask?: FieldMask | undefined;
 
-  /**
-   * if no filter is passed, all transactions are included (if mentioned in the read_mask)
-   *
-   * @generated from field: optional iota.grpc.v1.filter.TransactionFilter transactions_filter = 4;
-   */
-  transactionsFilter?: TransactionFilter | undefined;
+    /**
+     * if no filter is passed, all transactions are included (if mentioned in the read_mask)
+     *
+     * @generated from field: optional iota.grpc.v1.filter.TransactionFilter transactions_filter = 4;
+     */
+    transactionsFilter?: TransactionFilter | undefined;
 
-  /**
-   * if no filter is passed, all events are included (if mentioned in the read_mask)
-   *
-   * @generated from field: optional iota.grpc.v1.filter.EventFilter events_filter = 5;
-   */
-  eventsFilter?: EventFilter | undefined;
+    /**
+     * if no filter is passed, all events are included (if mentioned in the read_mask)
+     *
+     * @generated from field: optional iota.grpc.v1.filter.EventFilter events_filter = 5;
+     */
+    eventsFilter?: EventFilter | undefined;
 
-  /**
-   * When true, checkpoints with no matching transactions or events are skipped entirely.
-   * At least one of transactions_filter or events_filter must be set.
-   * A Progress message is sent periodically to indicate liveness and scan position.
-   *
-   * @generated from field: optional bool filter_checkpoints = 6;
-   */
-  filterCheckpoints?: boolean | undefined;
+    /**
+     * When true, checkpoints with no matching transactions or events are skipped entirely.
+     * At least one of transactions_filter or events_filter must be set.
+     * A Progress message is sent periodically to indicate liveness and scan position.
+     *
+     * @generated from field: optional bool filter_checkpoints = 6;
+     */
+    filterCheckpoints?: boolean | undefined;
 
-  /**
-   * Progress message interval in milliseconds when filter_checkpoints is enabled.
-   * Defaults to 2000ms. Minimum value is 500ms; lower values are clamped.
-   *
-   * @generated from field: optional uint32 progress_interval_ms = 7;
-   */
-  progressIntervalMs?: number | undefined;
+    /**
+     * Progress message interval in milliseconds when filter_checkpoints is enabled.
+     * Defaults to 2000ms. Minimum value is 500ms; lower values are clamped.
+     *
+     * @generated from field: optional uint32 progress_interval_ms = 7;
+     */
+    progressIntervalMs?: number | undefined;
 
-  /**
-   * Optional maximum message size the client can receive (1MB - 128MB)
-   * If not specified, server uses default chunking threshold (4MB)
-   *
-   * @generated from field: optional uint32 max_message_size_bytes = 8;
-   */
-  maxMessageSizeBytes?: number | undefined;
+    /**
+     * Optional maximum message size the client can receive (1MB - 128MB)
+     * If not specified, server uses default chunking threshold (4MB)
+     *
+     * @generated from field: optional uint32 max_message_size_bytes = 8;
+     */
+    maxMessageSizeBytes?: number | undefined;
 };
 
 /**
@@ -561,46 +566,46 @@ export type StreamCheckpointsRequest = Message<"iota.grpc.v1.ledger_service.Stre
  * Use `create(StreamCheckpointsRequestSchema)` to create a new message.
  */
 export const StreamCheckpointsRequestSchema: GenMessage<StreamCheckpointsRequest> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_ledger_service, 15);
+    messageDesc(file_iota_grpc_v1_ledger_service, 15);
 
 /**
  * @generated from message iota.grpc.v1.ledger_service.CheckpointData
  */
 export type CheckpointData = Message<"iota.grpc.v1.ledger_service.CheckpointData"> & {
-  /**
-   * @generated from oneof iota.grpc.v1.ledger_service.CheckpointData.payload
-   */
-  payload: {
     /**
-     * @generated from field: iota.grpc.v1.checkpoint.Checkpoint checkpoint = 1;
+     * @generated from oneof iota.grpc.v1.ledger_service.CheckpointData.payload
      */
-    value: Checkpoint;
-    case: "checkpoint";
-  } | {
-    /**
-     * @generated from field: iota.grpc.v1.transaction.ExecutedTransactions executed_transactions = 2;
-     */
-    value: ExecutedTransactions;
-    case: "executedTransactions";
-  } | {
-    /**
-     * @generated from field: iota.grpc.v1.event.Events events = 3;
-     */
-    value: Events;
-    case: "events";
-  } | {
-    /**
-     * @generated from field: iota.grpc.v1.ledger_service.CheckpointData.Progress progress = 4;
-     */
-    value: CheckpointData_Progress;
-    case: "progress";
-  } | {
-    /**
-     * @generated from field: iota.grpc.v1.ledger_service.CheckpointData.EndMarker end_marker = 5;
-     */
-    value: CheckpointData_EndMarker;
-    case: "endMarker";
-  } | { case: undefined; value?: undefined };
+    payload: {
+        /**
+         * @generated from field: iota.grpc.v1.checkpoint.Checkpoint checkpoint = 1;
+         */
+        value: Checkpoint;
+        case: "checkpoint";
+    } | {
+        /**
+         * @generated from field: iota.grpc.v1.transaction.ExecutedTransactions executed_transactions = 2;
+         */
+        value: ExecutedTransactions;
+        case: "executedTransactions";
+    } | {
+        /**
+         * @generated from field: iota.grpc.v1.event.Events events = 3;
+         */
+        value: Events;
+        case: "events";
+    } | {
+        /**
+         * @generated from field: iota.grpc.v1.ledger_service.CheckpointData.Progress progress = 4;
+         */
+        value: CheckpointData_Progress;
+        case: "progress";
+    } | {
+        /**
+         * @generated from field: iota.grpc.v1.ledger_service.CheckpointData.EndMarker end_marker = 5;
+         */
+        value: CheckpointData_EndMarker;
+        case: "endMarker";
+    } | { case: undefined; value?: undefined };
 };
 
 /**
@@ -608,18 +613,18 @@ export type CheckpointData = Message<"iota.grpc.v1.ledger_service.CheckpointData
  * Use `create(CheckpointDataSchema)` to create a new message.
  */
 export const CheckpointDataSchema: GenMessage<CheckpointData> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_ledger_service, 16);
+    messageDesc(file_iota_grpc_v1_ledger_service, 16);
 
 /**
  * @generated from message iota.grpc.v1.ledger_service.CheckpointData.Progress
  */
 export type CheckpointData_Progress = Message<"iota.grpc.v1.ledger_service.CheckpointData.Progress"> & {
-  /**
-   * The sequence number of the latest scanned checkpoint.
-   *
-   * @generated from field: uint64 latest_scanned_sequence_number = 1;
-   */
-  latestScannedSequenceNumber: bigint;
+    /**
+     * The sequence number of the latest scanned checkpoint.
+     *
+     * @generated from field: uint64 latest_scanned_sequence_number = 1;
+     */
+    latestScannedSequenceNumber: bigint;
 };
 
 /**
@@ -627,18 +632,18 @@ export type CheckpointData_Progress = Message<"iota.grpc.v1.ledger_service.Check
  * Use `create(CheckpointData_ProgressSchema)` to create a new message.
  */
 export const CheckpointData_ProgressSchema: GenMessage<CheckpointData_Progress> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_ledger_service, 16, 0);
+    messageDesc(file_iota_grpc_v1_ledger_service, 16, 0);
 
 /**
  * @generated from message iota.grpc.v1.ledger_service.CheckpointData.EndMarker
  */
 export type CheckpointData_EndMarker = Message<"iota.grpc.v1.ledger_service.CheckpointData.EndMarker"> & {
-  /**
-   * The height of this checkpoint.
-   *
-   * @generated from field: optional uint64 sequence_number = 1;
-   */
-  sequenceNumber?: bigint | undefined;
+    /**
+     * The height of this checkpoint.
+     *
+     * @generated from field: optional uint64 sequence_number = 1;
+     */
+    sequenceNumber?: bigint | undefined;
 };
 
 /**
@@ -646,27 +651,27 @@ export type CheckpointData_EndMarker = Message<"iota.grpc.v1.ledger_service.Chec
  * Use `create(CheckpointData_EndMarkerSchema)` to create a new message.
  */
 export const CheckpointData_EndMarkerSchema: GenMessage<CheckpointData_EndMarker> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_ledger_service, 16, 1);
+    messageDesc(file_iota_grpc_v1_ledger_service, 16, 1);
 
 /**
  * @generated from message iota.grpc.v1.ledger_service.GetEpochRequest
  */
 export type GetEpochRequest = Message<"iota.grpc.v1.ledger_service.GetEpochRequest"> & {
-  /**
-   * The requested epoch.
-   * If no epoch is provided the current epoch will be returned.
-   *
-   * @generated from field: optional uint64 epoch = 1;
-   */
-  epoch?: bigint | undefined;
+    /**
+     * The requested epoch.
+     * If no epoch is provided the current epoch will be returned.
+     *
+     * @generated from field: optional uint64 epoch = 1;
+     */
+    epoch?: bigint | undefined;
 
-  /**
-   * Mask specifying which fields to read.
-   * If no mask is specified, defaults to `epoch`.
-   *
-   * @generated from field: optional google.protobuf.FieldMask read_mask = 2;
-   */
-  readMask?: FieldMask | undefined;
+    /**
+     * Mask specifying which fields to read.
+     * If no mask is specified, defaults to `epoch`.
+     *
+     * @generated from field: optional google.protobuf.FieldMask read_mask = 2;
+     */
+    readMask?: FieldMask | undefined;
 };
 
 /**
@@ -674,16 +679,16 @@ export type GetEpochRequest = Message<"iota.grpc.v1.ledger_service.GetEpochReque
  * Use `create(GetEpochRequestSchema)` to create a new message.
  */
 export const GetEpochRequestSchema: GenMessage<GetEpochRequest> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_ledger_service, 17);
+    messageDesc(file_iota_grpc_v1_ledger_service, 17);
 
 /**
  * @generated from message iota.grpc.v1.ledger_service.GetEpochResponse
  */
 export type GetEpochResponse = Message<"iota.grpc.v1.ledger_service.GetEpochResponse"> & {
-  /**
-   * @generated from field: optional iota.grpc.v1.epoch.Epoch epoch = 1;
-   */
-  epoch?: Epoch | undefined;
+    /**
+     * @generated from field: optional iota.grpc.v1.epoch.Epoch epoch = 1;
+     */
+    epoch?: Epoch | undefined;
 };
 
 /**
@@ -691,74 +696,73 @@ export type GetEpochResponse = Message<"iota.grpc.v1.ledger_service.GetEpochResp
  * Use `create(GetEpochResponseSchema)` to create a new message.
  */
 export const GetEpochResponseSchema: GenMessage<GetEpochResponse> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_ledger_service, 18);
+    messageDesc(file_iota_grpc_v1_ledger_service, 18);
 
 /**
  * @generated from service iota.grpc.v1.ledger_service.LedgerService
  */
 export const LedgerService: GenService<{
-  /**
-   * Check the health of the node.
-   *
-   * @generated from rpc iota.grpc.v1.ledger_service.LedgerService.GetHealth
-   */
-  getHealth: {
-    methodKind: "unary";
-    input: typeof GetHealthRequestSchema;
-    output: typeof GetHealthResponseSchema;
-  },
-  /**
-   * Query the service for general information about its current state.
-   *
-   * @generated from rpc iota.grpc.v1.ledger_service.LedgerService.GetServiceInfo
-   */
-  getServiceInfo: {
-    methodKind: "unary";
-    input: typeof GetServiceInfoRequestSchema;
-    output: typeof GetServiceInfoResponseSchema;
-  },
-  /**
-   * @generated from rpc iota.grpc.v1.ledger_service.LedgerService.GetObjects
-   */
-  getObjects: {
-    methodKind: "server_streaming";
-    input: typeof GetObjectsRequestSchema;
-    output: typeof GetObjectsResponseSchema;
-  },
-  /**
-   * @generated from rpc iota.grpc.v1.ledger_service.LedgerService.GetTransactions
-   */
-  getTransactions: {
-    methodKind: "server_streaming";
-    input: typeof GetTransactionsRequestSchema;
-    output: typeof GetTransactionsResponseSchema;
-  },
-  /**
-   * Checkpoint operations
-   *
-   * @generated from rpc iota.grpc.v1.ledger_service.LedgerService.GetCheckpoint
-   */
-  getCheckpoint: {
-    methodKind: "server_streaming";
-    input: typeof GetCheckpointRequestSchema;
-    output: typeof CheckpointDataSchema;
-  },
-  /**
-   * @generated from rpc iota.grpc.v1.ledger_service.LedgerService.StreamCheckpoints
-   */
-  streamCheckpoints: {
-    methodKind: "server_streaming";
-    input: typeof StreamCheckpointsRequestSchema;
-    output: typeof CheckpointDataSchema;
-  },
-  /**
-   * @generated from rpc iota.grpc.v1.ledger_service.LedgerService.GetEpoch
-   */
-  getEpoch: {
-    methodKind: "unary";
-    input: typeof GetEpochRequestSchema;
-    output: typeof GetEpochResponseSchema;
-  },
+    /**
+     * Check the health of the node.
+     *
+     * @generated from rpc iota.grpc.v1.ledger_service.LedgerService.GetHealth
+     */
+    getHealth: {
+        methodKind: "unary";
+        input: typeof GetHealthRequestSchema;
+        output: typeof GetHealthResponseSchema;
+    };
+    /**
+     * Query the service for general information about its current state.
+     *
+     * @generated from rpc iota.grpc.v1.ledger_service.LedgerService.GetServiceInfo
+     */
+    getServiceInfo: {
+        methodKind: "unary";
+        input: typeof GetServiceInfoRequestSchema;
+        output: typeof GetServiceInfoResponseSchema;
+    };
+    /**
+     * @generated from rpc iota.grpc.v1.ledger_service.LedgerService.GetObjects
+     */
+    getObjects: {
+        methodKind: "server_streaming";
+        input: typeof GetObjectsRequestSchema;
+        output: typeof GetObjectsResponseSchema;
+    };
+    /**
+     * @generated from rpc iota.grpc.v1.ledger_service.LedgerService.GetTransactions
+     */
+    getTransactions: {
+        methodKind: "server_streaming";
+        input: typeof GetTransactionsRequestSchema;
+        output: typeof GetTransactionsResponseSchema;
+    };
+    /**
+     * Checkpoint operations
+     *
+     * @generated from rpc iota.grpc.v1.ledger_service.LedgerService.GetCheckpoint
+     */
+    getCheckpoint: {
+        methodKind: "server_streaming";
+        input: typeof GetCheckpointRequestSchema;
+        output: typeof CheckpointDataSchema;
+    };
+    /**
+     * @generated from rpc iota.grpc.v1.ledger_service.LedgerService.StreamCheckpoints
+     */
+    streamCheckpoints: {
+        methodKind: "server_streaming";
+        input: typeof StreamCheckpointsRequestSchema;
+        output: typeof CheckpointDataSchema;
+    };
+    /**
+     * @generated from rpc iota.grpc.v1.ledger_service.LedgerService.GetEpoch
+     */
+    getEpoch: {
+        methodKind: "unary";
+        input: typeof GetEpochRequestSchema;
+        output: typeof GetEpochResponseSchema;
+    };
 }> = /*@__PURE__*/
-  serviceDesc(file_iota_grpc_v1_ledger_service, 0);
-
+    serviceDesc(file_iota_grpc_v1_ledger_service, 0);

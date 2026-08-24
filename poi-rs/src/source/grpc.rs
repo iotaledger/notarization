@@ -2,23 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use async_trait::async_trait;
-use iota_grpc_client::{
-    Client as GrpcClient, ReadMask,
-    read_mask_fields::{CheckpointResponseField, EpochField, ObjectField, ServiceInfoField, TransactionField},
+use iota_grpc_client::read_mask_fields::{
+    CheckpointResponseField, EpochField, ObjectField, ServiceInfoField, TransactionField,
 };
+use iota_grpc_client::{Client as GrpcClient, ReadMask};
 use iota_grpc_types::proto::TryFromProtoError;
 use iota_sdk_types::{
     CheckpointContents, CheckpointDigest, ObjectId, SignedCheckpointSummary, SignedTransaction, TransactionDigest,
     Version,
 };
-use iota_types::{
-    committee::{Committee, EpochId},
-    digests::ChainIdentifier,
-    effects::TransactionEffectsAPI,
-    messages_checkpoint::CertifiedCheckpointSummary,
-    object::Object,
-    transaction::Transaction,
-};
+use iota_types::committee::{Committee, EpochId};
+use iota_types::digests::ChainIdentifier;
+use iota_types::effects::TransactionEffectsAPI;
+use iota_types::messages_checkpoint::CertifiedCheckpointSummary;
+use iota_types::object::Object;
+use iota_types::transaction::Transaction;
 
 use super::{Source, SourceCheckpoint, SourceError, SourceTransaction};
 

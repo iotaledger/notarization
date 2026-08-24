@@ -23,11 +23,7 @@ import { strict as assert } from "node:assert";
 
 import { fromBase58 } from "@iota/iota-sdk/utils";
 import { Proof } from "@iota/poi-wasm";
-import {
-    createNotarization,
-    loadGenesisCommitteeResolution,
-    preparePoiExample,
-} from "./util.js";
+import { createNotarization, loadGenesisCommitteeResolution, preparePoiExample } from "./util.js";
 
 /** Demonstrates how to construct, transfer, and verify a transaction proof. */
 export async function createAndVerifyTransactionProof(): Promise<void> {

@@ -60,11 +60,11 @@ The default localnet endpoints are `http://127.0.0.1:9000` for JSON-RPC and
 
 The example utility reads the following environment variables:
 
-| Name | Required | Description |
-| :--- | :--- | :--- |
-| `IOTA_NOTARIZATION_PKG_ID` | mainnet only | Existing Single Notarization Move Package on the active network. On other networks, this overrides automatic publication and the chain-scoped cache. |
-| `NETWORK_GRPC_URL` | custom networks or ports | gRPC/ConnectRPC endpoint. Known public networks and standard localnet use their default endpoints. |
-| `IOTA_GENESIS_PATH` | genesis-anchored examples on localnet and custom networks | Independently trusted genesis blob. Known public networks download and cache their official genesis blobs automatically. |
+| Name                       | Required                                                  | Description                                                                                                                                          |
+| :------------------------- | :-------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `IOTA_NOTARIZATION_PKG_ID` | mainnet only                                              | Existing Single Notarization Move Package on the active network. On other networks, this overrides automatic publication and the chain-scoped cache. |
+| `NETWORK_GRPC_URL`         | custom networks or ports                                  | gRPC/ConnectRPC endpoint. Known public networks and standard localnet use their default endpoints.                                                   |
+| `IOTA_GENESIS_PATH`        | genesis-anchored examples on localnet and custom networks | Independently trusted genesis blob. Known public networks download and cache their official genesis blobs automatically.                             |
 
 The active CLI environment supplies the JSON-RPC endpoint. `NETWORK_GRPC_URL`
 supplies proof evidence when the utility cannot infer the endpoint. Every
@@ -105,13 +105,13 @@ npm run example:node -- 05_create_and_verify_event_proof
 
 ## Examples
 
-| Name | What the example proves |
-| :--- | :--- |
-| [01_create_and_verify_transaction_proof](./src/01_create_and_verify_transaction_proof.ts) | The transaction that created a `Notarization` object using Locked Notarization. |
+| Name                                                                                        | What the example proves                                                                    |
+| :------------------------------------------------------------------------------------------ | :----------------------------------------------------------------------------------------- |
+| [01_create_and_verify_transaction_proof](./src/01_create_and_verify_transaction_proof.ts)   | The transaction that created a `Notarization` object using Locked Notarization.            |
 | [02_create_and_verify_multi_target_proof](./src/02_create_and_verify_multi_target_proof.ts) | The creation transaction, resulting `Notarization` object, and emitted event in one proof. |
-| [03_reuse_verifier_for_multiple_proofs](./src/03_reuse_verifier_for_multiple_proofs.ts) | Two creation transactions while reusing one verifier and its committee cache. |
-| [04_create_and_verify_object_proof](./src/04_create_and_verify_object_proof.ts) | A freshly created `Notarization` object, starting from only its object ID. |
-| [05_create_and_verify_event_proof](./src/05_create_and_verify_event_proof.ts) | A fresh `LockedNotarizationCreated` event, starting from only its event ID. |
+| [03_reuse_verifier_for_multiple_proofs](./src/03_reuse_verifier_for_multiple_proofs.ts)     | Two creation transactions while reusing one verifier and its committee cache.              |
+| [04_create_and_verify_object_proof](./src/04_create_and_verify_object_proof.ts)             | A freshly created `Notarization` object, starting from only its object ID.                 |
+| [05_create_and_verify_event_proof](./src/05_create_and_verify_event_proof.ts)               | A fresh `LockedNotarizationCreated` event, starting from only its event ID.                |
 
 ## Committee Trust
 

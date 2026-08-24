@@ -7,11 +7,13 @@
 
 use std::fs::File;
 
-use iota_config::{IOTA_GENESIS_FILENAME, genesis::Genesis};
+use iota_config::IOTA_GENESIS_FILENAME;
+use iota_config::genesis::Genesis;
 use iota_grpc_client::Client as GrpcClient;
 use iota_sdk_types::{ObjectReference, TransactionDigest};
+use iota_types::committee::Committee;
+use iota_types::digests::ChainIdentifier;
 use iota_types::iota_system_state::{IotaSystemStateTrait, get_iota_system_state};
-use iota_types::{committee::Committee, digests::ChainIdentifier};
 use test_cluster::{TestCluster, TestClusterBuilder};
 
 pub mod proofs;

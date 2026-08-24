@@ -57,17 +57,20 @@ async fn main() -> Result<()> {
         "the proof must contain the requested event target"
     );
     ensure!(
-        proof.transaction_proof.events.is_some(),
+        proof.transaction_proof().events.is_some(),
         "the proof must contain the event data committed to by the transaction effects"
     );
 
     println!("Proof constructed:");
     println!(
         "  resolved transaction: {}",
-        proof.transaction_proof.transaction.digest()
+        proof.transaction_proof().transaction.digest()
     );
-    println!("  checkpoint epoch:     {}", proof.checkpoint_summary.epoch());
-    println!("  checkpoint number:    {}\n", proof.checkpoint_summary.sequence_number);
+    println!("  checkpoint epoch:     {}", proof.checkpoint_summary().epoch());
+    println!(
+        "  checkpoint number:    {}\n",
+        proof.checkpoint_summary().sequence_number
+    );
 
     // Trusted-node resolution accepts the committee reported by the connected
     // node. It avoids the genesis walk but makes that node part of the trust boundary.

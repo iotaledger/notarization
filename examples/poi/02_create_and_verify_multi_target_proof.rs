@@ -71,13 +71,13 @@ async fn main() -> Result<()> {
         "the proof must contain the requested event target"
     );
     ensure!(
-        proof.transaction_proof.events.is_some(),
+        proof.transaction_proof().events.is_some(),
         "event evidence must be present when an event is targeted"
     );
 
     println!("Proof constructed:");
-    println!("  checkpoint epoch:  {}", proof.checkpoint_summary.epoch());
-    println!("  checkpoint number: {}", proof.checkpoint_summary.sequence_number);
+    println!("  checkpoint epoch:  {}", proof.checkpoint_summary().epoch());
+    println!("  checkpoint number: {}", proof.checkpoint_summary().sequence_number);
     println!("  object targets:    {}", proof.targets().objects.len());
     println!("  event targets:     {}\n", proof.targets().events.len());
 

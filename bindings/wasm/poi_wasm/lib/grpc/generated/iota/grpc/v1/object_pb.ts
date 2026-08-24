@@ -6,6 +6,7 @@
 // @generated from file iota/grpc/v1/object.proto (package iota.grpc.v1.object, syntax proto3)
 /* eslint-disable */
 
+import type { Message } from "@bufbuild/protobuf";
 import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
 import { file_iota_grpc_options } from "../options_pb.js";
@@ -13,13 +14,15 @@ import type { BcsData } from "./bcs_pb.js";
 import { file_iota_grpc_v1_bcs } from "./bcs_pb.js";
 import type { ObjectReference } from "./types_pb.js";
 import { file_iota_grpc_v1_types } from "./types_pb.js";
-import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file iota/grpc/v1/object.proto.
  */
 export const file_iota_grpc_v1_object: GenFile = /*@__PURE__*/
-  fileDesc("Chlpb3RhL2dycGMvdjEvb2JqZWN0LnByb3RvEhNpb3RhLmdycGMudjEub2JqZWN0IogBCgZPYmplY3QSOwoJcmVmZXJlbmNlGAEgASgLMiMuaW90YS5ncnBjLnYxLnR5cGVzLk9iamVjdFJlZmVyZW5jZUgAiAEBEisKA2JjcxgCIAEoCzIZLmlvdGEuZ3JwYy52MS5iY3MuQmNzRGF0YUgBiAEBQgwKCl9yZWZlcmVuY2VCBgoEX2JjcyI9CgdPYmplY3RzEiwKB29iamVjdHMYASADKAsyGy5pb3RhLmdycGMudjEub2JqZWN0Lk9iamVjdDoEkLUYAWIGcHJvdG8z", [file_iota_grpc_options, file_iota_grpc_v1_bcs, file_iota_grpc_v1_types]);
+    fileDesc(
+        "Chlpb3RhL2dycGMvdjEvb2JqZWN0LnByb3RvEhNpb3RhLmdycGMudjEub2JqZWN0IogBCgZPYmplY3QSOwoJcmVmZXJlbmNlGAEgASgLMiMuaW90YS5ncnBjLnYxLnR5cGVzLk9iamVjdFJlZmVyZW5jZUgAiAEBEisKA2JjcxgCIAEoCzIZLmlvdGEuZ3JwYy52MS5iY3MuQmNzRGF0YUgBiAEBQgwKCl9yZWZlcmVuY2VCBgoEX2JjcyI9CgdPYmplY3RzEiwKB29iamVjdHMYASADKAsyGy5pb3RhLmdycGMudjEub2JqZWN0Lk9iamVjdDoEkLUYAWIGcHJvdG8z",
+        [file_iota_grpc_options, file_iota_grpc_v1_bcs, file_iota_grpc_v1_types],
+    );
 
 /**
  * An object on the IOTA blockchain.
@@ -27,19 +30,19 @@ export const file_iota_grpc_v1_object: GenFile = /*@__PURE__*/
  * @generated from message iota.grpc.v1.object.Object
  */
 export type Object$ = Message<"iota.grpc.v1.object.Object"> & {
-  /**
-   * Reference to this object.
-   *
-   * @generated from field: optional iota.grpc.v1.types.ObjectReference reference = 1;
-   */
-  reference?: ObjectReference | undefined;
+    /**
+     * Reference to this object.
+     *
+     * @generated from field: optional iota.grpc.v1.types.ObjectReference reference = 1;
+     */
+    reference?: ObjectReference | undefined;
 
-  /**
-   * This Object serialized as BCS.
-   *
-   * @generated from field: optional iota.grpc.v1.bcs.BcsData bcs = 2;
-   */
-  bcs?: BcsData | undefined;
+    /**
+     * This Object serialized as BCS.
+     *
+     * @generated from field: optional iota.grpc.v1.bcs.BcsData bcs = 2;
+     */
+    bcs?: BcsData | undefined;
 };
 
 /**
@@ -47,7 +50,7 @@ export type Object$ = Message<"iota.grpc.v1.object.Object"> & {
  * Use `create(ObjectSchema)` to create a new message.
  */
 export const ObjectSchema: GenMessage<Object$> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_object, 0);
+    messageDesc(file_iota_grpc_v1_object, 0);
 
 /**
  * A list of objects.
@@ -55,10 +58,10 @@ export const ObjectSchema: GenMessage<Object$> = /*@__PURE__*/
  * @generated from message iota.grpc.v1.object.Objects
  */
 export type Objects = Message<"iota.grpc.v1.object.Objects"> & {
-  /**
-   * @generated from field: repeated iota.grpc.v1.object.Object objects = 1;
-   */
-  objects: Object$[];
+    /**
+     * @generated from field: repeated iota.grpc.v1.object.Object objects = 1;
+     */
+    objects: Object$[];
 };
 
 /**
@@ -66,5 +69,4 @@ export type Objects = Message<"iota.grpc.v1.object.Objects"> & {
  * Use `create(ObjectsSchema)` to create a new message.
  */
 export const ObjectsSchema: GenMessage<Objects> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_object, 1);
-
+    messageDesc(file_iota_grpc_v1_object, 1);

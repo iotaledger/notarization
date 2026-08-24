@@ -3,14 +3,12 @@
 
 use async_trait::async_trait;
 use iota_sdk_types::{CheckpointContents, ObjectId, TransactionDigest, Version};
-use iota_types::{
-    committee::{Committee, EpochId},
-    digests::ChainIdentifier,
-    effects::{TransactionEffects, TransactionEvents},
-    messages_checkpoint::CertifiedCheckpointSummary,
-    object::Object,
-    transaction::Transaction,
-};
+use iota_types::committee::{Committee, EpochId};
+use iota_types::digests::ChainIdentifier;
+use iota_types::effects::{TransactionEffects, TransactionEvents};
+use iota_types::messages_checkpoint::CertifiedCheckpointSummary;
+use iota_types::object::Object;
+use iota_types::transaction::Transaction;
 
 use crate::BoxError;
 
@@ -71,6 +69,7 @@ impl SourceError {
 ///
 /// This type contains IOTA domain values rather than transport-specific gRPC or
 /// protobuf messages.
+#[derive(Clone, Debug)]
 pub struct SourceTransaction {
     /// Signed transaction being authenticated.
     pub transaction: Transaction,
@@ -86,6 +85,7 @@ pub struct SourceTransaction {
 ///
 /// The certified summary authenticates the checkpoint contents used by the
 /// transaction proof.
+#[derive(Clone, Debug)]
 pub struct SourceCheckpoint {
     /// Certified checkpoint summary.
     pub summary: CertifiedCheckpointSummary,

@@ -3,11 +3,9 @@
 
 #![forbid(unsafe_code)]
 
-use std::{
-    fs,
-    io::{self, Write},
-    path::{Path, PathBuf},
-};
+use std::fs;
+use std::io::{self, Write};
+use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, bail};
 use clap::{ArgGroup, Args, Parser, Subcommand, ValueEnum};
@@ -83,7 +81,8 @@ struct CreateArgs {
     /// Transaction digest to prove.
     #[arg(long, value_name = "DIGEST", value_parser = parse_transaction_digest, group = "target")]
     transaction: Option<TransactionDigest>,
-    /// Object ID to prove. The source resolves its latest version unless a transaction or event scopes the proof. May be repeated.
+    /// Object ID to prove. The source resolves its latest version unless a transaction or event scopes the proof. May
+    /// be repeated.
     #[arg(long, value_name = "OBJECT_ID", value_parser = parse_object_id, group = "target")]
     object: Vec<ObjectId>,
     /// Event identifier formatted as TRANSACTION_DIGEST:EVENT_SEQUENCE. May be repeated.
@@ -155,8 +154,6 @@ impl VerifyArgs {
             serde_json::from_reader(file)
                 .with_context(|| format!("failed to read proof JSON from '{}'", self.proof.display()))?
         };
-        proof.validate().context("proof format is not supported")?;
-
         let genesis = match self.genesis.as_deref() {
             Some(path) => {
                 fs::File::open(path).with_context(|| format!("failed to open genesis blob '{}'", path.display()))?
@@ -306,8 +303,9 @@ fn parse_event_id(value: &str) -> Result<EventID, String> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use clap::CommandFactory;
+
+    use super::*;
 
     const DIGEST: &str = "11111111111111111111111111111111";
     const OBJECT_ID: &str = "0x0000000000000000000000000000000000000000000000000000000000000000";

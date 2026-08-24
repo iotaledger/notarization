@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use iota_types::committee::Committee;
-use poi_rs::{Proof, ProofVerifier, ProofVersion, VerifyErrorKind};
+use poi_rs::{Proof, ProofVerifier};
 
 const COMMITTEE: &str = include_str!("fixtures/current/committee.json");
 const TRANSACTION: &str = include_str!("fixtures/current/transaction.json");
@@ -21,7 +21,8 @@ fn assert_fixture_round_trips_and_verifies(fixture: &str) -> Proof {
             .expect("serialized proof must be valid JSON"),
         serde_json::from_str::<serde_json::Value>(fixture).expect("proof fixture must be valid JSON")
     );
-    assert_eq!(proof.version(), ProofVersion::CURRENT);
+    assert_eq!(proof.version(), 1);
+    assert!(matches!(&proof, Proof::ProofV1(_)));
 
     proof
 }
@@ -54,18 +55,15 @@ fn event_fixture_round_trips_and_verifies() {
 }
 
 #[test]
-fn unsupported_fixture_version_returns_the_version_number() {
-    let committee: Committee = serde_json::from_str(COMMITTEE).expect("committee fixture must deserialize");
+fn unsupported_proof_variant_is_rejected_during_deserialization() {
     let mut fixture: serde_json::Value = serde_json::from_str(TRANSACTION).expect("proof fixture must be valid JSON");
-    fixture["version"] = serde_json::json!(2);
-    let proof: Proof = serde_json::from_value(fixture).expect("unsupported proof version must deserialize");
+    let proof = fixture
+        .as_object_mut()
+        .expect("proof fixture must be an object")
+        .remove("ProofV1")
+        .expect("proof fixture must contain ProofV1");
+    let fixture = serde_json::json!({ "ProofV2": proof });
+    let error = serde_json::from_value::<Proof>(fixture).expect_err("an unsupported proof variant must be rejected");
 
-    let error = ProofVerifier::new(&committee)
-        .verify(&proof)
-        .expect_err("an unsupported proof version must be rejected");
-    let VerifyErrorKind::Version { source } = error.kind else {
-        panic!("unsupported proof version must return a version error");
-    };
-
-    assert_eq!(source.version, 2);
+    assert!(error.to_string().contains("ProofV2"));
 }

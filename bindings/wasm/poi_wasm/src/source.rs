@@ -309,13 +309,15 @@ mod tests {
     fn decodes_the_grpc_bcs_evidence_into_existing_iota_types() {
         let proof = Proof::from_json_slice(include_bytes!("../../../../poi-rs/tests/fixtures/current/event.json"))
             .expect("fixture must deserialize");
-        let signed_transaction: SdkSignedTransaction = proof
-            .transaction_proof
+        let transaction_proof = proof.transaction_proof();
+        let checkpoint_summary = proof.checkpoint_summary();
+        let checkpoint_contents = proof.checkpoint_contents();
+        let signed_transaction: SdkSignedTransaction = transaction_proof
             .transaction
             .clone()
             .try_into()
             .expect("transaction must convert to SDK types");
-        let events_bcs = proof.transaction_proof.events.as_ref().map(|events| {
+        let events_bcs = transaction_proof.events.as_ref().map(|events| {
             events
                 .0
                 .iter()
@@ -330,22 +332,21 @@ mod tests {
                 .iter()
                 .map(|signature| bcs::to_bytes(signature).expect("signature must serialize"))
                 .collect(),
-            effects_bcs: bcs::to_bytes(&proof.transaction_proof.effects).expect("effects must serialize"),
+            effects_bcs: bcs::to_bytes(&transaction_proof.effects).expect("effects must serialize"),
             events_bcs,
-            checkpoint_sequence_number: proof.checkpoint_summary.sequence_number,
+            checkpoint_sequence_number: checkpoint_summary.sequence_number,
         })
         .expect("transaction evidence must decode");
 
-        assert_eq!(transaction.transaction, proof.transaction_proof.transaction);
-        assert_eq!(transaction.effects, proof.transaction_proof.effects);
-        assert_eq!(transaction.events, proof.transaction_proof.events);
+        assert_eq!(transaction.transaction, transaction_proof.transaction);
+        assert_eq!(transaction.effects, transaction_proof.effects);
+        assert_eq!(transaction.events, transaction_proof.events);
 
-        let signed_summary: SdkSignedCheckpointSummary = proof
-            .checkpoint_summary
+        let signed_summary: SdkSignedCheckpointSummary = checkpoint_summary
             .clone()
             .try_into()
             .expect("checkpoint summary must convert to SDK types");
-        let contents = SdkCheckpointContents::try_from(proof.checkpoint_contents.clone())
+        let contents = SdkCheckpointContents::try_from(checkpoint_contents.clone())
             .expect("checkpoint contents must convert to SDK types");
         let checkpoint = decode_checkpoint(JsCheckpointEvidence {
             summary_bcs: bcs::to_bytes(&VersionedCheckpointSummary::V1(signed_summary.checkpoint))
@@ -358,8 +359,8 @@ mod tests {
 
         assert_eq!(
             bcs::to_bytes(&checkpoint.summary).expect("decoded checkpoint summary must serialize"),
-            bcs::to_bytes(&proof.checkpoint_summary).expect("fixture checkpoint summary must serialize")
+            bcs::to_bytes(checkpoint_summary).expect("fixture checkpoint summary must serialize")
         );
-        assert_eq!(checkpoint.contents, proof.checkpoint_contents);
+        assert_eq!(&checkpoint.contents, checkpoint_contents);
     }
 }

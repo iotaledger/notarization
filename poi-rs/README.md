@@ -93,7 +93,6 @@ committee. It verifies only the proof material passed by the caller.
 
 Verification checks:
 
-- the proof format version is supported
 - the checkpoint summary is certified by the supplied committee
 - the checkpoint contents match the certified checkpoint summary
 - the transaction digest matches the transaction effects
@@ -115,7 +114,7 @@ trust the authenticated target claims relative to the supplied committee.
 ## Main Types
 
 - `Proof`: Versioned Proof of Inclusion envelope.
-- `ProofVersion`: Proof format version used for compatibility checks.
+- `ProofV1`: Version 1 checkpoint and transaction evidence carried by `Proof::ProofV1`.
 - `TransactionProof`: Transaction, effects, and optional event evidence used to prove inclusion.
 - `ProofTargets`: Transaction, object, and event claims explicitly selected by the caller.
 - `PoiClient`: Source-backed entry point for proof construction and committee-aware verification.
@@ -126,5 +125,5 @@ trust the authenticated target claims relative to the supplied committee.
 - `CommitteeResolver`: Committee resolution and source-backed proof verification configured by `CommitteeResolution`.
 - `ProofVerifier`: Offline verifier for `Proof` values.
 - `SourceError`: Transport and response failures from a ledger source.
-- `ProofBuilderError`, `CommitteeResolutionError`, `ProofVerificationError`, `VerifyError`, `SerializationError`, and
-  `VersionError`: Operation-specific errors.
+- `ProofBuilderError`, `CommitteeResolutionError`, `ProofVerificationError`, `VerifyError`, and `SerializationError`:
+  Operation-specific errors.

@@ -64,11 +64,14 @@ async fn main() -> Result<()> {
     println!("Proof constructed:");
     println!(
         "  resolved transaction: {}",
-        proof.transaction_proof.transaction.digest()
+        proof.transaction_proof().transaction.digest()
     );
     println!("  object version:       {}", proof.targets().objects[0].version());
-    println!("  checkpoint epoch:     {}", proof.checkpoint_summary.epoch());
-    println!("  checkpoint number:    {}\n", proof.checkpoint_summary.sequence_number);
+    println!("  checkpoint epoch:     {}", proof.checkpoint_summary().epoch());
+    println!(
+        "  checkpoint number:    {}\n",
+        proof.checkpoint_summary().sequence_number
+    );
 
     // Trusted-node resolution accepts the committee reported by the connected
     // node. It avoids the genesis walk but makes that node part of the trust boundary.

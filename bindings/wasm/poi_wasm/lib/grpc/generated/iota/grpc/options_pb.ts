@@ -14,7 +14,10 @@ import { file_google_protobuf_descriptor } from "@bufbuild/protobuf/wkt";
  * Describes the file iota/grpc/options.proto.
  */
 export const file_iota_grpc_options: GenFile = /*@__PURE__*/
-  fileDesc("Chdpb3RhL2dycGMvb3B0aW9ucy5wcm90bxIJaW90YS5ncnBjOlEKEW1lc3NhZ2VfYWNjZXNzb3JzEh8uZ29vZ2xlLnByb3RvYnVmLk1lc3NhZ2VPcHRpb25zGNCGAyABKAlSEG1lc3NhZ2VBY2Nlc3NvcnOIAQE6WgoWZmllbGRfbWFza190cmFuc3BhcmVudBIfLmdvb2dsZS5wcm90b2J1Zi5NZXNzYWdlT3B0aW9ucxjShgMgASgIUhRmaWVsZE1hc2tUcmFuc3BhcmVudIgBATpLCg9maWVsZF9hY2Nlc3NvcnMSHS5nb29nbGUucHJvdG9idWYuRmllbGRPcHRpb25zGNGGAyABKAlSDmZpZWxkQWNjZXNzb3JziAEBYgZwcm90bzM", [file_google_protobuf_descriptor]);
+    fileDesc(
+        "Chdpb3RhL2dycGMvb3B0aW9ucy5wcm90bxIJaW90YS5ncnBjOlEKEW1lc3NhZ2VfYWNjZXNzb3JzEh8uZ29vZ2xlLnByb3RvYnVmLk1lc3NhZ2VPcHRpb25zGNCGAyABKAlSEG1lc3NhZ2VBY2Nlc3NvcnOIAQE6WgoWZmllbGRfbWFza190cmFuc3BhcmVudBIfLmdvb2dsZS5wcm90b2J1Zi5NZXNzYWdlT3B0aW9ucxjShgMgASgIUhRmaWVsZE1hc2tUcmFuc3BhcmVudIgBATpLCg9maWVsZF9hY2Nlc3NvcnMSHS5nb29nbGUucHJvdG9idWYuRmllbGRPcHRpb25zGNGGAyABKAlSDmZpZWxkQWNjZXNzb3JziAEBYgZwcm90bzM",
+        [file_google_protobuf_descriptor],
+    );
 
 /**
  * Default accessor types to generate for all fields in this message.
@@ -25,7 +28,7 @@ export const file_iota_grpc_options: GenFile = /*@__PURE__*/
  * @generated from extension: optional string message_accessors = 50000;
  */
 export const message_accessors: GenExtension<MessageOptions, string> = /*@__PURE__*/
-  extDesc(file_iota_grpc_options, 0);
+    extDesc(file_iota_grpc_options, 0);
 
 /**
  * When true, parent fields pointing to this message will skip this wrapper
@@ -35,7 +38,7 @@ export const message_accessors: GenExtension<MessageOptions, string> = /*@__PURE
  * @generated from extension: optional bool field_mask_transparent = 50002;
  */
 export const field_mask_transparent: GenExtension<MessageOptions, boolean> = /*@__PURE__*/
-  extDesc(file_iota_grpc_options, 1);
+    extDesc(file_iota_grpc_options, 1);
 
 /**
  * Comma-separated list of accessor types to generate for this field.
@@ -46,5 +49,4 @@ export const field_mask_transparent: GenExtension<MessageOptions, boolean> = /*@
  * @generated from extension: optional string field_accessors = 50001;
  */
 export const field_accessors: GenExtension<FieldOptions, string> = /*@__PURE__*/
-  extDesc(file_iota_grpc_options, 2);
-
+    extDesc(file_iota_grpc_options, 2);

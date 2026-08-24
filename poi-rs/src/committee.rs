@@ -1,20 +1,19 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{io::Read, sync::Arc};
+use std::io::Read;
+use std::sync::Arc;
 
 #[cfg(feature = "native-grpc")]
 use iota_grpc_client::Client as GrpcClient;
 use iota_sdk_types::CheckpointContents;
-use iota_types::{
-    committee::{Committee, EpochId},
-    effects::{TransactionEffects, TransactionEvents},
-    error::IotaError,
-    iota_system_state::{IotaSystemStateTrait, get_iota_system_state},
-    messages_checkpoint::CertifiedCheckpointSummary,
-    object::Object,
-    transaction::Transaction,
-};
+use iota_types::committee::{Committee, EpochId};
+use iota_types::effects::{TransactionEffects, TransactionEvents};
+use iota_types::error::IotaError;
+use iota_types::iota_system_state::{IotaSystemStateTrait, get_iota_system_state};
+use iota_types::messages_checkpoint::CertifiedCheckpointSummary;
+use iota_types::object::Object;
+use iota_types::transaction::Transaction;
 use serde::Deserialize;
 
 use crate::{
@@ -274,7 +273,7 @@ where
     /// [`ProofVerifier`].
     pub async fn verify(&self, proof: &Proof) -> Result<(), ProofVerificationError> {
         let committee = self
-            .resolve(proof.checkpoint_summary.epoch())
+            .resolve(proof.checkpoint_summary().epoch())
             .await
             .map_err(|source| ProofVerificationError::CommitteeResolution { source })?;
 
@@ -508,10 +507,11 @@ impl CommitteeResolver<GrpcClient> {
 mod tests {
     use std::sync::Mutex;
 
-    use iota_sdk_types::{
-        CheckpointSummary, EndOfEpochData, ObjectId, TransactionDigest, Version, gas::GasCostSummary,
-    };
-    use iota_types::{digests::ChainIdentifier, messages_checkpoint::CertifiedCheckpointSummary, object::Object};
+    use iota_sdk_types::gas::GasCostSummary;
+    use iota_sdk_types::{CheckpointSummary, EndOfEpochData, ObjectId, TransactionDigest, Version};
+    use iota_types::digests::ChainIdentifier;
+    use iota_types::messages_checkpoint::CertifiedCheckpointSummary;
+    use iota_types::object::Object;
 
     use super::*;
     use crate::{SourceCheckpoint, SourceError, SourceTransaction};

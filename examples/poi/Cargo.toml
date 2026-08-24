@@ -15,9 +15,9 @@ async-trait.workspace = true
 bcs.workspace = true
 iota-config = { git = "https://github.com/iotaledger/iota.git", tag = "v1.29.0" }
 iota-grpc-client.workspace = true
-iota_interaction = { workspace = true, features = ["keytool"] }
 iota-sdk-types.workspace = true
 iota-types.workspace = true
+iota_interaction = { workspace = true, features = ["keytool"] }
 notarization = { path = "../../notarization-rs" }
 poi-rs = { path = "../../poi-rs" }
 product_common = { workspace = true, features = ["test-utils"] }

@@ -58,14 +58,17 @@ async fn main() -> Result<()> {
 
     println!("Network:            {}", context.network_alias);
     println!("First transaction:  {first_transaction}");
-    println!("First checkpoint:   {}", first_proof.checkpoint_summary.sequence_number);
-    println!("First epoch:        {}", first_proof.checkpoint_summary.epoch());
+    println!(
+        "First checkpoint:   {}",
+        first_proof.checkpoint_summary().sequence_number
+    );
+    println!("First epoch:        {}", first_proof.checkpoint_summary().epoch());
     println!("Second transaction: {second_transaction}");
     println!(
         "Second checkpoint:  {}",
-        second_proof.checkpoint_summary.sequence_number
+        second_proof.checkpoint_summary().sequence_number
     );
-    println!("Second epoch:       {}\n", second_proof.checkpoint_summary.epoch());
+    println!("Second epoch:       {}\n", second_proof.checkpoint_summary().epoch());
 
     // Keep this verifier alive. Its default in-memory cache stores only
     // committees authenticated through the genesis-anchored epoch walk.

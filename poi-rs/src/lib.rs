@@ -28,17 +28,7 @@ pub use committee::{
     ProofVerificationError,
 };
 pub use proof::{
-    Proof, ProofTargets, ProofVerifier, ProofVersion, SerializationError, SerializationErrorKind, TransactionProof,
-    VerifyError, VerifyErrorKind, VersionError,
+    Proof, ProofTargets, ProofV1, ProofVerifier, SerializationError, SerializationErrorKind, TransactionProof,
+    VerifyError, VerifyErrorKind,
 };
 pub use source::{Source, SourceCheckpoint, SourceError, SourceTransaction};
-
-#[cfg(test)]
-mod tests {
-    use crate::{PoiClient, Proof};
-
-    pub fn client_building_test() {
-        // Proof
-        let client = PoiClient::devnet().unwrap();
-    }
-}

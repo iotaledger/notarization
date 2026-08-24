@@ -6,6 +6,7 @@
 // @generated from file iota/grpc/v1/checkpoint.proto (package iota.grpc.v1.checkpoint, syntax proto3)
 /* eslint-disable */
 
+import type { Message } from "@bufbuild/protobuf";
 import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
 import { file_iota_grpc_options } from "../options_pb.js";
@@ -15,13 +16,15 @@ import type { ValidatorAggregatedSignature } from "./signatures_pb.js";
 import { file_iota_grpc_v1_signatures } from "./signatures_pb.js";
 import type { Digest } from "./types_pb.js";
 import { file_iota_grpc_v1_types } from "./types_pb.js";
-import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file iota/grpc/v1/checkpoint.proto.
  */
 export const file_iota_grpc_v1_checkpoint: GenFile = /*@__PURE__*/
-  fileDesc("Ch1pb3RhL2dycGMvdjEvY2hlY2twb2ludC5wcm90bxIXaW90YS5ncnBjLnYxLmNoZWNrcG9pbnQijgEKEUNoZWNrcG9pbnRTdW1tYXJ5Ei8KBmRpZ2VzdBgBIAEoCzIaLmlvdGEuZ3JwYy52MS50eXBlcy5EaWdlc3RIAIgBARIrCgNiY3MYAiABKAsyGS5pb3RhLmdycGMudjEuYmNzLkJjc0RhdGFIAYgBAToIgrUYBHdpdGhCCQoHX2RpZ2VzdEIGCgRfYmNzIo8BChJDaGVja3BvaW50Q29udGVudHMSLwoGZGlnZXN0GAEgASgLMhouaW90YS5ncnBjLnYxLnR5cGVzLkRpZ2VzdEgAiAEBEisKA2JjcxgCIAEoCzIZLmlvdGEuZ3JwYy52MS5iY3MuQmNzRGF0YUgBiAEBOgiCtRgEd2l0aEIJCgdfZGlnZXN0QgYKBF9iY3MixAIKCkNoZWNrcG9pbnQSHAoPc2VxdWVuY2VfbnVtYmVyGAEgASgESACIAQESQAoHc3VtbWFyeRgCIAEoCzIqLmlvdGEuZ3JwYy52MS5jaGVja3BvaW50LkNoZWNrcG9pbnRTdW1tYXJ5SAGIAQESQgoIY29udGVudHMYAyABKAsyKy5pb3RhLmdycGMudjEuY2hlY2twb2ludC5DaGVja3BvaW50Q29udGVudHNIAogBARJNCglzaWduYXR1cmUYBCABKAsyNS5pb3RhLmdycGMudjEuc2lnbmF0dXJlcy5WYWxpZGF0b3JBZ2dyZWdhdGVkU2lnbmF0dXJlSAOIAQE6CIK1GAR3aXRoQhIKEF9zZXF1ZW5jZV9udW1iZXJCCgoIX3N1bW1hcnlCCwoJX2NvbnRlbnRzQgwKCl9zaWduYXR1cmViBnByb3RvMw", [file_iota_grpc_options, file_iota_grpc_v1_bcs, file_iota_grpc_v1_signatures, file_iota_grpc_v1_types]);
+    fileDesc(
+        "Ch1pb3RhL2dycGMvdjEvY2hlY2twb2ludC5wcm90bxIXaW90YS5ncnBjLnYxLmNoZWNrcG9pbnQijgEKEUNoZWNrcG9pbnRTdW1tYXJ5Ei8KBmRpZ2VzdBgBIAEoCzIaLmlvdGEuZ3JwYy52MS50eXBlcy5EaWdlc3RIAIgBARIrCgNiY3MYAiABKAsyGS5pb3RhLmdycGMudjEuYmNzLkJjc0RhdGFIAYgBAToIgrUYBHdpdGhCCQoHX2RpZ2VzdEIGCgRfYmNzIo8BChJDaGVja3BvaW50Q29udGVudHMSLwoGZGlnZXN0GAEgASgLMhouaW90YS5ncnBjLnYxLnR5cGVzLkRpZ2VzdEgAiAEBEisKA2JjcxgCIAEoCzIZLmlvdGEuZ3JwYy52MS5iY3MuQmNzRGF0YUgBiAEBOgiCtRgEd2l0aEIJCgdfZGlnZXN0QgYKBF9iY3MixAIKCkNoZWNrcG9pbnQSHAoPc2VxdWVuY2VfbnVtYmVyGAEgASgESACIAQESQAoHc3VtbWFyeRgCIAEoCzIqLmlvdGEuZ3JwYy52MS5jaGVja3BvaW50LkNoZWNrcG9pbnRTdW1tYXJ5SAGIAQESQgoIY29udGVudHMYAyABKAsyKy5pb3RhLmdycGMudjEuY2hlY2twb2ludC5DaGVja3BvaW50Q29udGVudHNIAogBARJNCglzaWduYXR1cmUYBCABKAsyNS5pb3RhLmdycGMudjEuc2lnbmF0dXJlcy5WYWxpZGF0b3JBZ2dyZWdhdGVkU2lnbmF0dXJlSAOIAQE6CIK1GAR3aXRoQhIKEF9zZXF1ZW5jZV9udW1iZXJCCgoIX3N1bW1hcnlCCwoJX2NvbnRlbnRzQgwKCl9zaWduYXR1cmViBnByb3RvMw",
+        [file_iota_grpc_options, file_iota_grpc_v1_bcs, file_iota_grpc_v1_signatures, file_iota_grpc_v1_types],
+    );
 
 /**
  * A header for a checkpoint on the IOTA blockchain.
@@ -47,19 +50,19 @@ export const file_iota_grpc_v1_checkpoint: GenFile = /*@__PURE__*/
  * @generated from message iota.grpc.v1.checkpoint.CheckpointSummary
  */
 export type CheckpointSummary = Message<"iota.grpc.v1.checkpoint.CheckpointSummary"> & {
-  /**
-   * The digest of this CheckpointSummary.
-   *
-   * @generated from field: optional iota.grpc.v1.types.Digest digest = 1;
-   */
-  digest?: Digest | undefined;
+    /**
+     * The digest of this CheckpointSummary.
+     *
+     * @generated from field: optional iota.grpc.v1.types.Digest digest = 1;
+     */
+    digest?: Digest | undefined;
 
-  /**
-   * This CheckpointSummary serialized as BCS.
-   *
-   * @generated from field: optional iota.grpc.v1.bcs.BcsData bcs = 2;
-   */
-  bcs?: BcsData | undefined;
+    /**
+     * This CheckpointSummary serialized as BCS.
+     *
+     * @generated from field: optional iota.grpc.v1.bcs.BcsData bcs = 2;
+     */
+    bcs?: BcsData | undefined;
 };
 
 /**
@@ -67,7 +70,7 @@ export type CheckpointSummary = Message<"iota.grpc.v1.checkpoint.CheckpointSumma
  * Use `create(CheckpointSummarySchema)` to create a new message.
  */
 export const CheckpointSummarySchema: GenMessage<CheckpointSummary> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_checkpoint, 0);
+    messageDesc(file_iota_grpc_v1_checkpoint, 0);
 
 /**
  * The committed to contents of a checkpoint.
@@ -75,19 +78,19 @@ export const CheckpointSummarySchema: GenMessage<CheckpointSummary> = /*@__PURE_
  * @generated from message iota.grpc.v1.checkpoint.CheckpointContents
  */
 export type CheckpointContents = Message<"iota.grpc.v1.checkpoint.CheckpointContents"> & {
-  /**
-   * The digest of this CheckpointContents.
-   *
-   * @generated from field: optional iota.grpc.v1.types.Digest digest = 1;
-   */
-  digest?: Digest | undefined;
+    /**
+     * The digest of this CheckpointContents.
+     *
+     * @generated from field: optional iota.grpc.v1.types.Digest digest = 1;
+     */
+    digest?: Digest | undefined;
 
-  /**
-   * This CheckpointContents serialized as BCS.
-   *
-   * @generated from field: optional iota.grpc.v1.bcs.BcsData bcs = 2;
-   */
-  bcs?: BcsData | undefined;
+    /**
+     * This CheckpointContents serialized as BCS.
+     *
+     * @generated from field: optional iota.grpc.v1.bcs.BcsData bcs = 2;
+     */
+    bcs?: BcsData | undefined;
 };
 
 /**
@@ -95,40 +98,40 @@ export type CheckpointContents = Message<"iota.grpc.v1.checkpoint.CheckpointCont
  * Use `create(CheckpointContentsSchema)` to create a new message.
  */
 export const CheckpointContentsSchema: GenMessage<CheckpointContents> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_checkpoint, 1);
+    messageDesc(file_iota_grpc_v1_checkpoint, 1);
 
 /**
  * @generated from message iota.grpc.v1.checkpoint.Checkpoint
  */
 export type Checkpoint = Message<"iota.grpc.v1.checkpoint.Checkpoint"> & {
-  /**
-   * The height of this checkpoint.
-   *
-   * @generated from field: optional uint64 sequence_number = 1;
-   */
-  sequenceNumber?: bigint | undefined;
+    /**
+     * The height of this checkpoint.
+     *
+     * @generated from field: optional uint64 sequence_number = 1;
+     */
+    sequenceNumber?: bigint | undefined;
 
-  /**
-   * The `CheckpointSummary` for this checkpoint.
-   *
-   * @generated from field: optional iota.grpc.v1.checkpoint.CheckpointSummary summary = 2;
-   */
-  summary?: CheckpointSummary | undefined;
+    /**
+     * The `CheckpointSummary` for this checkpoint.
+     *
+     * @generated from field: optional iota.grpc.v1.checkpoint.CheckpointSummary summary = 2;
+     */
+    summary?: CheckpointSummary | undefined;
 
-  /**
-   * The `CheckpointContents` for this checkpoint.
-   *
-   * @generated from field: optional iota.grpc.v1.checkpoint.CheckpointContents contents = 3;
-   */
-  contents?: CheckpointContents | undefined;
+    /**
+     * The `CheckpointContents` for this checkpoint.
+     *
+     * @generated from field: optional iota.grpc.v1.checkpoint.CheckpointContents contents = 3;
+     */
+    contents?: CheckpointContents | undefined;
 
-  /**
-   * An aggregated quorum signature from the validator committee that
-   * certified this checkpoint.
-   *
-   * @generated from field: optional iota.grpc.v1.signatures.ValidatorAggregatedSignature signature = 4;
-   */
-  signature?: ValidatorAggregatedSignature | undefined;
+    /**
+     * An aggregated quorum signature from the validator committee that
+     * certified this checkpoint.
+     *
+     * @generated from field: optional iota.grpc.v1.signatures.ValidatorAggregatedSignature signature = 4;
+     */
+    signature?: ValidatorAggregatedSignature | undefined;
 };
 
 /**
@@ -136,5 +139,4 @@ export type Checkpoint = Message<"iota.grpc.v1.checkpoint.Checkpoint"> & {
  * Use `create(CheckpointSchema)` to create a new message.
  */
 export const CheckpointSchema: GenMessage<Checkpoint> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_checkpoint, 2);
-
+    messageDesc(file_iota_grpc_v1_checkpoint, 2);

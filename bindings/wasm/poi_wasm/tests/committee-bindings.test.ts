@@ -8,36 +8,36 @@ import test from "node:test";
 import { Committee } from "../node/poi_wasm.js";
 
 test("the WASM committee can be deserialized from Rust JSON", async () => {
-  const json = await readFile(
-    new URL(
-      "../../../../poi-rs/tests/fixtures/current/committee.json",
-      import.meta.url,
-    ),
-    "utf8",
-  );
+    const json = await readFile(
+        new URL(
+            "../../../../poi-rs/tests/fixtures/current/committee.json",
+            import.meta.url,
+        ),
+        "utf8",
+    );
 
-  const committee = Committee.fromJSON(json);
+    const committee = Committee.fromJSON(json);
 
-  assert.equal(committee.epoch, 0n);
+    assert.equal(committee.epoch, 0n);
 });
 
 test("the WASM committee rejects invalid total voting power", async () => {
-  const fixture = JSON.parse(
-    await readFile(
-      new URL(
-        "../../../../poi-rs/tests/fixtures/current/committee.json",
-        import.meta.url,
-      ),
-      "utf8",
-    ),
-  ) as {
-    epoch: number;
-    voting_rights: [string, number][];
-  };
-  fixture.voting_rights[0]![1] = 9_999;
+    const fixture = JSON.parse(
+        await readFile(
+            new URL(
+                "../../../../poi-rs/tests/fixtures/current/committee.json",
+                import.meta.url,
+            ),
+            "utf8",
+        ),
+    ) as {
+        epoch: number;
+        voting_rights: [string, number][];
+    };
+    fixture.voting_rights[0]![1] = 9_999;
 
-  assert.throws(
-    () => Committee.fromJSON(JSON.stringify(fixture)),
-    /committee voting power must total 10000, received 9999/,
-  );
+    assert.throws(
+        () => Committee.fromJSON(JSON.stringify(fixture)),
+        /committee voting power must total 10000, received 9999/,
+    );
 });

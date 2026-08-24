@@ -4,11 +4,19 @@
 mod utils;
 
 use iota_sdk_types::CheckpointContents;
-use iota_types::{
-    effects::TransactionEvents, event::EventID, messages_checkpoint::CheckpointContentsExt, object::Object,
-};
-use poi_rs::{ProofTargets, ProofVerifier, VerifyErrorKind};
+use iota_types::effects::TransactionEvents;
+use iota_types::event::EventID;
+use iota_types::messages_checkpoint::CheckpointContentsExt;
+use iota_types::object::Object;
+use poi_rs::{Proof, ProofTargets, ProofV1, ProofVerifier, VerifyErrorKind};
 use utils::proofs::{event, execution_data, proof_with_events, proof_with_targets, valid_transaction_proof};
+
+fn proof_v1_mut(proof: &mut Proof) -> &mut ProofV1 {
+    match proof {
+        Proof::ProofV1(proof) => proof,
+        _ => panic!("test helper expected a version 1 proof"),
+    }
+}
 
 #[test]
 fn valid_transaction_proof_is_accepted() {
@@ -22,7 +30,7 @@ fn valid_transaction_proof_is_accepted() {
 #[test]
 fn transaction_digest_must_match_the_effects() {
     let (committee, mut proof) = valid_transaction_proof();
-    proof.transaction_proof.effects = execution_data().effects;
+    proof_v1_mut(&mut proof).transaction_proof.effects = execution_data().effects;
 
     let error = ProofVerifier::new(&committee)
         .verify(&proof)
@@ -34,7 +42,7 @@ fn transaction_digest_must_match_the_effects() {
 #[test]
 fn events_digest_must_match_the_effects() {
     let (committee, mut proof) = valid_transaction_proof();
-    proof.transaction_proof.events = Some(TransactionEvents(Vec::new()));
+    proof_v1_mut(&mut proof).transaction_proof.events = Some(TransactionEvents(Vec::new()));
 
     let error = ProofVerifier::new(&committee)
         .verify(&proof)
@@ -47,7 +55,8 @@ fn events_digest_must_match_the_effects() {
 fn checkpoint_contents_must_match_the_signed_summary() {
     let (committee, mut proof) = valid_transaction_proof();
     let alternate = execution_data();
-    proof.checkpoint_contents = CheckpointContents::new_with_digests_only_for_tests([alternate.digests()]);
+    proof_v1_mut(&mut proof).checkpoint_contents =
+        CheckpointContents::new_with_digests_only_for_tests([alternate.digests()]);
 
     let error = ProofVerifier::new(&committee)
         .verify(&proof)
@@ -60,8 +69,11 @@ fn checkpoint_contents_must_match_the_signed_summary() {
 fn transaction_must_be_present_in_the_checkpoint() {
     let (committee, mut proof) = valid_transaction_proof();
     let alternate = execution_data();
-    proof.transaction_proof.transaction = alternate.transaction;
-    proof.transaction_proof.effects = alternate.effects;
+    {
+        let proof = proof_v1_mut(&mut proof);
+        proof.transaction_proof.transaction = alternate.transaction;
+        proof.transaction_proof.effects = alternate.effects;
+    }
 
     let error = ProofVerifier::new(&committee)
         .verify(&proof)
@@ -91,7 +103,7 @@ fn event_target_must_belong_to_the_proven_transaction() {
         tx_digest: iota_sdk_types::TransactionDigest::new([0xff; 32]),
         event_seq: 0,
     };
-    proof.targets = ProofTargets::new().add_event(event_id);
+    proof_v1_mut(&mut proof).targets = ProofTargets::new().add_event(event_id);
 
     let error = ProofVerifier::new(&committee)
         .verify(&proof)
@@ -108,7 +120,7 @@ fn event_sequence_must_exist_in_the_transaction() {
         tx_digest: transaction_digest,
         event_seq: 1,
     };
-    proof.targets = ProofTargets::new().add_event(event_id);
+    proof_v1_mut(&mut proof).targets = ProofTargets::new().add_event(event_id);
 
     let error = ProofVerifier::new(&committee)
         .verify(&proof)

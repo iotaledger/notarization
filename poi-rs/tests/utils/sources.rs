@@ -6,12 +6,10 @@ use std::sync::{Arc, Mutex};
 use async_trait::async_trait;
 use iota_grpc_client::Client as GrpcClient;
 use iota_sdk_types::{ObjectId, TransactionDigest, Version};
-use iota_types::{
-    committee::{Committee, EpochId},
-    digests::ChainIdentifier,
-    messages_checkpoint::CertifiedCheckpointSummary,
-    object::Object,
-};
+use iota_types::committee::{Committee, EpochId};
+use iota_types::digests::ChainIdentifier;
+use iota_types::messages_checkpoint::CertifiedCheckpointSummary;
+use iota_types::object::Object;
 use poi_rs::{Source, SourceCheckpoint, SourceError, SourceTransaction};
 
 #[derive(Clone)]

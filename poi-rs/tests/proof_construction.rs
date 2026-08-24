@@ -6,13 +6,11 @@ mod utils;
 use std::sync::{Arc, Mutex};
 
 use iota_sdk_types::TransactionDigest;
-use iota_types::{event::EventID, object::Object};
+use iota_types::event::EventID;
+use iota_types::object::Object;
 use poi_rs::{PoiClient, ProofBuilderError, ProofVerifier, SourceError};
-use utils::{
-    genesis_chain_identifier, grpc_client, object_transfer_tx,
-    sources::{MissingSource, RecordingSource, RejectingSource},
-    staking_tx, start_test_cluster, transfer_tx,
-};
+use utils::sources::{MissingSource, RecordingSource, RejectingSource};
+use utils::{genesis_chain_identifier, grpc_client, object_transfer_tx, staking_tx, start_test_cluster, transfer_tx};
 
 #[tokio::test]
 async fn client_uses_a_custom_source_for_proof_building() {
@@ -71,9 +69,9 @@ async fn stacked_requests_are_deduplicated_and_reuse_transaction_evidence() {
             .expect("recorded transactions lock must not be poisoned"),
         vec![staking.digest]
     );
-    assert_eq!(proof.targets.transaction, Some(staking.digest));
-    assert_eq!(proof.targets.objects.len(), 1);
-    assert_eq!(proof.targets.events.len(), 1);
+    assert_eq!(proof.targets().transaction, Some(staking.digest));
+    assert_eq!(proof.targets().objects.len(), 1);
+    assert_eq!(proof.targets().events.len(), 1);
     ProofVerifier::new(&cluster.committee())
         .verify(&proof)
         .expect("the stacked-target proof must verify offline");
@@ -111,7 +109,7 @@ async fn proof_uses_the_genesis_checkpoint_as_its_chain_identifier() {
         .await
         .expect("transaction proof must be constructed");
 
-    assert_eq!(proof.chain, genesis_chain_identifier(&cluster));
+    assert_eq!(proof.chain(), &genesis_chain_identifier(&cluster));
 }
 
 #[tokio::test]

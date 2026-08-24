@@ -1,16 +1,15 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use iota_sdk_types::{CheckpointContents, CheckpointSummary, Event, TransactionDigest, gas::GasCostSummary};
-use iota_types::{
-    base_types::ExecutionData,
-    committee::Committee,
-    digests::ChainIdentifier,
-    effects::{TestEffectsBuilder, TransactionEvents},
-    messages_checkpoint::{CertifiedCheckpointSummary, CheckpointContentsExt, FullCheckpointContents},
-    sdk_types::{Address, Identifier, ObjectId, StructTag},
-};
-use poi_rs::{Proof, ProofTargets, TransactionProof};
+use iota_sdk_types::gas::GasCostSummary;
+use iota_sdk_types::{CheckpointContents, CheckpointSummary, Event, TransactionDigest};
+use iota_types::base_types::ExecutionData;
+use iota_types::committee::Committee;
+use iota_types::digests::ChainIdentifier;
+use iota_types::effects::{TestEffectsBuilder, TransactionEvents};
+use iota_types::messages_checkpoint::{CertifiedCheckpointSummary, CheckpointContentsExt, FullCheckpointContents};
+use iota_types::sdk_types::{Address, Identifier, ObjectId, StructTag};
+use poi_rs::{Proof, ProofTargets, ProofV1, TransactionProof};
 
 pub fn execution_data() -> ExecutionData {
     FullCheckpointContents::random_for_testing()
@@ -57,13 +56,14 @@ fn proof_from_execution(
     let contents = CheckpointContents::new_with_digests_only_for_tests([execution.digests()]);
     let (committee, summary) = signed_checkpoint(&contents);
     let chain = ChainIdentifier::from(*summary.digest());
-    let proof = Proof::new(
+    let proof = ProofV1::new(
         chain,
         targets,
         summary,
         contents,
         TransactionProof::new(execution.transaction, execution.effects, events),
-    );
+    )
+    .into();
 
     (committee, proof)
 }
@@ -77,13 +77,14 @@ pub fn proof_with_events(events: TransactionEvents) -> (Committee, TransactionDi
     let contents = CheckpointContents::new_with_digests_only_for_tests([execution.digests()]);
     let (committee, summary) = signed_checkpoint(&contents);
     let chain = ChainIdentifier::from(*summary.digest());
-    let proof = Proof::new(
+    let proof = ProofV1::new(
         chain,
         ProofTargets::new(),
         summary,
         contents,
         TransactionProof::new(execution.transaction, execution.effects, Some(events)),
-    );
+    )
+    .into();
 
     (committee, transaction_digest, proof)
 }

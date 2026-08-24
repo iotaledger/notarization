@@ -6,18 +6,21 @@
 // @generated from file iota/grpc/v1/signatures.proto (package iota.grpc.v1.signatures, syntax proto3)
 /* eslint-disable */
 
+import type { Message } from "@bufbuild/protobuf";
 import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
 import { file_iota_grpc_options } from "../options_pb.js";
 import type { BcsData } from "./bcs_pb.js";
 import { file_iota_grpc_v1_bcs } from "./bcs_pb.js";
-import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file iota/grpc/v1/signatures.proto.
  */
 export const file_iota_grpc_v1_signatures: GenFile = /*@__PURE__*/
-  fileDesc("Ch1pb3RhL2dycGMvdjEvc2lnbmF0dXJlcy5wcm90bxIXaW90YS5ncnBjLnYxLnNpZ25hdHVyZXMiTgoNVXNlclNpZ25hdHVyZRIrCgNiY3MYASABKAsyGS5pb3RhLmdycGMudjEuYmNzLkJjc0RhdGFIAIgBAToIgrUYBHdpdGhCBgoEX2JjcyJaCg5Vc2VyU2lnbmF0dXJlcxI6CgpzaWduYXR1cmVzGAEgAygLMiYuaW90YS5ncnBjLnYxLnNpZ25hdHVyZXMuVXNlclNpZ25hdHVyZToMgrUYBHdpdGiQtRgBIl0KHFZhbGlkYXRvckFnZ3JlZ2F0ZWRTaWduYXR1cmUSKwoDYmNzGAEgASgLMhkuaW90YS5ncnBjLnYxLmJjcy5CY3NEYXRhSACIAQE6CIK1GAR3aXRoQgYKBF9iY3NiBnByb3RvMw", [file_iota_grpc_options, file_iota_grpc_v1_bcs]);
+    fileDesc(
+        "Ch1pb3RhL2dycGMvdjEvc2lnbmF0dXJlcy5wcm90bxIXaW90YS5ncnBjLnYxLnNpZ25hdHVyZXMiTgoNVXNlclNpZ25hdHVyZRIrCgNiY3MYASABKAsyGS5pb3RhLmdycGMudjEuYmNzLkJjc0RhdGFIAIgBAToIgrUYBHdpdGhCBgoEX2JjcyJaCg5Vc2VyU2lnbmF0dXJlcxI6CgpzaWduYXR1cmVzGAEgAygLMiYuaW90YS5ncnBjLnYxLnNpZ25hdHVyZXMuVXNlclNpZ25hdHVyZToMgrUYBHdpdGiQtRgBIl0KHFZhbGlkYXRvckFnZ3JlZ2F0ZWRTaWduYXR1cmUSKwoDYmNzGAEgASgLMhkuaW90YS5ncnBjLnYxLmJjcy5CY3NEYXRhSACIAQE6CIK1GAR3aXRoQgYKBF9iY3NiBnByb3RvMw",
+        [file_iota_grpc_options, file_iota_grpc_v1_bcs],
+    );
 
 /**
  * A signature from a user.
@@ -25,15 +28,15 @@ export const file_iota_grpc_v1_signatures: GenFile = /*@__PURE__*/
  * @generated from message iota.grpc.v1.signatures.UserSignature
  */
 export type UserSignature = Message<"iota.grpc.v1.signatures.UserSignature"> & {
-  /**
-   * This signature serialized as as BCS.
-   *
-   * When provided as input this will support both the form that is length
-   * prefixed as well as not length prefixed.
-   *
-   * @generated from field: optional iota.grpc.v1.bcs.BcsData bcs = 1;
-   */
-  bcs?: BcsData | undefined;
+    /**
+     * This signature serialized as as BCS.
+     *
+     * When provided as input this will support both the form that is length
+     * prefixed as well as not length prefixed.
+     *
+     * @generated from field: optional iota.grpc.v1.bcs.BcsData bcs = 1;
+     */
+    bcs?: BcsData | undefined;
 };
 
 /**
@@ -41,7 +44,7 @@ export type UserSignature = Message<"iota.grpc.v1.signatures.UserSignature"> & {
  * Use `create(UserSignatureSchema)` to create a new message.
  */
 export const UserSignatureSchema: GenMessage<UserSignature> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_signatures, 0);
+    messageDesc(file_iota_grpc_v1_signatures, 0);
 
 /**
  * A list of user signatures.
@@ -49,10 +52,10 @@ export const UserSignatureSchema: GenMessage<UserSignature> = /*@__PURE__*/
  * @generated from message iota.grpc.v1.signatures.UserSignatures
  */
 export type UserSignatures = Message<"iota.grpc.v1.signatures.UserSignatures"> & {
-  /**
-   * @generated from field: repeated iota.grpc.v1.signatures.UserSignature signatures = 1;
-   */
-  signatures: UserSignature[];
+    /**
+     * @generated from field: repeated iota.grpc.v1.signatures.UserSignature signatures = 1;
+     */
+    signatures: UserSignature[];
 };
 
 /**
@@ -60,7 +63,7 @@ export type UserSignatures = Message<"iota.grpc.v1.signatures.UserSignatures"> &
  * Use `create(UserSignaturesSchema)` to create a new message.
  */
 export const UserSignaturesSchema: GenMessage<UserSignatures> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_signatures, 1);
+    messageDesc(file_iota_grpc_v1_signatures, 1);
 
 /**
  * / An aggregated signature from multiple validators.
@@ -68,10 +71,10 @@ export const UserSignaturesSchema: GenMessage<UserSignatures> = /*@__PURE__*/
  * @generated from message iota.grpc.v1.signatures.ValidatorAggregatedSignature
  */
 export type ValidatorAggregatedSignature = Message<"iota.grpc.v1.signatures.ValidatorAggregatedSignature"> & {
-  /**
-   * @generated from field: optional iota.grpc.v1.bcs.BcsData bcs = 1;
-   */
-  bcs?: BcsData | undefined;
+    /**
+     * @generated from field: optional iota.grpc.v1.bcs.BcsData bcs = 1;
+     */
+    bcs?: BcsData | undefined;
 };
 
 /**
@@ -79,5 +82,4 @@ export type ValidatorAggregatedSignature = Message<"iota.grpc.v1.signatures.Vali
  * Use `create(ValidatorAggregatedSignatureSchema)` to create a new message.
  */
 export const ValidatorAggregatedSignatureSchema: GenMessage<ValidatorAggregatedSignature> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_signatures, 2);
-
+    messageDesc(file_iota_grpc_v1_signatures, 2);

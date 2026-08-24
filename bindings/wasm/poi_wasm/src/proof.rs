@@ -94,13 +94,13 @@ impl WasmProof {
     /// Returns the proof format version.
     #[wasm_bindgen(getter)]
     pub fn version(&self) -> u16 {
-        self.0.version().value()
+        self.0.version()
     }
 
     /// Returns the epoch of the committee that certified this proof.
     #[wasm_bindgen(getter, js_name = checkpointEpoch)]
     pub fn checkpoint_epoch(&self) -> u64 {
-        self.0.checkpoint_summary.epoch()
+        self.0.checkpoint_summary().epoch()
     }
 
     /// Returns the transaction, object, and event targets selected for this proof.
@@ -114,11 +114,6 @@ impl WasmProof {
         poi_rs::ProofVerifier::new(committee.inner())
             .verify(&self.0)
             .wasm_result()
-    }
-
-    /// Validates the proof format version.
-    pub fn validate(&self) -> Result<(), JsValue> {
-        self.0.validate().wasm_result()
     }
 
     /// Serializes this proof as JSON.

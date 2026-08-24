@@ -70,11 +70,11 @@ transactions. A non-mainnet run may also publish the Single Notarization Move Pa
 
 ## Examples
 
-| Name                                                                                    | Information                                                                                                   |
-| :-------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------ |
-| [01_create_and_verify_transaction_proof](./01_create_and_verify_transaction_proof.rs)   | Creates a transaction proof, serializes it as JSON, and verifies it from a trusted network genesis blob.      |
-| [02_create_and_verify_multi_target_proof](./02_create_and_verify_multi_target_proof.rs) | Combines transaction, changed-object, and emitted-event targets in one proof.                                 |
-| [03_reuse_verifier_for_multiple_proofs](./03_reuse_verifier_for_multiple_proofs.rs)     | Reuses one genesis-anchored verifier across proofs for two fresh transactions.                                |
+| Name                                                                                    | Information                                                                                                  |
+| :-------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------- |
+| [01_create_and_verify_transaction_proof](./01_create_and_verify_transaction_proof.rs)   | Creates a transaction proof, serializes it as JSON, and verifies it from a trusted network genesis blob.     |
+| [02_create_and_verify_multi_target_proof](./02_create_and_verify_multi_target_proof.rs) | Combines transaction, changed-object, and emitted-event targets in one proof.                                |
+| [03_reuse_verifier_for_multiple_proofs](./03_reuse_verifier_for_multiple_proofs.rs)     | Reuses one genesis-anchored verifier across proofs for two fresh transactions.                               |
 | [04_create_and_verify_object_proof](./04_create_and_verify_object_proof.rs)             | Starts from a fresh object ID and lets the builder discover the transaction that created its latest version. |
 | [05_create_and_verify_event_proof](./05_create_and_verify_event_proof.rs)               | Starts from a fresh event ID without declaring a separate transaction target.                                |
 | [advanced_01_file_based_committee_cache](./advanced/01_file_based_committee_cache.rs)   | Persists authenticated committees in a cache scoped to the active network.                                   |

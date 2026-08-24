@@ -6,6 +6,7 @@
 // @generated from file iota/grpc/v1/event.proto (package iota.grpc.v1.event, syntax proto3)
 /* eslint-disable */
 
+import type { Message } from "@bufbuild/protobuf";
 import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Value } from "@bufbuild/protobuf/wkt";
@@ -15,13 +16,15 @@ import type { BcsData } from "./bcs_pb.js";
 import { file_iota_grpc_v1_bcs } from "./bcs_pb.js";
 import type { Address, ObjectId } from "./types_pb.js";
 import { file_iota_grpc_v1_types } from "./types_pb.js";
-import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file iota/grpc/v1/event.proto.
  */
 export const file_iota_grpc_v1_event: GenFile = /*@__PURE__*/
-  fileDesc("Chhpb3RhL2dycGMvdjEvZXZlbnQucHJvdG8SEmlvdGEuZ3JwYy52MS5ldmVudCKeAwoFRXZlbnQSKwoDYmNzGAEgASgLMhkuaW90YS5ncnBjLnYxLmJjcy5CY3NEYXRhSACIAQESNQoKcGFja2FnZV9pZBgCIAEoCzIcLmlvdGEuZ3JwYy52MS50eXBlcy5PYmplY3RJZEgBiAEBEhMKBm1vZHVsZRgDIAEoCUgCiAEBEjAKBnNlbmRlchgEIAEoCzIbLmlvdGEuZ3JwYy52MS50eXBlcy5BZGRyZXNzSAOIAQESFwoKZXZlbnRfdHlwZRgFIAEoCUgEiAEBEjQKDGJjc19jb250ZW50cxgGIAEoCzIZLmlvdGEuZ3JwYy52MS5iY3MuQmNzRGF0YUgFiAEBEjIKDWpzb25fY29udGVudHMYByABKAsyFi5nb29nbGUucHJvdG9idWYuVmFsdWVIBogBAToIgrUYBHdpdGhCBgoEX2Jjc0INCgtfcGFja2FnZV9pZEIJCgdfbW9kdWxlQgkKB19zZW5kZXJCDQoLX2V2ZW50X3R5cGVCDwoNX2Jjc19jb250ZW50c0IQCg5fanNvbl9jb250ZW50cyJBCgZFdmVudHMSKQoGZXZlbnRzGAEgAygLMhkuaW90YS5ncnBjLnYxLmV2ZW50LkV2ZW50OgyCtRgEd2l0aJC1GAFiBnByb3RvMw", [file_google_protobuf_struct, file_iota_grpc_options, file_iota_grpc_v1_bcs, file_iota_grpc_v1_types]);
+    fileDesc(
+        "Chhpb3RhL2dycGMvdjEvZXZlbnQucHJvdG8SEmlvdGEuZ3JwYy52MS5ldmVudCKeAwoFRXZlbnQSKwoDYmNzGAEgASgLMhkuaW90YS5ncnBjLnYxLmJjcy5CY3NEYXRhSACIAQESNQoKcGFja2FnZV9pZBgCIAEoCzIcLmlvdGEuZ3JwYy52MS50eXBlcy5PYmplY3RJZEgBiAEBEhMKBm1vZHVsZRgDIAEoCUgCiAEBEjAKBnNlbmRlchgEIAEoCzIbLmlvdGEuZ3JwYy52MS50eXBlcy5BZGRyZXNzSAOIAQESFwoKZXZlbnRfdHlwZRgFIAEoCUgEiAEBEjQKDGJjc19jb250ZW50cxgGIAEoCzIZLmlvdGEuZ3JwYy52MS5iY3MuQmNzRGF0YUgFiAEBEjIKDWpzb25fY29udGVudHMYByABKAsyFi5nb29nbGUucHJvdG9idWYuVmFsdWVIBogBAToIgrUYBHdpdGhCBgoEX2Jjc0INCgtfcGFja2FnZV9pZEIJCgdfbW9kdWxlQgkKB19zZW5kZXJCDQoLX2V2ZW50X3R5cGVCDwoNX2Jjc19jb250ZW50c0IQCg5fanNvbl9jb250ZW50cyJBCgZFdmVudHMSKQoGZXZlbnRzGAEgAygLMhkuaW90YS5ncnBjLnYxLmV2ZW50LkV2ZW50OgyCtRgEd2l0aJC1GAFiBnByb3RvMw",
+        [file_google_protobuf_struct, file_iota_grpc_options, file_iota_grpc_v1_bcs, file_iota_grpc_v1_types],
+    );
 
 /**
  * An event.
@@ -29,56 +32,56 @@ export const file_iota_grpc_v1_event: GenFile = /*@__PURE__*/
  * @generated from message iota.grpc.v1.event.Event
  */
 export type Event = Message<"iota.grpc.v1.event.Event"> & {
-  /**
-   * This Event serialized as BCS.
-   *
-   * @generated from field: optional iota.grpc.v1.bcs.BcsData bcs = 1;
-   */
-  bcs?: BcsData | undefined;
+    /**
+     * This Event serialized as BCS.
+     *
+     * @generated from field: optional iota.grpc.v1.bcs.BcsData bcs = 1;
+     */
+    bcs?: BcsData | undefined;
 
-  /**
-   * Package ID of the top-level function invoked by a `MoveCall` command that triggered this
-   * event to be emitted.
-   *
-   * @generated from field: optional iota.grpc.v1.types.ObjectId package_id = 2;
-   */
-  packageId?: ObjectId | undefined;
+    /**
+     * Package ID of the top-level function invoked by a `MoveCall` command that triggered this
+     * event to be emitted.
+     *
+     * @generated from field: optional iota.grpc.v1.types.ObjectId package_id = 2;
+     */
+    packageId?: ObjectId | undefined;
 
-  /**
-   * Module name of the top-level function invoked by a `MoveCall` command that triggered this
-   * event to be emitted.
-   *
-   * @generated from field: optional string module = 3;
-   */
-  module?: string | undefined;
+    /**
+     * Module name of the top-level function invoked by a `MoveCall` command that triggered this
+     * event to be emitted.
+     *
+     * @generated from field: optional string module = 3;
+     */
+    module?: string | undefined;
 
-  /**
-   * Address of the account that sent the transaction where this event was emitted.
-   *
-   * @generated from field: optional iota.grpc.v1.types.Address sender = 4;
-   */
-  sender?: Address | undefined;
+    /**
+     * Address of the account that sent the transaction where this event was emitted.
+     *
+     * @generated from field: optional iota.grpc.v1.types.Address sender = 4;
+     */
+    sender?: Address | undefined;
 
-  /**
-   * The type of the event emitted.
-   *
-   * @generated from field: optional string event_type = 5;
-   */
-  eventType?: string | undefined;
+    /**
+     * The type of the event emitted.
+     *
+     * @generated from field: optional string event_type = 5;
+     */
+    eventType?: string | undefined;
 
-  /**
-   * BCS serialized bytes of the event.
-   *
-   * @generated from field: optional iota.grpc.v1.bcs.BcsData bcs_contents = 6;
-   */
-  bcsContents?: BcsData | undefined;
+    /**
+     * BCS serialized bytes of the event.
+     *
+     * @generated from field: optional iota.grpc.v1.bcs.BcsData bcs_contents = 6;
+     */
+    bcsContents?: BcsData | undefined;
 
-  /**
-   * JSON rendering of the event.
-   *
-   * @generated from field: optional google.protobuf.Value json_contents = 7;
-   */
-  jsonContents?: Value | undefined;
+    /**
+     * JSON rendering of the event.
+     *
+     * @generated from field: optional google.protobuf.Value json_contents = 7;
+     */
+    jsonContents?: Value | undefined;
 };
 
 /**
@@ -86,7 +89,7 @@ export type Event = Message<"iota.grpc.v1.event.Event"> & {
  * Use `create(EventSchema)` to create a new message.
  */
 export const EventSchema: GenMessage<Event> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_event, 0);
+    messageDesc(file_iota_grpc_v1_event, 0);
 
 /**
  * A list of events.
@@ -94,10 +97,10 @@ export const EventSchema: GenMessage<Event> = /*@__PURE__*/
  * @generated from message iota.grpc.v1.event.Events
  */
 export type Events = Message<"iota.grpc.v1.event.Events"> & {
-  /**
-   * @generated from field: repeated iota.grpc.v1.event.Event events = 1;
-   */
-  events: Event[];
+    /**
+     * @generated from field: repeated iota.grpc.v1.event.Event events = 1;
+     */
+    events: Event[];
 };
 
 /**
@@ -105,5 +108,4 @@ export type Events = Message<"iota.grpc.v1.event.Events"> & {
  * Use `create(EventsSchema)` to create a new message.
  */
 export const EventsSchema: GenMessage<Events> = /*@__PURE__*/
-  messageDesc(file_iota_grpc_v1_event, 1);
-
+    messageDesc(file_iota_grpc_v1_event, 1);

@@ -1,7 +1,9 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{fs, fs::File, path::PathBuf};
+use std::fs;
+use std::fs::File;
+use std::path::PathBuf;
 
 use anyhow::{Context, Result, bail, ensure};
 use iota_config::{IOTA_GENESIS_FILENAME, iota_config_dir};
@@ -9,10 +11,8 @@ use iota_grpc_client::Client as GrpcClient;
 use iota_interaction::KeytoolSigner;
 use iota_sdk_types::{ObjectId, TransactionDigest};
 use iota_types::event::EventID;
-use notarization::{
-    client::{NotarizationClient, NotarizationClientReadOnly},
-    core::types::{State, TimeLock},
-};
+use notarization::client::{NotarizationClient, NotarizationClientReadOnly};
+use notarization::core::types::{State, TimeLock};
 use poi_rs::PoiClient;
 use product_common::test_utils::{
     TEST_GAS_BUDGET, get_active_address, get_balance, get_cached_id, get_client, init_product_package, request_funds,

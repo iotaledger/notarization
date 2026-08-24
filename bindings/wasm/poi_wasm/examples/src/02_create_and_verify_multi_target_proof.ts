@@ -16,11 +16,7 @@ import { strict as assert } from "node:assert";
 
 import { fromBase58, fromHex, normalizeIotaObjectId } from "@iota/iota-sdk/utils";
 import { Proof } from "@iota/poi-wasm";
-import {
-    createNotarization,
-    loadGenesisCommitteeResolution,
-    preparePoiExample,
-} from "./util.js";
+import { createNotarization, loadGenesisCommitteeResolution, preparePoiExample } from "./util.js";
 
 /** Demonstrates how to construct and verify one proof containing three related targets. */
 export async function createAndVerifyMultiTargetProof(): Promise<void> {

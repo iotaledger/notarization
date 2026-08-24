@@ -15,10 +15,9 @@
 use std::time::Instant;
 
 use anyhow::{Context, Result};
+use file_committee_cache::FileCommitteeCache;
 use poi_examples::prepare_poi_example;
 use poi_rs::CommitteeResolution;
-
-use file_committee_cache::FileCommitteeCache;
 
 /// Demonstrates how to:
 /// 1. Create a network-scoped file cache.
@@ -49,7 +48,7 @@ async fn main() -> Result<()> {
 
     println!("Network:            {}", context.network_alias);
     println!("Transaction target: {transaction_digest}");
-    println!("Checkpoint epoch:   {}", proof.checkpoint_summary.epoch());
+    println!("Checkpoint epoch:   {}", proof.checkpoint_summary().epoch());
     println!("Committee cache:    {}\n", cache_directory.display());
 
     let verifier = client.verifier(resolution);
@@ -70,7 +69,9 @@ async fn main() -> Result<()> {
 
 mod file_committee_cache {
 
-    use std::{fs, io::Write, path::PathBuf};
+    use std::fs;
+    use std::io::Write;
+    use std::path::PathBuf;
 
     use iota_types::committee::{Committee, EpochId};
     use poi_rs::{CommitteeCache, CommitteeCacheError};

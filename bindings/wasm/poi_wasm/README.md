@@ -52,9 +52,9 @@ import { PoiClient } from "@iota/poi-wasm";
 
 const client = PoiClient.testnet();
 const proof = await client.makeProof({
-  transaction: transactionDigest,
-  objects: [objectId],
-  events: [{ transaction: transactionDigest, sequence: eventSequence }],
+    transaction: transactionDigest,
+    objects: [objectId],
+    events: [{ transaction: transactionDigest, sequence: eventSequence }],
 });
 
 console.log(proof.toJSON());

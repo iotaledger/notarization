@@ -9,12 +9,7 @@
  */
 
 import { fromBase58 } from "@iota/iota-sdk/utils";
-import {
-    createNotarization,
-    elapsedMilliseconds,
-    loadGenesisCommitteeResolution,
-    preparePoiExample,
-} from "./util.js";
+import { createNotarization, elapsedMilliseconds, loadGenesisCommitteeResolution, preparePoiExample } from "./util.js";
 
 /** Demonstrates how one verifier reuses committee resolution across proofs. */
 export async function reuseVerifierForMultipleProofs(): Promise<void> {

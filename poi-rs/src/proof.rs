@@ -12,27 +12,16 @@
 //! [`Committee`]: iota_types::committee::Committee
 
 use iota_sdk_types::{CheckpointContents, TransactionDigest};
-use iota_types::{
-    committee::Committee,
-    digests::ChainIdentifier,
-    effects::{TransactionEffects, TransactionEffectsAPI, TransactionEffectsExt, TransactionEvents},
-    event::EventID,
-    messages_checkpoint::{CertifiedCheckpointSummary, CheckpointContentsExt},
-    object::Object,
-    transaction::Transaction,
-};
+use iota_types::committee::Committee;
+use iota_types::digests::ChainIdentifier;
+use iota_types::effects::{TransactionEffects, TransactionEffectsAPI, TransactionEffectsExt, TransactionEvents};
+use iota_types::event::EventID;
+use iota_types::messages_checkpoint::{CertifiedCheckpointSummary, CheckpointContentsExt};
+use iota_types::object::Object;
+use iota_types::transaction::Transaction;
 use serde::{Deserialize, Serialize};
 
 use crate::BoxError;
-
-/// An unsupported proof format version.
-#[derive(Debug, thiserror::Error)]
-#[non_exhaustive]
-#[error("unsupported Proof of Inclusion proof format version: {version}")]
-pub struct VersionError {
-    /// The unsupported version.
-    pub version: u16,
-}
 
 /// An error serializing or deserializing a proof.
 #[derive(Debug, thiserror::Error)]
@@ -71,13 +60,6 @@ pub struct VerifyError {
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum VerifyErrorKind {
-    /// The proof uses an unsupported wire-format version.
-    #[error("proof format version is not supported")]
-    Version {
-        /// The version error.
-        #[source]
-        source: VersionError,
-    },
     /// The committee signature or checkpoint-contents commitment is invalid.
     #[error("checkpoint summary verification failed")]
     CheckpointSummary {
@@ -115,56 +97,6 @@ pub enum VerifyErrorKind {
     /// A claimed object reference is absent from the packaged transaction effects.
     #[error("object target was not found in the transaction effects")]
     ObjectNotFound,
-}
-
-/// The format version of a serialized [`Proof`].
-///
-/// Versions are encoded as unsigned integers. This crate currently supports
-/// only [`ProofVersion::CURRENT`].
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct ProofVersion(u16);
-
-impl ProofVersion {
-    /// The version produced and accepted by this crate.
-    pub const CURRENT: Self = Self(1);
-
-    /// Creates a supported proof version.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`VersionError`] when `version` is not [`Self::CURRENT`].
-    pub fn new(version: u16) -> Result<Self, VersionError> {
-        let version = Self(version);
-        version.validate()?;
-        Ok(version)
-    }
-
-    /// Returns the numeric version.
-    pub const fn value(self) -> u16 {
-        self.0
-    }
-
-    /// Checks that this version is supported.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`VersionError`] when the value is not [`Self::CURRENT`].
-    pub fn validate(self) -> Result<(), VersionError> {
-        if self == Self::CURRENT {
-            Ok(())
-        } else {
-            Err(VersionError { version: self.value() })
-        }
-    }
-}
-
-impl TryFrom<u16> for ProofVersion {
-    type Error = VersionError;
-
-    fn try_from(version: u16) -> Result<Self, Self::Error> {
-        Self::new(version)
-    }
 }
 
 /// Values the caller selected for a [`Proof`].
@@ -228,16 +160,33 @@ pub struct TransactionProof {
 
 impl TransactionProof {
     /// Creates transaction proof data.
-    pub fn new(transaction: Transaction, effects: TransactionEffects, events: Option<TransactionEvents>) -> Self {
+    pub fn new(
+        transaction: Transaction,
+        effects: TransactionEffects,
+        events: impl Into<Option<TransactionEvents>>,
+    ) -> Self {
         Self {
             transaction,
             effects,
-            events,
+            events: events.into(),
         }
     }
 }
 
-/// Evidence that a transaction is included in a certified checkpoint.
+/// Versioned evidence that a transaction is included in a certified checkpoint.
+///
+/// The enum is non-exhaustive so future crate versions can add support for new
+/// proof formats without making matches in downstream crates source-breaking.
+/// Its serialized representation is externally tagged, with the variant name
+/// identifying the proof format, for example `{ "ProofV1": { ... } }`.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[non_exhaustive]
+pub enum Proof {
+    /// A version 1 proof.
+    ProofV1(ProofV1),
+}
+
+/// Version 1 evidence that a transaction is included in a certified checkpoint.
 ///
 /// [`ProofTargets`] records the values selected by the caller. The checkpoint
 /// and transaction proof fields contain the evidence for those targets.
@@ -245,9 +194,7 @@ impl TransactionProof {
 /// [`Proof::chain`] identifies the network reported by the proof source. It is
 /// informational and is not checked during verification.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Proof {
-    /// The proof format version.
-    pub version: ProofVersion,
+pub struct ProofV1 {
     /// The network reported by the proof source.
     pub chain: ChainIdentifier,
     /// The values selected for this proof.
@@ -260,8 +207,10 @@ pub struct Proof {
     pub transaction_proof: TransactionProof,
 }
 
-impl Proof {
-    /// Creates a proof using [`ProofVersion::CURRENT`].
+impl ProofV1 {
+    const VERSION: u16 = 1;
+
+    /// Creates a version 1 proof payload.
     pub fn new(
         chain: ChainIdentifier,
         targets: ProofTargets,
@@ -270,7 +219,6 @@ impl Proof {
         transaction_proof: TransactionProof,
     ) -> Self {
         Self {
-            version: ProofVersion::CURRENT,
             chain,
             targets,
             checkpoint_summary,
@@ -278,15 +226,55 @@ impl Proof {
             transaction_proof,
         }
     }
+}
 
+impl From<ProofV1> for Proof {
+    fn from(proof: ProofV1) -> Self {
+        Self::ProofV1(proof)
+    }
+}
+
+impl Proof {
     /// Returns the proof format version.
-    pub const fn version(&self) -> ProofVersion {
-        self.version
+    pub const fn version(&self) -> u16 {
+        match self {
+            Self::ProofV1(_) => ProofV1::VERSION,
+        }
+    }
+
+    /// Returns the network reported by the proof source.
+    pub const fn chain(&self) -> &ChainIdentifier {
+        match self {
+            Self::ProofV1(proof) => &proof.chain,
+        }
     }
 
     /// Returns the values selected for this proof.
     pub const fn targets(&self) -> &ProofTargets {
-        &self.targets
+        match self {
+            Self::ProofV1(proof) => &proof.targets,
+        }
+    }
+
+    /// Returns the certified checkpoint summary.
+    pub const fn checkpoint_summary(&self) -> &CertifiedCheckpointSummary {
+        match self {
+            Self::ProofV1(proof) => &proof.checkpoint_summary,
+        }
+    }
+
+    /// Returns the checkpoint contents.
+    pub const fn checkpoint_contents(&self) -> &CheckpointContents {
+        match self {
+            Self::ProofV1(proof) => &proof.checkpoint_contents,
+        }
+    }
+
+    /// Returns the transaction-specific evidence.
+    pub const fn transaction_proof(&self) -> &TransactionProof {
+        match self {
+            Self::ProofV1(proof) => &proof.transaction_proof,
+        }
     }
 
     /// Serializes the proof as JSON.
@@ -310,15 +298,6 @@ impl Proof {
         serde_json::from_slice(bytes).map_err(|source| SerializationError {
             kind: SerializationErrorKind::Json { source },
         })
-    }
-
-    /// Checks that the proof format version is supported.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`VersionError`] when [`Self::version`] is unsupported.
-    pub fn validate(&self) -> Result<(), VersionError> {
-        self.version.validate()
     }
 }
 
@@ -349,7 +328,6 @@ impl<'committee> ProofVerifier<'committee> {
     ///
     /// Verification checks that:
     ///
-    /// - the proof uses a supported format version;
     /// - the committee certifies the checkpoint summary;
     /// - the checkpoint contents match the digest in that summary;
     /// - the transaction, effects, and optional events are internally consistent;
@@ -360,10 +338,13 @@ impl<'committee> ProofVerifier<'committee> {
     ///
     /// Returns an error if any check fails.
     pub fn verify(&self, proof: &Proof) -> Result<(), VerifyError> {
-        proof.validate().map_err(|source| VerifyError {
-            kind: VerifyErrorKind::Version { source },
-        })?;
+        match proof {
+            Proof::ProofV1(proof) => self.verify_v1(proof),
+        }
+    }
 
+    /// Verifies a version 1 proof and all of its claims.
+    fn verify_v1(&self, proof: &ProofV1) -> Result<(), VerifyError> {
         if proof.targets.is_empty() {
             return Err(VerifyError {
                 kind: VerifyErrorKind::MissingTarget,

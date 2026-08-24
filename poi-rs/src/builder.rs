@@ -4,9 +4,11 @@
 #[cfg(feature = "native-grpc")]
 use iota_grpc_client::Client as GrpcClient;
 use iota_sdk_types::{ObjectId, ObjectReference, TransactionDigest};
-use iota_types::{effects::TransactionEffectsExt, event::EventID, object::Object};
+use iota_types::effects::TransactionEffectsExt;
+use iota_types::event::EventID;
+use iota_types::object::Object;
 
-use crate::{Proof, ProofTargets, Source, SourceError, TransactionProof};
+use crate::{Proof, ProofTargets, ProofV1, Source, SourceError, TransactionProof};
 
 /// Error returned when a proof cannot be constructed by [`ProofBuilder`].
 #[derive(Debug, thiserror::Error)]
@@ -247,13 +249,14 @@ impl<S: Source> ProofBuilder<S> {
             targets = targets.add_event(event_id);
         }
 
-        Ok(Proof::new(
+        Ok(ProofV1::new(
             chain_identifier,
             targets,
             checkpoint.summary,
             checkpoint.contents,
             transaction_proof,
-        ))
+        )
+        .into())
     }
 
     async fn fetch_transaction(
