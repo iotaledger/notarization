@@ -6,6 +6,7 @@ import type { Transport } from "@connectrpc/connect";
 import {
   type CommitteeResolution,
   CommitteeResolver,
+  type Proof,
   ProofBuilder,
 } from "../node/poi_wasm.js";
 import { LedgerSource } from "./ledger-source.js";
@@ -26,8 +27,26 @@ export interface PoiClientOptions {
   transport?: Transport;
 }
 
+/** An event selected for inclusion in a proof. */
+export interface ProofEventRequest {
+  /** Digest of the transaction that emitted the event. */
+  transaction: Uint8Array;
+  /** Transaction-local event sequence number. */
+  sequence: bigint;
+}
+
+/** Transaction, object, and event targets selected for one proof. */
+export interface ProofRequest {
+  /** Transaction selected as an explicit proof target. */
+  transaction?: Uint8Array;
+  /** Object IDs selected as proof targets. */
+  objects?: readonly Uint8Array[];
+  /** Event IDs selected as proof targets. */
+  events?: readonly ProofEventRequest[];
+}
+
 /**
- * Creates Proof of Inclusion builders backed by an IOTA ledger endpoint.
+ * Creates Proofs of Inclusion backed by an IOTA ledger endpoint.
  *
  * Use one of the named public-network constructors, or construct a client with
  * an explicit endpoint for a private node, archive, local network, or
@@ -56,9 +75,23 @@ export class PoiClient {
     return new PoiClient(DEVNET_ENDPOINT, options);
   }
 
-  /** Creates a fresh builder for one Proof of Inclusion. */
-  public proof(): ProofBuilder {
-    return new ProofBuilder(this.#source);
+  /** Creates one Proof of Inclusion for the selected targets. */
+  public async makeProof(request: ProofRequest): Promise<Proof> {
+    let builder = new ProofBuilder(this.#source);
+
+    if (request.transaction !== undefined) {
+      builder = builder.transaction(request.transaction);
+    }
+
+    for (const object of request.objects ?? []) {
+      builder = builder.object(object);
+    }
+
+    for (const event of request.events ?? []) {
+      builder = builder.event(event.transaction, event.sequence);
+    }
+
+    return builder.build();
   }
 
   /** Creates a verifier using the selected committee-resolution strategy. */

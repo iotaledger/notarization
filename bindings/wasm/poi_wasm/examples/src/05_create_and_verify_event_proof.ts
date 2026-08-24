@@ -30,7 +30,9 @@ export async function createAndVerifyEventProof(): Promise<void> {
     // The event ID already identifies the emitting transaction, allowing the
     // builder to fetch all required transaction, effects, and event evidence.
     console.log("\nStage 2 - Construct a proof from only the event ID");
-    const proof = await context.poiClient.proof().event(transaction, targets.eventSequence).build();
+    const proof = await context.poiClient.makeProof({
+        events: [{ transaction, sequence: targets.eventSequence }],
+    });
     const proofTargets = proof.targets;
 
     assert.equal(proofTargets.transaction, undefined);

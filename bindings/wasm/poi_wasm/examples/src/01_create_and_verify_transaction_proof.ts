@@ -45,7 +45,7 @@ export async function createAndVerifyTransactionProof(): Promise<void> {
     // Only the transaction is selected even though the context also created an
     // object and emitted an event.
     console.log("\nStage 3 - Construct a proof for the creation transaction");
-    const proof = await context.poiClient.proof().transaction(transaction).build();
+    const proof = await context.poiClient.makeProof({ transaction });
     const proofTargets = proof.targets;
 
     assert.equal(proofTargets.transaction, targets.transactionDigest);

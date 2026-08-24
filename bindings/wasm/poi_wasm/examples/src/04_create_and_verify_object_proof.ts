@@ -31,7 +31,7 @@ export async function createAndVerifyObjectProof(): Promise<void> {
     // that produced the latest object version and constructs its evidence.
     console.log("\nStage 2 - Construct a proof from only the Notarization object ID");
     const object = fromHex(normalizeIotaObjectId(targets.objectId, false, true));
-    const proof = await context.poiClient.proof().object(object).build();
+    const proof = await context.poiClient.makeProof({ objects: [object] });
     const proofTargets = proof.targets;
 
     assert.equal(proofTargets.transaction, undefined);

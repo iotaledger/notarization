@@ -30,14 +30,12 @@ export async function reuseVerifierForMultipleProofs(): Promise<void> {
     const secondTargets = await createNotarization(context, "Second Notarization object");
 
     console.log("\nStage 3 - Construct one transaction proof for each Notarization object");
-    const firstProof = await context.poiClient
-        .proof()
-        .transaction(fromBase58(firstTargets.transactionDigest))
-        .build();
-    const secondProof = await context.poiClient
-        .proof()
-        .transaction(fromBase58(secondTargets.transactionDigest))
-        .build();
+    const firstProof = await context.poiClient.makeProof({
+        transaction: fromBase58(firstTargets.transactionDigest),
+    });
+    const secondProof = await context.poiClient.makeProof({
+        transaction: fromBase58(secondTargets.transactionDigest),
+    });
 
     console.log(`  first proof epoch:  ${firstProof.checkpointEpoch}`);
     console.log(`  second proof epoch: ${secondProof.checkpointEpoch}\n`);

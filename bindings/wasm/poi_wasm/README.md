@@ -51,16 +51,18 @@ nodes, archives, local networks, or alternative endpoints.
 import { PoiClient } from "@iota/poi-wasm";
 
 const client = PoiClient.testnet();
-const proof = await client
-  .proof()
-  .transaction(transactionDigest)
-  .build();
+const proof = await client.makeProof({
+  transaction: transactionDigest,
+  objects: [objectId],
+  events: [{ transaction: transactionDigest, sequence: eventSequence }],
+});
 
 console.log(proof.toJSON());
 ```
 
-The same builder also exposes `object(objectId)` and
-`event(transactionDigest, eventSequence)`. All 64-bit values use JavaScript
+The `transaction` field selects the transaction explicitly. The `objects` and
+`events` arrays select any object and event targets that belong to the same
+transaction. Event sequence numbers and all other 64-bit values use JavaScript
 `bigint`.
 
 The serialized proof records the targets explicitly selected by the caller.

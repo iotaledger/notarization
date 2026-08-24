@@ -39,12 +39,11 @@ export async function createAndVerifyMultiTargetProof(): Promise<void> {
     // The explicit transaction and event identify one execution. The object ID
     // is resolved at the exact version recorded in that transaction's effects.
     console.log("\nStage 3 - Construct one proof for the transaction, object, and event");
-    const proof = await context.poiClient
-        .proof()
-        .transaction(transaction)
-        .object(object)
-        .event(transaction, targets.eventSequence)
-        .build();
+    const proof = await context.poiClient.makeProof({
+        transaction,
+        objects: [object],
+        events: [{ transaction, sequence: targets.eventSequence }],
+    });
     assert.equal(proof.targets.transaction, targets.transactionDigest);
     assert.equal(proof.targets.objects.length, 1);
     assert.equal(proof.targets.objects[0]?.objectId, targets.objectId);
