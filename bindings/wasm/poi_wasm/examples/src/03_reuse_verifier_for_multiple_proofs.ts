@@ -4,60 +4,56 @@
 /**
  * # Reuse a Verifier for Multiple Proofs
  *
- * Genesis-anchored verification authenticates every committee transition from
- * epoch 0 to the proof's checkpoint epoch. A verifier retains authenticated
- * committees in memory, so applications should reuse it across proofs from the same network.
+ * A verifier retains resolved committees in memory, so applications should
+ * reuse it across proofs from the same network.
  */
 
-import { strict as assert } from "node:assert";
-
 import { fromBase58 } from "@iota/iota-sdk/utils";
-import { CommitteeResolution, PoiClient } from "@iota/poi-wasm";
 import {
+    buildProofWithRetry,
+    createNotarization,
     elapsedMilliseconds,
-    loadMainnetGenesis,
-    MAINNET_TRANSACTION_DIGEST,
-    SECOND_MAINNET_TRANSACTION_DIGEST,
+    loadGenesisCommitteeResolution,
+    preparePoiExample,
 } from "./util.js";
 
-/** Demonstrates how one verifier avoids repeating an authenticated committee walk. */
+/** Demonstrates how one verifier reuses committee resolution across proofs. */
 export async function reuseVerifierForMultipleProofs(): Promise<void> {
     console.log("=== Proof of Inclusion: Reuse a Verifier for Multiple Proofs ===\n");
 
-    const client = PoiClient.mainnet();
-    const firstProof = await client
-        .proof()
-        .transaction(fromBase58(MAINNET_TRANSACTION_DIGEST))
-        .build();
-    const secondProof = await client
-        .proof()
-        .transaction(fromBase58(SECOND_MAINNET_TRANSACTION_DIGEST))
-        .build();
+    console.log("Stage 1 - Create two Notarization objects using Locked Notarization");
+    const context = await preparePoiExample();
+    const firstTargets = await createNotarization(context, "First Notarization object");
+    const secondTargets = await createNotarization(context, "Second Notarization object");
 
-    assert.equal(firstProof.checkpointEpoch, secondProof.checkpointEpoch);
+    console.log("\nStage 2 - Construct one transaction proof for each notarization");
+    const firstProof = await buildProofWithRetry(() =>
+        context.poiClient.proof().transaction(fromBase58(firstTargets.transactionDigest)).build(),
+    );
+    const secondProof = await buildProofWithRetry(() =>
+        context.poiClient.proof().transaction(fromBase58(secondTargets.transactionDigest)).build(),
+    );
 
-    console.log(`First transaction:  ${MAINNET_TRANSACTION_DIGEST}`);
-    console.log(`Second transaction: ${SECOND_MAINNET_TRANSACTION_DIGEST}`);
-    console.log(`Checkpoint epoch:   ${firstProof.checkpointEpoch}\n`);
+    console.log(`  first proof epoch:  ${firstProof.checkpointEpoch}`);
+    console.log(`  second proof epoch: ${secondProof.checkpointEpoch}\n`);
 
-    const genesis = await loadMainnetGenesis();
+    // Keep this verifier alive so its committee cache can serve both proofs.
+    const trust = await loadGenesisCommitteeResolution(context);
+    const verifier = context.poiClient.verifier(trust.resolution);
 
-    // Keep this verifier alive. Its default cache contains only committees
-    // authenticated through the genesis-anchored epoch walk.
-    const verifier = client.verifier(CommitteeResolution.fromGenesis(genesis));
-
-    console.log("Verifying the first proof; this performs the epoch walk...");
+    console.log("Stage 3 - Verify both proofs with one verifier");
+    console.log("  verifying the first proof; this resolves its checkpoint committee...");
     const firstStart = process.hrtime.bigint();
     await verifier.verify(firstProof);
     const firstDuration = elapsedMilliseconds(firstStart);
 
-    console.log("Verifying the second proof with the same verifier...");
+    console.log("  verifying the second proof with the same verifier...");
     const secondStart = process.hrtime.bigint();
     await verifier.verify(secondProof);
     const secondDuration = elapsedMilliseconds(secondStart);
 
-    console.log("\nBoth transaction proofs verified successfully.");
-    console.log(`First verification:  ${firstDuration.toFixed(2)} ms`);
-    console.log(`Second verification: ${secondDuration.toFixed(2)} ms`);
-    console.log("The second verification reused the authenticated epoch-469 committee.");
+    console.log("\n  both transaction proofs verified successfully.");
+    console.log(`  first verification:  ${firstDuration.toFixed(2)} ms`);
+    console.log(`  second verification: ${secondDuration.toFixed(2)} ms`);
+    console.log(`Both proofs used committee resolution through ${trust.description}.`);
 }

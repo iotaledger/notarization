@@ -3,7 +3,7 @@
 
 //! # Create and Verify a Transaction Proof
 //!
-//! This example constructs a Proof of Inclusion for an existing IOTA transaction,
+//! This example creates an IOTA transaction, constructs a Proof of Inclusion for it,
 //! serializes the proof for transfer, and verifies it from a trusted genesis blob.
 //!
 //! ## Actors
@@ -13,42 +13,37 @@
 //! - **Verifier application**: Starts from an independently trusted genesis blob, authenticates the checkpoint
 //!   committee, and verifies the proof locally.
 //!
-//! The example uses one [`PoiClient`] for both workflows, but the source endpoint and the genesis blob have different
-//! security roles: the endpoint supplies evidence, while the genesis blob establishes trust.
+//! The example uses one [`poi_rs::PoiClient`] for both workflows, but the source endpoint and the genesis blob have
+//! different security roles: the endpoint supplies evidence, while the genesis blob establishes trust.
 
 use anyhow::{Context, Result, ensure};
-use iota_sdk_types::TransactionDigest;
-use poi_rs::{CommitteeResolution, PoiClient, Proof};
-
-mod utils;
-
-use utils::load_mainnet_genesis;
-
-const MAINNET_TRANSACTION_DIGEST: &str = "86EvhdjqBb6Rt5pB8sKjTnE7MrzpNLuWTH3SuELBjDvu";
+use poi_examples::prepare_poi_example;
+use poi_rs::{CommitteeResolution, Proof};
 
 /// Demonstrates how to:
-/// 1. Connect to the IOTA mainnet proof source.
-/// 2. Construct a Proof of Inclusion for a transaction.
+/// 1. Configure clients from the active IOTA CLI environment and wallet.
+/// 2. Create a transaction and construct its Proof of Inclusion.
 /// 3. Serialize and deserialize the proof as portable JSON.
-/// 4. Download and cache the trusted mainnet genesis blob.
+/// 4. Load the trusted genesis blob for the active network.
 /// 5. Authenticate the checkpoint committee from genesis.
 /// 6. Verify the received proof locally.
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("=== Proof of Inclusion: Create and Verify a Transaction Proof ===\n");
 
-    let transaction_digest = MAINNET_TRANSACTION_DIGEST
-        .parse::<TransactionDigest>()
-        .context("the example transaction digest must be valid")?;
+    let context = prepare_poi_example().await?;
+    let transaction_digest = context
+        .create_notarization("PoI transaction-proof example")
+        .await?
+        .transaction_digest;
+    let client = &context.poi_client;
 
     // -------------------------------------------------------------------------
-    // Step 1: Connect to the mainnet proof source
+    // Step 1: Connect to the selected proof source
     // -------------------------------------------------------------------------
     // Selecting a network controls where proof material is fetched. It does not
     // make that material trusted and does not select an authoritative committee.
-    let client = PoiClient::mainnet().context("failed to configure the public mainnet gRPC endpoint")?;
-
-    println!("Network:            mainnet");
+    println!("Network:            {}", context.network_alias);
     println!("Transaction target: {transaction_digest}\n");
 
     // -------------------------------------------------------------------------
@@ -97,7 +92,7 @@ async fn main() -> Result<()> {
     // -------------------------------------------------------------------------
     // The genesis blob must be obtained independently from an authoritative
     // source and must belong to the same network as the proof.
-    let genesis = load_mainnet_genesis().await?;
+    let genesis = context.load_genesis().await?;
     let resolution = CommitteeResolution::from_genesis(genesis)
         .context("failed to load the committee from the trusted genesis blob")?;
     let verifier = client.verifier(resolution);
@@ -105,9 +100,8 @@ async fn main() -> Result<()> {
     // -------------------------------------------------------------------------
     // Step 5: Authenticate the committee and verify the proof locally
     // -------------------------------------------------------------------------
-    // This transaction is from epoch 469. The resolver authenticates every
-    // committee transition from genesis to that epoch, so this first run may
-    // take a long time. Reuse the verifier when checking multiple proofs so its
+    // The resolver authenticates every committee transition from genesis to the
+    // proof's epoch. Reuse the verifier when checking multiple proofs so its
     // in-memory committee cache can avoid repeating the walk.
     verifier
         .verify(&received_proof)

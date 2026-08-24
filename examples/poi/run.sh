@@ -7,6 +7,9 @@ set -e
 
 echo "Running all Proof of Inclusion examples..."
 echo "================================"
+echo "Using the active IOTA CLI environment and wallet."
+echo "This run submits seven locked Notarization transactions."
+echo ""
 
 cargo run --release -p poi-examples --example 01_create_and_verify_transaction_proof
 cargo run --release -p poi-examples --example 02_create_and_verify_multi_target_proof

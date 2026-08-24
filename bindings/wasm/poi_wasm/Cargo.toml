@@ -20,8 +20,8 @@ async-trait = { version = "0.1", default-features = false }
 bcs = "0.1.6"
 console_error_panic_hook = "0.1"
 fastcrypto = "=0.1.11"
-iota-sdk-types = { git = "https://github.com/iotaledger/iota-rust-sdk.git", rev = "b77fcd5ac5fedb3dfbc77ba7d183140e43512339", default-features = false, features = ["serde"] }
-iota-types = { git = "https://github.com/iotaledger/iota.git", rev = "420df58ea50ce916a927ebba2dcaee192832e436" }
+iota-sdk-types = { git = "https://github.com/iotaledger/iota-rust-sdk.git", rev = "2f021d0556e47564e9b04bcd0b3e8347c41a0a26", default-features = false, features = ["serde"] }
+iota-types = { git = "https://github.com/iotaledger/iota.git", tag = "v1.29.0" }
 js-sys = "=0.3.85"
 poi-rs = { path = "../../../poi-rs", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
