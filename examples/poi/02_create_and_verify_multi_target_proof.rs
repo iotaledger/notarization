@@ -16,17 +16,22 @@ use poi_examples::prepare_poi_example;
 use poi_rs::{CommitteeResolution, Proof};
 
 /// Demonstrates how to:
-/// 1. Create transaction, object, and event targets in one execution.
-/// 2. Construct one proof containing all three claims.
-/// 3. Inspect the targets resolved by the builder.
-/// 4. Transfer the proof through its portable JSON representation.
-/// 5. Authenticate the checkpoint committee from the active network's genesis.
+/// 1. Establish committee trust from the active network's genesis blob.
+/// 2. Create transaction, object, and event targets in one execution.
+/// 3. Construct one proof containing all three claims.
+/// 4. Inspect the targets resolved by the builder.
+/// 5. Transfer the proof through its portable JSON representation.
 /// 6. Verify every target in one operation.
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("=== Proof of Inclusion: Create and Verify a Multi-Target Proof ===\n");
 
     let context = prepare_poi_example().await?;
+    // The genesis blob must be obtained independently from an authoritative
+    // source and must belong to the same network as the proof.
+    let genesis = context.load_genesis().await?;
+    let resolution = CommitteeResolution::from_genesis(genesis)
+        .context("failed to load the committee from the trusted genesis blob")?;
     let targets = context.create_notarization("PoI multi-target example").await?;
     let transaction_digest = targets.transaction_digest;
     let object_id = targets.object_id;
@@ -82,9 +87,6 @@ async fn main() -> Result<()> {
     println!("Serialized proof size: {} bytes", proof_json.len());
     let received_proof = Proof::from_json_slice(&proof_json).context("failed to deserialize the received proof")?;
 
-    let genesis = context.load_genesis().await?;
-    let resolution = CommitteeResolution::from_genesis(genesis)
-        .context("failed to load the committee from the trusted genesis blob")?;
     let verifier = client.verifier(resolution);
 
     // Genesis-anchored resolution authenticates every preceding committee

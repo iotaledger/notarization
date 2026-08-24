@@ -17,7 +17,7 @@ import { strict as assert } from "node:assert";
 
 import { fromHex, normalizeIotaObjectId } from "@iota/iota-sdk/utils";
 import { CommitteeResolution } from "@iota/poi-wasm";
-import { buildProofWithRetry, createNotarization, preparePoiExample } from "./util.js";
+import { createNotarization, preparePoiExample } from "./util.js";
 
 /** Demonstrates target-driven object discovery and verification. */
 export async function createAndVerifyObjectProof(): Promise<void> {
@@ -31,7 +31,7 @@ export async function createAndVerifyObjectProof(): Promise<void> {
     // that produced the latest object version and constructs its evidence.
     console.log("\nStage 2 - Construct a proof from only the Notarization object ID");
     const object = fromHex(normalizeIotaObjectId(targets.objectId, false, true));
-    const proof = await buildProofWithRetry(() => context.poiClient.proof().object(object).build());
+    const proof = await context.poiClient.proof().object(object).build();
     const proofTargets = proof.targets;
 
     assert.equal(proofTargets.transaction, undefined);

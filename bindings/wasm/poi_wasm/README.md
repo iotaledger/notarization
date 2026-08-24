@@ -131,13 +131,8 @@ npm run verify
 Verification regenerates the Node.js protobuf client from the committed schema
 image, builds `poi-rs` for `wasm32-unknown-unknown`, type-checks the TypeScript
 boundary, and runs the tests. The tests use an in-memory generated service
-implementation and do not require a running IOTA node. To query a live
-endpoint with the development diagnostic:
+implementation and do not require a running IOTA node.
 
-```sh
-npm run example:service-info -- https://grpc.testnet.iota.cafe:443
-```
-
-See [`examples/README.md`](examples/README.md) for complete mainnet Proof of
+See [`examples/README.md`](examples/README.md) for network-configurable Proof of
 Inclusion examples covering transaction, multi-target, verifier reuse, object,
 and event proofs.

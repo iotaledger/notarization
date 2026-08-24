@@ -22,32 +22,46 @@ use poi_rs::{CommitteeResolution, Proof};
 
 /// Demonstrates how to:
 /// 1. Configure clients from the active IOTA CLI environment and wallet.
-/// 2. Create a transaction and construct its Proof of Inclusion.
-/// 3. Serialize and deserialize the proof as portable JSON.
-/// 4. Load the trusted genesis blob for the active network.
-/// 5. Authenticate the checkpoint committee from genesis.
+/// 2. Establish committee trust from the active network's genesis blob.
+/// 3. Create a transaction as fresh proof evidence.
+/// 4. Construct its Proof of Inclusion.
+/// 5. Serialize and deserialize the proof as portable JSON.
 /// 6. Verify the received proof locally.
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("=== Proof of Inclusion: Create and Verify a Transaction Proof ===\n");
 
+    // -------------------------------------------------------------------------
+    // Step 1: Configure clients from the active IOTA CLI environment and wallet
+    // -------------------------------------------------------------------------
     let context = prepare_poi_example().await?;
+
+    // -------------------------------------------------------------------------
+    // Step 2: Establish committee trust from the active network's genesis blob
+    // -------------------------------------------------------------------------
+    // The genesis blob must be obtained independently from an authoritative
+    // source and must belong to the same network as the proof.
+    let genesis = context.load_genesis().await?;
+    let resolution = CommitteeResolution::from_genesis(genesis)
+        .context("failed to load the committee from the trusted genesis blob")?;
+    let verifier = context.poi_client.verifier(resolution);
+
+    // -------------------------------------------------------------------------
+    // Step 3: Create a transaction as fresh proof evidence
+    // -------------------------------------------------------------------------
     let transaction_digest = context
         .create_notarization("PoI transaction-proof example")
         .await?
         .transaction_digest;
     let client = &context.poi_client;
 
-    // -------------------------------------------------------------------------
-    // Step 1: Connect to the selected proof source
-    // -------------------------------------------------------------------------
     // Selecting a network controls where proof material is fetched. It does not
     // make that material trusted and does not select an authoritative committee.
     println!("Network:            {}", context.network_alias);
     println!("Transaction target: {transaction_digest}\n");
 
     // -------------------------------------------------------------------------
-    // Step 2: Construct the transaction proof
+    // Step 4: Construct its Proof of Inclusion
     // -------------------------------------------------------------------------
     // The builder fetches the transaction, its effects, and the certified
     // checkpoint evidence required to prove inclusion.
@@ -74,7 +88,7 @@ async fn main() -> Result<()> {
     println!("  checkpoint number: {}\n", proof.checkpoint_summary.sequence_number);
 
     // -------------------------------------------------------------------------
-    // Step 3: Serialize the proof for transfer
+    // Step 5: Serialize and deserialize the proof as portable JSON
     // -------------------------------------------------------------------------
     // A verifier can receive this JSON through a file, API, message, or any
     // other transport. Proof payloads remain untrusted until verification succeeds.
@@ -88,17 +102,7 @@ async fn main() -> Result<()> {
     );
 
     // -------------------------------------------------------------------------
-    // Step 4: Establish trust from the network genesis blob
-    // -------------------------------------------------------------------------
-    // The genesis blob must be obtained independently from an authoritative
-    // source and must belong to the same network as the proof.
-    let genesis = context.load_genesis().await?;
-    let resolution = CommitteeResolution::from_genesis(genesis)
-        .context("failed to load the committee from the trusted genesis blob")?;
-    let verifier = client.verifier(resolution);
-
-    // -------------------------------------------------------------------------
-    // Step 5: Authenticate the committee and verify the proof locally
+    // Step 6: Verify the received proof locally
     // -------------------------------------------------------------------------
     // The resolver authenticates every committee transition from genesis to the
     // proof's epoch. Reuse the verifier when checking multiple proofs so its

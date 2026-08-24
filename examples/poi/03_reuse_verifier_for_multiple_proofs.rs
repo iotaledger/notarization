@@ -19,15 +19,19 @@ use poi_examples::prepare_poi_example;
 use poi_rs::CommitteeResolution;
 
 /// Demonstrates how to:
-/// 1. Create and construct independent proofs for two transactions.
-/// 2. Create one genesis-anchored verifier.
-/// 3. Verify the first proof and populate the authenticated committee cache.
-/// 4. Reuse the same verifier for the second proof.
+/// 1. Establish committee trust from the active network's genesis blob.
+/// 2. Create and construct independent proofs for two transactions.
+/// 3. Create one genesis-anchored verifier.
+/// 4. Verify the first proof and populate the authenticated committee cache.
+/// 5. Reuse the same verifier for the second proof.
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("=== Proof of Inclusion: Reuse a Verifier for Multiple Proofs ===\n");
 
     let context = prepare_poi_example().await?;
+    let genesis = context.load_genesis().await?;
+    let resolution = CommitteeResolution::from_genesis(genesis)
+        .context("failed to load the committee from the trusted genesis blob")?;
     let first_transaction = context
         .create_notarization("PoI verifier-reuse example, transaction 1")
         .await?
@@ -62,10 +66,6 @@ async fn main() -> Result<()> {
         second_proof.checkpoint_summary.sequence_number
     );
     println!("Second epoch:       {}\n", second_proof.checkpoint_summary.epoch());
-
-    let genesis = context.load_genesis().await?;
-    let resolution = CommitteeResolution::from_genesis(genesis)
-        .context("failed to load the committee from the trusted genesis blob")?;
 
     // Keep this verifier alive. Its default in-memory cache stores only
     // committees authenticated through the genesis-anchored epoch walk.

@@ -30,6 +30,11 @@ async fn main() -> Result<()> {
     println!("=== Proof of Inclusion Advanced: File-Based Committee Cache ===\n");
 
     let context = prepare_poi_example().await?;
+    let cache = FileCommitteeCache::new(context.poi_dir()?.join("committee-cache"));
+    let cache_directory = cache.directory().to_owned();
+    let genesis = context.load_genesis().await?;
+    let resolution = CommitteeResolution::from_genesis_with_cache(genesis, cache)
+        .context("failed to configure genesis-anchored resolution with the file cache")?;
     let transaction_digest = context
         .create_notarization("PoI file-cache example")
         .await?
@@ -42,15 +47,11 @@ async fn main() -> Result<()> {
         .await
         .context("failed to construct the transaction proof")?;
 
-    let cache = FileCommitteeCache::new(context.poi_dir()?.join("committee-cache"));
     println!("Network:            {}", context.network_alias);
     println!("Transaction target: {transaction_digest}");
     println!("Checkpoint epoch:   {}", proof.checkpoint_summary.epoch());
-    println!("Committee cache:    {}\n", cache.directory().display());
+    println!("Committee cache:    {}\n", cache_directory.display());
 
-    let genesis = context.load_genesis().await?;
-    let resolution = CommitteeResolution::from_genesis_with_cache(genesis, cache)
-        .context("failed to configure genesis-anchored resolution with the file cache")?;
     let verifier = client.verifier(resolution);
 
     println!("Verifying the proof...");

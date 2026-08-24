@@ -10,7 +10,6 @@
 
 import { fromBase58 } from "@iota/iota-sdk/utils";
 import {
-    buildProofWithRetry,
     createNotarization,
     elapsedMilliseconds,
     loadGenesisCommitteeResolution,
@@ -21,27 +20,32 @@ import {
 export async function reuseVerifierForMultipleProofs(): Promise<void> {
     console.log("=== Proof of Inclusion: Reuse a Verifier for Multiple Proofs ===\n");
 
-    console.log("Stage 1 - Create two Notarization objects using Locked Notarization");
+    console.log("Stage 1 - Configure the proof source and establish committee trust");
     const context = await preparePoiExample();
+    const trust = await loadGenesisCommitteeResolution(context);
+    console.log(`  trust anchor: ${trust.description}`);
+
+    console.log("\nStage 2 - Create two Notarization objects using Locked Notarization");
     const firstTargets = await createNotarization(context, "First Notarization object");
     const secondTargets = await createNotarization(context, "Second Notarization object");
 
-    console.log("\nStage 2 - Construct one transaction proof for each notarization");
-    const firstProof = await buildProofWithRetry(() =>
-        context.poiClient.proof().transaction(fromBase58(firstTargets.transactionDigest)).build(),
-    );
-    const secondProof = await buildProofWithRetry(() =>
-        context.poiClient.proof().transaction(fromBase58(secondTargets.transactionDigest)).build(),
-    );
+    console.log("\nStage 3 - Construct one transaction proof for each Notarization object");
+    const firstProof = await context.poiClient
+        .proof()
+        .transaction(fromBase58(firstTargets.transactionDigest))
+        .build();
+    const secondProof = await context.poiClient
+        .proof()
+        .transaction(fromBase58(secondTargets.transactionDigest))
+        .build();
 
     console.log(`  first proof epoch:  ${firstProof.checkpointEpoch}`);
     console.log(`  second proof epoch: ${secondProof.checkpointEpoch}\n`);
 
     // Keep this verifier alive so its committee cache can serve both proofs.
-    const trust = await loadGenesisCommitteeResolution(context);
     const verifier = context.poiClient.verifier(trust.resolution);
 
-    console.log("Stage 3 - Verify both proofs with one verifier");
+    console.log("Stage 4 - Verify both proofs with one verifier");
     console.log("  verifying the first proof; this resolves its checkpoint committee...");
     const firstStart = process.hrtime.bigint();
     await verifier.verify(firstProof);

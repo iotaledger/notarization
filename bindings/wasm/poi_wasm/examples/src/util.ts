@@ -31,10 +31,6 @@ const NOTARIZATION_PACKAGE_ID_ENV = "IOTA_NOTARIZATION_PKG_ID";
 const GRPC_URL_ENV = "NETWORK_GRPC_URL";
 const GENESIS_PATH_ENV = "IOTA_GENESIS_PATH";
 const TEST_GAS_BUDGET = 50_000_000n;
-const FUNDING_ATTEMPTS = 30;
-const FUNDING_POLL_INTERVAL_MS = 1_000;
-const PROOF_SOURCE_ATTEMPTS = 15;
-const PROOF_SOURCE_POLL_INTERVAL_MS = 2_000;
 
 interface CliEnvironment {
     alias: string;
@@ -82,6 +78,8 @@ export async function preparePoiExample(): Promise<PoiContext> {
     const environment = await activeCliEnvironment();
     const rpcClient = new IotaClient({ url: environment.rpc });
     const chainIdentifier = await rpcClient.getChainIdentifier();
+    const grpcUrl = resolveGrpcUrl(environment, chainIdentifier);
+    const poiClient = new PoiClient(grpcUrl);
     const isMainnet = environment.alias === "mainnet" || chainIdentifier === MAINNET_CHAIN_IDENTIFIER;
     const configuredPackageId = configuredPackageIdFromEnvironment();
 
@@ -96,15 +94,14 @@ export async function preparePoiExample(): Promise<PoiContext> {
     const requiredBalance = TEST_GAS_BUDGET * 2n + (existingPackageId ? 0n : 500_000_000n);
     const senderAddress = await activeCliAddress();
 
-    await ensureWalletBalance(rpcClient, senderAddress, requiredBalance, isMainnet);
+    await fundWalletIfNeeded(rpcClient, senderAddress, requiredBalance, isMainnet);
 
     const packageId = existingPackageId ?? (await publishAndCachePackage(chainIdentifier));
-    const grpcUrl = resolveGrpcUrl(environment, chainIdentifier);
 
     return {
         networkAlias: environment.alias,
         chainIdentifier,
-        poiClient: new PoiClient(grpcUrl),
+        poiClient,
         rpcClient,
         signer: new KeytoolSigner(senderAddress),
         senderAddress,
@@ -262,24 +259,6 @@ export function elapsedMilliseconds(start: bigint): number {
     return Number(process.hrtime.bigint() - start) / 1_000_000;
 }
 
-/** Retries proof construction while a fresh transaction propagates to the gRPC source. */
-export async function buildProofWithRetry<T>(build: () => Promise<T>): Promise<T> {
-    let lastError: unknown;
-
-    for (let attempt = 1; attempt <= PROOF_SOURCE_ATTEMPTS; attempt += 1) {
-        try {
-            return await build();
-        } catch (error) {
-            lastError = error;
-            if (attempt < PROOF_SOURCE_ATTEMPTS) {
-                await delay(PROOF_SOURCE_POLL_INTERVAL_MS);
-            }
-        }
-    }
-
-    throw new Error(`proof construction failed after ${PROOF_SOURCE_ATTEMPTS} attempts`, { cause: lastError });
-}
-
 async function activeCliEnvironment(): Promise<CliEnvironment> {
     const stdout = await runCommand(
         "iota",
@@ -386,13 +365,13 @@ async function publishAndCachePackage(chainIdentifier: string): Promise<string> 
     return packageId;
 }
 
-async function ensureWalletBalance(
+async function fundWalletIfNeeded(
     rpcClient: IotaClient,
     address: string,
     requiredBalance: bigint,
     isMainnet: boolean,
 ): Promise<void> {
-    let balance = BigInt((await rpcClient.getBalance({ owner: address })).totalBalance);
+    const balance = BigInt((await rpcClient.getBalance({ owner: address })).totalBalance);
     if (balance >= requiredBalance) {
         return;
     }
@@ -407,18 +386,6 @@ async function ensureWalletBalance(
         ["client", "faucet", "--address", address, "--json"],
         "fund the active IOTA CLI wallet",
     );
-
-    for (let attempt = 1; attempt <= FUNDING_ATTEMPTS; attempt += 1) {
-        balance = BigInt((await rpcClient.getBalance({ owner: address })).totalBalance);
-        if (balance >= requiredBalance) {
-            return;
-        }
-        if (attempt < FUNDING_ATTEMPTS) {
-            await delay(FUNDING_POLL_INTERVAL_MS);
-        }
-    }
-
-    throw new Error(`faucet funds were not visible after ${FUNDING_ATTEMPTS} attempts`);
 }
 
 function packageCachePath(chainIdentifier: string): string {
@@ -471,8 +438,4 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isNodeError(error: unknown): error is NodeJS.ErrnoException {
     return error instanceof Error && "code" in error;
-}
-
-function delay(milliseconds: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }

@@ -17,7 +17,6 @@ import { strict as assert } from "node:assert";
 import { fromBase58, fromHex, normalizeIotaObjectId } from "@iota/iota-sdk/utils";
 import { Proof } from "@iota/poi-wasm";
 import {
-    buildProofWithRetry,
     createNotarization,
     loadGenesisCommitteeResolution,
     preparePoiExample,
@@ -27,23 +26,25 @@ import {
 export async function createAndVerifyMultiTargetProof(): Promise<void> {
     console.log("=== Proof of Inclusion: Create and Verify a Multi-Target Proof ===\n");
 
-    console.log("Stage 1 - Create one transaction with three related proof targets");
+    console.log("Stage 1 - Configure the proof source and establish committee trust");
     const context = await preparePoiExample();
+    const trust = await loadGenesisCommitteeResolution(context);
+    console.log(`  trust anchor: ${trust.description}`);
+
+    console.log("\nStage 2 - Create one transaction with three related proof targets");
     const targets = await createNotarization(context);
     const transaction = fromBase58(targets.transactionDigest);
     const object = fromHex(normalizeIotaObjectId(targets.objectId, false, true));
 
     // The explicit transaction and event identify one execution. The object ID
     // is resolved at the exact version recorded in that transaction's effects.
-    console.log("\nStage 2 - Construct one proof for the transaction, object, and event");
-    const proof = await buildProofWithRetry(() =>
-        context.poiClient
-            .proof()
-            .transaction(transaction)
-            .object(object)
-            .event(transaction, targets.eventSequence)
-            .build(),
-    );
+    console.log("\nStage 3 - Construct one proof for the transaction, object, and event");
+    const proof = await context.poiClient
+        .proof()
+        .transaction(transaction)
+        .object(object)
+        .event(transaction, targets.eventSequence)
+        .build();
     assert.equal(proof.targets.transaction, targets.transactionDigest);
     assert.equal(proof.targets.objects.length, 1);
     assert.equal(proof.targets.objects[0]?.objectId, targets.objectId);
@@ -59,13 +60,12 @@ export async function createAndVerifyMultiTargetProof(): Promise<void> {
 
     // Model transfer before verification. The receiver treats the entire payload
     // as untrusted input until every selected target verifies.
-    console.log("Stage 3 - Serialize and receive the untrusted proof");
+    console.log("Stage 4 - Serialize and receive the untrusted proof");
     const proofJSON = proof.toJSON();
     const receivedProof = Proof.fromJSON(proofJSON);
     console.log(`  serialized proof size: ${Buffer.byteLength(proofJSON)} bytes\n`);
 
-    console.log("Stage 4 - Verify every target in the received proof");
-    const trust = await loadGenesisCommitteeResolution(context);
+    console.log("Stage 5 - Verify every target in the received proof");
     const verifier = context.poiClient.verifier(trust.resolution);
     await verifier.verify(receivedProof);
 

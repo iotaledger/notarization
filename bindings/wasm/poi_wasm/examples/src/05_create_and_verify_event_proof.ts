@@ -16,7 +16,7 @@ import { strict as assert } from "node:assert";
 
 import { fromBase58 } from "@iota/iota-sdk/utils";
 import { CommitteeResolution } from "@iota/poi-wasm";
-import { buildProofWithRetry, createNotarization, preparePoiExample } from "./util.js";
+import { createNotarization, preparePoiExample } from "./util.js";
 
 /** Demonstrates event-driven transaction discovery and verification. */
 export async function createAndVerifyEventProof(): Promise<void> {
@@ -30,9 +30,7 @@ export async function createAndVerifyEventProof(): Promise<void> {
     // The event ID already identifies the emitting transaction, allowing the
     // builder to fetch all required transaction, effects, and event evidence.
     console.log("\nStage 2 - Construct a proof from only the event ID");
-    const proof = await buildProofWithRetry(() =>
-        context.poiClient.proof().event(transaction, targets.eventSequence).build(),
-    );
+    const proof = await context.poiClient.proof().event(transaction, targets.eventSequence).build();
     const proofTargets = proof.targets;
 
     assert.equal(proofTargets.transaction, undefined);

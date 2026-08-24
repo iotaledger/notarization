@@ -30,8 +30,7 @@
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
     "verify": "npm run grpc:generate && npm run build:nodejs && npm run typecheck && npm test",
-    "example:node": "tsx examples/src/main.ts",
-    "example:service-info": "tsx examples/src/service-info.ts"
+    "example:node": "tsx examples/src/main.ts"
   },
   "dependencies": {
     "@bufbuild/protobuf": "2.13.0",
