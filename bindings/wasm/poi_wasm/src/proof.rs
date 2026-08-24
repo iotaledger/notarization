@@ -5,7 +5,7 @@ use iota_sdk_types::{ObjectId, TransactionDigest};
 use iota_types::event::EventID;
 use js_sys::Uint8Array;
 use poi_rs::{Proof, ProofBuilder, ProofTargets};
-use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
+use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::committee::WasmCommittee;
 use crate::error::WasmResult;
@@ -87,8 +87,10 @@ pub struct WasmProof(pub(crate) Proof);
 impl WasmProof {
     /// Deserializes a proof from JSON.
     #[wasm_bindgen(js_name = fromJSON)]
-    pub fn from_json(json: &str) -> Result<WasmProof, JsValue> {
-        Proof::from_json_slice(json.as_bytes()).map(WasmProof).wasm_result()
+    pub fn from_json(json: &str) -> WasmResult<WasmProof> {
+        let proof = Proof::from_json_slice(json.as_bytes())?;
+
+        Ok(WasmProof(proof))
     }
 
     /// Returns the proof format version.
@@ -110,17 +112,18 @@ impl WasmProof {
     }
 
     /// Verifies this proof locally with the supplied committee.
-    pub fn verify(&self, committee: &WasmCommittee) -> Result<(), JsValue> {
-        poi_rs::ProofVerifier::new(committee.inner())
-            .verify(&self.0)
-            .wasm_result()
+    pub fn verify(&self, committee: &WasmCommittee) -> WasmResult<()> {
+        poi_rs::ProofVerifier::new(committee.inner()).verify(&self.0)?;
+
+        Ok(())
     }
 
     /// Serializes this proof as JSON.
     #[wasm_bindgen(js_name = toJSON)]
-    pub fn to_json(&self) -> Result<String, JsValue> {
-        let bytes = self.0.to_json_vec().wasm_result()?;
-        String::from_utf8(bytes).wasm_result()
+    pub fn to_json(&self) -> WasmResult<String> {
+        let bytes = self.0.to_json_vec()?;
+
+        Ok(String::from_utf8(bytes)?)
     }
 }
 
@@ -137,20 +140,20 @@ impl WasmProofBuilder {
     }
 
     /// Adds a transaction proof request.
-    pub fn transaction(self, transaction_digest: Uint8Array) -> Result<Self, JsValue> {
-        let digest = TransactionDigest::from_bytes(transaction_digest.to_vec()).wasm_result()?;
+    pub fn transaction(self, transaction_digest: Uint8Array) -> WasmResult<Self> {
+        let digest = TransactionDigest::from_bytes(transaction_digest.to_vec())?;
         Ok(Self(self.0.transaction(digest)))
     }
 
     /// Adds an object proof request.
-    pub fn object(self, object_id: Uint8Array) -> Result<Self, JsValue> {
-        let object_id = ObjectId::from_bytes(object_id.to_vec()).wasm_result()?;
+    pub fn object(self, object_id: Uint8Array) -> WasmResult<Self> {
+        let object_id = ObjectId::from_bytes(object_id.to_vec())?;
         Ok(Self(self.0.object(object_id)))
     }
 
     /// Adds an event proof request.
-    pub fn event(self, transaction_digest: Uint8Array, event_sequence: u64) -> Result<Self, JsValue> {
-        let tx_digest = TransactionDigest::from_bytes(transaction_digest.to_vec()).wasm_result()?;
+    pub fn event(self, transaction_digest: Uint8Array, event_sequence: u64) -> WasmResult<Self> {
+        let tx_digest = TransactionDigest::from_bytes(transaction_digest.to_vec())?;
         Ok(Self(self.0.event(EventID {
             tx_digest,
             event_seq: event_sequence,
@@ -158,7 +161,9 @@ impl WasmProofBuilder {
     }
 
     /// Fetches the requested evidence and constructs the proof.
-    pub async fn build(self) -> Result<WasmProof, JsValue> {
-        self.0.build().await.map(WasmProof).wasm_result()
+    pub async fn build(self) -> WasmResult<WasmProof> {
+        let proof = self.0.build().await?;
+
+        Ok(WasmProof(proof))
     }
 }

@@ -10,7 +10,7 @@ use iota_types::{
 use js_sys::Uint8Array;
 use poi_rs::{CommitteeResolution, CommitteeResolver};
 use serde::Deserialize;
-use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
+use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
     error::{PoiError, WasmResult},
@@ -38,28 +38,26 @@ impl WasmCommittee {
 impl WasmCommittee {
     /// Deserializes and validates a committee from its Rust JSON representation.
     #[wasm_bindgen(js_name = fromJSON)]
-    pub fn from_json(json: &str) -> Result<WasmCommittee, JsValue> {
+    pub fn from_json(json: &str) -> WasmResult<WasmCommittee> {
         let committee: CommitteeJson = serde_json::from_str(json)
-            .map_err(|error| PoiError::invalid_input(format!("invalid committee JSON: {error}")))
-            .wasm_result()?;
+            .map_err(|error| PoiError::invalid_input(format!("invalid committee JSON: {error}")))?;
         let mut voting_rights = BTreeMap::new();
         let mut total_voting_power = 0_u64;
 
         for (authority, voting_power) in committee.voting_rights {
             if voting_rights.insert(authority, voting_power).is_some() {
-                return Err(PoiError::invalid_input("committee contains a duplicate authority")).wasm_result();
+                return Err(PoiError::invalid_input("committee contains a duplicate authority").into());
             }
             total_voting_power = total_voting_power
                 .checked_add(voting_power)
-                .ok_or_else(|| PoiError::invalid_input("committee voting power exceeds the supported range"))
-                .wasm_result()?;
+                .ok_or_else(|| PoiError::invalid_input("committee voting power exceeds the supported range"))?;
         }
 
         if total_voting_power != TOTAL_VOTING_POWER {
             return Err(PoiError::invalid_input(format!(
                 "committee voting power must total {TOTAL_VOTING_POWER}, received {total_voting_power}"
-            )))
-            .wasm_result();
+            ))
+            .into());
         }
 
         Ok(WasmCommittee(Committee::new(committee.epoch, voting_rights)))
@@ -94,12 +92,12 @@ impl WasmCommitteeResolution {
 
     /// Authenticates committee lineage from the committee in a trusted genesis blob.
     #[wasm_bindgen(js_name = fromGenesis)]
-    pub fn from_genesis(genesis_blob: Uint8Array) -> Result<Self, JsValue> {
+    pub fn from_genesis(genesis_blob: Uint8Array) -> WasmResult<Self> {
         let bytes = genesis_blob.to_vec();
-        CommitteeResolution::from_genesis(bytes.as_slice())
-            .map(Self)
-            .map_err(|error| PoiError::invalid_input(format!("failed to load trusted genesis blob: {error}")))
-            .wasm_result()
+        let resolution = CommitteeResolution::from_genesis(bytes.as_slice())
+            .map_err(|error| PoiError::invalid_input(format!("failed to load trusted genesis blob: {error}")))?;
+
+        Ok(Self(resolution))
     }
 }
 
@@ -120,12 +118,16 @@ impl WasmCommitteeResolver {
     }
 
     /// Resolves the committee governing `epoch`.
-    pub async fn resolve(&self, epoch: u64) -> Result<WasmCommittee, JsValue> {
-        self.0.resolve(epoch).await.map(WasmCommittee).wasm_result()
+    pub async fn resolve(&self, epoch: u64) -> WasmResult<WasmCommittee> {
+        let committee = self.0.resolve(epoch).await?;
+
+        Ok(WasmCommittee(committee))
     }
 
     /// Resolves the committee required by `proof` and verifies the proof with it.
-    pub async fn verify(&self, proof: &WasmProof) -> Result<(), JsValue> {
-        self.0.verify(&proof.0).await.wasm_result()
+    pub async fn verify(&self, proof: &WasmProof) -> WasmResult<()> {
+        self.0.verify(&proof.0).await?;
+
+        Ok(())
     }
 }

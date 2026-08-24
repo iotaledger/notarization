@@ -3,7 +3,38 @@
 
 use std::error::Error;
 
-use wasm_bindgen::{JsCast, JsValue};
+use wasm_bindgen::{JsCast, JsError, JsValue};
+
+pub type WasmResult<T> = Result<T, WasmError>;
+
+#[derive(Debug)]
+pub struct WasmError {
+    message: String,
+}
+
+impl<E> From<E> for WasmError
+where
+    E: Error,
+{
+    fn from(error: E) -> Self {
+        let mut message = error.to_string();
+        let mut source = error.source();
+
+        while let Some(cause) = source {
+            message.push_str(": ");
+            message.push_str(&cause.to_string());
+            source = cause.source();
+        }
+
+        Self { message }
+    }
+}
+
+impl From<WasmError> for JsValue {
+    fn from(error: WasmError) -> Self {
+        JsError::new(&error.message).into()
+    }
+}
 
 #[derive(Debug, thiserror::Error)]
 pub(crate) enum PoiError {
@@ -33,29 +64,5 @@ impl PoiError {
 
     pub(crate) fn invalid_input(message: impl Into<String>) -> Self {
         Self::InvalidInput(message.into())
-    }
-}
-
-pub(crate) trait WasmResult<T> {
-    fn wasm_result(self) -> Result<T, JsValue>;
-}
-
-impl<T, E> WasmResult<T> for Result<T, E>
-where
-    E: Error,
-{
-    fn wasm_result(self) -> Result<T, JsValue> {
-        self.map_err(|error| {
-            let mut message = error.to_string();
-            let mut source = error.source();
-
-            while let Some(cause) = source {
-                message.push_str(": ");
-                message.push_str(&cause.to_string());
-                source = cause.source();
-            }
-
-            js_sys::Error::new(&message).into()
-        })
     }
 }
