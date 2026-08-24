@@ -16,12 +16,8 @@
 //! trust boundary.
 
 use anyhow::{Context, Result, ensure};
-use iota_sdk_types::TransactionDigest;
-use iota_types::event::EventID;
-use poi_rs::{CommitteeResolution, PoiClient};
-
-const MAINNET_TRANSACTION_DIGEST: &str = "86EvhdjqBb6Rt5pB8sKjTnE7MrzpNLuWTH3SuELBjDvu";
-const STAKING_REQUEST_EVENT_SEQUENCE: u64 = 0;
+use poi_examples::prepare_poi_example;
+use poi_rs::CommitteeResolution;
 
 /// Demonstrates how to:
 /// 1. Identify an event by transaction digest and sequence number.
@@ -32,17 +28,12 @@ const STAKING_REQUEST_EVENT_SEQUENCE: u64 = 0;
 async fn main() -> Result<()> {
     println!("=== Proof of Inclusion: Create and Verify an Event Proof ===\n");
 
-    let transaction_digest = MAINNET_TRANSACTION_DIGEST
-        .parse::<TransactionDigest>()
-        .context("the example transaction digest must be valid")?;
-    let event_id = EventID {
-        tx_digest: transaction_digest,
-        event_seq: STAKING_REQUEST_EVENT_SEQUENCE,
-    };
-    let client = PoiClient::mainnet().context("failed to configure the public mainnet gRPC endpoint")?;
+    let context = prepare_poi_example().await?;
+    let event_id = context.create_notarization("PoI event-proof example").await?.event_id;
+    let client = &context.poi_client;
 
-    println!("Network:      mainnet");
-    println!("Event target: {transaction_digest}:{STAKING_REQUEST_EVENT_SEQUENCE}\n");
+    println!("Network:      {}", context.network_alias);
+    println!("Event target: {}:{}\n", event_id.tx_digest, event_id.event_seq);
 
     // The event ID already identifies the emitting transaction, so the builder
     // can fetch the required transaction, effects, checkpoint, and event data.

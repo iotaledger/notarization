@@ -9,44 +9,44 @@
  * and transaction evidence into one proof.
  *
  * The discovered transaction supports the object claim but does not become an
- * explicit transaction target. Trusted-node resolution keeps this focused
- * example fast and is appropriate only when the node is inside the trust boundary.
+ * explicit transaction target. Trusted-node resolution keeps the example
+ * focused on object-driven discovery.
  */
 
 import { strict as assert } from "node:assert";
 
 import { fromHex, normalizeIotaObjectId } from "@iota/iota-sdk/utils";
-import { CommitteeResolution, PoiClient } from "@iota/poi-wasm";
-import { STAKED_IOTA_OBJECT_ID } from "./util.js";
+import { CommitteeResolution } from "@iota/poi-wasm";
+import { createNotarization, preparePoiExample } from "./util.js";
 
-/** Demonstrates target-driven object discovery and trusted-node verification. */
+/** Demonstrates target-driven object discovery and verification. */
 export async function createAndVerifyObjectProof(): Promise<void> {
     console.log("=== Proof of Inclusion: Create and Verify an Object Proof ===\n");
 
-    const client = PoiClient.mainnet();
-
-    console.log("Network:       mainnet");
-    console.log(`Object target: ${STAKED_IOTA_OBJECT_ID}\n`);
+    console.log("Stage 1 - Create a Notarization object using Locked Notarization");
+    const context = await preparePoiExample();
+    const targets = await createNotarization(context);
 
     // No transaction digest is supplied. The builder discovers the transaction
     // that produced the latest object version and constructs its evidence.
-    const object = fromHex(normalizeIotaObjectId(STAKED_IOTA_OBJECT_ID, false, true));
-    const proof = await client.proof().object(object).build();
-    const targets = proof.targets;
+    console.log("\nStage 2 - Construct a proof from only the Notarization object ID");
+    const object = fromHex(normalizeIotaObjectId(targets.objectId, false, true));
+    const proof = await context.poiClient.proof().object(object).build();
+    const proofTargets = proof.targets;
 
-    assert.equal(targets.transaction, undefined);
-    assert.equal(targets.objects.length, 1);
-    assert.equal(targets.objects[0]?.objectId, STAKED_IOTA_OBJECT_ID);
-    assert.equal(targets.events.length, 0);
+    assert.equal(proofTargets.transaction, undefined);
+    assert.equal(proofTargets.objects.length, 1);
+    assert.equal(proofTargets.objects[0]?.objectId, targets.objectId);
+    assert.equal(proofTargets.events.length, 0);
 
-    console.log("Proof constructed:");
-    console.log(`  checkpoint epoch: ${proof.checkpointEpoch}`);
-    console.log(`  object version:   ${targets.objects[0]?.version}`);
-    console.log(`  object targets:   ${targets.objects.length}\n`);
+    console.log("  proof constructed:");
+    console.log(`    checkpoint epoch: ${proof.checkpointEpoch}`);
+    console.log(`    object version:   ${proofTargets.objects[0]?.version}`);
+    console.log(`    object targets:   ${proofTargets.objects.length}\n`);
 
-    // This avoids the genesis committee walk but places the selected node inside the trust boundary.
-    await client.verifier(CommitteeResolution.trustedNode()).verify(proof);
+    console.log("Stage 3 - Verify the object proof");
+    await context.poiClient.verifier(CommitteeResolution.trustedNode()).verify(proof);
 
-    console.log("Object proof verified successfully.");
-    console.log("The resolved object version was changed by a transaction in the verified checkpoint.");
+    console.log("  object proof verified successfully.");
+    console.log("The resolved object version was changed by a transaction trusted through the selected node.");
 }

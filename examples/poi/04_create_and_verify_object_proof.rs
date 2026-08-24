@@ -16,10 +16,8 @@
 //! trust boundary.
 
 use anyhow::{Context, Result, ensure};
-use iota_sdk_types::ObjectId;
-use poi_rs::{CommitteeResolution, PoiClient};
-
-const STAKED_IOTA_OBJECT_ID: &str = "0x001270619f0ff6c5fce1925838a132241c73b9756dae9d0dcfab71bb03549f73";
+use poi_examples::prepare_poi_example;
+use poi_rs::CommitteeResolution;
 
 /// Demonstrates how to:
 /// 1. Request a proof using only an object ID.
@@ -30,12 +28,11 @@ const STAKED_IOTA_OBJECT_ID: &str = "0x001270619f0ff6c5fce1925838a132241c73b9756
 async fn main() -> Result<()> {
     println!("=== Proof of Inclusion: Create and Verify an Object Proof ===\n");
 
-    let object_id = STAKED_IOTA_OBJECT_ID
-        .parse::<ObjectId>()
-        .context("the example object ID must be valid")?;
-    let client = PoiClient::mainnet().context("failed to configure the public mainnet gRPC endpoint")?;
+    let context = prepare_poi_example().await?;
+    let object_id = context.create_notarization("PoI object-proof example").await?.object_id;
+    let client = &context.poi_client;
 
-    println!("Network:       mainnet");
+    println!("Network:       {}", context.network_alias);
     println!("Object target: {object_id}\n");
 
     // No transaction digest is supplied. The builder fetches the object first,

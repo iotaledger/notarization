@@ -9,22 +9,16 @@
 //! lets later runs resume from committees authenticated during earlier runs.
 //!
 //! The cache is part of the verifier's trust boundary. Its directory is scoped
-//! to mainnet, cached values are checked against their requested epoch, and an
-//! authenticated committee can never overwrite a conflicting cached value.
+//! to the active network, cached values are checked against their requested
+//! epoch, and an authenticated committee can never overwrite a conflicting value.
 
 use std::time::Instant;
 
 use anyhow::{Context, Result};
-use iota_sdk_types::TransactionDigest;
-use poi_rs::{CommitteeResolution, PoiClient};
-
-#[path = "../utils.rs"]
-mod utils;
+use poi_examples::prepare_poi_example;
+use poi_rs::CommitteeResolution;
 
 use file_committee_cache::FileCommitteeCache;
-use utils::{load_mainnet_genesis, mainnet_poi_dir};
-
-const MAINNET_TRANSACTION_DIGEST: &str = "86EvhdjqBb6Rt5pB8sKjTnE7MrzpNLuWTH3SuELBjDvu";
 
 /// Demonstrates how to:
 /// 1. Create a network-scoped file cache.
@@ -35,10 +29,17 @@ const MAINNET_TRANSACTION_DIGEST: &str = "86EvhdjqBb6Rt5pB8sKjTnE7MrzpNLuWTH3SuE
 async fn main() -> Result<()> {
     println!("=== Proof of Inclusion Advanced: File-Based Committee Cache ===\n");
 
-    let transaction_digest = MAINNET_TRANSACTION_DIGEST
-        .parse::<TransactionDigest>()
-        .context("the example transaction digest must be valid")?;
-    let client = PoiClient::mainnet().context("failed to configure the public mainnet gRPC endpoint")?;
+    let context = prepare_poi_example().await?;
+    let cache = FileCommitteeCache::new(context.poi_dir()?.join("committee-cache"));
+    let cache_directory = cache.directory().to_owned();
+    let genesis = context.load_genesis().await?;
+    let resolution = CommitteeResolution::from_genesis_with_cache(genesis, cache)
+        .context("failed to configure genesis-anchored resolution with the file cache")?;
+    let transaction_digest = context
+        .create_notarization("PoI file-cache example")
+        .await?
+        .transaction_digest;
+    let client = &context.poi_client;
     let proof = client
         .proof()
         .transaction(transaction_digest)
@@ -46,14 +47,11 @@ async fn main() -> Result<()> {
         .await
         .context("failed to construct the transaction proof")?;
 
-    let cache = FileCommitteeCache::new(mainnet_poi_dir()?.join("committee-cache"));
+    println!("Network:            {}", context.network_alias);
     println!("Transaction target: {transaction_digest}");
     println!("Checkpoint epoch:   {}", proof.checkpoint_summary.epoch());
-    println!("Committee cache:    {}\n", cache.directory().display());
+    println!("Committee cache:    {}\n", cache_directory.display());
 
-    let genesis = load_mainnet_genesis().await?;
-    let resolution = CommitteeResolution::from_genesis_with_cache(genesis, cache)
-        .context("failed to configure genesis-anchored resolution with the file cache")?;
     let verifier = client.verifier(resolution);
 
     println!("Verifying the proof...");

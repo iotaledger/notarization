@@ -11,7 +11,7 @@
       "epoch": "0",
       "sequence_number": "2",
       "network_total_transactions": "10",
-      "content_digest": "6EucatZAZSiXpJBkyeozmy1kzRERXWq1ty7N1grkTuSk",
+      "contents_digest": "6EucatZAZSiXpJBkyeozmy1kzRERXWq1ty7N1grkTuSk",
       "previous_digest": "Et5CyqsQpZSbHgai9vf9qhJspF2SvF1uV75CGsnRft36",
       "epoch_rolling_gas_cost_summary": {
         "computation_cost": "1000000",
