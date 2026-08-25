@@ -1,8 +1,20 @@
-# IOTA Proof of Inclusion WASM Examples
+# IOTA Proof of Inclusion Wasm Examples
+
+## Introduction
 
 These examples construct and verify portable IOTA Proof of Inclusion proofs
 with the `@iota/poi-wasm` Package. Each example creates fresh evidence through
 Single Notarization instead of depending on fixed historical transactions.
+
+## Learning Objectives
+
+The examples demonstrate how to:
+
+- select transaction, object, and event proof targets;
+- construct single-target and multi-target proofs with `PoiClient`;
+- verify proofs with genesis-anchored or trusted-node committee resolution;
+- reuse a verifier and its authenticated committee cache; and
+- configure Proof of Inclusion from the active IOTA CLI environment.
 
 ## What Each Example Does
 
@@ -25,7 +37,7 @@ Package ID.
 
 Install the following tools before running an example:
 
-- Node.js 20 or later;
+- Node.js 24 or later;
 - the IOTA CLI configured for the target network;
 - `jq`, which the Package publication script uses;
 - JSON-RPC and gRPC access to the same IOTA network; and
@@ -75,7 +87,7 @@ never requests faucet funds or publishes a Package automatically on mainnet.
 
 ## Step 3: Build and Run
 
-Install dependencies and build the Proof of Inclusion Package:
+Install dependencies and build the Proof of Inclusion Wasm Package:
 
 ```bash
 npm install
@@ -105,13 +117,13 @@ npm run example:node -- 05_event_proof
 
 ## Examples
 
-| Name                                                          | What the example proves                                                                    |
-| :------------------------------------------------------------ | :----------------------------------------------------------------------------------------- |
-| [01_transaction_proof](./src/01_transaction_proof.ts)         | The transaction that created a `Notarization` object using Locked Notarization.            |
-| [02_multi_target_proof](./src/02_multi_target_proof.ts)       | The creation transaction, resulting `Notarization` object, and emitted event in one proof. |
-| [03_reuse_verifier](./src/03_reuse_verifier.ts)               | Two creation transactions while reusing one verifier and its committee cache.              |
-| [04_object_proof](./src/04_object_proof.ts)                   | A freshly created `Notarization` object, starting from only its object ID.                  |
-| [05_event_proof](./src/05_event_proof.ts)                     | A fresh `LockedNotarizationCreated` event, starting from only its event ID.                 |
+| Name                                                    | What the example proves                                                                    |
+| :------------------------------------------------------ | :----------------------------------------------------------------------------------------- |
+| [01_transaction_proof](./src/01_transaction_proof.ts)   | The transaction that created a `Notarization` object using Locked Notarization.            |
+| [02_multi_target_proof](./src/02_multi_target_proof.ts) | The creation transaction, resulting `Notarization` object, and emitted event in one proof. |
+| [03_reuse_verifier](./src/03_reuse_verifier.ts)         | Two creation transactions while reusing one verifier and its committee cache.              |
+| [04_object_proof](./src/04_object_proof.ts)             | A freshly created `Notarization` object, starting from only its object ID.                 |
+| [05_event_proof](./src/05_event_proof.ts)               | A fresh `LockedNotarizationCreated` event, starting from only its event ID.                |
 
 ## Committee Trust
 
@@ -130,3 +142,10 @@ Obtain custom genesis blobs independently, verify that each blob belongs to the
 selected network, and do not accept a trust anchor from the same untrusted party
 that supplies the proof. Reuse a verifier when checking multiple proofs so it
 can retain resolved committees.
+
+## Documentation And Resources
+
+- [Proof of Inclusion Wasm Package](../README.md)
+- [Proof of Inclusion Rust Package](../../../../poi-rs/README.md)
+- [Proof of Inclusion Rust Examples](../../../../examples/poi/README.md)
+- [Repository Root](../../../../README.md)

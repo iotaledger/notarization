@@ -9,7 +9,7 @@ use tokio::sync::RwLock;
 
 use super::{CommitteeCache, CommitteeCacheError};
 
-/// In-memory committee cache for library usage and tests.
+/// In-memory committee cache for application use and tests.
 #[derive(Clone, Debug, Default)]
 pub struct MemoryCommitteeCache {
     committees: Arc<RwLock<BTreeMap<EpochId, Committee>>>,

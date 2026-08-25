@@ -1,5 +1,7 @@
 # IOTA Proof of Inclusion Examples
 
+## Introduction
+
 These Rust examples create fresh ledger activity and use it to construct and verify portable IOTA Proof of Inclusion
 proofs. Each example reads the active IOTA CLI environment and wallet, creates a locked `Notarization` object, and uses
 the resulting transaction, object, or event as its proof target.
@@ -7,6 +9,16 @@ the resulting transaction, object, or event as its proof target.
 Proof construction and verification have separate trust responsibilities. The configured gRPC endpoint supplies
 untrusted ledger evidence. Genesis-anchored verification authenticates that evidence from an independently trusted
 genesis blob, while trusted-node verification places the connected node inside the verifier's trust boundary.
+
+## Learning Objectives
+
+The examples demonstrate how to:
+
+- select transaction, object, and event proof targets;
+- construct single-target and multi-target proofs with `PoiClient`;
+- verify proofs with genesis-anchored or trusted-node committee resolution;
+- reuse a verifier and its authenticated committee cache; and
+- keep proof transport separate from committee trust decisions.
 
 ## Prerequisites
 
@@ -70,14 +82,14 @@ transactions. A non-mainnet run may also publish the Single Notarization Move Pa
 
 ## Examples
 
-| Name                                                                    | Information                                                                                                  |
-| :---------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------- |
-| [01_transaction_proof](./01_transaction_proof.rs)                       | Creates a transaction proof, serializes it as JSON, and verifies it from a trusted network genesis blob.     |
-| [02_multi_target_proof](./02_multi_target_proof.rs)                     | Combines transaction, changed-object, and emitted-event targets in one proof.                                |
-| [03_reuse_verifier](./03_reuse_verifier.rs)                             | Reuses one genesis-anchored verifier across proofs for two fresh transactions.                               |
-| [04_object_proof](./04_object_proof.rs)                                 | Starts from a fresh object ID and lets the builder discover the transaction that created its latest version. |
-| [05_event_proof](./05_event_proof.rs)                                   | Starts from a fresh event ID without declaring a separate transaction target.                                |
-| [advanced_01_committee_cache](./advanced/01_committee_cache.rs)         | Persists authenticated committees in a cache scoped to the active network.                                   |
+| Name                                                            | Information                                                                                                  |
+| :-------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------- |
+| [01_transaction_proof](./01_transaction_proof.rs)               | Creates a transaction proof, serializes it as JSON, and verifies it from a trusted network genesis blob.     |
+| [02_multi_target_proof](./02_multi_target_proof.rs)             | Combines transaction, changed-object, and emitted-event targets in one proof.                                |
+| [03_reuse_verifier](./03_reuse_verifier.rs)                     | Reuses one genesis-anchored verifier across proofs for two fresh transactions.                               |
+| [04_object_proof](./04_object_proof.rs)                         | Starts from a fresh object ID and lets the builder discover the transaction that created its latest version. |
+| [05_event_proof](./05_event_proof.rs)                           | Starts from a fresh event ID without declaring a separate transaction target.                                |
+| [advanced_01_committee_cache](./advanced/01_committee_cache.rs) | Persists authenticated committees in a cache scoped to the active network.                                   |
 
 ## Example Workflow
 
@@ -98,3 +110,10 @@ use trusted-node committee resolution so they can focus on target-driven discove
 - Ensure the genesis blob belongs to the same network as the proof.
 - Scope persistent committee caches to one network and genesis anchor.
 - Use `CommitteeResolution::TrustedNode` only when the connected node is inside the verifier's trust boundary.
+
+## Documentation And Resources
+
+- [Proof of Inclusion Rust Package](../../poi-rs/README.md)
+- [Proof of Inclusion Wasm Package](../../bindings/wasm/poi_wasm/README.md)
+- [Proof of Inclusion Wasm Examples](../../bindings/wasm/poi_wasm/examples/README.md)
+- [Repository Root](../../README.md)
