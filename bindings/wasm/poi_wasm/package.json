@@ -1,6 +1,6 @@
 {
   "name": "@iota/poi-wasm",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "description": "Node.js WASM bindings for the IOTA Proof of Inclusion Package.",
   "license": "Apache-2.0",
@@ -21,6 +21,7 @@
     "node/*"
   ],
   "scripts": {
+    "build": "npm run grpc:generate && npm run build:nodejs && npm run typecheck",
     "build:src:nodejs": "cargo build --lib --release --target wasm32-unknown-unknown --target-dir ../target",
     "prebundle:nodejs": "rimraf node",
     "bundle:nodejs": "wasm-bindgen ../target/wasm32-unknown-unknown/release/poi_wasm.wasm --typescript --target nodejs --out-dir node && node ../build/node poi_wasm --skip-fetch-polyfill && tsc --project ./lib/tsconfig.json",
@@ -29,6 +30,8 @@
     "grpc:generate": "node scripts/generate-grpc.mjs",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
+    "test:node": "tsx --test examples/src/tests.ts",
+    "test:unit:node": "npm test",
     "verify": "npm run grpc:generate && npm run build:nodejs && npm run typecheck && npm test",
     "example:node": "tsx examples/src/main.ts"
   },
@@ -40,14 +43,14 @@
   "devDependencies": {
     "@bufbuild/buf": "1.72.0",
     "@bufbuild/protoc-gen-es": "2.13.0",
-    "@iota/iota-interaction-ts": "0.14.0",
-    "@iota/iota-sdk": "1.14.0",
+    "@iota/iota-interaction-ts": "0.16.0",
+    "@iota/iota-sdk": "1.15.1",
     "@types/node": "22.20.1",
     "rimraf": "6.0.1",
     "tsx": "4.23.1",
     "typescript": "5.9.3"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   }
 }

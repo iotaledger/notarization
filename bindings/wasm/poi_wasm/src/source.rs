@@ -9,22 +9,22 @@ use iota_sdk_types::{
     CheckpointContents, CheckpointDigest, ObjectId, SignedCheckpointSummary, SignedTransaction, Transaction,
     TransactionDigest, UserSignature, Version,
 };
-use iota_types::{
-    base_types::AuthorityName,
-    committee::{Committee, EpochId},
-    digests::ChainIdentifier,
-    effects::{TransactionEffects, TransactionEffectsAPI, TransactionEvents},
-    messages_checkpoint::CertifiedCheckpointSummary,
-    object::Object,
-};
+use iota_types::base_types::AuthorityName;
+use iota_types::committee::{Committee, EpochId};
+use iota_types::digests::ChainIdentifier;
+use iota_types::effects::{TransactionEffects, TransactionEffectsAPI, TransactionEvents};
+use iota_types::messages_checkpoint::CertifiedCheckpointSummary;
+use iota_types::object::Object;
 use js_sys::Uint8Array;
 use poi_rs::{Source, SourceCheckpoint, SourceError, SourceTransaction};
 use serde::Deserialize;
-use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
+use wasm_bindgen::JsValue;
+use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::error::PoiError;
-use crate::versioned::VersionedObject;
-use crate::versioned::{VersionedCheckpointSummary, VersionedEvent, VersionedValidatorAggregatedSignature};
+use crate::versioned::{
+    VersionedCheckpointSummary, VersionedEvent, VersionedObject, VersionedValidatorAggregatedSignature,
+};
 
 #[wasm_bindgen]
 extern "C" {
@@ -298,8 +298,7 @@ where
 #[cfg(test)]
 mod tests {
     use iota_sdk_types::{
-        CheckpointContents as SdkCheckpointContents, SignedCheckpointSummary as SdkSignedCheckpointSummary,
-        SignedTransaction as SdkSignedTransaction,
+        SignedCheckpointSummary as SdkSignedCheckpointSummary, SignedTransaction as SdkSignedTransaction,
     };
     use poi_rs::Proof;
 
@@ -312,11 +311,7 @@ mod tests {
         let transaction_proof = proof.transaction_proof();
         let checkpoint_summary = proof.checkpoint_summary();
         let checkpoint_contents = proof.checkpoint_contents();
-        let signed_transaction: SdkSignedTransaction = transaction_proof
-            .transaction
-            .clone()
-            .try_into()
-            .expect("transaction must convert to SDK types");
+        let signed_transaction: SdkSignedTransaction = transaction_proof.transaction.clone().into();
         let events_bcs = transaction_proof.events.as_ref().map(|events| {
             events
                 .0
@@ -346,8 +341,7 @@ mod tests {
             .clone()
             .try_into()
             .expect("checkpoint summary must convert to SDK types");
-        let contents = SdkCheckpointContents::try_from(checkpoint_contents.clone())
-            .expect("checkpoint contents must convert to SDK types");
+        let contents = checkpoint_contents.clone();
         let checkpoint = decode_checkpoint(JsCheckpointEvidence {
             summary_bcs: bcs::to_bytes(&VersionedCheckpointSummary::V1(signed_summary.checkpoint))
                 .expect("checkpoint summary must serialize"),
