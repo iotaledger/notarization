@@ -29,6 +29,11 @@ on:
         required: false
         type: string
         default: "notarization_wasm"
+      node-version:
+        description: "Node.js version used to build and test the WASM package"
+        required: false
+        type: string
+        default: "20.x"
       additional-artifact-paths:
         description: "Additional paths included alongside the standard WASM package outputs"
         required: false
@@ -90,7 +95,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v1
         with:
-          node-version: 20.x
+          node-version: ${{ inputs.node-version }}
 
       - name: Install JS dependencies
         run: npm ci
