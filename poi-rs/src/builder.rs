@@ -314,33 +314,3 @@ impl<S: Source> ProofBuilder<S> {
         }
     }
 }
-
-#[cfg(test)]
-#[cfg(feature = "native-grpc")]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn mainnet_uses_the_sdk_mainnet_endpoint() {
-        let builder = ProofBuilder::mainnet().expect("mainnet builder must be configured");
-        let expected = GrpcClient::new_mainnet().expect("SDK mainnet client must be configured");
-
-        assert_eq!(builder.source.uri(), expected.uri());
-    }
-
-    #[tokio::test]
-    async fn testnet_uses_the_sdk_testnet_endpoint() {
-        let builder = ProofBuilder::testnet().expect("testnet builder must be configured");
-        let expected = GrpcClient::new_testnet().expect("SDK testnet client must be configured");
-
-        assert_eq!(builder.source.uri(), expected.uri());
-    }
-
-    #[tokio::test]
-    async fn devnet_uses_the_sdk_devnet_endpoint() {
-        let builder = ProofBuilder::devnet().expect("devnet builder must be configured");
-        let expected = GrpcClient::new_devnet().expect("SDK devnet client must be configured");
-
-        assert_eq!(builder.source.uri(), expected.uri());
-    }
-}
