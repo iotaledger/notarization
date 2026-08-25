@@ -3,11 +3,11 @@
 
 import { afterEach, describe, it } from "node:test";
 
-import { createAndVerifyTransactionProof } from "./01_create_and_verify_transaction_proof.js";
-import { createAndVerifyMultiTargetProof } from "./02_create_and_verify_multi_target_proof.js";
-import { reuseVerifierForMultipleProofs } from "./03_reuse_verifier_for_multiple_proofs.js";
-import { createAndVerifyObjectProof } from "./04_create_and_verify_object_proof.js";
-import { createAndVerifyEventProof } from "./05_create_and_verify_event_proof.js";
+import { createAndVerifyTransactionProof } from "./01_transaction_proof.js";
+import { createAndVerifyMultiTargetProof } from "./02_multi_target_proof.js";
+import { reuseVerifierForMultipleProofs } from "./03_reuse_verifier.js";
+import { createAndVerifyObjectProof } from "./04_object_proof.js";
+import { createAndVerifyEventProof } from "./05_event_proof.js";
 
 describe("Proof of Inclusion wasm node examples", () => {
     afterEach(() => {

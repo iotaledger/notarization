@@ -79,14 +79,14 @@ struct CreateArgs {
     #[command(flatten)]
     endpoint: EndpointArgs,
     /// Transaction digest to prove.
-    #[arg(long, value_name = "DIGEST", value_parser = parse_transaction_digest, group = "target")]
+    #[arg(long, value_name = "DIGEST")]
     transaction: Option<TransactionDigest>,
     /// Object ID to prove. The source resolves its latest version unless a transaction or event scopes the proof. May
     /// be repeated.
-    #[arg(long, value_name = "OBJECT_ID", value_parser = parse_object_id, group = "target")]
+    #[arg(long, value_name = "OBJECT_ID")]
     object: Vec<ObjectId>,
     /// Event identifier formatted as TRANSACTION_DIGEST:EVENT_SEQUENCE. May be repeated.
-    #[arg(long, value_name = "EVENT_ID", value_parser = parse_event_id, group = "target")]
+    #[arg(long, value_name = "EVENT_ID", value_parser = parse_event_id)]
     event: Vec<EventID>,
     /// Output file. Write JSON to stdout when omitted or set to '-'.
     #[arg(short, long, value_name = "PATH")]
@@ -270,4 +270,9 @@ async fn load_genesis(network: Network) -> Result<fs::File> {
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
     Cli::parse().command.execute().await
+}
+
+fn parse_event_id(value: &str) -> Result<EventID, String> {
+    EventID::try_from(value.to_owned())
+        .map_err(|error| format!("invalid event ID '{value}'; expected TRANSACTION_DIGEST:EVENT_SEQUENCE: {error}"))
 }

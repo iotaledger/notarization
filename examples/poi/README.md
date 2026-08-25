@@ -49,14 +49,14 @@ networks require `IOTA_GENESIS_PATH` because the verifier cannot infer a trusted
 Run an example from the repository root:
 
 ```bash
-cargo run --release -p poi-examples --example 01_create_and_verify_transaction_proof
+cargo run --release -p poi-examples --example 01_transaction_proof
 ```
 
 For localnet genesis-anchored examples, provide the genesis blob created by that local network:
 
 ```bash
 export IOTA_GENESIS_PATH=/path/to/localnet/genesis.blob
-cargo run --release -p poi-examples --example 01_create_and_verify_transaction_proof
+cargo run --release -p poi-examples --example 01_transaction_proof
 ```
 
 The focused runner executes every example:
@@ -70,14 +70,14 @@ transactions. A non-mainnet run may also publish the Single Notarization Move Pa
 
 ## Examples
 
-| Name                                                                                    | Information                                                                                                  |
-| :-------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------- |
-| [01_create_and_verify_transaction_proof](./01_create_and_verify_transaction_proof.rs)   | Creates a transaction proof, serializes it as JSON, and verifies it from a trusted network genesis blob.     |
-| [02_create_and_verify_multi_target_proof](./02_create_and_verify_multi_target_proof.rs) | Combines transaction, changed-object, and emitted-event targets in one proof.                                |
-| [03_reuse_verifier_for_multiple_proofs](./03_reuse_verifier_for_multiple_proofs.rs)     | Reuses one genesis-anchored verifier across proofs for two fresh transactions.                               |
-| [04_create_and_verify_object_proof](./04_create_and_verify_object_proof.rs)             | Starts from a fresh object ID and lets the builder discover the transaction that created its latest version. |
-| [05_create_and_verify_event_proof](./05_create_and_verify_event_proof.rs)               | Starts from a fresh event ID without declaring a separate transaction target.                                |
-| [advanced_01_file_based_committee_cache](./advanced/01_file_based_committee_cache.rs)   | Persists authenticated committees in a cache scoped to the active network.                                   |
+| Name                                                                    | Information                                                                                                  |
+| :---------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------- |
+| [01_transaction_proof](./01_transaction_proof.rs)                       | Creates a transaction proof, serializes it as JSON, and verifies it from a trusted network genesis blob.     |
+| [02_multi_target_proof](./02_multi_target_proof.rs)                     | Combines transaction, changed-object, and emitted-event targets in one proof.                                |
+| [03_reuse_verifier](./03_reuse_verifier.rs)                             | Reuses one genesis-anchored verifier across proofs for two fresh transactions.                               |
+| [04_object_proof](./04_object_proof.rs)                                 | Starts from a fresh object ID and lets the builder discover the transaction that created its latest version. |
+| [05_event_proof](./05_event_proof.rs)                                   | Starts from a fresh event ID without declaring a separate transaction target.                                |
+| [advanced_01_committee_cache](./advanced/01_committee_cache.rs)         | Persists authenticated committees in a cache scoped to the active network.                                   |
 
 ## Example Workflow
 

@@ -86,32 +86,32 @@ Run a localnet example with the genesis blob created by `iota-localnet`:
 
 ```bash
 IOTA_GENESIS_PATH="$HOME/.iota/iota_config/genesis.blob" \
-npm run example:node -- 02_create_and_verify_multi_target_proof
+npm run example:node -- 02_multi_target_proof
 ```
 
 Run against the active public faucet network. The utility funds the active CLI
 wallet and publishes Single Notarization when necessary:
 
 ```bash
-npm run example:node -- 04_create_and_verify_object_proof
+npm run example:node -- 04_object_proof
 ```
 
 On mainnet, select a funded CLI wallet and provide an existing Package ID:
 
 ```bash
 IOTA_NOTARIZATION_PKG_ID=<mainnet-package-id> \
-npm run example:node -- 05_create_and_verify_event_proof
+npm run example:node -- 05_event_proof
 ```
 
 ## Examples
 
-| Name                                                                                        | What the example proves                                                                    |
-| :------------------------------------------------------------------------------------------ | :----------------------------------------------------------------------------------------- |
-| [01_create_and_verify_transaction_proof](./src/01_create_and_verify_transaction_proof.ts)   | The transaction that created a `Notarization` object using Locked Notarization.            |
-| [02_create_and_verify_multi_target_proof](./src/02_create_and_verify_multi_target_proof.ts) | The creation transaction, resulting `Notarization` object, and emitted event in one proof. |
-| [03_reuse_verifier_for_multiple_proofs](./src/03_reuse_verifier_for_multiple_proofs.ts)     | Two creation transactions while reusing one verifier and its committee cache.              |
-| [04_create_and_verify_object_proof](./src/04_create_and_verify_object_proof.ts)             | A freshly created `Notarization` object, starting from only its object ID.                 |
-| [05_create_and_verify_event_proof](./src/05_create_and_verify_event_proof.ts)               | A fresh `LockedNotarizationCreated` event, starting from only its event ID.                |
+| Name                                                          | What the example proves                                                                    |
+| :------------------------------------------------------------ | :----------------------------------------------------------------------------------------- |
+| [01_transaction_proof](./src/01_transaction_proof.ts)         | The transaction that created a `Notarization` object using Locked Notarization.            |
+| [02_multi_target_proof](./src/02_multi_target_proof.ts)       | The creation transaction, resulting `Notarization` object, and emitted event in one proof. |
+| [03_reuse_verifier](./src/03_reuse_verifier.ts)               | Two creation transactions while reusing one verifier and its committee cache.              |
+| [04_object_proof](./src/04_object_proof.ts)                   | A freshly created `Notarization` object, starting from only its object ID.                  |
+| [05_event_proof](./src/05_event_proof.ts)                     | A fresh `LockedNotarizationCreated` event, starting from only its event ID.                 |
 
 ## Committee Trust
 

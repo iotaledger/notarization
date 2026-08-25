@@ -28,25 +28,25 @@ tempfile.workspace = true
 tokio.workspace = true
 
 [[example]]
-name = "01_create_and_verify_transaction_proof"
-path = "01_create_and_verify_transaction_proof.rs"
+name = "01_transaction_proof"
+path = "01_transaction_proof.rs"
 
 [[example]]
-name = "02_create_and_verify_multi_target_proof"
-path = "02_create_and_verify_multi_target_proof.rs"
+name = "02_multi_target_proof"
+path = "02_multi_target_proof.rs"
 
 [[example]]
-name = "03_reuse_verifier_for_multiple_proofs"
-path = "03_reuse_verifier_for_multiple_proofs.rs"
+name = "03_reuse_verifier"
+path = "03_reuse_verifier.rs"
 
 [[example]]
-name = "04_create_and_verify_object_proof"
-path = "04_create_and_verify_object_proof.rs"
+name = "04_object_proof"
+path = "04_object_proof.rs"
 
 [[example]]
-name = "05_create_and_verify_event_proof"
-path = "05_create_and_verify_event_proof.rs"
+name = "05_event_proof"
+path = "05_event_proof.rs"
 
 [[example]]
-name = "advanced_01_file_based_committee_cache"
-path = "advanced/01_file_based_committee_cache.rs"
+name = "advanced_01_committee_cache"
+path = "advanced/01_committee_cache.rs"
