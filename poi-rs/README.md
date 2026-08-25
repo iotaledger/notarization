@@ -186,6 +186,32 @@ select a network, committee, genesis blob, or other trust anchor.
 The optional `cli` feature builds the `poi` command for creating and verifying JSON proofs. CLI verification uses a
 trusted genesis blob and does not provide trusted-node verification.
 
+### Building the CLI From Source
+
+The project does not distribute pre-built `poi` binaries. Build the CLI locally from the repository source with Rust
+1.85 or later:
+
+```bash
+git clone https://github.com/iotaledger/notarization.git
+cd notarization
+cargo build --release -p poi-rs --features cli --bin poi
+```
+
+Cargo writes the binary to `target/release/poi` on Linux and macOS or `target\release\poi.exe` on Windows. Run the
+locally built binary from the repository root:
+
+```bash
+./target/release/poi --help
+```
+
+You can also build from source and install `poi` into Cargo's binary directory:
+
+```bash
+cargo install --path poi-rs --features cli --bin poi --locked
+```
+
+### Using the CLI
+
 ```bash
 cargo run --release -p poi-rs --features cli --bin poi -- create \
   --network testnet \

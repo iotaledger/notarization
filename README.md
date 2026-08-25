@@ -87,6 +87,7 @@ All three components provide Rust and TypeScript/JavaScript packages:
 
 - [Rust Package README](./poi-rs/README.md)
 - [Rust API documentation](https://iotaledger.github.io/notarization/poi_rs/index.html)
+- [Build the CLI from source](./poi-rs/README.md#building-the-cli-from-source)
 - [Rust Examples](./examples/poi/README.md)
 - [Wasm Package README](./bindings/wasm/poi_wasm/README.md)
 - [Wasm Examples](./bindings/wasm/poi_wasm/examples/README.md)
