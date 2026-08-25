@@ -1,8 +1,7 @@
 // Copyright 2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use iota_sdk_types::Object;
-use iota_sdk_types::{CheckpointSummary, Event, ValidatorAggregatedSignature};
+use iota_sdk_types::{CheckpointSummary, Event, Object, ValidatorAggregatedSignature};
 use serde::{Deserialize, Serialize};
 
 // These one-variant envelopes match the BCS version discriminants used by the

@@ -3,20 +3,16 @@
 
 use std::collections::BTreeMap;
 
-use iota_types::{
-    base_types::AuthorityName,
-    committee::{Committee, EpochId, StakeUnit, TOTAL_VOTING_POWER},
-};
+use iota_types::base_types::AuthorityName;
+use iota_types::committee::{Committee, EpochId, StakeUnit, TOTAL_VOTING_POWER};
 use js_sys::Uint8Array;
 use poi_rs::{CommitteeResolution, CommitteeResolver};
 use serde::Deserialize;
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use crate::{
-    error::{PoiError, WasmResult},
-    proof::WasmProof,
-    source::LedgerSource,
-};
+use crate::error::{PoiError, WasmResult};
+use crate::proof::WasmProof;
+use crate::source::LedgerSource;
 
 #[derive(Deserialize)]
 struct CommitteeJson {

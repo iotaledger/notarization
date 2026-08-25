@@ -29,6 +29,11 @@ on:
         required: false
         type: string
         default: "notarization_wasm"
+      additional-artifact-paths:
+        description: "Additional paths included alongside the standard WASM package outputs"
+        required: false
+        type: string
+        default: ""
 jobs:
   build-wasm:
     defaults:
@@ -114,5 +119,6 @@ jobs:
             ${{ inputs.wasm-package-dir }}/web
             ${{ inputs.wasm-package-dir }}/examples/dist
             ${{ inputs.wasm-package-dir }}/docs
+            ${{ inputs.additional-artifact-paths }}
           if-no-files-found: error
           retention-days: 1
