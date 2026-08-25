@@ -87,7 +87,7 @@ never requests faucet funds or publishes a Package automatically on mainnet.
 
 ## Step 3: Build and Run
 
-Install dependencies and build the Proof of Inclusion Package:
+Install dependencies and build the Proof of Inclusion Wasm Package:
 
 ```bash
 npm install
