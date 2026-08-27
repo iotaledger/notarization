@@ -7,8 +7,8 @@ proofs. Each example reads the active IOTA CLI environment and wallet, creates a
 the resulting transaction, object, or event as its proof target.
 
 Proof construction and verification have separate trust responsibilities. The configured gRPC endpoint supplies
-untrusted ledger evidence. Genesis-anchored verification authenticates that evidence from an independently trusted
-genesis blob, while trusted-node verification places the connected node inside the verifier's trust boundary.
+untrusted ledger evidence. Genesis-anchored verification authenticates that evidence from a trusted genesis blob,
+while trusted-node verification places the connected node inside the verifier's trust boundary.
 
 ## Learning Objectives
 
@@ -52,9 +52,10 @@ The shared setup performs the following work:
 > Mainnet examples submit paid transactions from the active CLI wallet. Set `IOTA_NOTARIZATION_PKG_ID` to an existing
 > Single Notarization Move Package and fund the active wallet before running them.
 
-Examples 01, 02, 03, and the advanced file-cache example use genesis-anchored verification. Mainnet, testnet, and
-devnet genesis blobs download automatically and remain cached in the IOTA configuration directory. Local and custom
-networks require `IOTA_GENESIS_PATH` because the verifier cannot infer a trusted genesis source for them.
+Examples 01, 02, 03, and the advanced file-cache example use genesis-anchored verification. For mainnet, testnet, and
+devnet, the active network's chain identifier selects a built-in genesis URL. The downloaded genesis blob remains
+cached in the IOTA configuration directory. Local and custom networks require an independently obtained
+`IOTA_GENESIS_PATH` because the verifier cannot infer a trusted genesis source for them.
 
 ## Running an Example
 
@@ -77,8 +78,13 @@ The focused runner executes every example:
 ./examples/poi/run.sh
 ```
 
+The runner starts each example in a separate process. On its first run, examples 01, 02, 03, and the advanced cache
+example may each perform a genesis-to-current-epoch committee walk. Run individual examples when you do not need the
+complete set.
+
 The complete runner creates seven locked `Notarization` objects because the verifier-reuse example creates two
-transactions. A non-mainnet run may also publish the Single Notarization Move Package once.
+transactions. A non-mainnet run may also publish the Single Notarization Move Package once. On mainnet, all seven
+transactions consume paid gas from the active wallet.
 
 ## Examples
 
@@ -104,9 +110,10 @@ use trusted-node committee resolution so they can focus on target-driven discove
 ## Trust Boundaries
 
 - Selecting a network configures the source of proof material; it does not make the proof trusted.
+- For known public networks, the active chain identifier selects one of the built-in genesis sources.
 - The `chain` value carried by a proof is informational and must not act as a trust anchor.
 - Treat the complete proof payload as untrusted until verification succeeds.
-- Obtain `IOTA_GENESIS_PATH` independently from the party supplying the proof.
+- For local and custom networks, obtain `IOTA_GENESIS_PATH` independently from the party supplying the proof.
 - Ensure the genesis blob belongs to the same network as the proof.
 - Scope persistent committee caches to one network and genesis anchor.
 - Use `CommitteeResolution::TrustedNode` only when the connected node is inside the verifier's trust boundary.

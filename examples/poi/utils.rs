@@ -51,7 +51,8 @@ impl PoiContext {
     /// Opens the trusted genesis blob for the active network.
     ///
     /// `IOTA_GENESIS_PATH` is required for local and custom networks. For known
-    /// public networks, the official genesis blob is downloaded and cached.
+    /// public networks, the active chain identifier selects a built-in genesis
+    /// URL, and the downloaded blob is cached.
     pub async fn load_genesis(&self) -> Result<File> {
         if let Some(path) = std::env::var_os(GENESIS_PATH_ENV) {
             let path = PathBuf::from(path);

@@ -26,8 +26,9 @@ async fn main() -> Result<()> {
     println!("=== Proof of Inclusion: Create and Verify a Multi-Target Proof ===\n");
 
     let context = prepare_poi_example().await?;
-    // The genesis blob must be obtained independently from an authoritative
-    // source and must belong to the same network as the proof.
+    // Known public-network chain identifiers select a built-in genesis source.
+    // Local and custom networks require an independently supplied genesis blob.
+    // In both cases, the genesis blob must belong to the proof's network.
     let genesis = context.load_genesis().await?;
     let resolution = CommitteeResolution::from_genesis(genesis)
         .context("failed to load the committee from the trusted genesis blob")?;

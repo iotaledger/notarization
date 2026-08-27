@@ -10,7 +10,7 @@
 //!
 //! - **Ledger source**: Supplies untrusted transaction, checkpoint, and committee-transition evidence.
 //! - **Prover application**: Selects the transaction and constructs a portable proof from the ledger evidence.
-//! - **Verifier application**: Starts from an independently trusted genesis blob, authenticates the checkpoint
+//! - **Verifier application**: Starts from a separately sourced trusted genesis blob, authenticates the checkpoint
 //!   committee, and verifies the proof locally.
 //!
 //! The example uses one [`poi_rs::PoiClient`] for both workflows, but the source endpoint and the genesis blob have
@@ -39,8 +39,9 @@ async fn main() -> Result<()> {
     // -------------------------------------------------------------------------
     // Step 2: Establish committee trust from the active network's genesis blob
     // -------------------------------------------------------------------------
-    // The genesis blob must be obtained independently from an authoritative
-    // source and must belong to the same network as the proof.
+    // Known public-network chain identifiers select a built-in genesis source.
+    // Local and custom networks require an independently supplied genesis blob.
+    // In both cases, the genesis blob must belong to the proof's network.
     let genesis = context.load_genesis().await?;
     let resolution = CommitteeResolution::from_genesis(genesis)
         .context("failed to load the committee from the trusted genesis blob")?;
@@ -55,8 +56,9 @@ async fn main() -> Result<()> {
         .transaction_digest;
     let client = &context.poi_client;
 
-    // Selecting a network controls where proof material is fetched. It does not
-    // make that material trusted and does not select an authoritative committee.
+    // Selecting a network controls where proof material is fetched. For known
+    // public networks, its chain identifier also selects a built-in genesis
+    // source. Proof material remains untrusted until verification succeeds.
     println!("Network:            {}", context.network_alias);
     println!("Transaction target: {transaction_digest}\n");
 

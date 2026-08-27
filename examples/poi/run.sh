@@ -9,6 +9,8 @@ echo "Running all Proof of Inclusion examples..."
 echo "================================"
 echo "Using the active IOTA CLI environment and wallet."
 echo "This run submits seven locked Notarization transactions."
+echo "Genesis-anchored examples run in separate processes and may repeat the committee walk."
+echo "On mainnet, all seven transactions consume paid gas from the active wallet."
 echo ""
 
 cargo run --release -p poi-examples --example 01_transaction_proof
