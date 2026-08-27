@@ -15,7 +15,6 @@
 import { strict as assert } from "node:assert";
 
 import { fromBase58, fromHex, normalizeIotaObjectId } from "@iota/iota-sdk/utils";
-import { Proof } from "@iota/poi-wasm";
 import { createNotarization, loadGenesisCommitteeResolution, preparePoiExample } from "./util.js";
 
 /** Demonstrates how to construct and verify one proof containing three related targets. */
@@ -53,16 +52,9 @@ export async function createAndVerifyMultiTargetProof(): Promise<void> {
     console.log(`    object targets:      ${proof.targets.objects.length}`);
     console.log(`    event targets:       ${proof.targets.events.length}\n`);
 
-    // Model transfer before verification. The receiver treats the entire payload
-    // as untrusted input until every selected target verifies.
-    console.log("Stage 4 - Serialize and receive the untrusted proof");
-    const proofJSON = proof.toJSON();
-    const receivedProof = Proof.fromJSON(proofJSON);
-    console.log(`  serialized proof size: ${Buffer.byteLength(proofJSON)} bytes\n`);
-
-    console.log("Stage 5 - Verify every target in the received proof");
+    console.log("Stage 4 - Verify every target in the proof");
     const verifier = context.poiClient.verifier(trust.resolution);
-    await verifier.verify(receivedProof);
+    await verifier.verify(proof);
 
     console.log("  multi-target proof verified successfully.");
     console.log("The transaction, changed object, and emitted event are authenticated by one proof.");

@@ -13,15 +13,14 @@
 
 use anyhow::{Context, Result, ensure};
 use poi_examples::prepare_poi_example;
-use poi_rs::{CommitteeResolution, Proof};
+use poi_rs::CommitteeResolution;
 
 /// Demonstrates how to:
 /// 1. Establish committee trust from the active network's genesis blob.
 /// 2. Create transaction, object, and event targets in one execution.
 /// 3. Construct one proof containing all three claims.
 /// 4. Inspect the targets resolved by the builder.
-/// 5. Transfer the proof through its portable JSON representation.
-/// 6. Verify every target in one operation.
+/// 5. Verify every target in one operation.
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("=== Proof of Inclusion: Create and Verify a Multi-Target Proof ===\n");
@@ -81,18 +80,12 @@ async fn main() -> Result<()> {
     println!("  object targets:    {}", proof.targets().objects.len());
     println!("  event targets:     {}\n", proof.targets().events.len());
 
-    // A verifier receives the complete proof as untrusted input. JSON is used
-    // here to model transfer across a file, API, message, or process boundary.
-    let proof_json = proof.to_json_vec().context("failed to serialize the proof as JSON")?;
-    println!("Serialized proof size: {} bytes", proof_json.len());
-    let received_proof = Proof::from_json_slice(&proof_json).context("failed to deserialize the received proof")?;
-
     let verifier = client.verifier(resolution);
 
     // Genesis-anchored resolution authenticates every preceding committee
     // transition. This may take a long time on an established network.
     verifier
-        .verify(&received_proof)
+        .verify(&proof)
         .await
         .context("multi-target proof verification failed")?;
 

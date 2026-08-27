@@ -254,11 +254,6 @@ export async function loadGenesisCommitteeResolution(context: PoiContext): Promi
     };
 }
 
-/** Returns the elapsed milliseconds since a `process.hrtime.bigint()` reading. */
-export function elapsedMilliseconds(start: bigint): number {
-    return Number(process.hrtime.bigint() - start) / 1_000_000;
-}
-
 async function activeCliEnvironment(): Promise<CliEnvironment> {
     const stdout = await runCommand(
         "iota",

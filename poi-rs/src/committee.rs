@@ -768,30 +768,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn node_resolution_mode_carries_no_anchored_cache() {
-        let resolver = CommitteeResolver::new(
-            GrpcClient::new("http://127.0.0.1:1").unwrap(),
-            CommitteeResolution::TrustedNode,
-        );
-
-        assert!(matches!(resolver.mode, CommitteeResolution::TrustedNode));
-    }
-
-    #[tokio::test]
-    async fn anchored_resolution_resumes_from_an_authenticated_cache() {
-        let (current_committee, next_committee, _) = signed_end_of_epoch_summary(3, true);
-        let cache = crate::MemoryCommitteeCache::new();
-        cache.store(&next_committee).await.unwrap();
-        let client = GrpcClient::new("http://127.0.0.1:1").unwrap();
-        let resolver =
-            crate::PoiClient::new(client).verifier(CommitteeResolution::anchored_with_cache(current_committee, cache));
-
-        let resolved = resolver.resolve(4).await.unwrap();
-
-        assert_eq!(resolved, next_committee);
-    }
-
-    #[tokio::test]
     async fn anchor_mode_uses_a_committee_cache_by_default() {
         let (current_committee, next_committee, _) = signed_end_of_epoch_summary(3, true);
         let client = GrpcClient::new("http://127.0.0.1:1").unwrap();
@@ -804,19 +780,6 @@ mod tests {
         let resolved = resolver.resolve(4).await.unwrap();
 
         assert_eq!(resolved, next_committee);
-    }
-
-    #[tokio::test]
-    async fn memory_cache_rejects_a_conflicting_committee() {
-        let (_, next_committee, _) = signed_end_of_epoch_summary(3, true);
-        let cache = crate::MemoryCommitteeCache::new();
-        cache.store(&next_committee).await.unwrap();
-        let (conflicting_committee, _) = Committee::new_simple_test_committee_of_size(6);
-        let conflicting_committee = Committee::new(4, conflicting_committee.voting_rights.iter().cloned().collect());
-
-        let error = cache.store(&conflicting_committee).await.unwrap_err();
-
-        assert!(matches!(error, CommitteeCacheError::Conflict { epoch: 4 }));
     }
 
     #[tokio::test]

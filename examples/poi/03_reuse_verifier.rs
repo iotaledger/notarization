@@ -12,8 +12,6 @@
 //! proof for each. The second verification reuses committee history already
 //! authenticated while verifying the first proof.
 
-use std::time::Instant;
-
 use anyhow::{Context, Result};
 use poi_examples::prepare_poi_example;
 use poi_rs::CommitteeResolution;
@@ -75,24 +73,18 @@ async fn main() -> Result<()> {
     let verifier = client.verifier(resolution);
 
     println!("Verifying the first proof; this performs the epoch walk...");
-    let first_started = Instant::now();
     verifier
         .verify(&first_proof)
         .await
         .context("first transaction proof verification failed")?;
-    let first_elapsed = first_started.elapsed();
 
     println!("Verifying the second proof with the same verifier...");
-    let second_started = Instant::now();
     verifier
         .verify(&second_proof)
         .await
         .context("second transaction proof verification failed")?;
-    let second_elapsed = second_started.elapsed();
 
     println!("\nBoth transaction proofs verified successfully.");
-    println!("First verification:  {first_elapsed:?}");
-    println!("Second verification: {second_elapsed:?}");
     println!("The second verification reused committee history authenticated during the first verification.");
 
     Ok(())

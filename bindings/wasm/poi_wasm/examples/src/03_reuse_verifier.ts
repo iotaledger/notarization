@@ -9,7 +9,7 @@
  */
 
 import { fromBase58 } from "@iota/iota-sdk/utils";
-import { createNotarization, elapsedMilliseconds, loadGenesisCommitteeResolution, preparePoiExample } from "./util.js";
+import { createNotarization, loadGenesisCommitteeResolution, preparePoiExample } from "./util.js";
 
 /** Demonstrates how one verifier reuses committee resolution across proofs. */
 export async function reuseVerifierForMultipleProofs(): Promise<void> {
@@ -40,17 +40,11 @@ export async function reuseVerifierForMultipleProofs(): Promise<void> {
 
     console.log("Stage 4 - Verify both proofs with one verifier");
     console.log("  verifying the first proof; this resolves its checkpoint committee...");
-    const firstStart = process.hrtime.bigint();
     await verifier.verify(firstProof);
-    const firstDuration = elapsedMilliseconds(firstStart);
 
     console.log("  verifying the second proof with the same verifier...");
-    const secondStart = process.hrtime.bigint();
     await verifier.verify(secondProof);
-    const secondDuration = elapsedMilliseconds(secondStart);
 
     console.log("\n  both transaction proofs verified successfully.");
-    console.log(`  first verification:  ${firstDuration.toFixed(2)} ms`);
-    console.log(`  second verification: ${secondDuration.toFixed(2)} ms`);
     console.log(`Both proofs used committee resolution through ${trust.description}.`);
 }

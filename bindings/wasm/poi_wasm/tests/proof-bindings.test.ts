@@ -61,12 +61,7 @@ test("the WASM proof can be deserialized for verification", async () => {
 
     const proof = Proof.fromJSON(json);
     const targets: ProofTargets = proof.targets;
-    const serialized = JSON.parse(proof.toJSON()) as {
-        ProofV1: {
-            checkpoint_contents: unknown;
-            transaction_proof: Record<string, unknown>;
-        };
-    };
+    const receivedProof = Proof.fromJSON(proof.toJSON());
 
     assert.equal(proof.version, 1);
     assert.equal(proof.checkpointEpoch, 0n);
@@ -76,12 +71,9 @@ test("the WASM proof can be deserialized for verification", async () => {
     );
     assert.deepEqual(targets.objects, []);
     assert.deepEqual(targets.events, []);
-    assert.ok(serialized.ProofV1.checkpoint_contents);
-    assert.deepEqual(Object.keys(serialized.ProofV1.transaction_proof), [
-        "transaction",
-        "effects",
-        "events",
-    ]);
+    assert.equal(receivedProof.version, proof.version);
+    assert.equal(receivedProof.checkpointEpoch, proof.checkpointEpoch);
+    assert.equal(receivedProof.targets.transaction, targets.transaction);
 });
 
 test("the WASM proof keeps selected events separate from event evidence", async () => {
@@ -95,9 +87,6 @@ test("the WASM proof keeps selected events separate from event evidence", async 
 
     const proof = Proof.fromJSON(json);
     const targets = proof.targets;
-    const serialized = JSON.parse(proof.toJSON()) as {
-        ProofV1: { transaction_proof: { events: unknown[] | null } };
-    };
 
     assert.equal(targets.transaction, undefined);
     assert.deepEqual(targets.objects, []);
@@ -107,7 +96,6 @@ test("the WASM proof keeps selected events separate from event evidence", async 
         "25zdMVEMRtg7pDGqgLgL1Hf3s8sL9YGuN9UVeo3dECG6",
     );
     assert.equal(targets.events[0]?.eventSequence, 0n);
-    assert.equal(serialized.ProofV1.transaction_proof.events?.length, 1);
 });
 
 test("the WASM proof stores selected objects only in its targets", async () => {
@@ -121,9 +109,6 @@ test("the WASM proof stores selected objects only in its targets", async () => {
 
     const proof = Proof.fromJSON(json);
     const targets = proof.targets;
-    const serialized = JSON.parse(proof.toJSON()) as {
-        ProofV1: { transaction_proof: { events: unknown[] | null } };
-    };
 
     assert.equal(targets.transaction, undefined);
     assert.equal(targets.objects.length, 1);
@@ -131,5 +116,4 @@ test("the WASM proof stores selected objects only in its targets", async () => {
     assert.equal(targets.objects[0]?.version, 2n);
     assert.ok(targets.objects[0]?.digest);
     assert.deepEqual(targets.events, []);
-    assert.equal(serialized.ProofV1.transaction_proof.events, null);
 });

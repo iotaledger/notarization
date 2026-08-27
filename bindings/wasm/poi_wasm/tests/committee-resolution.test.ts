@@ -9,28 +9,7 @@ import type { LedgerSource } from "../lib/source-types.js";
 import { Committee, CommitteeResolution, CommitteeResolver, Proof } from "../node/poi_wasm.js";
 
 test("the WASM resolver constructs a committee reported by a trusted node", async () => {
-    const fixture = JSON.parse(
-        await readFile(
-            new URL(
-                "../../../../poi-rs/tests/fixtures/current/committee.json",
-                import.meta.url,
-            ),
-            "utf8",
-        ),
-    ) as {
-        epoch: number;
-        voting_rights: [string, number][];
-    };
-    const source = {
-        async committee() {
-            return {
-                members: fixture.voting_rights.map(([publicKey, weight]) => ({
-                    publicKey: Buffer.from(publicKey, "base64"),
-                    weight: BigInt(weight),
-                })),
-            };
-        },
-    } as unknown as LedgerSource;
+    const source = await committeeSource();
 
     const committee = await new CommitteeResolver(
         source,
@@ -42,13 +21,7 @@ test("the WASM resolver constructs a committee reported by a trusted node", asyn
 
 test("the anchored verifier resolves the committee and verifies the proof", async () => {
     const [committeeJson, proofJson] = await Promise.all([
-        readFile(
-            new URL(
-                "../../../../poi-rs/tests/fixtures/current/committee.json",
-                import.meta.url,
-            ),
-            "utf8",
-        ),
+        readCommitteeJson(),
         readFile(
             new URL(
                 "../../../../poi-rs/tests/fixtures/current/transaction.json",
@@ -70,33 +43,9 @@ test("the anchored verifier resolves the committee and verifies the proof", asyn
 });
 
 test("the anchored resolver returns its trusted committee without fetching it again", async () => {
-    const fixture = JSON.parse(
-        await readFile(
-            new URL(
-                "../../../../poi-rs/tests/fixtures/current/committee.json",
-                import.meta.url,
-            ),
-            "utf8",
-        ),
-    ) as {
-        voting_rights: [string, number][];
-    };
-    const source = {
-        async committee() {
-            return {
-                members: fixture.voting_rights.map(([publicKey, weight]) => ({
-                    publicKey: Buffer.from(publicKey, "base64"),
-                    weight: BigInt(weight),
-                })),
-            };
-        },
-    } as unknown as LedgerSource;
-    const committee = await new CommitteeResolver(
-        source,
-        CommitteeResolution.trustedNode(),
-    ).resolve(0n);
+    const committee = await loadCommittee();
     const anchored = await new CommitteeResolver(
-        source,
+        rejectingSource(),
         CommitteeResolution.anchored(committee),
     ).resolve(0n);
 
@@ -104,34 +53,12 @@ test("the anchored resolver returns its trusted committee without fetching it ag
 });
 
 test("the anchored resolver reports a missing current epoch", async () => {
-    const fixture = JSON.parse(
-        await readFile(
-            new URL(
-                "../../../../poi-rs/tests/fixtures/current/committee.json",
-                import.meta.url,
-            ),
-            "utf8",
-        ),
-    ) as {
-        voting_rights: [string, number][];
-    };
     const source = {
-        async committee() {
-            return {
-                members: fixture.voting_rights.map(([publicKey, weight]) => ({
-                    publicKey: Buffer.from(publicKey, "base64"),
-                    weight: BigInt(weight),
-                })),
-            };
-        },
         async currentEpoch() {
             return undefined;
         },
     } as unknown as LedgerSource;
-    const committee = await new CommitteeResolver(
-        source,
-        CommitteeResolution.trustedNode(),
-    ).resolve(0n);
+    const committee = await loadCommittee();
 
     await assert.rejects(
         new CommitteeResolver(
@@ -143,27 +70,8 @@ test("the anchored resolver reports a missing current epoch", async () => {
 });
 
 test("the anchored resolver requests epoch-close evidence through the JavaScript source", async () => {
-    const fixture = JSON.parse(
-        await readFile(
-            new URL(
-                "../../../../poi-rs/tests/fixtures/current/committee.json",
-                import.meta.url,
-            ),
-            "utf8",
-        ),
-    ) as {
-        voting_rights: [string, number][];
-    };
     let requestedEpoch: bigint | undefined;
     const source = {
-        async committee() {
-            return {
-                members: fixture.voting_rights.map(([publicKey, weight]) => ({
-                    publicKey: Buffer.from(publicKey, "base64"),
-                    weight: BigInt(weight),
-                })),
-            };
-        },
         async currentEpoch() {
             return 1n;
         },
@@ -178,10 +86,7 @@ test("the anchored resolver requests epoch-close evidence through the JavaScript
             };
         },
     } as unknown as LedgerSource;
-    const committee = await new CommitteeResolver(
-        source,
-        CommitteeResolution.trustedNode(),
-    ).resolve(0n);
+    const committee = await loadCommittee();
 
     await assert.rejects(
         new CommitteeResolver(
@@ -192,3 +97,44 @@ test("the anchored resolver requests epoch-close evidence through the JavaScript
     );
     assert.equal(requestedEpoch, 0n);
 });
+
+interface CommitteeFixture {
+    voting_rights: [string, number][];
+}
+
+async function readCommitteeJson(): Promise<string> {
+    return readFile(
+        new URL(
+            "../../../../poi-rs/tests/fixtures/current/committee.json",
+            import.meta.url,
+        ),
+        "utf8",
+    );
+}
+
+async function loadCommittee(): Promise<Committee> {
+    return Committee.fromJSON(await readCommitteeJson());
+}
+
+async function committeeSource(): Promise<LedgerSource> {
+    const fixture = JSON.parse(await readCommitteeJson()) as CommitteeFixture;
+
+    return {
+        async committee() {
+            return {
+                members: fixture.voting_rights.map(([publicKey, weight]) => ({
+                    publicKey: Buffer.from(publicKey, "base64"),
+                    weight: BigInt(weight),
+                })),
+            };
+        },
+    } as unknown as LedgerSource;
+}
+
+function rejectingSource(): LedgerSource {
+    return new Proxy({} as LedgerSource, {
+        get(_target, property) {
+            throw new Error(`anchored resolution unexpectedly read source property ${String(property)}`);
+        },
+    });
+}
