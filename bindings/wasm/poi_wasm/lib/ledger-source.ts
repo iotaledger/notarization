@@ -162,6 +162,16 @@ export class LedgerSource implements LedgerSourceContract {
                 readMask: { paths: CHECKPOINT_PROOF_FIELDS },
             })
         ) {
+            if (reachedEnd) {
+                if (response.payload.case === "endMarker") {
+                    throw new Error(
+                        "getCheckpoint returned more than one end marker for one sequence number",
+                    );
+                }
+
+                throw new Error("getCheckpoint returned data after its end marker");
+            }
+
             if (response.payload.case === "checkpoint") {
                 if (checkpoint) {
                     throw new Error(

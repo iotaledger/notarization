@@ -98,9 +98,10 @@ duplicate authorities, requires total voting power to equal 10,000, and reconstr
 state.
 
 The verifier fetches the certified checkpoint in each epoch-close proof, verifies it with the current committee, and
-only then accepts and caches the next committee. Retain the verifier when checking multiple proofs so it can reuse its
-authenticated committee cache. `CommitteeResolver.resolve(epoch)` and `Proof.verify(committee)` remain available for
-lower-level committee resolution and offline verification.
+only then accepts and caches the next committee. Each anchored verifier owns a fresh in-memory cache; the WASM Package
+does not accept a caller-provided committee cache. Retain the verifier when checking multiple proofs so it can reuse the
+committees authenticated during its lifetime. `CommitteeResolver.resolve(epoch)` and `Proof.verify(committee)` remain
+available for lower-level committee resolution and offline verification.
 
 ## Trust Boundaries
 

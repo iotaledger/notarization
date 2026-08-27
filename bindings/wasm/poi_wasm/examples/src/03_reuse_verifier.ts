@@ -4,8 +4,8 @@
 /**
  * # Reuse a Verifier for Multiple Proofs
  *
- * A verifier retains resolved committees in memory, so applications should
- * reuse it across proofs from the same network.
+ * An anchored verifier retains committees authenticated during its lifetime,
+ * so applications should reuse it across proofs from the same network.
  */
 
 import { fromBase58 } from "@iota/iota-sdk/utils";
@@ -35,7 +35,7 @@ export async function reuseVerifierForMultipleProofs(): Promise<void> {
     console.log(`  first proof epoch:  ${firstProof.checkpointEpoch}`);
     console.log(`  second proof epoch: ${secondProof.checkpointEpoch}\n`);
 
-    // Keep this verifier alive so its committee cache can serve both proofs.
+    // Keep one verifier and its authenticated committee state for both proofs.
     const verifier = context.poiClient.verifier(trust.resolution);
 
     console.log("Stage 4 - Verify both proofs with one verifier");

@@ -8,6 +8,7 @@ import { create } from "@bufbuild/protobuf";
 import { createRouterTransport } from "@connectrpc/connect";
 
 import {
+    type CheckpointData,
     CheckpointDataSchema,
     GetEpochResponseSchema,
     GetObjectsResponseSchema,
@@ -220,25 +221,102 @@ test("returns undefined when a transaction or object is not returned", async () 
 });
 
 test("rejects incomplete checkpoint evidence", async () => {
-    const transport = createRouterTransport((router) => {
-        router.service(LedgerService, {
-            async *getCheckpoint() {
-                yield create(CheckpointDataSchema, {
-                    payload: {
-                        case: "endMarker",
-                        value: { sequenceNumber: 42n },
-                    },
-                });
-            },
-        });
-    });
-    const source = new LedgerSource("http://unused.test", { transport });
+    const source = checkpointSource(endMarker());
 
     await assert.rejects(
         source.checkpoint(42n),
         /returned no checkpoint for sequence number 42/,
     );
 });
+
+test("rejects a checkpoint stream without an end marker", async () => {
+    const source = checkpointSource(checkpoint());
+
+    await assert.rejects(
+        source.checkpoint(42n),
+        /did not finish sequence number 42/,
+    );
+});
+
+test("rejects duplicate checkpoints in one response stream", async () => {
+    const source = checkpointSource(checkpoint(), checkpoint(), endMarker());
+
+    await assert.rejects(
+        source.checkpoint(42n),
+        /returned more than one checkpoint for one sequence number/,
+    );
+});
+
+test("rejects duplicate end markers in one response stream", async () => {
+    const source = checkpointSource(checkpoint(), endMarker(), endMarker());
+
+    await assert.rejects(
+        source.checkpoint(42n),
+        /returned more than one end marker for one sequence number/,
+    );
+});
+
+test("rejects checkpoint data after an end marker", async () => {
+    const source = checkpointSource(endMarker(), checkpoint());
+
+    await assert.rejects(
+        source.checkpoint(42n),
+        /returned data after its end marker/,
+    );
+});
+
+test("rejects a checkpoint with a different sequence number", async () => {
+    const source = checkpointSource(checkpoint(43n), endMarker());
+
+    await assert.rejects(
+        source.checkpoint(42n),
+        /returned sequence number 43, expected 42/,
+    );
+});
+
+test("rejects an end marker with a different sequence number", async () => {
+    const source = checkpointSource(checkpoint(), endMarker(43n));
+
+    await assert.rejects(
+        source.checkpoint(42n),
+        /ended at sequence number 43, expected 42/,
+    );
+});
+
+function checkpointSource(...responses: CheckpointData[]): LedgerSource {
+    const transport = createRouterTransport((router) => {
+        router.service(LedgerService, {
+            async *getCheckpoint() {
+                yield* responses;
+            },
+        });
+    });
+
+    return new LedgerSource("http://unused.test", { transport });
+}
+
+function checkpoint(sequenceNumber = 42n): CheckpointData {
+    return create(CheckpointDataSchema, {
+        payload: {
+            case: "checkpoint",
+            value: {
+                sequenceNumber,
+                summary: { bcs: { data: bytes(0x01) } },
+                signature: { bcs: { data: bytes(0x02) } },
+                contents: { bcs: { data: bytes(0x03) } },
+            },
+        },
+    });
+}
+
+function endMarker(sequenceNumber = 42n): CheckpointData {
+    return create(CheckpointDataSchema, {
+        payload: {
+            case: "endMarker",
+            value: { sequenceNumber },
+        },
+    });
+}
 
 function bytes(value: number): Uint8Array {
     return new Uint8Array(32).fill(value);

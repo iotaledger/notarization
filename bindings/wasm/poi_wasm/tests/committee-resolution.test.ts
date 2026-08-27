@@ -6,7 +6,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import type { LedgerSource } from "../lib/source-types.js";
-import { Committee, CommitteeResolution, CommitteeResolver, Proof } from "../node/poi_wasm.js";
+import { Committee, CommitteeResolution, CommitteeResolver } from "../lib/index.js";
 
 test("the WASM resolver constructs a committee reported by a trusted node", async () => {
     const source = await committeeSource();
@@ -17,29 +17,6 @@ test("the WASM resolver constructs a committee reported by a trusted node", asyn
     ).resolve(0n);
 
     assert.equal(committee.epoch, 0n);
-});
-
-test("the anchored verifier resolves the committee and verifies the proof", async () => {
-    const [committeeJson, proofJson] = await Promise.all([
-        readCommitteeJson(),
-        readFile(
-            new URL(
-                "../../../../poi-rs/tests/fixtures/current/transaction.json",
-                import.meta.url,
-            ),
-            "utf8",
-        ),
-    ]);
-    const committee = Committee.fromJSON(committeeJson);
-    const proof = Proof.fromJSON(proofJson);
-    const source = {} as LedgerSource;
-
-    await assert.doesNotReject(
-        new CommitteeResolver(
-            source,
-            CommitteeResolution.anchored(committee),
-        ).verify(proof),
-    );
 });
 
 test("the anchored resolver returns its trusted committee without fetching it again", async () => {

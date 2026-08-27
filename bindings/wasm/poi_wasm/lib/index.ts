@@ -9,6 +9,5 @@ export {
     ProofEventTarget,
     ProofObjectTarget,
     ProofTargets,
-    start,
 } from "../node/poi_wasm.js";
 export { PoiClient, type PoiClientOptions, type ProofEventRequest, type ProofRequest } from "./poi-client.js";

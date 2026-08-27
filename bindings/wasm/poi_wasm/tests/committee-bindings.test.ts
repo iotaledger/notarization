@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { Committee } from "../node/poi_wasm.js";
+import { Committee } from "../lib/index.js";
 
 test("the WASM committee can be deserialized from Rust JSON", async () => {
     const json = await readFile(

@@ -140,8 +140,9 @@ is inside the verifier's trust boundary.
 
 Obtain custom genesis blobs independently, verify that each blob belongs to the
 selected network, and do not accept a trust anchor from the same untrusted party
-that supplies the proof. Reuse a verifier when checking multiple proofs so it
-can retain resolved committees.
+that supplies the proof. Each anchored verifier owns a fresh in-memory committee
+cache. Reuse the verifier when checking multiple proofs so it can retain the
+committees authenticated during its lifetime.
 
 ## Documentation And Resources
 
