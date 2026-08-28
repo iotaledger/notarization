@@ -442,14 +442,16 @@ impl<'committee> ProofVerifier<'committee> {
                 });
             }
 
-            let event_index = event_id.event_seq as usize;
-            let Some(_) = events.get(event_index) else {
+            let event_exists = usize::try_from(event_id.event_seq)
+                .ok()
+                .is_some_and(|index| events.get(index).is_some());
+            if !event_exists {
                 return Err(VerifyError {
                     kind: VerifyErrorKind::EventSequenceOutOfBounds {
                         sequence: event_id.event_seq,
                     },
                 });
-            };
+            }
         }
 
         Ok(())

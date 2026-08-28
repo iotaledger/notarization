@@ -64,6 +64,29 @@ test("the public proof fixtures round trip and verify offline", async (context) 
     }
 });
 
+test("rejects event sequences outside the wasm32 index range", async () => {
+    const committee = Committee.fromJSON(await readFixture("committee.json"));
+
+    for (const eventSequence of [1n << 32n, (1n << 64n) - 1n]) {
+        const fixture = JSON.parse(await readFixture("event.json")) as EventProofFixture;
+        fixture.ProofV1.targets.events[0]!.eventSeq = eventSequence.toString();
+        const proof = Proof.fromJSON(JSON.stringify(fixture));
+
+        assert.throws(
+            () => proof.verify(committee),
+            new RegExp(`event sequence number ${eventSequence} is out of bounds`),
+        );
+    }
+});
+
+interface EventProofFixture {
+    ProofV1: {
+        targets: {
+            events: [{ eventSeq: string }];
+        };
+    };
+}
+
 function readFixture(name: string): Promise<string> {
     return readFile(
         new URL(`../../../../poi-rs/tests/fixtures/current/${name}`, import.meta.url),
