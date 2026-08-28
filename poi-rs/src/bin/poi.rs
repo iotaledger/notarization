@@ -12,6 +12,7 @@ use clap::{ArgGroup, Args, Parser, Subcommand, ValueEnum};
 use iota_config::{IOTA_GENESIS_FILENAME, iota_config_dir};
 use iota_grpc_client::Client as GrpcClient;
 use iota_sdk_types::{ObjectId, TransactionDigest};
+use iota_types::effects::TransactionEffectsExt;
 use iota_types::event::EventID;
 use poi_rs::{CommitteeResolution, PoiClient, Proof};
 
@@ -174,8 +175,39 @@ impl VerifyArgs {
             .verify(&proof)
             .await
             .context("proof verification failed")?;
-        writeln!(io::stdout().lock(), "valid").context("failed to write verification result to stdout")
+        write_verification_summary(io::stdout().lock(), &proof).context("failed to write verification result to stdout")
     }
+}
+
+fn write_verification_summary(mut writer: impl Write, proof: &Proof) -> io::Result<()> {
+    let checkpoint = proof.checkpoint_summary();
+    let transaction_proof = proof.transaction_proof();
+    let transaction_digest = transaction_proof.effects.execution_digests().transaction;
+    writeln!(writer, "Proof verified successfully.")?;
+    writeln!(writer, "  reported chain:    {}", proof.chain().digest())?;
+    writeln!(writer, "  checkpoint epoch:  {}", checkpoint.epoch())?;
+    writeln!(writer, "  checkpoint number: {}", checkpoint.sequence_number)?;
+    writeln!(writer, "  timestamp (ms):    {}", checkpoint.timestamp_ms)?;
+    writeln!(writer, "  transaction:       {transaction_digest}")?;
+    writeln!(writer, "  targets:")?;
+
+    let targets = proof.targets();
+    if let Some(transaction) = targets.transaction {
+        writeln!(writer, "    transaction: {transaction}")?;
+    }
+    for object in &targets.objects {
+        let object_ref = object.as_inner().object_ref();
+        writeln!(
+            writer,
+            "    object:      {} @ {} ({})",
+            object_ref.object_id, object_ref.version, object_ref.digest
+        )?;
+    }
+    for event in &targets.events {
+        writeln!(writer, "    event:       {}:{}", event.tx_digest, event.event_seq)?;
+    }
+
+    Ok(())
 }
 
 #[derive(Debug, Args)]

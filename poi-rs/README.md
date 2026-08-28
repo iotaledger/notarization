@@ -151,10 +151,10 @@ Verification checks:
 - the checkpoint contents match the certified checkpoint summary;
 - the transaction digest matches the transaction effects;
 - the transaction effects are included in the checkpoint contents;
-- an explicitly requested transaction matches the packaged transaction;
-- requested object targets derive references present in the transaction effects;
+- a transaction target declared by the proof matches the packaged transaction;
+- object targets declared by the proof derive references present in the transaction effects;
 - event data matches the digest recorded in the effects when the proof includes event targets; and
-- requested event targets belong to the transaction and select events in the authenticated event list.
+- event targets declared by the proof belong to the transaction and select events in the authenticated event list.
 
 ## Proof Model
 
