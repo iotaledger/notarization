@@ -11,9 +11,8 @@
 //! The discovered transaction is evidence supporting the object claim. It is not
 //! an explicit transaction target unless the caller also invokes `transaction`.
 //!
-//! This focused example uses trusted-node committee resolution to avoid an epoch
-//! walk. Use this mode only when the connected node is inside the verifier's
-//! trust boundary.
+//! Verification authenticates the checkpoint committee from a trusted genesis
+//! blob, independently of the node that supplied the proof evidence.
 
 use anyhow::{Context, Result, ensure};
 use poi_examples::prepare_poi_example;
@@ -23,12 +22,17 @@ use poi_rs::CommitteeResolution;
 /// 1. Request a proof using only an object ID.
 /// 2. Let the builder resolve the latest object version and its transaction.
 /// 3. Distinguish supporting transaction evidence from an explicit target.
-/// 4. Resolve the committee from a trusted node and verify the object claim.
+/// 4. Authenticate committee history from genesis and verify the object claim.
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("=== Proof of Inclusion: Create and Verify an Object Proof ===\n");
 
     let context = prepare_poi_example().await?;
+    let genesis = context.load_genesis().await?;
+    let resolution = CommitteeResolution::from_genesis(genesis)
+        .context("failed to load the committee from the trusted genesis blob")?;
+    println!("Committee resolution: genesis anchored");
+
     let object_id = context.create_notarization("PoI object-proof example").await?.object_id;
     let client = &context.poi_client;
 
@@ -73,9 +77,7 @@ async fn main() -> Result<()> {
         proof.checkpoint_summary().sequence_number
     );
 
-    // Trusted-node resolution accepts the committee reported by the connected
-    // node. It avoids the genesis walk but makes that node part of the trust boundary.
-    let verifier = client.verifier(CommitteeResolution::TrustedNode);
+    let verifier = client.verifier(resolution);
     let verified = verifier
         .verify(&proof)
         .await

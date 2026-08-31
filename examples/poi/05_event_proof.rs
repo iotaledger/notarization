@@ -11,9 +11,8 @@
 //! digest in the transaction effects commits to that complete list. Verification
 //! then checks that the selected sequence exists in the authenticated events.
 //!
-//! This focused example uses trusted-node committee resolution to avoid an epoch
-//! walk. Use this mode only when the connected node is inside the verifier's
-//! trust boundary.
+//! Verification authenticates the checkpoint committee from a trusted genesis
+//! blob, independently of the node that supplied the proof evidence.
 
 use anyhow::{Context, Result, ensure};
 use poi_examples::prepare_poi_example;
@@ -23,12 +22,17 @@ use poi_rs::CommitteeResolution;
 /// 1. Identify an event by transaction digest and sequence number.
 /// 2. Construct a proof without adding an explicit transaction target.
 /// 3. Inspect the event target and its supporting event evidence.
-/// 4. Resolve the committee from a trusted node and verify the event claim.
+/// 4. Authenticate committee history from genesis and verify the event claim.
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("=== Proof of Inclusion: Create and Verify an Event Proof ===\n");
 
     let context = prepare_poi_example().await?;
+    let genesis = context.load_genesis().await?;
+    let resolution = CommitteeResolution::from_genesis(genesis)
+        .context("failed to load the committee from the trusted genesis blob")?;
+    println!("Committee resolution: genesis anchored");
+
     let event_id = context.create_notarization("PoI event-proof example").await?.event_id;
     let client = &context.poi_client;
 
@@ -72,9 +76,7 @@ async fn main() -> Result<()> {
         proof.checkpoint_summary().sequence_number
     );
 
-    // Trusted-node resolution accepts the committee reported by the connected
-    // node. It avoids the genesis walk but makes that node part of the trust boundary.
-    let verifier = client.verifier(CommitteeResolution::TrustedNode);
+    let verifier = client.verifier(resolution);
     let verified = verifier
         .verify(&proof)
         .await

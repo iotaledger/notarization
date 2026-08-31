@@ -7,29 +7,31 @@
  * An event ID contains its emitting transaction digest and sequence number, so
  * it can select an execution without a separate transaction target. The proof
  * carries the transaction's complete event list because the effects commit to
- * that complete list.
- *
- * Trusted-node resolution keeps the example focused on event-driven discovery.
+ * that complete list. Verification authenticates committee history from a
+ * trusted genesis blob.
  */
 
 import { strict as assert } from "node:assert";
 
 import { fromBase58 } from "@iota/iota-sdk/utils";
-import { CommitteeResolution } from "@iota/poi-wasm";
-import { createNotarization, preparePoiExample } from "./util.js";
+import { createNotarization, loadGenesisCommitteeResolution, preparePoiExample } from "./util.js";
 
 /** Demonstrates event-driven transaction discovery and verification. */
 export async function createAndVerifyEventProof(): Promise<void> {
     console.log("=== Proof of Inclusion: Create and Verify an Event Proof ===\n");
 
-    console.log("Stage 1 - Emit a LockedNotarizationCreated event as fresh proof evidence");
+    console.log("Stage 1 - Configure the proof source and establish committee trust");
     const context = await preparePoiExample();
+    const trust = await loadGenesisCommitteeResolution(context);
+    console.log(`  trust anchor: ${trust.description}`);
+
+    console.log("\nStage 2 - Emit a LockedNotarizationCreated event as fresh proof evidence");
     const targets = await createNotarization(context);
     const transaction = fromBase58(targets.transactionDigest);
 
     // The event ID already identifies the emitting transaction, allowing the
     // builder to fetch all required transaction, effects, and event evidence.
-    console.log("\nStage 2 - Construct a proof from only the event ID");
+    console.log("\nStage 3 - Construct a proof from only the event ID");
     const proof = await context.poiClient.makeProof({
         events: [{ transaction, sequence: targets.eventSequence }],
     });
@@ -45,8 +47,8 @@ export async function createAndVerifyEventProof(): Promise<void> {
     console.log(`    checkpoint epoch: ${proof.checkpointEpoch}`);
     console.log(`    event targets:    ${proofTargets.events.length}\n`);
 
-    console.log("Stage 3 - Verify the event proof");
-    const verified = await context.poiClient.verifier(CommitteeResolution.trustedNode()).verify(proof);
+    console.log("Stage 4 - Verify the event proof");
+    const verified = await context.poiClient.verifier(trust.resolution).verify(proof);
 
     console.log("  event proof verified successfully.");
     console.log(
@@ -55,5 +57,5 @@ export async function createAndVerifyEventProof(): Promise<void> {
         }`,
     );
     console.log(`  event contents: ${verified.eventContents(0).length} BCS bytes`);
-    console.log("The selected event was emitted by a transaction trusted through the selected node.");
+    console.log("The selected event was authenticated from the trusted network genesis.");
 }

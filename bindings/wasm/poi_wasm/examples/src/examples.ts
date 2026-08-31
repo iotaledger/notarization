@@ -6,6 +6,7 @@ import { createAndVerifyMultiTargetProof } from "./02_multi_target_proof.js";
 import { reuseVerifierForMultipleProofs } from "./03_reuse_verifier.js";
 import { createAndVerifyObjectProof } from "./04_object_proof.js";
 import { createAndVerifyEventProof } from "./05_event_proof.js";
+import { verifyWithTrustedNode } from "./06_trusted_node.js";
 
 interface PoiExample {
     readonly testName: string;
@@ -33,5 +34,9 @@ export const examples: Readonly<Record<string, PoiExample>> = {
     "05_event_proof": {
         testName: "creates and verifies an event proof",
         run: createAndVerifyEventProof,
+    },
+    "06_trusted_node": {
+        testName: "verifies a transaction proof through a trusted node",
+        run: verifyWithTrustedNode,
     },
 };
