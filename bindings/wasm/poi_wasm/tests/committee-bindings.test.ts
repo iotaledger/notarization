@@ -17,8 +17,11 @@ test("the WASM committee can be deserialized from Rust JSON", async () => {
     );
 
     const committee = Committee.fromJSON(json);
+    const restored = Committee.fromJSON(committee.toJSON());
 
     assert.equal(committee.epoch, 0n);
+    assert.equal(restored.epoch, committee.epoch);
+    assert.equal(restored.toJSON(), committee.toJSON());
 });
 
 test("the WASM committee rejects invalid total voting power", async () => {

@@ -28,6 +28,8 @@ pub enum WasmError {
     #[error(transparent)]
     Serialization(#[from] SerializationError),
     #[error(transparent)]
+    Json(#[from] serde_json::Error),
+    #[error(transparent)]
     Poi(#[from] PoiError),
     #[error(transparent)]
     Address(#[from] AddressParseError),
@@ -90,7 +92,7 @@ impl WasmError {
                 PoiError::InvalidInput(_) => WasmErrorCode::InvalidInput,
                 PoiError::InvalidResponse(_) => WasmErrorCode::Internal,
             },
-            Self::Bcs(_) | Self::Utf8(_) => WasmErrorCode::Internal,
+            Self::Json(_) | Self::Bcs(_) | Self::Utf8(_) => WasmErrorCode::Internal,
         }
     }
 }

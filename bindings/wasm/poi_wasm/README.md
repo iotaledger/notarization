@@ -100,7 +100,7 @@ target payloads. Continue using `Proof` only as the untrusted transport and seri
 Callers that already possess an extracted trusted committee can use `CommitteeResolution.anchored(committee)` instead.
 `Committee.fromJSON()` accepts the Rust `Committee` fields `epoch` and `voting_rights`, validates public keys, rejects
 duplicate authorities, requires total voting power to equal 10,000, and reconstructs the committee's derived lookup
-state.
+state. Use `Committee.toJSON()` to persist a resolved committee and restore it later with `Committee.fromJSON()`.
 
 The verifier fetches the certified checkpoint in each epoch-close proof, verifies it with the current committee, and
 only then accepts and caches the next committee. Each anchored verifier owns a fresh in-memory cache; the WASM Package

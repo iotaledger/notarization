@@ -7,14 +7,14 @@ use iota_types::base_types::AuthorityName;
 use iota_types::committee::{Committee, EpochId, StakeUnit, TOTAL_VOTING_POWER};
 use js_sys::Uint8Array;
 use poi_rs::{CommitteeResolution, CommitteeResolver};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::error::{PoiError, WasmResult};
 use crate::proof::{WasmProof, WasmVerifiedProof};
 use crate::source::LedgerSource;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 struct CommitteeJson {
     epoch: EpochId,
     voting_rights: Vec<(AuthorityName, StakeUnit)>,
@@ -57,6 +57,17 @@ impl WasmCommittee {
         }
 
         Ok(WasmCommittee(Committee::new(committee.epoch, voting_rights)))
+    }
+
+    /// Serializes this committee for persistence and later restoration with `fromJSON`.
+    #[wasm_bindgen(js_name = toJSON)]
+    pub fn to_json(&self) -> WasmResult<String> {
+        let committee = CommitteeJson {
+            epoch: self.0.epoch,
+            voting_rights: self.0.voting_rights.clone(),
+        };
+
+        Ok(serde_json::to_string(&committee)?)
     }
 
     /// Returns the epoch governed by this committee.
