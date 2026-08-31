@@ -85,13 +85,14 @@ async fn main() -> Result<()> {
 
     // Genesis-anchored resolution authenticates every preceding committee
     // transition. This may take a long time on an established network.
-    verifier
+    let verified = verifier
         .verify(&proof)
         .await
         .context("multi-target proof verification failed")?;
 
     println!("\nMulti-target proof verified successfully.");
-    println!("The transaction, changed object, and emitted event are authenticated by one proof.");
+    println!("  object targets: {}", verified.objects().len());
+    println!("  event targets:  {}", verified.events().len());
 
     Ok(())
 }

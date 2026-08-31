@@ -11,7 +11,7 @@
 //! [`CertifiedCheckpointSummary`]: iota_types::messages_checkpoint::CertifiedCheckpointSummary
 //! [`Committee`]: iota_types::committee::Committee
 
-use iota_sdk_types::{CheckpointContents, TransactionDigest};
+use iota_sdk_types::{CheckpointContents, Event, Transaction as TransactionData, TransactionDigest};
 use iota_types::committee::Committee;
 use iota_types::digests::ChainIdentifier;
 use iota_types::effects::{TransactionEffects, TransactionEffectsAPI, TransactionEffectsExt, TransactionEvents};
@@ -173,6 +173,68 @@ impl TransactionProof {
     }
 }
 
+/// Authenticated claims borrowed from a successfully verified proof.
+///
+/// Values are exposed through this type only after all checkpoint, transaction,
+/// object, and event checks have succeeded. The original [`Proof`] remains
+/// available for serialization and inspection, but its contents must not be
+/// treated as authenticated without a corresponding `VerifiedProof`.
+#[derive(Debug)]
+#[must_use = "read authenticated claims from the returned VerifiedProof"]
+pub struct VerifiedProof<'proof> {
+    checkpoint_summary: &'proof CertifiedCheckpointSummary,
+    transaction: &'proof TransactionData,
+    transaction_digest: TransactionDigest,
+    transaction_target: Option<&'proof TransactionDigest>,
+    objects: &'proof [Object],
+    events: Vec<(&'proof EventID, &'proof Event)>,
+}
+
+impl<'proof> VerifiedProof<'proof> {
+    /// Returns the epoch of the authenticated checkpoint.
+    pub fn checkpoint_epoch(&self) -> u64 {
+        self.checkpoint_summary.epoch()
+    }
+
+    /// Returns the authenticated checkpoint sequence number.
+    pub fn checkpoint_sequence_number(&self) -> u64 {
+        self.checkpoint_summary.sequence_number
+    }
+
+    /// Returns the authenticated checkpoint timestamp in milliseconds since the Unix epoch.
+    pub fn checkpoint_timestamp_ms(&self) -> u64 {
+        self.checkpoint_summary.timestamp_ms
+    }
+
+    /// Returns the transaction data included in the authenticated checkpoint.
+    ///
+    /// User signatures packaged with the original proof are not returned because
+    /// checkpoint inclusion does not authenticate those signature bytes.
+    pub const fn transaction(&self) -> &'proof TransactionData {
+        self.transaction
+    }
+
+    /// Returns the digest of the transaction included in the authenticated checkpoint.
+    pub const fn transaction_digest(&self) -> TransactionDigest {
+        self.transaction_digest
+    }
+
+    /// Returns the explicit transaction target, when the proof declared one.
+    pub const fn transaction_target(&self) -> Option<&'proof TransactionDigest> {
+        self.transaction_target
+    }
+
+    /// Returns the authenticated object targets.
+    pub const fn objects(&self) -> &'proof [Object] {
+        self.objects
+    }
+
+    /// Returns authenticated event targets paired with their event contents.
+    pub fn events(&self) -> impl ExactSizeIterator<Item = (&'proof EventID, &'proof Event)> + '_ {
+        self.events.iter().copied()
+    }
+}
+
 /// Versioned evidence that a transaction is included in a certified checkpoint.
 ///
 /// The enum is non-exhaustive so future crate versions can add support for new
@@ -242,35 +304,40 @@ impl Proof {
         }
     }
 
-    /// Returns the network reported by the proof source.
+    /// Returns the unverified network reported by the proof source.
+    ///
+    /// This value is informational and is not authenticated by proof verification.
     pub const fn chain(&self) -> &ChainIdentifier {
         match self {
             Self::ProofV1(proof) => &proof.chain,
         }
     }
 
-    /// Returns the values selected for this proof.
+    /// Returns the unverified values declared by this proof.
+    ///
+    /// After verification, read authenticated targets from the returned
+    /// [`VerifiedProof`] instead.
     pub const fn targets(&self) -> &ProofTargets {
         match self {
             Self::ProofV1(proof) => &proof.targets,
         }
     }
 
-    /// Returns the certified checkpoint summary.
+    /// Returns the checkpoint summary carried by this unverified proof.
     pub const fn checkpoint_summary(&self) -> &CertifiedCheckpointSummary {
         match self {
             Self::ProofV1(proof) => &proof.checkpoint_summary,
         }
     }
 
-    /// Returns the checkpoint contents.
+    /// Returns the checkpoint contents carried by this unverified proof.
     pub const fn checkpoint_contents(&self) -> &CheckpointContents {
         match self {
             Self::ProofV1(proof) => &proof.checkpoint_contents,
         }
     }
 
-    /// Returns the transaction-specific evidence.
+    /// Returns the transaction-specific evidence carried by this unverified proof.
     pub const fn transaction_proof(&self) -> &TransactionProof {
         match self {
             Self::ProofV1(proof) => &proof.transaction_proof,
@@ -334,17 +401,20 @@ impl<'committee> ProofVerifier<'committee> {
     /// - the transaction effects occur in the authenticated checkpoint contents;
     /// - every selected target matches the authenticated proof data.
     ///
+    /// On success, returns a [`VerifiedProof`] borrowing the authenticated claims
+    /// from `proof`.
+    ///
     /// # Errors
     ///
     /// Returns an error if any check fails.
-    pub fn verify(&self, proof: &Proof) -> Result<(), VerifyError> {
+    pub fn verify<'proof>(&self, proof: &'proof Proof) -> Result<VerifiedProof<'proof>, VerifyError> {
         match proof {
             Proof::ProofV1(proof) => self.verify_v1(proof),
         }
     }
 
     /// Verifies a version 1 proof and all of its claims.
-    fn verify_v1(&self, proof: &ProofV1) -> Result<(), VerifyError> {
+    fn verify_v1<'proof>(&self, proof: &'proof ProofV1) -> Result<VerifiedProof<'proof>, VerifyError> {
         if proof.targets.is_empty() {
             return Err(VerifyError {
                 kind: VerifyErrorKind::MissingTarget,
@@ -363,9 +433,16 @@ impl<'committee> ProofVerifier<'committee> {
             })?;
 
         self.verify_transaction_proof(summary, &proof.checkpoint_contents, &proof.transaction_proof)?;
-        self.verify_targets(&proof.targets, &proof.transaction_proof)?;
+        let events = self.verify_targets(&proof.targets, &proof.transaction_proof)?;
 
-        Ok(())
+        Ok(VerifiedProof {
+            checkpoint_summary: summary,
+            transaction: proof.transaction_proof.transaction.data().transaction(),
+            transaction_digest: *proof.transaction_proof.transaction.digest(),
+            transaction_target: proof.targets.transaction.as_ref(),
+            objects: &proof.targets.objects,
+            events,
+        })
     }
 
     /// Checks the transaction-to-effects, effects-to-checkpoint, and effects-to-events links.
@@ -405,7 +482,11 @@ impl<'committee> ProofVerifier<'committee> {
     }
 
     /// Checks every declared target against the transaction proof.
-    fn verify_targets(&self, targets: &ProofTargets, transaction_proof: &TransactionProof) -> Result<(), VerifyError> {
+    fn verify_targets<'proof>(
+        &self,
+        targets: &'proof ProofTargets,
+        transaction_proof: &'proof TransactionProof,
+    ) -> Result<Vec<(&'proof EventID, &'proof Event)>, VerifyError> {
         let transaction_digest = transaction_proof.effects.execution_digests().transaction;
 
         if targets.transaction.is_some_and(|target| target != transaction_digest) {
@@ -414,18 +495,20 @@ impl<'committee> ProofVerifier<'committee> {
             });
         }
 
-        self.verify_event_targets(targets, transaction_proof)?;
-        self.verify_object_targets(targets, transaction_proof)
+        let events = self.verify_event_targets(targets, transaction_proof)?;
+        self.verify_object_targets(targets, transaction_proof)?;
+
+        Ok(events)
     }
 
     /// Checks each event target against the proven transaction and its packaged events.
-    fn verify_event_targets(
+    fn verify_event_targets<'proof>(
         &self,
-        targets: &ProofTargets,
-        transaction_proof: &TransactionProof,
-    ) -> Result<(), VerifyError> {
+        targets: &'proof ProofTargets,
+        transaction_proof: &'proof TransactionProof,
+    ) -> Result<Vec<(&'proof EventID, &'proof Event)>, VerifyError> {
         if targets.events.is_empty() {
-            return Ok(());
+            return Ok(Vec::new());
         }
 
         let Some(events) = &transaction_proof.events else {
@@ -435,6 +518,7 @@ impl<'committee> ProofVerifier<'committee> {
         };
 
         let execution_digests = transaction_proof.effects.execution_digests();
+        let mut verified_events = Vec::with_capacity(targets.events.len());
         for event_id in &targets.events {
             if event_id.tx_digest != execution_digests.transaction {
                 return Err(VerifyError {
@@ -442,19 +526,20 @@ impl<'committee> ProofVerifier<'committee> {
                 });
             }
 
-            let event_exists = usize::try_from(event_id.event_seq)
+            let event = usize::try_from(event_id.event_seq)
                 .ok()
-                .is_some_and(|index| events.get(index).is_some());
-            if !event_exists {
+                .and_then(|index| events.get(index));
+            let Some(event) = event else {
                 return Err(VerifyError {
                     kind: VerifyErrorKind::EventSequenceOutOfBounds {
                         sequence: event_id.event_seq,
                     },
                 });
-            }
+            };
+            verified_events.push((event_id, event));
         }
 
-        Ok(())
+        Ok(verified_events)
     }
 
     /// Checks each object target against the transaction effects.

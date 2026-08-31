@@ -72,7 +72,7 @@ async fn stacked_requests_are_deduplicated_and_reuse_transaction_evidence() {
     assert_eq!(proof.targets().transaction, Some(staking.digest));
     assert_eq!(proof.targets().objects.len(), 1);
     assert_eq!(proof.targets().events.len(), 1);
-    ProofVerifier::new(&cluster.committee())
+    let _verified = ProofVerifier::new(&cluster.committee())
         .verify(&proof)
         .expect("the stacked-target proof must verify offline");
 }

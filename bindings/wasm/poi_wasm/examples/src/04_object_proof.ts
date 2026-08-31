@@ -45,8 +45,12 @@ export async function createAndVerifyObjectProof(): Promise<void> {
     console.log(`    object targets:   ${proofTargets.objects.length}\n`);
 
     console.log("Stage 3 - Verify the object proof");
-    await context.poiClient.verifier(CommitteeResolution.trustedNode()).verify(proof);
+    const verified = await context.poiClient.verifier(CommitteeResolution.trustedNode()).verify(proof);
 
     console.log("  object proof verified successfully.");
+    console.log(
+        `  authenticated object: ${verified.targets.objects[0]?.objectId} at version ${verified.targets.objects[0]?.version}`,
+    );
+    console.log(`  object BCS: ${verified.objectBcs(0).length} bytes`);
     console.log("The resolved object version was changed by a transaction trusted through the selected node.");
 }

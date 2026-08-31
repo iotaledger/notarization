@@ -54,8 +54,9 @@ export async function createAndVerifyMultiTargetProof(): Promise<void> {
 
     console.log("Stage 4 - Verify every target in the proof");
     const verifier = context.poiClient.verifier(trust.resolution);
-    await verifier.verify(proof);
+    const verified = await verifier.verify(proof);
 
     console.log("  multi-target proof verified successfully.");
-    console.log("The transaction, changed object, and emitted event are authenticated by one proof.");
+    console.log(`  object targets: ${verified.targets.objects.length}`);
+    console.log(`  event targets:  ${verified.targets.events.length}`);
 }

@@ -109,13 +109,14 @@ async fn main() -> Result<()> {
     // The resolver authenticates every committee transition from genesis to the
     // proof's epoch. Reuse the verifier when checking multiple proofs so its
     // in-memory committee cache can avoid repeating the walk.
-    verifier
+    let verified = verifier
         .verify(&received_proof)
         .await
         .context("transaction proof verification failed")?;
 
     println!("\nTransaction proof verified successfully.");
-    println!("The transaction is included in a checkpoint authenticated from the trusted genesis blob.");
+    println!("  transaction:       {}", verified.transaction_digest());
+    println!("  checkpoint number: {}", verified.checkpoint_sequence_number());
 
     Ok(())
 }

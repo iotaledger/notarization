@@ -76,7 +76,8 @@ inside the caller's trust boundary.
 import { CommitteeResolution } from "@iota/poi-wasm";
 
 const verifier = client.verifier(CommitteeResolution.trustedNode());
-await verifier.verify(proof);
+const verified = await verifier.verify(proof);
+console.log(verified.transaction);
 ```
 
 Use genesis-anchored resolution to authenticate committee lineage independently from the node:
@@ -88,8 +89,12 @@ const trustedGenesisBlob = await readFile("genesis.blob");
 const resolution = CommitteeResolution.fromGenesis(trustedGenesisBlob);
 const verifier = client.verifier(resolution);
 
-await verifier.verify(proof);
+const verified = await verifier.verify(proof);
 ```
+
+Successful verification returns a read-only `VerifiedProof`. It exposes the authenticated transaction digest,
+checkpoint metadata, and `ProofTargets`. Use `objectBcs(index)` and `eventContents(index)` to read the authenticated
+target payloads. Continue using `Proof` only as the untrusted transport and serialization envelope.
 
 `CommitteeResolution.fromGenesis()` decodes the BCS-encoded IOTA genesis blob and extracts its committee in Rust.
 Callers that already possess an extracted trusted committee can use `CommitteeResolution.anchored(committee)` instead.
@@ -101,7 +106,8 @@ The verifier fetches the certified checkpoint in each epoch-close proof, verifie
 only then accepts and caches the next committee. Each anchored verifier owns a fresh in-memory cache; the WASM Package
 does not accept a caller-provided committee cache. Retain the verifier when checking multiple proofs so it can reuse the
 committees authenticated during its lifetime. `CommitteeResolver.resolve(epoch)` and `Proof.verify(committee)` remain
-available for lower-level committee resolution and offline verification.
+available for lower-level committee resolution and offline verification; both verification methods return a
+`VerifiedProof` on success.
 
 ## Trust Boundaries
 

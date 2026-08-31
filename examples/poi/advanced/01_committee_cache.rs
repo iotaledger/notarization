@@ -55,13 +55,14 @@ async fn main() -> Result<()> {
 
     println!("Verifying the proof...");
     let started = Instant::now();
-    verifier
+    let verified = verifier
         .verify(&proof)
         .await
         .context("transaction proof verification failed")?;
     let elapsed = started.elapsed();
 
     println!("\nTransaction proof verified successfully in {elapsed:?}.");
+    println!("  authenticated checkpoint: {}", verified.checkpoint_sequence_number());
     println!("Run the example again to reuse the authenticated committees stored on disk.");
 
     Ok(())

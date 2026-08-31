@@ -63,8 +63,9 @@ export async function createAndVerifyTransactionProof(): Promise<void> {
 
     console.log("Stage 5 - Verify the received proof");
     const verifier = context.poiClient.verifier(trust.resolution);
-    await verifier.verify(receivedProof);
+    const verified = await verifier.verify(receivedProof);
 
     console.log("  transaction proof verified successfully.");
-    console.log(`The transaction is included in a checkpoint authenticated through ${trust.description}.`);
+    console.log(`  transaction: ${verified.transaction}`);
+    console.log(`  checkpoint:  ${verified.checkpointSequenceNumber}`);
 }

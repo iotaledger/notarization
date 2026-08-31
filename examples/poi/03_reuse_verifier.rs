@@ -73,18 +73,23 @@ async fn main() -> Result<()> {
     let verifier = client.verifier(resolution);
 
     println!("Verifying the first proof; this performs the epoch walk...");
-    verifier
+    let first_verified = verifier
         .verify(&first_proof)
         .await
         .context("first transaction proof verification failed")?;
 
     println!("Verifying the second proof with the same verifier...");
-    verifier
+    let second_verified = verifier
         .verify(&second_proof)
         .await
         .context("second transaction proof verification failed")?;
 
     println!("\nBoth transaction proofs verified successfully.");
+    println!(
+        "  authenticated checkpoints: {}, {}",
+        first_verified.checkpoint_sequence_number(),
+        second_verified.checkpoint_sequence_number()
+    );
     println!("The second verification reused committee history authenticated during the first verification.");
 
     Ok(())

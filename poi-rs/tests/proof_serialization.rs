@@ -13,7 +13,7 @@ fn assert_fixture_round_trips_and_verifies(fixture: &str) -> Proof {
     let committee: Committee = serde_json::from_str(COMMITTEE).expect("committee fixture must deserialize");
     let proof = Proof::from_json_slice(fixture.as_bytes()).expect("proof fixture must deserialize");
 
-    ProofVerifier::new(&committee)
+    let _verified = ProofVerifier::new(&committee)
         .verify(&proof)
         .expect("proof fixture must verify offline");
     assert_eq!(

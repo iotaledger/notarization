@@ -76,13 +76,16 @@ async fn main() -> Result<()> {
     // Trusted-node resolution accepts the committee reported by the connected
     // node. It avoids the genesis walk but makes that node part of the trust boundary.
     let verifier = client.verifier(CommitteeResolution::TrustedNode);
-    verifier
+    let verified = verifier
         .verify(&proof)
         .await
         .context("object proof verification failed")?;
 
     println!("Object proof verified successfully.");
-    println!("The resolved object version was changed by a transaction included in the verified checkpoint.");
+    println!(
+        "  authenticated object: {:?}",
+        verified.objects()[0].as_inner().object_ref()
+    );
 
     Ok(())
 }

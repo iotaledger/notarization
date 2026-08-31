@@ -22,9 +22,41 @@ fn proof_v1_mut(proof: &mut Proof) -> &mut ProofV1 {
 fn valid_transaction_proof_is_accepted() {
     let (committee, proof) = valid_transaction_proof();
 
-    ProofVerifier::new(&committee)
+    let verified = ProofVerifier::new(&committee)
         .verify(&proof)
         .expect("a valid transaction proof must verify");
+
+    assert_eq!(
+        verified.transaction_target().copied(),
+        Some(verified.transaction_digest())
+    );
+    assert_eq!(
+        verified.transaction(),
+        proof.transaction_proof().transaction.data().transaction()
+    );
+    assert!(verified.objects().is_empty());
+    assert_eq!(verified.events().len(), 0);
+    assert_eq!(verified.checkpoint_epoch(), 0);
+    assert_eq!(verified.checkpoint_sequence_number(), 0);
+    assert_eq!(verified.checkpoint_timestamp_ms(), 0);
+}
+
+#[test]
+fn verified_event_content_is_exposed() {
+    let target = event(vec![1, 2, 3]);
+    let (committee, transaction_digest, mut proof) = proof_with_events(TransactionEvents(vec![target.clone()]));
+    let event_id = EventID {
+        tx_digest: transaction_digest,
+        event_seq: 0,
+    };
+    proof_v1_mut(&mut proof).targets = ProofTargets::new().add_event(event_id);
+
+    let verified = ProofVerifier::new(&committee)
+        .verify(&proof)
+        .expect("a valid event proof must verify");
+    let events = verified.events().collect::<Vec<_>>();
+
+    assert_eq!(events, vec![(&event_id, &target)]);
 }
 
 #[test]

@@ -29,6 +29,6 @@ pub use committee::{
 };
 pub use proof::{
     Proof, ProofTargets, ProofV1, ProofVerifier, SerializationError, SerializationErrorKind, TransactionProof,
-    VerifyError, VerifyErrorKind,
+    VerifiedProof, VerifyError, VerifyErrorKind,
 };
 pub use source::{Source, SourceCheckpoint, SourceError, SourceTransaction};

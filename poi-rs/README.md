@@ -131,7 +131,8 @@ let client = PoiClient::testnet()?;
 let resolution = CommitteeResolution::from_genesis(File::open("genesis.blob")?)?;
 let verifier = client.verifier(resolution);
 
-verifier.verify(proof).await?;
+let verified = verifier.verify(proof).await?;
+println!("verified transaction: {}", verified.transaction_digest());
 # Ok(())
 # }
 ```
@@ -144,6 +145,11 @@ contains committees authenticated for the same network.
 
 Retain the verifier when checking multiple proofs so it can reuse its authenticated committee cache. `ProofVerifier`
 remains the offline entry point for callers that already possess the authoritative committee.
+
+Successful verification returns a `VerifiedProof` that borrows from the input proof and exposes only authenticated
+checkpoint metadata, transaction data and digest, object targets, and event claims. It intentionally omits the packaged
+user signatures because checkpoint inclusion does not authenticate those bytes. Read relying-party data through this
+returned value. The original `Proof` remains the portable untrusted envelope used for transport and serialization.
 
 Verification checks:
 
@@ -175,8 +181,8 @@ transaction itself, although transaction evidence supports every proof.
 authoritative. `CommitteeResolver::verify()` composes committee resolution with offline verification for source-backed
 workflows, while `CommitteeResolver::resolve()` returns the authenticated committee when callers need it directly.
 
-Treat every proof payload as untrusted until verification succeeds. After successful verification, callers can trust
-the authenticated target claims relative to the supplied committee.
+Treat every proof payload as untrusted. After successful verification, trust claims relative to the supplied committee
+through the returned `VerifiedProof`; do not read relying-party claims from an unrelated `Proof` value.
 
 The proof's `chain` value is informational. The verifier does not authenticate it, so applications must not use it to
 select a network, committee, genesis blob, or other trust anchor.

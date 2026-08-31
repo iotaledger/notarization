@@ -17,7 +17,8 @@ use iota_types::transaction::Transaction;
 use serde::Deserialize;
 
 use crate::{
-    BoxError, CommitteeCache, CommitteeCacheError, MemoryCommitteeCache, Proof, ProofVerifier, Source, VerifyError,
+    BoxError, CommitteeCache, CommitteeCacheError, MemoryCommitteeCache, Proof, ProofVerifier, Source, VerifiedProof,
+    VerifyError,
 };
 
 /// Error returned when a committee cannot be resolved for an epoch.
@@ -270,8 +271,9 @@ where
     ///
     /// Committee resolution may fetch committee or epoch-close evidence from
     /// the source. The final proof verification is performed locally by
-    /// [`ProofVerifier`].
-    pub async fn verify(&self, proof: &Proof) -> Result<(), ProofVerificationError> {
+    /// [`ProofVerifier`]. On success, the returned [`VerifiedProof`] borrows the
+    /// authenticated claims from `proof`.
+    pub async fn verify<'proof>(&self, proof: &'proof Proof) -> Result<VerifiedProof<'proof>, ProofVerificationError> {
         let committee = self
             .resolve(proof.checkpoint_summary().epoch())
             .await

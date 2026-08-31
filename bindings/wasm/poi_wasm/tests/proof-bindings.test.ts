@@ -5,11 +5,12 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { Committee, Proof, type ProofTargets } from "../lib/index.js";
+import { Committee, Proof, type ProofTargets, type VerifiedProof } from "../lib/index.js";
 
 const fixtures: readonly {
     name: string;
     assertTargets: (targets: ProofTargets) => void;
+    assertVerified: (proof: VerifiedProof) => void;
 }[] = [
     {
         name: "transaction",
@@ -21,6 +22,13 @@ const fixtures: readonly {
             assert.deepEqual(targets.objects, []);
             assert.deepEqual(targets.events, []);
         },
+        assertVerified(proof) {
+            assert.equal(proof.targets.transaction, proof.transaction);
+            assert.deepEqual(proof.targets.objects, []);
+            assert.deepEqual(proof.targets.events, []);
+            assert.throws(() => proof.objectBcs(0), /object target index 0 is out of bounds/);
+            assert.throws(() => proof.eventContents(0), /event target index 0 is out of bounds/);
+        },
     },
     {
         name: "object",
@@ -31,6 +39,15 @@ const fixtures: readonly {
             assert.equal(targets.objects[0]?.version, 2n);
             assert.ok(targets.objects[0]?.digest);
             assert.deepEqual(targets.events, []);
+        },
+        assertVerified(proof) {
+            assert.equal(proof.targets.transaction, undefined);
+            assert.equal(proof.targets.objects.length, 1);
+            assert.match(proof.targets.objects[0]?.objectId ?? "", /^0x[0-9a-f]{64}$/);
+            assert.equal(proof.targets.objects[0]?.version, 2n);
+            assert.ok(proof.targets.objects[0]?.digest);
+            assert.ok(proof.objectBcs(0).length > 0);
+            assert.deepEqual(proof.targets.events, []);
         },
     },
     {
@@ -45,6 +62,17 @@ const fixtures: readonly {
             );
             assert.equal(targets.events[0]?.eventSequence, 0n);
         },
+        assertVerified(proof) {
+            assert.equal(proof.targets.transaction, undefined);
+            assert.deepEqual(proof.targets.objects, []);
+            assert.equal(proof.targets.events.length, 1);
+            assert.equal(
+                proof.targets.events[0]?.transactionDigest,
+                "25zdMVEMRtg7pDGqgLgL1Hf3s8sL9YGuN9UVeo3dECG6",
+            );
+            assert.equal(proof.targets.events[0]?.eventSequence, 0n);
+            assert.ok(proof.eventContents(0).length > 0);
+        },
     },
 ];
 
@@ -56,10 +84,15 @@ test("the public proof fixtures round trip and verify offline", async (context) 
             const proof = Proof.fromJSON(await readFixture(`${fixture.name}.json`));
             const receivedProof = Proof.fromJSON(proof.toJSON());
 
-            receivedProof.verify(committee);
+            const verified = receivedProof.verify(committee);
             assert.equal(receivedProof.version, 1);
             assert.equal(receivedProof.checkpointEpoch, 0n);
+            assert.equal(verified.checkpointEpoch, 0n);
+            assert.ok(verified.checkpointSequenceNumber >= 0n);
+            assert.ok(verified.checkpointTimestampMs > 0n);
+            assert.ok(verified.transaction);
             fixture.assertTargets(receivedProof.targets);
+            fixture.assertVerified(verified);
         });
     }
 });

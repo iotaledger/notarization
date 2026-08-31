@@ -46,8 +46,12 @@ export async function createAndVerifyEventProof(): Promise<void> {
     console.log(`    event targets:    ${proofTargets.events.length}\n`);
 
     console.log("Stage 3 - Verify the event proof");
-    await context.poiClient.verifier(CommitteeResolution.trustedNode()).verify(proof);
+    const verified = await context.poiClient.verifier(CommitteeResolution.trustedNode()).verify(proof);
 
     console.log("  event proof verified successfully.");
+    console.log(
+        `  authenticated event: ${verified.targets.events[0]?.transactionDigest}:${verified.targets.events[0]?.eventSequence}`,
+    );
+    console.log(`  event contents: ${verified.eventContents(0).length} BCS bytes`);
     console.log("The selected event was emitted by a transaction trusted through the selected node.");
 }

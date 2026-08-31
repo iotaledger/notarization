@@ -11,7 +11,7 @@ use serde::Deserialize;
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::error::{PoiError, WasmResult};
-use crate::proof::WasmProof;
+use crate::proof::{WasmProof, WasmVerifiedProof};
 use crate::source::LedgerSource;
 
 #[derive(Deserialize)]
@@ -120,10 +120,10 @@ impl WasmCommitteeResolver {
         Ok(WasmCommittee(committee))
     }
 
-    /// Resolves the committee required by `proof` and verifies the proof with it.
-    pub async fn verify(&self, proof: &WasmProof) -> WasmResult<()> {
-        self.0.verify(&proof.0).await?;
+    /// Resolves the committee required by `proof` and returns its authenticated claims.
+    pub async fn verify(&self, proof: &WasmProof) -> WasmResult<WasmVerifiedProof> {
+        let verified = self.0.verify(&proof.0).await?;
 
-        Ok(())
+        Ok(WasmVerifiedProof::new(&proof.0, verified))
     }
 }

@@ -31,7 +31,7 @@ async fn client_builds_and_verifies_a_transaction_proof_from_genesis() {
     assert!(proof.transaction_proof().events.is_none());
 
     let resolution = CommitteeResolution::from_genesis(genesis).expect("test cluster genesis blob must load");
-    client
+    let _verified = client
         .verifier(resolution)
         .verify(&proof)
         .await
@@ -55,7 +55,7 @@ async fn client_builds_and_verifies_an_object_proof_with_a_trusted_node() {
     assert_eq!(proof.targets().objects[0].as_inner().object_ref(), transfer.gas_object);
     assert!(proof.targets().events.is_empty());
     assert!(proof.transaction_proof().events.is_none());
-    client
+    let _verified = client
         .verifier(CommitteeResolution::TrustedNode)
         .verify(&proof)
         .await
@@ -84,7 +84,7 @@ async fn client_builds_and_verifies_an_event_proof_with_a_trusted_node() {
     assert_eq!(proof.targets().events, vec![event_id]);
     assert!(proof.transaction_proof().events.is_some());
 
-    client
+    let _verified = client
         .verifier(CommitteeResolution::TrustedNode)
         .verify(&proof)
         .await
@@ -106,7 +106,7 @@ async fn client_builds_one_verified_proof_for_multiple_objects() {
 
     assert_eq!(proof.transaction_proof().transaction.digest(), &transfer.digest);
     assert_eq!(proof.targets().objects.len(), 2);
-    client
+    let _verified = client
         .verifier(CommitteeResolution::TrustedNode)
         .verify(&proof)
         .await
@@ -135,7 +135,7 @@ async fn client_builds_one_verified_proof_for_object_and_event_targets() {
     assert_eq!(proof.targets().objects[0].as_inner().object_ref(), staking.gas_object);
     assert_eq!(proof.targets().objects.len(), 1);
     assert_eq!(proof.targets().events.len(), 1);
-    client
+    let _verified = client
         .verifier(CommitteeResolution::TrustedNode)
         .verify(&proof)
         .await
