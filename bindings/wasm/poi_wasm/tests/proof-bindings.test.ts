@@ -143,7 +143,7 @@ interface EventProofFixture {
 
 function readFixture(name: string): Promise<string> {
     return readFile(
-        new URL(`../../../../poi-rs/tests/fixtures/current/${name}`, import.meta.url),
+        new URL(`../../../../poi-rs/tests/fixtures/v1/${name}`, import.meta.url),
         "utf8",
     );
 }

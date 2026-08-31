@@ -4,10 +4,10 @@
 use iota_types::committee::Committee;
 use poi_rs::{Proof, ProofVerifier};
 
-const COMMITTEE: &str = include_str!("fixtures/current/committee.json");
-const TRANSACTION: &str = include_str!("fixtures/current/transaction.json");
-const OBJECT: &str = include_str!("fixtures/current/object.json");
-const EVENT: &str = include_str!("fixtures/current/event.json");
+const COMMITTEE: &str = include_str!("fixtures/v1/committee.json");
+const TRANSACTION: &str = include_str!("fixtures/v1/transaction.json");
+const OBJECT: &str = include_str!("fixtures/v1/object.json");
+const EVENT: &str = include_str!("fixtures/v1/event.json");
 
 fn assert_fixture_round_trips_and_verifies(fixture: &str) -> Proof {
     let committee: Committee = serde_json::from_str(COMMITTEE).expect("committee fixture must deserialize");

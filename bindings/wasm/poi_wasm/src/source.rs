@@ -306,7 +306,7 @@ mod tests {
 
     #[test]
     fn decodes_the_grpc_bcs_evidence_into_existing_iota_types() {
-        let proof = Proof::from_json_slice(include_bytes!("../../../../poi-rs/tests/fixtures/current/event.json"))
+        let proof = Proof::from_json_slice(include_bytes!("../../../../poi-rs/tests/fixtures/v1/event.json"))
             .expect("fixture must deserialize");
         let transaction_proof = proof.transaction_proof();
         let checkpoint_summary = proof.checkpoint_summary();

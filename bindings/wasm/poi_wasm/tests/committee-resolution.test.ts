@@ -109,7 +109,7 @@ interface CommitteeFixture {
 async function readCommitteeJson(): Promise<string> {
     return readFile(
         new URL(
-            "../../../../poi-rs/tests/fixtures/current/committee.json",
+            "../../../../poi-rs/tests/fixtures/v1/committee.json",
             import.meta.url,
         ),
         "utf8",

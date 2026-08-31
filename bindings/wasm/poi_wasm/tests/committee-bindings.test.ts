@@ -10,7 +10,7 @@ import { Committee } from "../lib/index.js";
 test("the WASM committee can be deserialized from Rust JSON", async () => {
     const json = await readFile(
         new URL(
-            "../../../../poi-rs/tests/fixtures/current/committee.json",
+            "../../../../poi-rs/tests/fixtures/v1/committee.json",
             import.meta.url,
         ),
         "utf8",
@@ -28,7 +28,7 @@ test("the WASM committee rejects invalid total voting power", async () => {
     const fixture = JSON.parse(
         await readFile(
             new URL(
-                "../../../../poi-rs/tests/fixtures/current/committee.json",
+                "../../../../poi-rs/tests/fixtures/v1/committee.json",
                 import.meta.url,
             ),
             "utf8",
