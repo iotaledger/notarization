@@ -4,7 +4,7 @@
 mod utils;
 
 use iota_sdk_types::CheckpointContents;
-use iota_types::effects::TransactionEvents;
+use iota_types::effects::{TestEffectsBuilder, TransactionEvents};
 use iota_types::event::EventID;
 use iota_types::messages_checkpoint::CheckpointContentsExt;
 use iota_types::object::Object;
@@ -39,6 +39,43 @@ fn valid_transaction_proof_is_accepted() {
     assert_eq!(verified.checkpoint_epoch(), 0);
     assert_eq!(verified.checkpoint_sequence_number(), 0);
     assert_eq!(verified.checkpoint_timestamp_ms(), 0);
+}
+
+#[test]
+fn proof_requires_a_target() {
+    let (committee, mut proof) = valid_transaction_proof();
+    proof_v1_mut(&mut proof).targets = ProofTargets::new();
+
+    let error = ProofVerifier::new(&committee)
+        .verify(&proof)
+        .expect_err("a proof without a target must be rejected");
+
+    assert!(matches!(error.kind, VerifyErrorKind::MissingTarget));
+}
+
+#[test]
+fn transaction_target_must_match_the_packaged_transaction() {
+    let (committee, mut proof) = valid_transaction_proof();
+    proof_v1_mut(&mut proof).targets =
+        ProofTargets::new().set_transaction(iota_sdk_types::TransactionDigest::new([0xff; 32]));
+
+    let error = ProofVerifier::new(&committee)
+        .verify(&proof)
+        .expect_err("a mismatched transaction target must be rejected");
+
+    assert!(matches!(error.kind, VerifyErrorKind::TransactionTargetMismatch));
+}
+
+#[test]
+fn checkpoint_signature_must_match_the_supplied_committee() {
+    let (_, proof) = valid_transaction_proof();
+    let (wrong_committee, _) = iota_types::committee::Committee::new_simple_test_committee_of_size(6);
+
+    let error = ProofVerifier::new(&wrong_committee)
+        .verify(&proof)
+        .expect_err("a checkpoint signed by another committee must be rejected");
+
+    assert!(matches!(error.kind, VerifyErrorKind::CheckpointSummary { .. }));
 }
 
 #[test]
@@ -115,6 +152,22 @@ fn transaction_must_be_present_in_the_checkpoint() {
 }
 
 #[test]
+fn forged_effects_with_the_same_transaction_are_rejected() {
+    let (committee, mut proof) = valid_transaction_proof();
+    let forged_events = TransactionEvents(vec![event(vec![0xff])]);
+    let forged_effects = TestEffectsBuilder::new(proof.transaction_proof().transaction.data())
+        .with_events_digest(forged_events.digest())
+        .build();
+    proof_v1_mut(&mut proof).transaction_proof.effects = forged_effects;
+
+    let error = ProofVerifier::new(&committee)
+        .verify(&proof)
+        .expect_err("effects absent from the checkpoint must be rejected even when the transaction matches");
+
+    assert!(matches!(error.kind, VerifyErrorKind::TransactionNotInCheckpoint));
+}
+
+#[test]
 fn object_target_must_appear_in_the_transaction_effects() {
     let object = Object::immutable_for_testing();
     let targets = ProofTargets::new().add_object(object);
@@ -142,6 +195,27 @@ fn event_target_must_belong_to_the_proven_transaction() {
         .expect_err("an event from another transaction must be rejected");
 
     assert!(matches!(error.kind, VerifyErrorKind::EventTransactionMismatch));
+}
+
+#[test]
+fn event_target_requires_packaged_event_data() {
+    let target = event(vec![1, 2, 3]);
+    let (committee, transaction_digest, mut proof) = proof_with_events(TransactionEvents(vec![target]));
+    let event_id = EventID {
+        tx_digest: transaction_digest,
+        event_seq: 0,
+    };
+    {
+        let proof = proof_v1_mut(&mut proof);
+        proof.targets = ProofTargets::new().add_event(event_id);
+        proof.transaction_proof.events = None;
+    }
+
+    let error = ProofVerifier::new(&committee)
+        .verify(&proof)
+        .expect_err("an event target without packaged events must be rejected");
+
+    assert!(matches!(error.kind, VerifyErrorKind::MissingEvents));
 }
 
 #[test]

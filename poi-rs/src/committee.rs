@@ -576,6 +576,7 @@ impl CommitteeResolver<GrpcClient> {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
     use std::sync::Mutex;
 
     use iota_sdk_types::gas::GasCostSummary;
@@ -592,9 +593,18 @@ mod tests {
         committee: Committee,
     }
 
+    struct FailingStoreCache;
+
     #[derive(Clone)]
     struct EpochCloseSource {
         summary: CertifiedCheckpointSummary,
+    }
+
+    #[derive(Clone)]
+    struct CommitteeHistorySource {
+        current_epoch: Option<EpochId>,
+        summaries: BTreeMap<EpochId, CertifiedCheckpointSummary>,
+        fail_current_epoch: bool,
     }
 
     #[async_trait::async_trait]
@@ -634,6 +644,44 @@ mod tests {
         }
     }
 
+    #[async_trait::async_trait]
+    impl Source for CommitteeHistorySource {
+        async fn chain_identifier(&self) -> Result<ChainIdentifier, SourceError> {
+            unreachable!("committee history does not resolve a chain identifier")
+        }
+
+        async fn transaction(
+            &self,
+            _transaction_digest: TransactionDigest,
+        ) -> Result<Option<SourceTransaction>, SourceError> {
+            unreachable!("committee history does not resolve transactions")
+        }
+
+        async fn object(&self, _object_id: ObjectId, _version: Option<Version>) -> Result<Option<Object>, SourceError> {
+            unreachable!("committee history does not resolve objects")
+        }
+
+        async fn checkpoint(&self, _sequence_number: u64) -> Result<SourceCheckpoint, SourceError> {
+            unreachable!("committee history does not resolve checkpoints")
+        }
+
+        async fn committee(&self, _epoch: EpochId) -> Result<Committee, SourceError> {
+            unreachable!("anchored committee history does not trust node committees")
+        }
+
+        async fn current_epoch(&self) -> Result<Option<EpochId>, SourceError> {
+            if self.fail_current_epoch {
+                return Err(SourceError::request(std::io::Error::other("current epoch unavailable")));
+            }
+
+            Ok(self.current_epoch)
+        }
+
+        async fn epoch_close_summary(&self, epoch: EpochId) -> Result<Option<CertifiedCheckpointSummary>, SourceError> {
+            Ok(self.summaries.get(&epoch).cloned())
+        }
+    }
+
     #[derive(Clone, Default)]
     struct RecordingCache {
         stored: Arc<Mutex<Vec<Committee>>>,
@@ -668,8 +716,55 @@ mod tests {
         }
     }
 
+    #[async_trait::async_trait]
+    impl CommitteeCache for FailingStoreCache {
+        async fn committee(&self, _key: CommitteeCacheKey) -> Result<Option<Committee>, CommitteeCacheError> {
+            Ok(None)
+        }
+
+        async fn store(&self, key: CommitteeCacheKey, _committee: &Committee) -> Result<(), CommitteeCacheError> {
+            Err(CommitteeCacheError::Backend {
+                epoch: key.epoch(),
+                source: Box::new(std::io::Error::other("cache unavailable")),
+            })
+        }
+    }
+
     fn chain_identifier(byte: u8) -> ChainIdentifier {
         ChainIdentifier::from(CheckpointDigest::new([byte; 32]))
+    }
+
+    fn committee_with_keypairs(epoch: EpochId, size: usize) -> (Committee, Vec<iota_types::crypto::AuthorityKeyPair>) {
+        let (base_committee, keypairs) = Committee::new_simple_test_committee_of_size(size);
+        let committee = Committee::new(epoch, base_committee.voting_rights.iter().cloned().collect());
+
+        (committee, keypairs)
+    }
+
+    fn signed_committee_transition(
+        current: &Committee,
+        keypairs: &[iota_types::crypto::AuthorityKeyPair],
+        next: &Committee,
+    ) -> CertifiedCheckpointSummary {
+        let summary = CheckpointSummary {
+            epoch: current.epoch,
+            sequence_number: current.epoch,
+            network_total_transactions: 0,
+            contents_digest: Default::default(),
+            previous_digest: None,
+            epoch_rolling_gas_cost_summary: GasCostSummary::default(),
+            timestamp_ms: 0,
+            checkpoint_commitments: Vec::new(),
+            end_of_epoch_data: Some(EndOfEpochData {
+                next_epoch_committee: next.committee_members(),
+                next_epoch_protocol_version: 1,
+                epoch_commitments: Vec::new(),
+                epoch_supply_change: 0,
+            }),
+            version_specific_data: Vec::new(),
+        };
+
+        CertifiedCheckpointSummary::new_from_keypairs_for_testing(summary, keypairs, current)
     }
 
     fn signed_end_of_epoch_summary(
@@ -910,6 +1005,152 @@ mod tests {
         let resolved = resolver.resolve(4).await.unwrap();
 
         assert_eq!(resolved, next_committee);
+    }
+
+    #[tokio::test]
+    async fn target_cache_entry_must_contain_the_requested_epoch() {
+        let (anchor, _) = committee_with_keypairs(3, 4);
+        let (mislabeled, _) = committee_with_keypairs(5, 5);
+        let chain_identifier = chain_identifier(1);
+        let cache = StaticCache {
+            key: CommitteeCacheKey::new(chain_identifier, 4),
+            committee: mislabeled,
+        };
+        let resolver = CommitteeResolver::new(
+            CommitteeHistorySource {
+                current_epoch: Some(5),
+                summaries: BTreeMap::new(),
+                fail_current_epoch: false,
+            },
+            CommitteeResolution::anchored_with_cache(chain_identifier, anchor, cache),
+        );
+
+        let error = resolver.resolve(4).await.unwrap_err();
+
+        assert!(matches!(
+            error.kind,
+            CommitteeResolutionErrorKind::Cache {
+                epoch: 4,
+                source: CommitteeCacheError::Conflict { epoch: 4 }
+            }
+        ));
+    }
+
+    #[tokio::test]
+    async fn intermediate_cache_entry_must_contain_its_key_epoch() {
+        let (anchor, _) = committee_with_keypairs(3, 4);
+        let (mislabeled, _) = committee_with_keypairs(5, 5);
+        let chain_identifier = chain_identifier(1);
+        let cache = StaticCache {
+            key: CommitteeCacheKey::new(chain_identifier, 4),
+            committee: mislabeled,
+        };
+        let resolver = CommitteeResolver::new(
+            CommitteeHistorySource {
+                current_epoch: Some(5),
+                summaries: BTreeMap::new(),
+                fail_current_epoch: false,
+            },
+            CommitteeResolution::anchored_with_cache(chain_identifier, anchor, cache),
+        );
+
+        let error = resolver.resolve(5).await.unwrap_err();
+
+        assert!(matches!(
+            error.kind,
+            CommitteeResolutionErrorKind::Cache {
+                epoch: 4,
+                source: CommitteeCacheError::Conflict { epoch: 4 }
+            }
+        ));
+    }
+
+    #[tokio::test]
+    async fn anchored_resolution_reports_a_current_epoch_source_failure() {
+        let (anchor, _) = committee_with_keypairs(0, 4);
+        let resolver = CommitteeResolver::new(
+            CommitteeHistorySource {
+                current_epoch: None,
+                summaries: BTreeMap::new(),
+                fail_current_epoch: true,
+            },
+            CommitteeResolution::anchored(anchor),
+        );
+
+        let error = resolver.resolve(1).await.unwrap_err();
+
+        assert!(matches!(
+            error.kind,
+            CommitteeResolutionErrorKind::FetchCurrentEpoch { .. }
+        ));
+    }
+
+    #[tokio::test]
+    async fn anchored_resolution_reports_missing_epoch_close_evidence() {
+        let (anchor, _) = committee_with_keypairs(0, 4);
+        let resolver = CommitteeResolver::new(
+            CommitteeHistorySource {
+                current_epoch: Some(1),
+                summaries: BTreeMap::new(),
+                fail_current_epoch: false,
+            },
+            CommitteeResolution::anchored(anchor),
+        );
+
+        let error = resolver.resolve(1).await.unwrap_err();
+
+        assert!(matches!(
+            error.kind,
+            CommitteeResolutionErrorKind::MissingEpochCloseProof { epoch: 0 }
+        ));
+    }
+
+    #[tokio::test]
+    async fn anchored_resolution_reports_a_cache_store_failure() {
+        let (anchor, keypairs) = committee_with_keypairs(0, 4);
+        let (next, _) = committee_with_keypairs(1, 5);
+        let summary = signed_committee_transition(&anchor, &keypairs, &next);
+        let resolver = CommitteeResolver::new(
+            CommitteeHistorySource {
+                current_epoch: Some(1),
+                summaries: BTreeMap::from([(0, summary)]),
+                fail_current_epoch: false,
+            },
+            CommitteeResolution::anchored_with_cache(chain_identifier(1), anchor, FailingStoreCache),
+        );
+
+        let error = resolver.resolve(1).await.unwrap_err();
+
+        assert!(matches!(
+            error.kind,
+            CommitteeResolutionErrorKind::Cache {
+                epoch: 1,
+                source: CommitteeCacheError::Backend { epoch: 1, .. }
+            }
+        ));
+    }
+
+    #[tokio::test]
+    async fn anchored_resolution_authenticates_multiple_epoch_transitions() {
+        let (first, first_keypairs) = committee_with_keypairs(0, 4);
+        let (second, second_keypairs) = committee_with_keypairs(1, 5);
+        let (expected, _) = committee_with_keypairs(2, 6);
+        let summaries = BTreeMap::from([
+            (0, signed_committee_transition(&first, &first_keypairs, &second)),
+            (1, signed_committee_transition(&second, &second_keypairs, &expected)),
+        ]);
+        let resolver = CommitteeResolver::new(
+            CommitteeHistorySource {
+                current_epoch: Some(2),
+                summaries,
+                fail_current_epoch: false,
+            },
+            CommitteeResolution::anchored(first),
+        );
+
+        let resolved = resolver.resolve(2).await.unwrap();
+
+        assert_eq!(resolved, expected);
     }
 
     #[tokio::test]

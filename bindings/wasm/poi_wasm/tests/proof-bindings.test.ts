@@ -117,6 +117,22 @@ test("rejects event sequences outside the wasm32 index range", async () => {
     }
 });
 
+test("rejects a proof with a committee from another epoch", async () => {
+    const committeeFixture = JSON.parse(await readFixture("committee.json")) as { epoch: number };
+    committeeFixture.epoch = 1;
+    const committee = Committee.fromJSON(JSON.stringify(committeeFixture));
+    const proof = Proof.fromJSON(await readFixture("transaction.json"));
+
+    assert.throws(
+        () => proof.verify(committee),
+        (error) => {
+            assert.ok(isPoiError(error));
+            assert.equal(error.code, "PROOF_INVALID");
+            return true;
+        },
+    );
+});
+
 interface EventProofFixture {
     ProofV1: {
         targets: {
