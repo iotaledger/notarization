@@ -220,13 +220,10 @@ test("returns undefined when a transaction or object is not returned", async () 
     assert.equal(await source.object(bytes(0x02)), undefined);
 });
 
-test("rejects incomplete checkpoint evidence", async () => {
+test("returns undefined when a checkpoint is not returned", async () => {
     const source = checkpointSource(endMarker());
 
-    await assert.rejects(
-        source.checkpoint(42n),
-        /returned no checkpoint for sequence number 42/,
-    );
+    assert.equal(await source.checkpoint(42n), undefined);
 });
 
 test("rejects a checkpoint stream without an end marker", async () => {

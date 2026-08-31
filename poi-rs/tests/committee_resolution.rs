@@ -19,6 +19,19 @@ fn disconnected_client() -> GrpcClient {
     GrpcClient::new("http://127.0.0.1:1").expect("disconnected gRPC client must be constructed")
 }
 
+#[test]
+fn genesis_loading_errors_are_scoped_to_epoch_zero() {
+    let Err(error) = CommitteeResolution::from_genesis(std::io::empty()) else {
+        panic!("empty genesis data must be rejected");
+    };
+
+    assert_eq!(error.target_epoch, 0);
+    assert!(matches!(
+        error.kind,
+        CommitteeResolutionErrorKind::LoadGenesisCommittee { .. }
+    ));
+}
+
 #[tokio::test]
 async fn genesis_anchored_client_authenticates_committee_across_epochs() {
     let cluster = start_test_cluster().await;

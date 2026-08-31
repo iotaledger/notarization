@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex};
 use iota_sdk_types::TransactionDigest;
 use iota_types::event::EventID;
 use iota_types::object::Object;
-use poi_rs::{PoiClient, ProofBuilderError, ProofVerifier, SourceError};
+use poi_rs::{PoiClient, ProofBuilderError, ProofVerifier, Source, SourceError};
 use utils::sources::{MissingSource, RecordingSource, RejectingSource};
 use utils::{genesis_chain_identifier, grpc_client, object_transfer_tx, staking_tx, start_test_cluster, transfer_tx};
 
@@ -95,6 +95,33 @@ async fn transaction_not_returned_by_the_source_is_reported_as_missing() {
         panic!("an omitted transaction must return a transaction-not-found error");
     };
     assert_eq!(missing_transaction, transaction_digest);
+}
+
+#[tokio::test]
+async fn checkpoint_not_returned_by_the_source_is_reported_as_missing() {
+    let cluster = start_test_cluster().await;
+    let transfer = transfer_tx(&cluster).await;
+    let client = grpc_client(&cluster);
+    let checkpoint_sequence_number = client
+        .transaction(transfer.digest)
+        .await
+        .expect("transaction request must succeed")
+        .expect("executed transaction must exist")
+        .checkpoint_sequence_number;
+    let source = RecordingSource::new(client, Arc::new(Mutex::new(Vec::new()))).without_checkpoints();
+
+    let error = PoiClient::new(source)
+        .proof()
+        .transaction(transfer.digest)
+        .build()
+        .await
+        .expect_err("a checkpoint omitted by the source must be rejected");
+
+    assert!(matches!(
+        error,
+        ProofBuilderError::CheckpointNotFound { sequence_number }
+            if sequence_number == checkpoint_sequence_number
+    ));
 }
 
 #[tokio::test]

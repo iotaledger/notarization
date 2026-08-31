@@ -224,7 +224,7 @@ impl CommitteeResolution {
     ///
     /// The reader must contain the BCS-encoded `genesis.blob` for the proof's
     /// network. Authenticated committees are retained in a fresh in-memory cache.
-    pub fn from_genesis(reader: impl Read) -> Result<Self, CommitteeResolutionErrorKind> {
+    pub fn from_genesis(reader: impl Read) -> Result<Self, CommitteeResolutionError> {
         Self::from_genesis_with_cache(reader, MemoryCommitteeCache::new())
     }
 
@@ -233,6 +233,13 @@ impl CommitteeResolution {
     /// The reader must contain the BCS-encoded `genesis.blob` for the proof's
     /// network. Cache entries are scoped automatically to the genesis checkpoint digest.
     pub fn from_genesis_with_cache(
+        reader: impl Read,
+        cache: impl CommitteeCache + 'static,
+    ) -> Result<Self, CommitteeResolutionError> {
+        Self::load_genesis(reader, cache).map_err(|kind| CommitteeResolutionError::new(0, kind))
+    }
+
+    fn load_genesis(
         reader: impl Read,
         cache: impl CommitteeCache + 'static,
     ) -> Result<Self, CommitteeResolutionErrorKind> {
@@ -624,7 +631,7 @@ mod tests {
             unreachable!("committee transition does not resolve objects")
         }
 
-        async fn checkpoint(&self, _sequence_number: u64) -> Result<SourceCheckpoint, SourceError> {
+        async fn checkpoint(&self, _sequence_number: u64) -> Result<Option<SourceCheckpoint>, SourceError> {
             unreachable!("committee transition does not resolve checkpoints")
         }
 
@@ -661,7 +668,7 @@ mod tests {
             unreachable!("committee history does not resolve objects")
         }
 
-        async fn checkpoint(&self, _sequence_number: u64) -> Result<SourceCheckpoint, SourceError> {
+        async fn checkpoint(&self, _sequence_number: u64) -> Result<Option<SourceCheckpoint>, SourceError> {
             unreachable!("committee history does not resolve checkpoints")
         }
 

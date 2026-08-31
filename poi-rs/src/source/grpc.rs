@@ -126,8 +126,8 @@ impl Source for GrpcClient {
         Ok(Some(object))
     }
 
-    async fn checkpoint(&self, sequence_number: u64) -> Result<SourceCheckpoint, SourceError> {
-        let checkpoint = self
+    async fn checkpoint(&self, sequence_number: u64) -> Result<Option<SourceCheckpoint>, SourceError> {
+        let checkpoint = match self
             .get_checkpoint_by_sequence_number(
                 sequence_number,
                 Some(ReadMask::from(&[
@@ -139,8 +139,11 @@ impl Source for GrpcClient {
                 None,
             )
             .await
-            .map(|response| response.into_inner())
-            .map_err(SourceError::request)?;
+        {
+            Ok(response) => response.into_inner(),
+            Err(error) if error.is_not_found() => return Ok(None),
+            Err(error) => return Err(SourceError::request(error)),
+        };
         let summary: CertifiedCheckpointSummary = checkpoint
             .signed_summary()
             .map_err(SourceError::invalid_response)?
@@ -152,7 +155,7 @@ impl Source for GrpcClient {
             .contents()
             .map_err(SourceError::invalid_response)?;
 
-        Ok(SourceCheckpoint { summary, contents })
+        Ok(Some(SourceCheckpoint { summary, contents }))
     }
 
     async fn committee(&self, epoch: EpochId) -> Result<Committee, SourceError> {

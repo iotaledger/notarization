@@ -30,6 +30,12 @@ pub enum ProofBuilderError {
         /// Transaction digest that was not returned.
         transaction_digest: TransactionDigest,
     },
+    /// The source did not return the checkpoint containing the transaction.
+    #[error("checkpoint {sequence_number} was not found")]
+    CheckpointNotFound {
+        /// Checkpoint sequence number that was not returned.
+        sequence_number: u64,
+    },
     /// The source did not return a requested object.
     #[error("object {object_id} was not found")]
     ObjectNotFound {
@@ -219,11 +225,15 @@ impl<S: Source> ProofBuilder<S> {
             .chain_identifier()
             .await
             .map_err(|source| ProofBuilderError::Source { source })?;
+        let checkpoint_sequence_number = transaction.checkpoint_sequence_number;
         let checkpoint = self
             .source
-            .checkpoint(transaction.checkpoint_sequence_number)
+            .checkpoint(checkpoint_sequence_number)
             .await
-            .map_err(|source| ProofBuilderError::Source { source })?;
+            .map_err(|source| ProofBuilderError::Source { source })?
+            .ok_or(ProofBuilderError::CheckpointNotFound {
+                sequence_number: checkpoint_sequence_number,
+            })?;
         let transaction_events = if self.event_ids.is_empty() {
             None
         } else {

@@ -149,15 +149,20 @@ impl Source for LedgerSource {
         Ok(Some(object.into()))
     }
 
-    async fn checkpoint(&self, sequence_number: u64) -> Result<SourceCheckpoint, SourceError> {
+    async fn checkpoint(&self, sequence_number: u64) -> Result<Option<SourceCheckpoint>, SourceError> {
         let value = self
             .checkpoint(sequence_number)
             .await
             .map_err(|source| SourceError::request(PoiError::from_js(source)))?;
+
+        if value.is_undefined() || value.is_null() {
+            return Ok(None);
+        }
+
         let evidence: JsCheckpointEvidence = serde_wasm_bindgen::from_value(value)
             .map_err(|source| SourceError::invalid_response(PoiError::invalid_response(source.to_string())))?;
 
-        decode_checkpoint(evidence)
+        decode_checkpoint(evidence).map(Some)
     }
 
     async fn committee(&self, epoch: EpochId) -> Result<Committee, SourceError> {

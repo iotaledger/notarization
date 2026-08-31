@@ -77,6 +77,7 @@ impl WasmError {
             Self::ProofBuilder(error) => match error {
                 ProofBuilderError::Source { .. } => WasmErrorCode::SourceRequest,
                 ProofBuilderError::TransactionNotFound { .. }
+                | ProofBuilderError::CheckpointNotFound { .. }
                 | ProofBuilderError::ObjectNotFound { .. }
                 | ProofBuilderError::EventNotFound { .. } => WasmErrorCode::NotFound,
                 ProofBuilderError::MissingRequest
