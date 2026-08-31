@@ -81,8 +81,8 @@ struct CreateArgs {
     /// Transaction digest to prove.
     #[arg(long, value_name = "DIGEST")]
     transaction: Option<TransactionDigest>,
-    /// Object ID to prove. The source resolves its latest version unless a transaction or event scopes the proof. May
-    /// be repeated.
+    /// Object ID to prove. Without a transaction or event target, the source resolves its latest version at proof
+    /// construction time. May be repeated.
     #[arg(long, value_name = "OBJECT_ID")]
     object: Vec<ObjectId>,
     /// Event identifier formatted as TRANSACTION_DIGEST:EVENT_SEQUENCE. May be repeated.

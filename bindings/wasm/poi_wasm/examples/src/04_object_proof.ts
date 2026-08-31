@@ -4,9 +4,9 @@
 /**
  * # Create and Verify an Object Proof
  *
- * Starting from only an object ID, the builder fetches the object's latest
- * version, discovers the transaction that produced it, and packages the object
- * and transaction evidence into one proof.
+ * Starting from only an object ID, the builder fetches its latest version at
+ * proof construction time, discovers the transaction that produced it, and
+ * packages both as one proof.
  *
  * The discovered transaction supports the object claim but does not become an
  * explicit transaction target. Verification authenticates committee history
@@ -31,7 +31,7 @@ export async function createAndVerifyObjectProof(): Promise<void> {
     const targets = await createNotarization(context);
 
     // No transaction digest is supplied. The builder discovers the transaction
-    // that produced the latest object version and constructs its evidence.
+    // that produced the version returned at build time and constructs its evidence.
     console.log("\nStage 3 - Construct a proof from only the Notarization object ID");
     const object = fromHex(normalizeIotaObjectId(targets.objectId, false, true));
     const proof = await context.poiClient.makeProof({ objects: [object] });

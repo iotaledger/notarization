@@ -90,15 +90,15 @@ transactions consume paid gas from the active wallet.
 
 ## Examples
 
-| Name                                                            | Information                                                                                                  |
-| :-------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------- |
-| [01_transaction_proof](./01_transaction_proof.rs)               | Creates a transaction proof, serializes it as JSON, and verifies it from a trusted network genesis blob.     |
-| [02_multi_target_proof](./02_multi_target_proof.rs)             | Combines transaction, changed-object, and emitted-event targets in one proof.                                |
-| [03_reuse_verifier](./03_reuse_verifier.rs)                     | Reuses one genesis-anchored verifier across proofs for two fresh transactions.                               |
-| [04_object_proof](./04_object_proof.rs)                         | Starts from a fresh object ID and lets the builder discover the transaction that created its latest version. |
-| [05_event_proof](./05_event_proof.rs)                           | Starts from a fresh event ID without declaring a separate transaction target.                                |
-| [advanced_01_committee_cache](./advanced/01_committee_cache.rs) | Persists authenticated committees in a cache scoped to the active network.                                   |
-| [advanced_02_trusted_node](./advanced/02_trusted_node.rs)       | Demonstrates trusted-node committee resolution against a trusted endpoint on any network.                    |
+| Name                                                            | Information                                                                                              |
+| :-------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------- |
+| [01_transaction_proof](./01_transaction_proof.rs)               | Creates a transaction proof, serializes it as JSON, and verifies it from a trusted network genesis blob. |
+| [02_multi_target_proof](./02_multi_target_proof.rs)             | Combines transaction, changed-object, and emitted-event targets in one proof.                            |
+| [03_reuse_verifier](./03_reuse_verifier.rs)                     | Reuses one genesis-anchored verifier across proofs for two fresh transactions.                           |
+| [04_object_proof](./04_object_proof.rs)                         | Resolves the latest object version at proof construction time and proves its exact value.                |
+| [05_event_proof](./05_event_proof.rs)                           | Starts from a fresh event ID without declaring a separate transaction target.                            |
+| [advanced_01_committee_cache](./advanced/01_committee_cache.rs) | Persists authenticated committees in a cache scoped to the active network.                               |
+| [advanced_02_trusted_node](./advanced/02_trusted_node.rs)       | Demonstrates trusted-node committee resolution against a trusted endpoint on any network.                |
 
 ## Example Workflow
 

@@ -225,6 +225,9 @@ impl WasmProofBuilder {
     }
 
     /// Adds an object proof request.
+    ///
+    /// Without a transaction or event request, the source resolves the object's
+    /// latest version at proof construction time.
     pub fn object(self, object_id: Uint8Array) -> WasmResult<Self> {
         let object_id = ObjectId::from_bytes(object_id.to_vec())?;
         Ok(Self(self.0.object(object_id)))

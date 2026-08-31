@@ -5,9 +5,9 @@
 The Proof of Inclusion Wasm Package provides the Node.js and TypeScript interface for Proof of Inclusion in the IOTA
 Notarization Toolkit. It connects a generated IOTA `LedgerService` client to `poi-rs` compiled as WebAssembly.
 
-Use the Package to construct portable proofs for IOTA transactions, events, and object states and to verify those proofs
-locally. `PoiClient` hides the generated protobuf client, ConnectRPC transport, and JavaScript-to-WASM source adapter,
-while Rust owns proof construction, committee resolution, and verification.
+Use the Package to construct portable proofs for IOTA transactions, events, and specific object versions and to verify
+those proofs locally. `PoiClient` hides the generated protobuf client, ConnectRPC transport, and
+JavaScript-to-WASM source adapter, while Rust owns proof construction, committee resolution, and verification.
 
 Proof of Inclusion operates on existing ledger activity and does not define a separate Move Package.
 
@@ -61,8 +61,8 @@ targets. Event sequence numbers and all other 64-bit values use JavaScript `bigi
 
 The serialized proof records the targets explicitly selected by the caller. Its checkpoint summary and checkpoint
 contents are sibling fields, while the required transaction proof contains the transaction, effects, and optional event
-evidence. Object targets contain the selected object values, and event targets select events from the authenticated
-transaction event list.
+evidence. Object targets contain the selected historical object values, and event targets select events from the
+authenticated transaction event list.
 
 The JavaScript source adapter passes only opaque BCS bytes and checkpoint sequence numbers into WASM. Rust decodes those
 values into existing IOTA domain types and delegates target resolution and proof construction to `poi-rs`.
@@ -108,6 +108,16 @@ does not accept a caller-provided committee cache. Retain the verifier when chec
 committees authenticated during its lifetime. `CommitteeResolver.resolve(epoch)` and `Proof.verify(committee)` remain
 available for lower-level committee resolution and offline verification; both verification methods return a
 `VerifiedProof` on success.
+
+## What a Verified Proof Proves
+
+A verified proof establishes the following claims relative to the supplied committee:
+
+- A transaction target proves that the selected transaction and its effects are included in the certified checkpoint.
+- An object target proves the exact object version returned by `objectBcs(index)`. For an object ID without a transaction
+  or event target, `makeProof()` resolves its latest version at proof construction time; the proof does not claim that it
+  remains latest. Deleted and wrapped objects are unsupported.
+- An event target proves that `eventContents(index)` returns the selected event's authenticated contents.
 
 ## Trust Boundaries
 

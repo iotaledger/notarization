@@ -5,13 +5,13 @@
 The Proof of Inclusion Rust Package constructs and verifies portable evidence that IOTA ledger data is included in a
 certified checkpoint. It is the Rust Package for Proof of Inclusion in the IOTA Notarization Toolkit.
 
-Use Proof of Inclusion when a verifier needs cryptographic evidence for a transaction, event, or object state without
-trusting the source that transports the proof. `PoiClient` provides the main entry point, `ProofBuilder` constructs the
-evidence, and `ProofVerifier` verifies it locally against a committee the caller trusts.
+Use Proof of Inclusion when a verifier needs cryptographic evidence for a transaction, event, or specific object version
+without trusting the source that transports the proof. `PoiClient` provides the main entry point,
+`ProofBuilder` constructs the evidence, and `ProofVerifier` verifies it locally against a committee the caller trusts.
 
 Proof of Inclusion operates on existing IOTA ledger activity. It does not define a separate on-chain object or Move
 Package. Single Notarization and Audit Trails can create ledger activity that applications later prove, but Proof of
-Inclusion also supports transactions, events, and object states created by other IOTA applications.
+Inclusion also supports transactions, events, and object versions created by other IOTA applications.
 
 You can find the full IOTA Notarization Toolkit documentation [here](https://docs.iota.org/developer/iota-notarization).
 
@@ -164,6 +164,16 @@ Verification checks:
 - event data matches the digest recorded in the effects when the proof includes event targets; and
 - event targets declared by the proof belong to the transaction and select events in the authenticated event list.
 
+## What a Verified Proof Proves
+
+A verified proof establishes the following claims relative to the supplied committee:
+
+- A transaction target proves that the selected transaction and its effects are included in the certified checkpoint.
+- An object target proves that the exact object version was written by the authenticated transaction. For an object ID
+  without a transaction or event target, the builder resolves its latest version at proof construction time; the proof
+  does not claim that it remains latest. Deleted and wrapped objects are unsupported.
+- An event target proves that the selected event and its contents appear in the authenticated transaction's event list.
+
 ## Proof Model
 
 A `Proof` contains three layers of evidence:
@@ -172,10 +182,10 @@ A `Proof` contains three layers of evidence:
 - A `CertifiedCheckpointSummary` and its `CheckpointContents` link the transaction to a committee-certified checkpoint.
 - A required `TransactionProof` contains the transaction, its effects, and event data when event targets are present.
 
-Object targets contain their exact object values. Verification derives each object reference and finds it in the
-transaction effects. Event targets contain `EventID` values, while the transaction proof carries the complete event list
-needed to verify the effects' event digest. A transaction target is present only when the caller explicitly requests the
-transaction itself, although transaction evidence supports every proof.
+Object targets contain their exact values. Event targets contain `EventID` values, while the
+transaction proof carries the complete event list needed to verify the effects' event digest. A transaction target is
+present only when the caller explicitly requests the transaction itself, although transaction evidence supports every
+proof.
 
 ## Trust Boundaries
 

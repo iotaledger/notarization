@@ -4,9 +4,8 @@
 //! # Create and Verify an Object Proof
 //!
 //! An application can request a Proof of Inclusion using only an object ID. The
-//! builder fetches the object's latest version, discovers the transaction that
-//! produced that version, and packages the object and transaction evidence into
-//! one proof.
+//! builder fetches its latest version at proof construction time, discovers the
+//! transaction that produced it, and packages both as one proof.
 //!
 //! The discovered transaction is evidence supporting the object claim. It is not
 //! an explicit transaction target unless the caller also invokes `transaction`.

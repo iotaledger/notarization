@@ -48,8 +48,10 @@ pub enum ProofBuilderError {
         /// Requested object ID.
         object_id: ObjectId,
     },
-    /// The requested object was not changed by the selected transaction.
-    #[error("object {object_id} was not changed by transaction {transaction_digest}")]
+    /// The selected transaction did not write a provable value for the requested object.
+    #[error(
+        "transaction {transaction_digest} did not write a provable value for object {object_id}; deleted and wrapped objects are unsupported"
+    )]
     ObjectNotChangedByTransaction {
         /// Requested object ID.
         object_id: ObjectId,
@@ -129,13 +131,16 @@ impl<S: Source> ProofBuilder<S> {
 
     /// Adds an object proof request by object ID.
     ///
-    /// The source resolves the ID to the exact object reference packaged in the proof.
+    /// Without a transaction or event request, the source resolves the object's
+    /// latest version at proof construction time.
     pub fn object(mut self, object_id: ObjectId) -> Self {
         Self::push_unique(&mut self.object_ids, object_id);
         self
     }
 
     /// Adds multiple object proof requests by object ID.
+    ///
+    /// Object resolution follows the build-time semantics of [`Self::object`].
     pub fn objects(mut self, object_ids: impl IntoIterator<Item = ObjectId>) -> Self {
         for object_id in object_ids {
             Self::push_unique(&mut self.object_ids, object_id);
