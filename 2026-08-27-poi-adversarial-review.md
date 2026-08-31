@@ -33,6 +33,8 @@ Severity: **high** means a relying party can be misled or the verifier can be cr
 
 #### H1. Event target index truncated on wasm32: `event_seq = 2^32 + k` verifies as event `k` (soundness, confirmed)
 
+**Status: Resolved.** Event sequence conversion is now checked with `usize::try_from`, so values outside the target architecture's index range are rejected instead of truncated.
+
 **Proof.** [`poi-rs/src/proof.rs:445-446`](https://github.com/iotaledger/notarization/blob/3a69eb0454304902daa4e576626d8900656108c5/poi-rs/src/proof.rs#L445-L452):
 
 ```rust
@@ -74,7 +76,7 @@ signature: crate::crypto::AggregateAuthoritySignature::from_bytes(signature.as_b
 
 #### H4. `poi verify` prints only `valid` (ergonomics, hand-verified)
 
-**Status: Addressed.** The CLI now prints the verified checkpoint, transaction and declared targets. Expectation flags were intentionally not added.
+**Status: Resolved.** The CLI now prints the verified checkpoint, transaction and declared targets. Expectation flags were intentionally not added.
 
 **Proof.** [`poi-rs/src/bin/poi.rs:177`](https://github.com/iotaledger/notarization/blob/3a69eb0454304902daa4e576626d8900656108c5/poi-rs/src/bin/poi.rs#L170-L177): `writeln!(io::stdout().lock(), "valid")`. The verifier checks the proof's internal consistency; the targets are whatever the prover put into `ProofTargets`. Nothing shows the operator the chain, epoch, checkpoint sequence number and timestamp, transaction digest, object references with versions, or event IDs, and there is no way to state an expectation (`--transaction`, `--object`, `--event`) that the proof must satisfy. The README's check list says ["an explicitly requested transaction matches the packaged transaction"](https://github.com/iotaledger/notarization/blob/3a69eb0454304902daa4e576626d8900656108c5/poi-rs/README.md#L148-L157), where "requested" means requested by the prover, which reinforces the misreading.
 
@@ -102,7 +104,7 @@ signature: crate::crypto::AggregateAuthoritySignature::from_bytes(signature.as_b
 
 #### M2. `verify()` returns `()`; callers read claims from the unverified proof; the WASM `Proof` exposes no verified content (API design, hand-verified)
 
-**Status: Addressed.** Both verification entry points now return authenticated claims through `VerifiedProof`; the raw `Proof` remains explicitly unverified.
+**Status: Resolved.** Both verification entry points now return authenticated claims through `VerifiedProof`; the raw `Proof` remains explicitly unverified.
 
 **Proof.** [`ProofVerifier::verify`](https://github.com/iotaledger/notarization/blob/3a69eb0454304902daa4e576626d8900656108c5/poi-rs/src/proof.rs#L340) and [`CommitteeResolver::verify`](https://github.com/iotaledger/notarization/blob/3a69eb0454304902daa4e576626d8900656108c5/poi-rs/src/committee.rs#L274) return unit. Every claim (targets, object contents, event content, checkpoint timestamp and number) is read afterwards from the same `Proof` value that was untrusted before the call, and no type distinguishes the two states. There is no accessor that returns the event content for an `EventID` target: the caller has to know that it lives at `transaction_proof().events.as_ref().unwrap().0[event_seq as usize]`, the same indexing the verifier gets wrong in H1. On the WASM side the `Proof` class ([`poi_wasm/src/proof.rs:96-127`](https://github.com/iotaledger/notarization/blob/3a69eb0454304902daa4e576626d8900656108c5/bindings/wasm/poi_wasm/src/proof.rs#L96-L127)) exposes target IDs, versions and digests as strings and nothing else: no timestamp, no checkpoint number, no object body, no event body.
 
@@ -133,6 +135,8 @@ signature: crate::crypto::AggregateAuthoritySignature::from_bytes(signature.as_b
 **Fix.** Namespace cache keys by anchor identity (genesis checkpoint digest, or a digest of the anchor's voting rights) inside `anchored_with_cache`, so two resolvers with different anchors cannot read each other's entries even when handed the same backend.
 
 #### M5. `from_genesis` accepts any six-field BCS blob and exposes no chain identity (robustness, disputed, resolved as medium)
+
+**Status: Resolved.** Genesis-based resolution now requires epoch-zero checkpoint and committee data, verifies the checkpoint signature and contents against the extracted committee, and retains the checkpoint digest as the trusted `ChainIdentifier`.
 
 **Proof.** [`committee.rs:206-228`](https://github.com/iotaledger/notarization/blob/3a69eb0454304902daa4e576626d8900656108c5/poi-rs/src/committee.rs#L206-L228) decodes the blob, reads only `objects`, and discards `checkpoint` and the rest (`#[allow(dead_code)]` says so). There is no `epoch == 0` requirement, no verification of the genesis checkpoint against the extracted committee (iota-config's [`Genesis::checkpoint()`](https://github.com/iotaledger/iota/blob/v1.29.0/crates/iota-config/src/genesis.rs#L125-L130) does this lazily), and the genesis checkpoint digest is not surfaced.
 

@@ -52,6 +52,25 @@ pub enum CommitteeResolutionErrorKind {
         #[source]
         source: BoxError,
     },
+    /// The trusted genesis checkpoint is not from epoch zero.
+    #[error("trusted genesis checkpoint has epoch {epoch}, expected epoch 0")]
+    UnexpectedGenesisCheckpointEpoch {
+        /// Epoch encoded in the genesis checkpoint.
+        epoch: EpochId,
+    },
+    /// The committee extracted from the trusted genesis blob is not from epoch zero.
+    #[error("trusted genesis committee has epoch {epoch}, expected epoch 0")]
+    UnexpectedGenesisCommitteeEpoch {
+        /// Epoch encoded in the genesis committee.
+        epoch: EpochId,
+    },
+    /// The trusted genesis checkpoint or its contents failed verification.
+    #[error("trusted genesis checkpoint failed verification")]
+    InvalidGenesisCheckpoint {
+        /// Checkpoint signature or contents verification failure.
+        #[source]
+        source: BoxError,
+    },
     /// Fetching a committee directly from the trusted node failed.
     #[error("failed to fetch committee for epoch {epoch} from the trusted node")]
     FetchCommittee {
@@ -232,13 +251,30 @@ impl CommitteeResolution {
             bcs::from_reader(reader).map_err(|source| CommitteeResolutionErrorKind::LoadGenesisCommittee {
                 source: Box::new(source),
             })?;
-        let chain_identifier = ChainIdentifier::from(*genesis.checkpoint.digest());
+        let checkpoint_epoch = genesis.checkpoint.epoch();
+        if checkpoint_epoch != 0 {
+            return Err(CommitteeResolutionErrorKind::UnexpectedGenesisCheckpointEpoch {
+                epoch: checkpoint_epoch,
+            });
+        }
+
         let objects = genesis.objects.as_slice();
         let system_state =
             get_iota_system_state(&objects).map_err(|source| CommitteeResolutionErrorKind::LoadGenesisCommittee {
                 source: Box::new(source),
             })?;
         let committee = system_state.get_current_epoch_committee().committee().clone();
+        if committee.epoch != 0 {
+            return Err(CommitteeResolutionErrorKind::UnexpectedGenesisCommitteeEpoch { epoch: committee.epoch });
+        }
+
+        genesis
+            .checkpoint
+            .verify_with_contents(&committee, Some(&genesis.checkpoint_contents))
+            .map_err(|source| CommitteeResolutionErrorKind::InvalidGenesisCheckpoint {
+                source: Box::new(source),
+            })?;
+        let chain_identifier = ChainIdentifier::from(*genesis.checkpoint.digest());
 
         Ok(Self::anchored_with_cache(chain_identifier, committee, cache))
     }
