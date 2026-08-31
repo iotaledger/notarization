@@ -5,8 +5,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import type { LedgerSource } from "../lib/source-types.js";
 import { Committee, CommitteeResolution, CommitteeResolver } from "../lib/index.js";
+import type { LedgerSource } from "../lib/source-types.js";
 
 test("the WASM resolver constructs a committee reported by a trusted node", async () => {
     const source = await committeeSource();

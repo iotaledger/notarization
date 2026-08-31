@@ -21,7 +21,7 @@ pub mod proof;
 pub mod source;
 
 pub use builder::{ProofBuilder, ProofBuilderError};
-pub use cache::{CommitteeCache, CommitteeCacheError, MemoryCommitteeCache};
+pub use cache::{CommitteeCache, CommitteeCacheError, CommitteeCacheKey, MemoryCommitteeCache};
 pub use client::PoiClient;
 pub use committee::{
     CommitteeResolution, CommitteeResolutionError, CommitteeResolutionErrorKind, CommitteeResolver,

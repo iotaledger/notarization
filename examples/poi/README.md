@@ -115,7 +115,7 @@ use trusted-node committee resolution so they can focus on target-driven discove
 - Treat the complete proof payload as untrusted until verification succeeds.
 - For local and custom networks, obtain `IOTA_GENESIS_PATH` independently from the party supplying the proof.
 - Ensure the genesis blob belongs to the same network as the proof.
-- Scope persistent committee caches to one network and genesis anchor.
+- Preserve the complete network-scoped key when implementing a persistent committee cache.
 - Use `CommitteeResolution::TrustedNode` only when the connected node is inside the verifier's trust boundary.
 
 ## Documentation And Resources

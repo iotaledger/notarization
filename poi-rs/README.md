@@ -141,7 +141,9 @@ println!("verified transaction: {}", verified.transaction_digest());
 boundary. `CommitteeResolution::from_genesis()` loads an anchor committee from a trusted BCS-encoded genesis blob,
 while `CommitteeResolution::anchored()` accepts an already extracted trusted committee. Use
 `CommitteeResolution::anchored_with_cache()` or `CommitteeResolution::from_genesis_with_cache()` to supply a cache that
-contains committees authenticated for the same network.
+persists authenticated committees. Shared cache entries are keyed by both the trusted genesis checkpoint digest and
+epoch, so one backend can be shared safely by resolvers for different networks. The genesis-based constructor derives
+the chain identifier automatically; `anchored_with_cache()` requires it explicitly.
 
 Retain the verifier when checking multiple proofs so it can reuse its authenticated committee cache. `ProofVerifier`
 remains the offline entry point for callers that already possess the authoritative committee.

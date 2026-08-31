@@ -50,7 +50,9 @@ export async function createAndVerifyEventProof(): Promise<void> {
 
     console.log("  event proof verified successfully.");
     console.log(
-        `  authenticated event: ${verified.targets.events[0]?.transactionDigest}:${verified.targets.events[0]?.eventSequence}`,
+        `  authenticated event: ${verified.targets.events[0]?.transactionDigest}:${
+            verified.targets.events[0]?.eventSequence
+        }`,
     );
     console.log(`  event contents: ${verified.eventContents(0).length} BCS bytes`);
     console.log("The selected event was emitted by a transaction trusted through the selected node.");

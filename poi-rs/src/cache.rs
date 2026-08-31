@@ -2,12 +2,49 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use iota_types::committee::{Committee, EpochId};
+use iota_types::digests::ChainIdentifier;
 
 use crate::BoxError;
 
 mod in_memory;
 
 pub use in_memory::MemoryCommitteeCache;
+
+/// Identifies one committee-cache entry by its network and epoch.
+///
+/// The chain identifier is the network's genesis checkpoint digest. Cache
+/// adapters must use the complete key so entries authenticated for different
+/// networks cannot collide.
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct CommitteeCacheKey {
+    chain_identifier: ChainIdentifier,
+    epoch: EpochId,
+}
+
+impl CommitteeCacheKey {
+    /// Creates a cache key for `epoch` on the identified network.
+    pub const fn new(chain_identifier: ChainIdentifier, epoch: EpochId) -> Self {
+        Self {
+            chain_identifier,
+            epoch,
+        }
+    }
+
+    /// Creates a key for a cache private to one resolver.
+    pub(crate) fn isolated(epoch: EpochId) -> Self {
+        Self::new(ChainIdentifier::default(), epoch)
+    }
+
+    /// Returns the network's genesis checkpoint digest.
+    pub const fn chain_identifier(&self) -> &ChainIdentifier {
+        &self.chain_identifier
+    }
+
+    /// Returns the cached committee epoch.
+    pub const fn epoch(&self) -> EpochId {
+        self.epoch
+    }
+}
 
 /// Error returned by a committee cache.
 #[derive(Debug, thiserror::Error)]
@@ -32,14 +69,13 @@ pub enum CommitteeCacheError {
 
 /// Stores authenticated committees for anchored resolution.
 ///
-/// A cache is part of the caller's trust boundary. Implementations must return
-/// only committees previously authenticated for the same network and must
-/// preserve their integrity after storage.
+/// Implementations must preserve committee integrity after storage and use the
+/// complete [`CommitteeCacheKey`] for every lookup.
 #[async_trait::async_trait]
 pub trait CommitteeCache: Send + Sync {
-    /// Returns the authenticated committee for `epoch`, when available.
-    async fn committee(&self, epoch: EpochId) -> Result<Option<Committee>, CommitteeCacheError>;
+    /// Returns the authenticated committee for `key`, when available.
+    async fn committee(&self, key: CommitteeCacheKey) -> Result<Option<Committee>, CommitteeCacheError>;
 
-    /// Stores a committee after the resolver has authenticated it.
-    async fn store(&self, committee: &Committee) -> Result<(), CommitteeCacheError>;
+    /// Stores a committee under `key` after the resolver has authenticated it.
+    async fn store(&self, key: CommitteeCacheKey, committee: &Committee) -> Result<(), CommitteeCacheError>;
 }

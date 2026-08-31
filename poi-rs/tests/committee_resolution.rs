@@ -7,8 +7,11 @@ use std::fs::File;
 
 use iota_config::IOTA_GENESIS_FILENAME;
 use iota_grpc_client::Client as GrpcClient;
-use poi_rs::{CommitteeCache, CommitteeResolution, CommitteeResolutionErrorKind, MemoryCommitteeCache, PoiClient};
-use utils::{advance_to_epoch, grpc_client, start_test_cluster};
+use poi_rs::{
+    CommitteeCache, CommitteeCacheKey, CommitteeResolution, CommitteeResolutionErrorKind, MemoryCommitteeCache,
+    PoiClient,
+};
+use utils::{advance_to_epoch, genesis_chain_identifier, grpc_client, start_test_cluster};
 
 use crate::utils::committee_at;
 
@@ -36,7 +39,7 @@ async fn genesis_anchored_client_authenticates_committee_across_epochs() {
     assert_eq!(resolved, expected[10]);
     assert_eq!(
         cache
-            .committee(10)
+            .committee(CommitteeCacheKey::new(genesis_chain_identifier(&cluster), 10))
             .await
             .expect("caller-provided cache must remain readable"),
         Some(expected[10].clone())

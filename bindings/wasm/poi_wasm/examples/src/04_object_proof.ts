@@ -49,7 +49,9 @@ export async function createAndVerifyObjectProof(): Promise<void> {
 
     console.log("  object proof verified successfully.");
     console.log(
-        `  authenticated object: ${verified.targets.objects[0]?.objectId} at version ${verified.targets.objects[0]?.version}`,
+        `  authenticated object: ${verified.targets.objects[0]?.objectId} at version ${
+            verified.targets.objects[0]?.version
+        }`,
     );
     console.log(`  object BCS: ${verified.objectBcs(0).length} bytes`);
     console.log("The resolved object version was changed by a transaction trusted through the selected node.");
