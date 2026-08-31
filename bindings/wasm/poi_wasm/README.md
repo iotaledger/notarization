@@ -109,6 +109,9 @@ committees authenticated during its lifetime. `CommitteeResolver.resolve(epoch)`
 available for lower-level committee resolution and offline verification; both verification methods return a
 `VerifiedProof` on success.
 
+Verification failures are normal JavaScript errors with a stable `code`. Use `isPoiError(error)` before reading the
+code. Only `PROOF_INVALID` means the proof was rejected.
+
 ## What a Verified Proof Proves
 
 A verified proof establishes the following claims relative to the supplied committee:

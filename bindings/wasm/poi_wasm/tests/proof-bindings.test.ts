@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { Committee, Proof, type ProofTargets, type VerifiedProof } from "../lib/index.js";
+import { Committee, isPoiError, Proof, type ProofTargets, type VerifiedProof } from "../lib/index.js";
 
 const fixtures: readonly {
     name: string;
@@ -107,7 +107,12 @@ test("rejects event sequences outside the wasm32 index range", async () => {
 
         assert.throws(
             () => proof.verify(committee),
-            new RegExp(`event sequence number ${eventSequence} is out of bounds`),
+            (error) => {
+                assert.ok(isPoiError(error));
+                assert.equal(error.code, "PROOF_INVALID");
+                assert.match(error.message, new RegExp(`event sequence number ${eventSequence} is out of bounds`));
+                return true;
+            },
         );
     }
 });

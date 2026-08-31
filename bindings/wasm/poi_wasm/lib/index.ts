@@ -11,4 +11,5 @@ export {
     ProofTargets,
     VerifiedProof,
 } from "../node/poi_wasm.js";
+export { isPoiError, type PoiError, type PoiErrorCode } from "./error.js";
 export { PoiClient, type PoiClientOptions, type ProofEventRequest, type ProofRequest } from "./poi-client.js";
