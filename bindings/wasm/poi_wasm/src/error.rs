@@ -80,7 +80,7 @@ impl WasmError {
                 | ProofBuilderError::CheckpointNotFound { .. }
                 | ProofBuilderError::ObjectNotFound { .. }
                 | ProofBuilderError::EventNotFound { .. } => WasmErrorCode::NotFound,
-                ProofBuilderError::MissingRequest
+                ProofBuilderError::MissingTarget
                 | ProofBuilderError::ObjectReferenceMismatch { .. }
                 | ProofBuilderError::ObjectNotChangedByTransaction { .. }
                 | ProofBuilderError::TransactionMismatch { .. } => WasmErrorCode::InvalidInput,

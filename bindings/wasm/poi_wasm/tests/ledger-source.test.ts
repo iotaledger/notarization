@@ -118,6 +118,7 @@ test("returns the BCS evidence needed by poi-rs", async () => {
                     value: 42n,
                 });
                 assert.deepEqual(request.readMask?.paths, [
+                    "checkpoint.sequence_number",
                     "checkpoint.summary.bcs",
                     "checkpoint.signature",
                     "checkpoint.contents.bcs",

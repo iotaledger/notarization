@@ -131,7 +131,7 @@ impl WasmCommitteeResolver {
         Ok(WasmCommittee(committee))
     }
 
-    /// Resolves the committee required by `proof` and returns its authenticated claims.
+    /// Resolves the committee required by `proof` and returns its authenticated targets.
     pub async fn verify(&self, proof: &WasmProof) -> WasmResult<WasmVerifiedProof> {
         let verified = self.0.verify(&proof.0).await?;
 

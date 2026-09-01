@@ -149,24 +149,24 @@ Retain the verifier when checking multiple proofs so it can reuse its authentica
 remains the offline entry point for callers that already possess the authoritative committee.
 
 Successful verification returns a `VerifiedProof` that borrows from the input proof and exposes only authenticated
-checkpoint metadata, transaction data and digest, object targets, and event claims. It intentionally omits the packaged
+checkpoint metadata, transaction data and digest, object targets, and event targets. It intentionally omits the packaged
 user signatures because checkpoint inclusion does not authenticate those bytes. Read relying-party data through this
 returned value. The original `Proof` remains the portable untrusted envelope used for transport and serialization.
 
 Verification checks:
 
-- the checkpoint summary is certified by the supplied committee;
-- the checkpoint contents match the certified checkpoint summary;
-- the transaction digest matches the transaction effects;
-- the transaction effects are included in the checkpoint contents;
-- a transaction target declared by the proof matches the packaged transaction;
-- object targets declared by the proof derive references present in the transaction effects;
-- event data matches the digest recorded in the effects when the proof includes event targets; and
-- event targets declared by the proof belong to the transaction and select events in the authenticated event list.
+- the proof contains at least one transaction, object, or event target;
+- the supplied committee certifies the checkpoint summary and its checkpoint-contents digest;
+- the packaged transaction digest matches the transaction effects;
+- the transaction effects are included in the authenticated checkpoint contents;
+- packaged event data matches the digest in the transaction effects;
+- an explicit transaction target matches the packaged transaction;
+- every object target's exact reference appears in the transaction effects; and
+- every event target has packaged event data, belongs to the packaged transaction, and selects an existing event.
 
 ## What a Verified Proof Proves
 
-A verified proof establishes the following claims relative to the supplied committee:
+Successful verification authenticates the following targets relative to the supplied committee:
 
 - A transaction target proves that the selected transaction and its effects are included in the certified checkpoint.
 - An object target proves that the exact object version was written by the authenticated transaction. For an object ID
@@ -193,8 +193,8 @@ proof.
 authoritative. `CommitteeResolver::verify()` composes committee resolution with offline verification for source-backed
 workflows, while `CommitteeResolver::resolve()` returns the authenticated committee when callers need it directly.
 
-Treat every proof payload as untrusted. After successful verification, trust claims relative to the supplied committee
-through the returned `VerifiedProof`; do not read relying-party claims from an unrelated `Proof` value.
+Treat every proof payload as untrusted. After successful verification, trust target data relative to the supplied
+committee through the returned `VerifiedProof`; do not read relying-party data from an unrelated `Proof` value.
 
 The proof's `chain` value is informational. The verifier does not authenticate it, so applications must not use it to
 select a network, committee, genesis blob, or other trust anchor.
@@ -249,7 +249,7 @@ formats.
 - `Proof`: Versioned Proof of Inclusion envelope.
 - `ProofV1`: Version 1 checkpoint and transaction evidence carried by `Proof::ProofV1`.
 - `TransactionProof`: Transaction, effects, and optional event evidence used to prove inclusion.
-- `ProofTargets`: Transaction, object, and event claims explicitly selected by the caller.
+- `ProofTargets`: Transaction, object, and event targets explicitly selected by the caller.
 - `PoiClient`: Source-backed entry point for proof construction and committee-aware verification.
 - `CommitteeResolution`: Trusted-node or anchored committee-resolution configuration, including the committee cache.
 - `ProofBuilder`: Proof-construction workflow for public networks or custom sources.

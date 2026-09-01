@@ -1,6 +1,7 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+use std::fmt;
 use std::io::Read;
 use std::sync::Arc;
 
@@ -192,6 +193,23 @@ pub enum CommitteeResolution {
     },
 }
 
+impl fmt::Debug for CommitteeResolution {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::TrustedNode => formatter.write_str("TrustedNode"),
+            Self::Anchored {
+                committee,
+                chain_identifier,
+                ..
+            } => formatter
+                .debug_struct("Anchored")
+                .field("committee", committee)
+                .field("chain_identifier", chain_identifier)
+                .finish_non_exhaustive(),
+        }
+    }
+}
+
 impl CommitteeResolution {
     /// Anchors committee resolution at an already trusted committee.
     ///
@@ -292,7 +310,7 @@ impl CommitteeResolution {
 /// A resolver either accepts committee data directly from a trusted node or
 /// starts from a trusted committee, normally obtained from the network genesis
 /// blob, and authenticates every end-of-epoch handoff up to the requested epoch.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct CommitteeResolver<S> {
     source: S,
     mode: CommitteeResolution,
@@ -334,7 +352,7 @@ where
     /// Committee resolution may fetch committee or epoch-close evidence from
     /// the source. The final proof verification is performed locally by
     /// [`ProofVerifier`]. On success, the returned [`VerifiedProof`] borrows the
-    /// authenticated claims from `proof`.
+    /// authenticated targets from `proof`.
     pub async fn verify<'proof>(&self, proof: &'proof Proof) -> Result<VerifiedProof<'proof>, ProofVerificationError> {
         let committee = self
             .resolve(proof.checkpoint_summary().epoch())

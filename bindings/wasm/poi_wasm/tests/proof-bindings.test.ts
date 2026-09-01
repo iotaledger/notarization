@@ -6,6 +6,8 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import { Committee, isPoiError, Proof, type ProofTargets, type VerifiedProof } from "../lib/index.js";
+import type { LedgerSource } from "../lib/source-types.js";
+import { ProofBuilder } from "../node/poi_wasm.js";
 
 const fixtures: readonly {
     name: string;
@@ -128,6 +130,24 @@ test("rejects a proof with a committee from another epoch", async () => {
         (error) => {
             assert.ok(isPoiError(error));
             assert.equal(error.code, "PROOF_INVALID");
+            return true;
+        },
+    );
+});
+
+test("rejects a non-Uint8Array object response", async () => {
+    const source = {
+        async object() {
+            return { 0: 255, length: 1 };
+        },
+    } as unknown as LedgerSource;
+
+    await assert.rejects(
+        new ProofBuilder(source).object(new Uint8Array(32)).build(),
+        (error) => {
+            assert.ok(isPoiError(error));
+            assert.equal(error.code, "SOURCE_REQUEST");
+            assert.match(error.message, /object source response must be a Uint8Array/);
             return true;
         },
     );

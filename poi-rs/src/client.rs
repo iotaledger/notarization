@@ -7,7 +7,7 @@ use iota_grpc_client::Client as GrpcClient;
 use crate::{CommitteeResolution, CommitteeResolver, ProofBuilder, Source};
 
 /// Convenient entry point for proof construction and verification backed by one ledger source.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct PoiClient<S> {
     source: S,
 }

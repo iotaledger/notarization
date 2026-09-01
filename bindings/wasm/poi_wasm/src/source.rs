@@ -18,8 +18,8 @@ use iota_types::object::Object;
 use js_sys::Uint8Array;
 use poi_rs::{Source, SourceCheckpoint, SourceError, SourceTransaction};
 use serde::Deserialize;
-use wasm_bindgen::JsValue;
 use wasm_bindgen::prelude::wasm_bindgen;
+use wasm_bindgen::{JsCast, JsValue};
 
 use crate::error::PoiError;
 use crate::versioned::{
@@ -142,7 +142,14 @@ impl Source for LedgerSource {
             return Ok(None);
         }
 
-        let bytes = Uint8Array::new(&value).to_vec();
+        let bytes = value
+            .dyn_into::<Uint8Array>()
+            .map_err(|_| {
+                SourceError::invalid_response(PoiError::invalid_response(
+                    "object source response must be a Uint8Array",
+                ))
+            })?
+            .to_vec();
         let versioned: VersionedObject = decode_bcs(&bytes).map_err(SourceError::invalid_response)?;
         let VersionedObject::V1(object) = versioned;
 

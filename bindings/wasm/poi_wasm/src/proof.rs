@@ -79,7 +79,7 @@ impl From<&ProofTargets> for WasmProofTargets {
     }
 }
 
-/// Authenticated claims returned by successful proof verification.
+/// Authenticated targets returned by successful proof verification.
 #[wasm_bindgen(js_name = VerifiedProof, inspectable)]
 #[derive(Clone)]
 pub struct WasmVerifiedProof(Proof);
@@ -190,7 +190,7 @@ impl WasmProof {
         self.0.targets().into()
     }
 
-    /// Verifies this proof locally and returns its authenticated claims.
+    /// Verifies this proof locally and returns its authenticated targets.
     pub fn verify(&self, committee: &WasmCommittee) -> WasmResult<WasmVerifiedProof> {
         let verified = poi_rs::ProofVerifier::new(committee.inner()).verify(&self.0)?;
 
@@ -218,22 +218,22 @@ impl WasmProofBuilder {
         Self(ProofBuilder::new(source))
     }
 
-    /// Adds a transaction proof request.
+    /// Adds a transaction proof target.
     pub fn transaction(self, transaction_digest: Uint8Array) -> WasmResult<Self> {
         let digest = TransactionDigest::from_bytes(transaction_digest.to_vec())?;
         Ok(Self(self.0.transaction(digest)))
     }
 
-    /// Adds an object proof request.
+    /// Adds an object proof target.
     ///
-    /// Without a transaction or event request, the source resolves the object's
+    /// Without a transaction or event target, the source resolves the object's
     /// latest version at proof construction time.
     pub fn object(self, object_id: Uint8Array) -> WasmResult<Self> {
         let object_id = ObjectId::from_bytes(object_id.to_vec())?;
         Ok(Self(self.0.object(object_id)))
     }
 
-    /// Adds an event proof request.
+    /// Adds an event proof target.
     pub fn event(self, transaction_digest: Uint8Array, event_sequence: u64) -> WasmResult<Self> {
         let tx_digest = TransactionDigest::from_bytes(transaction_digest.to_vec())?;
         Ok(Self(self.0.event(EventID {

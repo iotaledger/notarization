@@ -22,7 +22,7 @@ use poi_rs::CommitteeResolution;
 /// 1. Identify an event by transaction digest and sequence number.
 /// 2. Construct a proof without adding an explicit transaction target.
 /// 3. Inspect the event target and its supporting event evidence.
-/// 4. Authenticate committee history from genesis and verify the event claim.
+/// 4. Authenticate committee history from genesis and verify the event target.
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("=== Proof of Inclusion: Create and Verify an Event Proof ===\n");

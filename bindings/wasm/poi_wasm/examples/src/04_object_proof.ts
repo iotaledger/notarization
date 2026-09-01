@@ -8,7 +8,7 @@
  * proof construction time, discovers the transaction that produced it, and
  * packages both as one proof.
  *
- * The discovered transaction supports the object claim but does not become an
+ * The discovered transaction supports the object target but does not become an
  * explicit transaction target. Verification authenticates committee history
  * from a trusted genesis blob.
  */

@@ -85,13 +85,13 @@ pub enum VerifyErrorKind {
     /// Event targets are present but the proof does not contain transaction events.
     #[error("event targets require transaction event data")]
     MissingEvents,
-    /// An event claim identifies a transaction other than the one proven by the envelope.
+    /// An event target identifies a transaction other than the one proven by the envelope.
     #[error("event target does not belong to the transaction")]
     EventTransactionMismatch,
-    /// An event claim refers to an index outside the packaged transaction events.
+    /// An event target refers to an index outside the packaged transaction events.
     #[error("event sequence number {sequence} is out of bounds")]
     EventSequenceOutOfBounds {
-        /// Transaction-local event index requested by the claim.
+        /// Transaction-local event index selected by the target.
         sequence: u64,
     },
     /// A claimed object reference is absent from the packaged transaction effects.
@@ -115,7 +115,7 @@ pub struct ProofTargets {
 }
 
 impl ProofTargets {
-    /// Creates an empty set of claims.
+    /// Creates an empty set of targets.
     pub fn new() -> Self {
         Self::default()
     }
@@ -173,14 +173,14 @@ impl TransactionProof {
     }
 }
 
-/// Authenticated claims borrowed from a successfully verified proof.
+/// Authenticated targets borrowed from a successfully verified proof.
 ///
 /// Values are exposed through this type only after all checkpoint, transaction,
 /// object, and event checks have succeeded. The original [`Proof`] remains
 /// available for serialization and inspection, but its contents must not be
 /// treated as authenticated without a corresponding `VerifiedProof`.
 #[derive(Debug)]
-#[must_use = "read authenticated claims from the returned VerifiedProof"]
+#[must_use = "read authenticated targets from the returned VerifiedProof"]
 pub struct VerifiedProof<'proof> {
     checkpoint_summary: &'proof CertifiedCheckpointSummary,
     transaction: &'proof TransactionData,
@@ -391,7 +391,7 @@ impl<'committee> ProofVerifier<'committee> {
         self.committee
     }
 
-    /// Verifies a proof and all of its claims.
+    /// Verifies a proof and all of its targets.
     ///
     /// Verification checks that:
     ///
@@ -401,7 +401,7 @@ impl<'committee> ProofVerifier<'committee> {
     /// - the transaction effects occur in the authenticated checkpoint contents;
     /// - every selected target matches the authenticated proof data.
     ///
-    /// On success, returns a [`VerifiedProof`] borrowing the authenticated claims
+    /// On success, returns a [`VerifiedProof`] borrowing the authenticated targets
     /// from `proof`.
     ///
     /// # Errors
@@ -413,7 +413,7 @@ impl<'committee> ProofVerifier<'committee> {
         }
     }
 
-    /// Verifies a version 1 proof and all of its claims.
+    /// Verifies a version 1 proof and all of its targets.
     fn verify_v1<'proof>(&self, proof: &'proof ProofV1) -> Result<VerifiedProof<'proof>, VerifyError> {
         if proof.targets.is_empty() {
             return Err(VerifyError {

@@ -26,6 +26,7 @@ const TRANSACTION_PROOF_FIELDS = [
     "checkpoint",
 ];
 const CHECKPOINT_PROOF_FIELDS = [
+    "checkpoint.sequence_number",
     "checkpoint.summary.bcs",
     "checkpoint.signature",
     "checkpoint.contents.bcs",

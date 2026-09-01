@@ -7,7 +7,7 @@
 //! builder fetches its latest version at proof construction time, discovers the
 //! transaction that produced it, and packages both as one proof.
 //!
-//! The discovered transaction is evidence supporting the object claim. It is not
+//! The discovered transaction is evidence supporting the object target. It is not
 //! an explicit transaction target unless the caller also invokes `transaction`.
 //!
 //! Verification authenticates the checkpoint committee from a trusted genesis
@@ -21,7 +21,7 @@ use poi_rs::CommitteeResolution;
 /// 1. Request a proof using only an object ID.
 /// 2. Let the builder resolve the latest object version and its transaction.
 /// 3. Distinguish supporting transaction evidence from an explicit target.
-/// 4. Authenticate committee history from genesis and verify the object claim.
+/// 4. Authenticate committee history from genesis and verify the object target.
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("=== Proof of Inclusion: Create and Verify an Object Proof ===\n");

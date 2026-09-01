@@ -4,7 +4,7 @@
 /**
  * # Create and Verify a Multi-Target Proof
  *
- * A single Proof of Inclusion can authenticate several claims about the same
+ * A single Proof of Inclusion can authenticate several targets from the same
  * transaction. This example proves the transaction itself, one object changed
  * by it, and one event emitted by it.
  *

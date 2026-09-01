@@ -114,7 +114,7 @@ code. Only `PROOF_INVALID` means the proof was rejected.
 
 ## What a Verified Proof Proves
 
-A verified proof establishes the following claims relative to the supplied committee:
+Successful verification authenticates the following targets relative to the supplied committee:
 
 - A transaction target proves that the selected transaction and its effects are included in the certified checkpoint.
 - An object target proves the exact object version returned by `objectBcs(index)`. For an object ID without a transaction
