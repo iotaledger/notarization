@@ -14,9 +14,9 @@ use crate::{Proof, ProofTargets, ProofV1, Source, SourceError, TransactionProof}
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum ProofBuilderError {
-    /// No proof request was selected before building.
-    #[error("proof builder requires a request")]
-    MissingRequest,
+    /// No proof target was selected before building.
+    #[error("proof builder requires a target")]
+    MissingTarget,
     /// The configured source failed while reading proof evidence.
     #[error("source failed while reading proof evidence")]
     Source {
@@ -29,6 +29,12 @@ pub enum ProofBuilderError {
     TransactionNotFound {
         /// Transaction digest that was not returned.
         transaction_digest: TransactionDigest,
+    },
+    /// The source did not return the checkpoint containing the transaction.
+    #[error("checkpoint {sequence_number} was not found")]
+    CheckpointNotFound {
+        /// Checkpoint sequence number that was not returned.
+        sequence_number: u64,
     },
     /// The source did not return a requested object.
     #[error("object {object_id} was not found")]
@@ -48,20 +54,22 @@ pub enum ProofBuilderError {
         /// Requested object ID.
         object_id: ObjectId,
     },
-    /// The requested object was not changed by the selected transaction.
-    #[error("object {object_id} was not changed by transaction {transaction_digest}")]
+    /// The selected transaction did not write a provable value for the requested object.
+    #[error(
+        "transaction {transaction_digest} did not write a provable value for object {object_id}; deleted and wrapped objects are unsupported"
+    )]
     ObjectNotChangedByTransaction {
         /// Requested object ID.
         object_id: ObjectId,
-        /// Transaction selected by the other proof requests.
+        /// Transaction selected by the other proof targets.
         transaction_digest: TransactionDigest,
     },
-    /// The requests belong to different transactions.
-    #[error("proof requests belong to different transactions: {actual}, expected {expected}")]
+    /// The targets belong to different transactions.
+    #[error("proof targets belong to different transactions: {actual}, expected {expected}")]
     TransactionMismatch {
-        /// Transaction selected by the first request.
+        /// Transaction selected by the first target.
         expected: TransactionDigest,
-        /// Transaction selected by a conflicting request.
+        /// Transaction selected by a conflicting target.
         actual: TransactionDigest,
     },
 }
@@ -71,6 +79,7 @@ pub enum ProofBuilderError {
 /// The builder keeps proof construction independent of a specific transport.
 /// With the `native-grpc` feature enabled, SDK gRPC clients can be adapted
 /// through `ProofBuilder::from_grpc_client`.
+#[derive(Debug)]
 pub struct ProofBuilder<S> {
     source: S,
     transaction_digests: Vec<TransactionDigest>,
@@ -121,21 +130,24 @@ impl<S: Source> ProofBuilder<S> {
         }
     }
 
-    /// Adds a transaction proof request.
+    /// Adds a transaction proof target.
     pub fn transaction(mut self, transaction_digest: TransactionDigest) -> Self {
         Self::push_unique(&mut self.transaction_digests, transaction_digest);
         self
     }
 
-    /// Adds an object proof request by object ID.
+    /// Adds an object proof target by object ID.
     ///
-    /// The source resolves the ID to the exact object reference packaged in the proof.
+    /// Without a transaction or event target, the source resolves the object's
+    /// latest version at proof construction time.
     pub fn object(mut self, object_id: ObjectId) -> Self {
         Self::push_unique(&mut self.object_ids, object_id);
         self
     }
 
-    /// Adds multiple object proof requests by object ID.
+    /// Adds multiple object proof targets by object ID.
+    ///
+    /// Object resolution follows the build-time semantics of [`Self::object`].
     pub fn objects(mut self, object_ids: impl IntoIterator<Item = ObjectId>) -> Self {
         for object_id in object_ids {
             Self::push_unique(&mut self.object_ids, object_id);
@@ -143,13 +155,13 @@ impl<S: Source> ProofBuilder<S> {
         self
     }
 
-    /// Adds an event proof request.
+    /// Adds an event proof target.
     pub fn event(mut self, event_id: EventID) -> Self {
         Self::push_unique(&mut self.event_ids, event_id);
         self
     }
 
-    /// Adds multiple event proof requests.
+    /// Adds multiple event proof targets.
     pub fn events(mut self, event_ids: impl IntoIterator<Item = EventID>) -> Self {
         for event_id in event_ids {
             Self::push_unique(&mut self.event_ids, event_id);
@@ -160,7 +172,7 @@ impl<S: Source> ProofBuilder<S> {
     /// Builds the requested proof from the configured source.
     pub async fn build(self) -> Result<Proof, ProofBuilderError> {
         if self.transaction_digests.is_empty() && self.object_ids.is_empty() && self.event_ids.is_empty() {
-            return Err(ProofBuilderError::MissingRequest);
+            return Err(ProofBuilderError::MissingTarget);
         }
 
         self.build_proof().await
@@ -203,7 +215,7 @@ impl<S: Source> ProofBuilder<S> {
             }
 
             let transaction_digest =
-                selected_transaction.expect("ProofBuilder only builds a proof for non-empty requests");
+                selected_transaction.expect("ProofBuilder only builds a proof for non-empty targets");
             let transaction = self.fetch_transaction(transaction_digest).await?;
 
             (transaction, objects)
@@ -214,11 +226,15 @@ impl<S: Source> ProofBuilder<S> {
             .chain_identifier()
             .await
             .map_err(|source| ProofBuilderError::Source { source })?;
+        let checkpoint_sequence_number = transaction.checkpoint_sequence_number;
         let checkpoint = self
             .source
-            .checkpoint(transaction.checkpoint_sequence_number)
+            .checkpoint(checkpoint_sequence_number)
             .await
-            .map_err(|source| ProofBuilderError::Source { source })?;
+            .map_err(|source| ProofBuilderError::Source { source })?
+            .ok_or(ProofBuilderError::CheckpointNotFound {
+                sequence_number: checkpoint_sequence_number,
+            })?;
         let transaction_events = if self.event_ids.is_empty() {
             None
         } else {

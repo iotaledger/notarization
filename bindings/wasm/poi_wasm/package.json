@@ -24,7 +24,7 @@
     "build": "npm run grpc:generate && npm run build:nodejs && npm run typecheck",
     "build:src:nodejs": "cargo build --lib --release --target wasm32-unknown-unknown --target-dir ../target",
     "prebundle:nodejs": "rimraf node",
-    "bundle:nodejs": "wasm-bindgen ../target/wasm32-unknown-unknown/release/poi_wasm.wasm --typescript --target nodejs --out-dir node && node ../build/node poi_wasm --skip-fetch-polyfill && tsc --project ./lib/tsconfig.json",
+    "bundle:nodejs": "wasm-bindgen ../target/wasm32-unknown-unknown/release/poi_wasm.wasm --typescript --weak-refs --target nodejs --out-dir node && node ../build/node poi_wasm --skip-fetch-polyfill && tsc --project ./lib/tsconfig.json",
     "build:nodejs": "npm run build:src:nodejs && npm run bundle:nodejs && wasm-opt -O node/poi_wasm_bg.wasm -o node/poi_wasm_bg.wasm",
     "grpc:schema:update": "node scripts/update-iota-schema.mjs",
     "grpc:generate": "node scripts/generate-grpc.mjs",

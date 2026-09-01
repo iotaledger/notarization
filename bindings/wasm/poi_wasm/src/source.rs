@@ -18,8 +18,8 @@ use iota_types::object::Object;
 use js_sys::Uint8Array;
 use poi_rs::{Source, SourceCheckpoint, SourceError, SourceTransaction};
 use serde::Deserialize;
-use wasm_bindgen::JsValue;
 use wasm_bindgen::prelude::wasm_bindgen;
+use wasm_bindgen::{JsCast, JsValue};
 
 use crate::error::PoiError;
 use crate::versioned::{
@@ -142,22 +142,34 @@ impl Source for LedgerSource {
             return Ok(None);
         }
 
-        let bytes = Uint8Array::new(&value).to_vec();
+        let bytes = value
+            .dyn_into::<Uint8Array>()
+            .map_err(|_| {
+                SourceError::invalid_response(PoiError::invalid_response(
+                    "object source response must be a Uint8Array",
+                ))
+            })?
+            .to_vec();
         let versioned: VersionedObject = decode_bcs(&bytes).map_err(SourceError::invalid_response)?;
         let VersionedObject::V1(object) = versioned;
 
         Ok(Some(object.into()))
     }
 
-    async fn checkpoint(&self, sequence_number: u64) -> Result<SourceCheckpoint, SourceError> {
+    async fn checkpoint(&self, sequence_number: u64) -> Result<Option<SourceCheckpoint>, SourceError> {
         let value = self
             .checkpoint(sequence_number)
             .await
             .map_err(|source| SourceError::request(PoiError::from_js(source)))?;
+
+        if value.is_undefined() || value.is_null() {
+            return Ok(None);
+        }
+
         let evidence: JsCheckpointEvidence = serde_wasm_bindgen::from_value(value)
             .map_err(|source| SourceError::invalid_response(PoiError::invalid_response(source.to_string())))?;
 
-        decode_checkpoint(evidence)
+        decode_checkpoint(evidence).map(Some)
     }
 
     async fn committee(&self, epoch: EpochId) -> Result<Committee, SourceError> {
@@ -306,7 +318,7 @@ mod tests {
 
     #[test]
     fn decodes_the_grpc_bcs_evidence_into_existing_iota_types() {
-        let proof = Proof::from_json_slice(include_bytes!("../../../../poi-rs/tests/fixtures/current/event.json"))
+        let proof = Proof::from_json_slice(include_bytes!("../../../../poi-rs/tests/fixtures/v1/event.json"))
             .expect("fixture must deserialize");
         let transaction_proof = proof.transaction_proof();
         let checkpoint_summary = proof.checkpoint_summary();

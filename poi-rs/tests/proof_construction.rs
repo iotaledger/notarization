@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex};
 use iota_sdk_types::TransactionDigest;
 use iota_types::event::EventID;
 use iota_types::object::Object;
-use poi_rs::{PoiClient, ProofBuilderError, ProofVerifier, SourceError};
+use poi_rs::{PoiClient, ProofBuilderError, ProofVerifier, Source, SourceError};
 use utils::sources::{MissingSource, RecordingSource, RejectingSource};
 use utils::{genesis_chain_identifier, grpc_client, object_transfer_tx, staking_tx, start_test_cluster, transfer_tx};
 
@@ -30,18 +30,18 @@ async fn client_uses_a_custom_source_for_proof_building() {
 }
 
 #[tokio::test]
-async fn proof_requires_at_least_one_request() {
+async fn proof_requires_at_least_one_target() {
     let error = PoiClient::new(RejectingSource)
         .proof()
         .build()
         .await
-        .expect_err("a proof without a request must be rejected");
+        .expect_err("a proof without a target must be rejected");
 
-    assert!(matches!(error, ProofBuilderError::MissingRequest));
+    assert!(matches!(error, ProofBuilderError::MissingTarget));
 }
 
 #[tokio::test]
-async fn stacked_requests_are_deduplicated_and_reuse_transaction_evidence() {
+async fn stacked_targets_are_deduplicated_and_reuse_transaction_evidence() {
     let cluster = start_test_cluster().await;
     let staking = staking_tx(&cluster).await;
     let object_id = staking.gas_object.object_id;
@@ -61,7 +61,7 @@ async fn stacked_requests_are_deduplicated_and_reuse_transaction_evidence() {
         .event(event_id)
         .build()
         .await
-        .expect("stacked requests from one transaction must produce a proof");
+        .expect("stacked targets from one transaction must produce a proof");
 
     assert_eq!(
         *transactions
@@ -72,7 +72,7 @@ async fn stacked_requests_are_deduplicated_and_reuse_transaction_evidence() {
     assert_eq!(proof.targets().transaction, Some(staking.digest));
     assert_eq!(proof.targets().objects.len(), 1);
     assert_eq!(proof.targets().events.len(), 1);
-    ProofVerifier::new(&cluster.committee())
+    let _verified = ProofVerifier::new(&cluster.committee())
         .verify(&proof)
         .expect("the stacked-target proof must verify offline");
 }
@@ -95,6 +95,33 @@ async fn transaction_not_returned_by_the_source_is_reported_as_missing() {
         panic!("an omitted transaction must return a transaction-not-found error");
     };
     assert_eq!(missing_transaction, transaction_digest);
+}
+
+#[tokio::test]
+async fn checkpoint_not_returned_by_the_source_is_reported_as_missing() {
+    let cluster = start_test_cluster().await;
+    let transfer = transfer_tx(&cluster).await;
+    let client = grpc_client(&cluster);
+    let checkpoint_sequence_number = client
+        .transaction(transfer.digest)
+        .await
+        .expect("transaction request must succeed")
+        .expect("executed transaction must exist")
+        .checkpoint_sequence_number;
+    let source = RecordingSource::new(client, Arc::new(Mutex::new(Vec::new()))).without_checkpoints();
+
+    let error = PoiClient::new(source)
+        .proof()
+        .transaction(transfer.digest)
+        .build()
+        .await
+        .expect_err("a checkpoint omitted by the source must be rejected");
+
+    assert!(matches!(
+        error,
+        ProofBuilderError::CheckpointNotFound { sequence_number }
+            if sequence_number == checkpoint_sequence_number
+    ));
 }
 
 #[tokio::test]
@@ -171,7 +198,7 @@ async fn explicit_transaction_and_event_from_different_transactions_are_rejected
         .event(event_id)
         .build()
         .await
-        .expect_err("requests from different transactions must be rejected");
+        .expect_err("targets from different transactions must be rejected");
 
     assert!(matches!(
         error,
@@ -236,7 +263,7 @@ async fn object_outside_the_event_transaction_is_rejected() {
 }
 
 #[tokio::test]
-async fn object_requests_from_different_transactions_are_rejected() {
+async fn object_targets_from_different_transactions_are_rejected() {
     let cluster = start_test_cluster().await;
     let first = object_transfer_tx(&cluster).await;
     let second = object_transfer_tx(&cluster).await;

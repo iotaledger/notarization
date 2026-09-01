@@ -3,7 +3,7 @@
 
 //! # Create and Verify a Multi-Target Proof
 //!
-//! A single Proof of Inclusion can authenticate several claims about the same
+//! A single Proof of Inclusion can authenticate several targets from the same
 //! transaction. This example proves the transaction itself, one object changed
 //! by the transaction, and one event emitted by the transaction.
 //!
@@ -18,7 +18,7 @@ use poi_rs::CommitteeResolution;
 /// Demonstrates how to:
 /// 1. Establish committee trust from the active network's genesis blob.
 /// 2. Create transaction, object, and event targets in one execution.
-/// 3. Construct one proof containing all three claims.
+/// 3. Construct one proof containing all three targets.
 /// 4. Inspect the targets resolved by the builder.
 /// 5. Verify every target in one operation.
 #[tokio::main]
@@ -85,13 +85,14 @@ async fn main() -> Result<()> {
 
     // Genesis-anchored resolution authenticates every preceding committee
     // transition. This may take a long time on an established network.
-    verifier
+    let verified = verifier
         .verify(&proof)
         .await
         .context("multi-target proof verification failed")?;
 
     println!("\nMulti-target proof verified successfully.");
-    println!("The transaction, changed object, and emitted event are authenticated by one proof.");
+    println!("  object targets: {}", verified.objects().len());
+    println!("  event targets:  {}", verified.events().len());
 
     Ok(())
 }

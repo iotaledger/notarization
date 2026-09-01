@@ -7,13 +7,15 @@ use std::fs;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Result, bail, ensure};
 use clap::{ArgGroup, Args, Parser, Subcommand, ValueEnum};
+use iota_config::genesis::Genesis;
 use iota_config::{IOTA_GENESIS_FILENAME, iota_config_dir};
 use iota_grpc_client::Client as GrpcClient;
 use iota_sdk_types::{ObjectId, TransactionDigest};
+use iota_types::digests::{ChainIdentifier, get_mainnet_chain_identifier, get_testnet_chain_identifier};
 use iota_types::event::EventID;
-use poi_rs::{CommitteeResolution, PoiClient, Proof};
+use poi_rs::{CommitteeResolution, PoiClient, Proof, VerifiedProof};
 
 const GENESIS_CACHE_DIR: &str = "poi";
 const MAINNET_GENESIS_URL: &str = "https://dbfiles.mainnet.iota.cafe/genesis.blob";
@@ -30,7 +32,7 @@ const VERIFY_EXAMPLES: &str = r#"Examples:
     poi verify --network testnet --genesis trusted-genesis.blob proof.json
     poi verify --grpc-url http://localhost:9000 --genesis genesis.blob -
 
-Known networks download and cache their genesis blob automatically. An explicit --genesis path overrides the managed blob.
+Mainnet and testnet download, validate, and cache their genesis blob automatically. Devnet requires --genesis because its genesis digest is not stable. An explicit --genesis path overrides the managed blob.
 The genesis blob is the trust anchor. The selected endpoint only supplies committee-walking data."#;
 
 #[derive(Debug, Parser)]
@@ -81,8 +83,8 @@ struct CreateArgs {
     /// Transaction digest to prove.
     #[arg(long, value_name = "DIGEST")]
     transaction: Option<TransactionDigest>,
-    /// Object ID to prove. The source resolves its latest version unless a transaction or event scopes the proof. May
-    /// be repeated.
+    /// Object ID to prove. Without a transaction or event target, the source resolves its latest version at proof
+    /// construction time. May be repeated.
     #[arg(long, value_name = "OBJECT_ID")]
     object: Vec<ObjectId>,
     /// Event identifier formatted as TRANSACTION_DIGEST:EVENT_SEQUENCE. May be repeated.
@@ -156,7 +158,7 @@ impl VerifyArgs {
         };
         let genesis = match self.genesis.as_deref() {
             Some(path) => {
-                fs::File::open(path).with_context(|| format!("failed to open genesis blob '{}'", path.display()))?
+                fs::read(path).with_context(|| format!("failed to read genesis blob '{}'", path.display()))?
             }
             None => {
                 load_genesis(
@@ -167,15 +169,42 @@ impl VerifyArgs {
                 .await?
             }
         };
-        let resolution = CommitteeResolution::from_genesis(genesis)
+        let resolution = CommitteeResolution::from_genesis(genesis.as_slice())
             .map_err(|error| anyhow::anyhow!("failed to load trusted genesis blob: {error}"))?;
-        PoiClient::from_grpc_client(self.endpoint.client()?)
+        let verified = PoiClient::from_grpc_client(self.endpoint.client()?)
             .verifier(resolution)
             .verify(&proof)
             .await
             .context("proof verification failed")?;
-        writeln!(io::stdout().lock(), "valid").context("failed to write verification result to stdout")
+        write_verification_summary(io::stdout().lock(), &verified)
+            .context("failed to write verification result to stdout")
     }
+}
+
+fn write_verification_summary(mut writer: impl Write, proof: &VerifiedProof<'_>) -> io::Result<()> {
+    writeln!(writer, "Proof verified successfully.")?;
+    writeln!(writer, "  checkpoint epoch:  {}", proof.checkpoint_epoch())?;
+    writeln!(writer, "  checkpoint number: {}", proof.checkpoint_sequence_number())?;
+    writeln!(writer, "  timestamp (ms):    {}", proof.checkpoint_timestamp_ms())?;
+    writeln!(writer, "  transaction:       {}", proof.transaction_digest())?;
+    writeln!(writer, "  targets:")?;
+
+    if let Some(transaction) = proof.transaction_target() {
+        writeln!(writer, "    transaction: {transaction}")?;
+    }
+    for object in proof.objects() {
+        let object_ref = object.as_inner().object_ref();
+        writeln!(
+            writer,
+            "    object:      {} @ {} ({})",
+            object_ref.object_id, object_ref.version, object_ref.digest
+        )?;
+    }
+    for (event, _) in proof.events() {
+        writeln!(writer, "    event:       {}:{}", event.tx_digest, event.event_seq)?;
+    }
+
+    Ok(())
 }
 
 #[derive(Debug, Args)]
@@ -231,6 +260,16 @@ impl Network {
         }
     }
 
+    fn expected_chain_identifier(self) -> Result<ChainIdentifier> {
+        match self {
+            Self::Mainnet => Ok(get_mainnet_chain_identifier()),
+            Self::Testnet => Ok(get_testnet_chain_identifier()),
+            Self::Devnet => bail!(
+                "managed genesis is unavailable for devnet because its genesis digest is not stable; pass --genesis PATH"
+            ),
+        }
+    }
+
     fn client(self) -> Result<GrpcClient> {
         match self {
             Self::Mainnet => GrpcClient::new_mainnet().context("failed to configure mainnet gRPC endpoint"),
@@ -240,14 +279,25 @@ impl Network {
     }
 }
 
-async fn load_genesis(network: Network) -> Result<fs::File> {
+async fn load_genesis(network: Network) -> Result<Vec<u8>> {
+    network.expected_chain_identifier()?;
     let path = iota_config_dir()
         .context("failed to locate the IOTA configuration directory")?
         .join(GENESIS_CACHE_DIR)
         .join(network.name())
         .join(IOTA_GENESIS_FILENAME);
 
-    if !path.is_file() {
+    let bytes = if path.is_file() {
+        let bytes =
+            fs::read(&path).with_context(|| format!("failed to read cached genesis blob '{}'", path.display()))?;
+        validate_genesis(network, &bytes).with_context(|| {
+            format!(
+                "cached genesis blob '{}' is not trusted; remove it to download a fresh copy",
+                path.display()
+            )
+        })?;
+        bytes
+    } else {
         let parent = path
             .parent()
             .context("managed genesis path does not have a parent directory")?;
@@ -258,13 +308,36 @@ async fn load_genesis(network: Network) -> Result<fs::File> {
         let bytes = reqwest::get(url)
             .await
             .with_context(|| format!("failed to download {} genesis blob from '{url}'", network.name()))?
+            .error_for_status()
+            .with_context(|| format!("{} genesis download returned an error", network.name()))?
             .bytes()
             .await
-            .with_context(|| format!("failed to read genesis blob from '{url}'"))?;
-        fs::write(&path, bytes).with_context(|| format!("failed to cache genesis blob at '{}'", path.display()))?;
-    }
+            .with_context(|| format!("failed to read genesis blob from '{url}'"))?
+            .to_vec();
+        validate_genesis(network, &bytes)
+            .with_context(|| format!("downloaded {} genesis blob is not trusted", network.name()))?;
+        fs::write(&path, &bytes).with_context(|| format!("failed to cache genesis blob at '{}'", path.display()))?;
+        bytes
+    };
 
-    fs::File::open(&path).with_context(|| format!("failed to open genesis blob '{}'", path.display()))
+    Ok(bytes)
+}
+
+/// Validates that the genesis blob is valid BCS and matches the expected chain
+/// identifier for the network.
+fn validate_genesis(network: Network, bytes: &[u8]) -> Result<()> {
+    let genesis: Genesis =
+        bcs::from_bytes(bytes).with_context(|| format!("{} genesis blob is not valid BCS", network.name()))?;
+    let actual = ChainIdentifier::from(*genesis.checkpoint().digest());
+    let expected = network.expected_chain_identifier()?;
+    ensure!(
+        actual == expected,
+        "{} genesis digest mismatch: expected {}, found {}",
+        network.name(),
+        expected.digest(),
+        actual.digest()
+    );
+    Ok(())
 }
 
 #[tokio::main(flavor = "current_thread")]
@@ -275,4 +348,42 @@ async fn main() -> Result<()> {
 fn parse_event_id(value: &str) -> Result<EventID, String> {
     EventID::try_from(value.to_owned())
         .map_err(|error| format!("invalid event ID '{value}'; expected TRANSACTION_DIGEST:EVENT_SEQUENCE: {error}"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn managed_genesis_uses_the_pinned_network_identifiers() {
+        assert_eq!(
+            Network::Mainnet
+                .expected_chain_identifier()
+                .expect("mainnet must have a pinned identifier"),
+            get_mainnet_chain_identifier()
+        );
+        assert_eq!(
+            Network::Testnet
+                .expected_chain_identifier()
+                .expect("testnet must have a pinned identifier"),
+            get_testnet_chain_identifier()
+        );
+    }
+
+    #[test]
+    fn managed_genesis_is_unavailable_for_devnet() {
+        let error = Network::Devnet
+            .expected_chain_identifier()
+            .expect_err("devnet must require an explicit genesis blob");
+
+        assert!(error.to_string().contains("pass --genesis PATH"));
+    }
+
+    #[test]
+    fn managed_genesis_rejects_invalid_bcs() {
+        let error =
+            validate_genesis(Network::Mainnet, b"not a genesis blob").expect_err("invalid BCS must not be trusted");
+
+        assert!(error.to_string().contains("mainnet genesis blob is not valid BCS"));
+    }
 }

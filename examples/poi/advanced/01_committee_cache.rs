@@ -8,9 +8,9 @@
 //! when the process exits. This advanced example supplies a file-based cache that
 //! lets later runs resume from committees authenticated during earlier runs.
 //!
-//! The cache is part of the verifier's trust boundary. Its directory is scoped
-//! to the active network, cached values are checked against their requested
-//! epoch, and an authenticated committee can never overwrite a conflicting value.
+//! Cache entries are scoped automatically to the verifier's network,
+//! checked against their requested epoch, and never overwritten by a
+//! conflicting value.
 
 use std::time::Instant;
 
@@ -55,13 +55,14 @@ async fn main() -> Result<()> {
 
     println!("Verifying the proof...");
     let started = Instant::now();
-    verifier
+    let verified = verifier
         .verify(&proof)
         .await
         .context("transaction proof verification failed")?;
     let elapsed = started.elapsed();
 
     println!("\nTransaction proof verified successfully in {elapsed:?}.");
+    println!("  authenticated checkpoint: {}", verified.checkpoint_sequence_number());
     println!("Run the example again to reuse the authenticated committees stored on disk.");
 
     Ok(())
@@ -69,19 +70,18 @@ async fn main() -> Result<()> {
 
 mod file_committee_cache {
 
+    use std::fmt::Write as _;
     use std::fs;
     use std::io::Write;
     use std::path::PathBuf;
 
-    use iota_types::committee::{Committee, EpochId};
-    use poi_rs::{CommitteeCache, CommitteeCacheError};
+    use iota_types::committee::Committee;
+    use poi_rs::{CommitteeCache, CommitteeCacheError, CommitteeCacheKey};
     use tempfile::NamedTempFile;
 
     /// File-backed storage for committees authenticated by a resolver.
     ///
-    /// Each epoch is stored in a separate BCS file. The directory must be scoped to
-    /// one trusted network and genesis anchor; mixing networks would violate the
-    /// cache's trust contract.
+    /// Each network and epoch is stored in a separate BCS file.
     #[derive(Clone, Debug)]
     pub struct FileCommitteeCache {
         directory: PathBuf,
@@ -96,13 +96,26 @@ mod file_committee_cache {
             &self.directory
         }
 
-        fn committee_path(&self, epoch: EpochId) -> PathBuf {
-            self.directory.join(format!("epoch-{epoch}.bcs"))
+        fn network_directory(&self, key: CommitteeCacheKey) -> PathBuf {
+            let digest = key.chain_identifier().as_bytes();
+            let mut chain = String::with_capacity(digest.len() * 2);
+            for byte in digest {
+                write!(&mut chain, "{byte:02x}").expect("writing to a string cannot fail");
+            }
+
+            self.directory.join(chain)
         }
 
-        fn backend(epoch: EpochId, source: impl std::error::Error + Send + Sync + 'static) -> CommitteeCacheError {
+        fn committee_path(&self, key: CommitteeCacheKey) -> PathBuf {
+            self.network_directory(key).join(format!("epoch-{}.bcs", key.epoch()))
+        }
+
+        fn backend(
+            key: CommitteeCacheKey,
+            source: impl std::error::Error + Send + Sync + 'static,
+        ) -> CommitteeCacheError {
             CommitteeCacheError::Backend {
-                epoch,
+                epoch: key.epoch(),
                 source: Box::new(source),
             }
         }
@@ -110,26 +123,29 @@ mod file_committee_cache {
 
     #[async_trait::async_trait]
     impl CommitteeCache for FileCommitteeCache {
-        async fn committee(&self, epoch: EpochId) -> Result<Option<Committee>, CommitteeCacheError> {
-            let path = self.committee_path(epoch);
+        async fn committee(&self, key: CommitteeCacheKey) -> Result<Option<Committee>, CommitteeCacheError> {
+            let path = self.committee_path(key);
             let bytes = match fs::read(&path) {
                 Ok(bytes) => bytes,
                 Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
-                Err(error) => return Err(Self::backend(epoch, error)),
+                Err(error) => return Err(Self::backend(key, error)),
             };
-            let committee: Committee = bcs::from_bytes(&bytes).map_err(|error| Self::backend(epoch, error))?;
+            let committee: Committee = bcs::from_bytes(&bytes).map_err(|error| Self::backend(key, error))?;
 
-            if committee.epoch != epoch {
-                return Err(CommitteeCacheError::Conflict { epoch });
+            if committee.epoch != key.epoch() {
+                return Err(CommitteeCacheError::Conflict { epoch: key.epoch() });
             }
 
             Ok(Some(committee))
         }
 
-        async fn store(&self, committee: &Committee) -> Result<(), CommitteeCacheError> {
+        async fn store(&self, key: CommitteeCacheKey, committee: &Committee) -> Result<(), CommitteeCacheError> {
             let epoch = committee.epoch;
+            if key.epoch() != epoch {
+                return Err(CommitteeCacheError::Conflict { epoch });
+            }
 
-            if let Some(cached) = self.committee(epoch).await? {
+            if let Some(cached) = self.committee(key).await? {
                 return if cached == *committee {
                     Ok(())
                 } else {
@@ -137,23 +153,24 @@ mod file_committee_cache {
                 };
             }
 
-            fs::create_dir_all(&self.directory).map_err(|error| Self::backend(epoch, error))?;
-            let bytes = bcs::to_bytes(committee).map_err(|error| Self::backend(epoch, error))?;
-            let mut temporary = NamedTempFile::new_in(&self.directory).map_err(|error| Self::backend(epoch, error))?;
+            let directory = self.network_directory(key);
+            fs::create_dir_all(&directory).map_err(|error| Self::backend(key, error))?;
+            let bytes = bcs::to_bytes(committee).map_err(|error| Self::backend(key, error))?;
+            let mut temporary = NamedTempFile::new_in(&directory).map_err(|error| Self::backend(key, error))?;
             temporary
                 .write_all(&bytes)
                 .and_then(|()| temporary.as_file().sync_all())
-                .map_err(|error| Self::backend(epoch, error))?;
+                .map_err(|error| Self::backend(key, error))?;
 
-            match temporary.persist_noclobber(self.committee_path(epoch)) {
+            match temporary.persist_noclobber(self.committee_path(key)) {
                 Ok(_) => Ok(()),
                 Err(error) if error.error.kind() == std::io::ErrorKind::AlreadyExists => {
-                    match self.committee(epoch).await? {
+                    match self.committee(key).await? {
                         Some(cached) if cached == *committee => Ok(()),
                         _ => Err(CommitteeCacheError::Conflict { epoch }),
                     }
                 }
-                Err(error) => Err(Self::backend(epoch, error.error)),
+                Err(error) => Err(Self::backend(key, error.error)),
             }
         }
     }

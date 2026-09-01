@@ -10,22 +10,25 @@ import { Committee } from "../lib/index.js";
 test("the WASM committee can be deserialized from Rust JSON", async () => {
     const json = await readFile(
         new URL(
-            "../../../../poi-rs/tests/fixtures/current/committee.json",
+            "../../../../poi-rs/tests/fixtures/v1/committee.json",
             import.meta.url,
         ),
         "utf8",
     );
 
     const committee = Committee.fromJSON(json);
+    const restored = Committee.fromJSON(committee.toJSON());
 
     assert.equal(committee.epoch, 0n);
+    assert.equal(restored.epoch, committee.epoch);
+    assert.equal(restored.toJSON(), committee.toJSON());
 });
 
 test("the WASM committee rejects invalid total voting power", async () => {
     const fixture = JSON.parse(
         await readFile(
             new URL(
-                "../../../../poi-rs/tests/fixtures/current/committee.json",
+                "../../../../poi-rs/tests/fixtures/v1/committee.json",
                 import.meta.url,
             ),
             "utf8",

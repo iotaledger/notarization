@@ -7,13 +7,29 @@ use std::fs::File;
 
 use iota_config::IOTA_GENESIS_FILENAME;
 use iota_grpc_client::Client as GrpcClient;
-use poi_rs::{CommitteeCache, CommitteeResolution, CommitteeResolutionErrorKind, MemoryCommitteeCache, PoiClient};
-use utils::{advance_to_epoch, grpc_client, start_test_cluster};
+use poi_rs::{
+    CommitteeCache, CommitteeCacheKey, CommitteeResolution, CommitteeResolutionErrorKind, MemoryCommitteeCache,
+    PoiClient,
+};
+use utils::{advance_to_epoch, genesis_chain_identifier, grpc_client, start_test_cluster};
 
 use crate::utils::committee_at;
 
 fn disconnected_client() -> GrpcClient {
     GrpcClient::new("http://127.0.0.1:1").expect("disconnected gRPC client must be constructed")
+}
+
+#[test]
+fn genesis_loading_errors_are_scoped_to_epoch_zero() {
+    let Err(error) = CommitteeResolution::from_genesis(std::io::empty()) else {
+        panic!("empty genesis data must be rejected");
+    };
+
+    assert_eq!(error.target_epoch, 0);
+    assert!(matches!(
+        error.kind,
+        CommitteeResolutionErrorKind::LoadGenesisCommittee { .. }
+    ));
 }
 
 #[tokio::test]
@@ -36,7 +52,7 @@ async fn genesis_anchored_client_authenticates_committee_across_epochs() {
     assert_eq!(resolved, expected[10]);
     assert_eq!(
         cache
-            .committee(10)
+            .committee(CommitteeCacheKey::new(genesis_chain_identifier(&cluster), 10))
             .await
             .expect("caller-provided cache must remain readable"),
         Some(expected[10].clone())

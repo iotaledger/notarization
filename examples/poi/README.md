@@ -52,10 +52,12 @@ The shared setup performs the following work:
 > Mainnet examples submit paid transactions from the active CLI wallet. Set `IOTA_NOTARIZATION_PKG_ID` to an existing
 > Single Notarization Move Package and fund the active wallet before running them.
 
-Examples 01, 02, 03, and the advanced file-cache example use genesis-anchored verification. For mainnet, testnet, and
-devnet, the active network's chain identifier selects a built-in genesis URL. The downloaded genesis blob remains
+Examples 01 through 05 and the advanced file-cache example use genesis-anchored verification. For mainnet, testnet,
+and devnet, the active network's chain identifier selects a built-in genesis URL. The downloaded genesis blob remains
 cached in the IOTA configuration directory. Local and custom networks require an independently obtained
-`IOTA_GENESIS_PATH` because the verifier cannot infer a trusted genesis source for them.
+`IOTA_GENESIS_PATH` because the verifier cannot infer a trusted genesis source for them. The advanced trusted-node
+example can run on any network because it does not require genesis, but it places the connected node inside the
+verifier's trust boundary.
 
 ## Running an Example
 
@@ -78,24 +80,25 @@ The focused runner executes every example:
 ./examples/poi/run.sh
 ```
 
-The runner starts each example in a separate process. On its first run, examples 01, 02, 03, and the advanced cache
+The runner starts each example in a separate process. On its first run, examples 01 through 05 and the advanced cache
 example may each perform a genesis-to-current-epoch committee walk. Run individual examples when you do not need the
 complete set.
 
-The complete runner creates seven locked `Notarization` objects because the verifier-reuse example creates two
-transactions. A non-mainnet run may also publish the Single Notarization Move Package once. On mainnet, all seven
+The complete runner creates eight locked `Notarization` objects because the verifier-reuse example creates two
+transactions. A non-mainnet run may also publish the Single Notarization Move Package once. On mainnet, all eight
 transactions consume paid gas from the active wallet.
 
 ## Examples
 
-| Name                                                            | Information                                                                                                  |
-| :-------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------- |
-| [01_transaction_proof](./01_transaction_proof.rs)               | Creates a transaction proof, serializes it as JSON, and verifies it from a trusted network genesis blob.     |
-| [02_multi_target_proof](./02_multi_target_proof.rs)             | Combines transaction, changed-object, and emitted-event targets in one proof.                                |
-| [03_reuse_verifier](./03_reuse_verifier.rs)                     | Reuses one genesis-anchored verifier across proofs for two fresh transactions.                               |
-| [04_object_proof](./04_object_proof.rs)                         | Starts from a fresh object ID and lets the builder discover the transaction that created its latest version. |
-| [05_event_proof](./05_event_proof.rs)                           | Starts from a fresh event ID without declaring a separate transaction target.                                |
-| [advanced_01_committee_cache](./advanced/01_committee_cache.rs) | Persists authenticated committees in a cache scoped to the active network.                                   |
+| Name                                                            | Information                                                                                              |
+| :-------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------- |
+| [01_transaction_proof](./01_transaction_proof.rs)               | Creates a transaction proof, serializes it as JSON, and verifies it from a trusted network genesis blob. |
+| [02_multi_target_proof](./02_multi_target_proof.rs)             | Combines transaction, changed-object, and emitted-event targets in one proof.                            |
+| [03_reuse_verifier](./03_reuse_verifier.rs)                     | Reuses one genesis-anchored verifier across proofs for two fresh transactions.                           |
+| [04_object_proof](./04_object_proof.rs)                         | Resolves the latest object version at proof construction time and proves its exact value.                |
+| [05_event_proof](./05_event_proof.rs)                           | Starts from a fresh event ID without declaring a separate transaction target.                            |
+| [advanced_01_committee_cache](./advanced/01_committee_cache.rs) | Persists authenticated committees in a cache scoped to the active network.                               |
+| [advanced_02_trusted_node](./advanced/02_trusted_node.rs)       | Demonstrates trusted-node committee resolution against a trusted endpoint on any network.                |
 
 ## Example Workflow
 
@@ -105,7 +108,8 @@ its `LockedNotarizationCreated` event in one proof.
 
 The verifier-reuse example creates two transactions and retains one verifier across both proofs. The second
 verification reuses any committee history authenticated during the first verification. The object and event examples
-use trusted-node committee resolution so they can focus on target-driven discovery without performing a genesis walk.
+authenticate committee history from genesis. The advanced trusted-node example isolates the alternative trust model
+and can run against any active network without a genesis blob.
 
 ## Trust Boundaries
 
@@ -115,7 +119,7 @@ use trusted-node committee resolution so they can focus on target-driven discove
 - Treat the complete proof payload as untrusted until verification succeeds.
 - For local and custom networks, obtain `IOTA_GENESIS_PATH` independently from the party supplying the proof.
 - Ensure the genesis blob belongs to the same network as the proof.
-- Scope persistent committee caches to one network and genesis anchor.
+- Preserve the complete network-scoped key when implementing a persistent committee cache.
 - Use `CommitteeResolution::TrustedNode` only when the connected node is inside the verifier's trust boundary.
 
 ## Documentation And Resources

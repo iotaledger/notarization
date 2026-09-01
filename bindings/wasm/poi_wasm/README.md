@@ -5,9 +5,9 @@
 The Proof of Inclusion Wasm Package provides the Node.js and TypeScript interface for Proof of Inclusion in the IOTA
 Notarization Toolkit. It connects a generated IOTA `LedgerService` client to `poi-rs` compiled as WebAssembly.
 
-Use the Package to construct portable proofs for IOTA transactions, events, and object states and to verify those proofs
-locally. `PoiClient` hides the generated protobuf client, ConnectRPC transport, and JavaScript-to-WASM source adapter,
-while Rust owns proof construction, committee resolution, and verification.
+Use the Package to construct portable proofs for IOTA transactions, events, and specific object versions and to verify
+those proofs locally. `PoiClient` hides the generated protobuf client, ConnectRPC transport, and
+JavaScript-to-WASM source adapter, while Rust owns proof construction, committee resolution, and verification.
 
 Proof of Inclusion operates on existing ledger activity and does not define a separate Move Package.
 
@@ -61,8 +61,8 @@ targets. Event sequence numbers and all other 64-bit values use JavaScript `bigi
 
 The serialized proof records the targets explicitly selected by the caller. Its checkpoint summary and checkpoint
 contents are sibling fields, while the required transaction proof contains the transaction, effects, and optional event
-evidence. Object targets contain the selected object values, and event targets select events from the authenticated
-transaction event list.
+evidence. Object targets contain the selected historical object values, and event targets select events from the
+authenticated transaction event list.
 
 The JavaScript source adapter passes only opaque BCS bytes and checkpoint sequence numbers into WASM. Rust decodes those
 values into existing IOTA domain types and delegates target resolution and proof construction to `poi-rs`.
@@ -76,7 +76,8 @@ inside the caller's trust boundary.
 import { CommitteeResolution } from "@iota/poi-wasm";
 
 const verifier = client.verifier(CommitteeResolution.trustedNode());
-await verifier.verify(proof);
+const verified = await verifier.verify(proof);
+console.log(verified.transaction);
 ```
 
 Use genesis-anchored resolution to authenticate committee lineage independently from the node:
@@ -88,20 +89,48 @@ const trustedGenesisBlob = await readFile("genesis.blob");
 const resolution = CommitteeResolution.fromGenesis(trustedGenesisBlob);
 const verifier = client.verifier(resolution);
 
-await verifier.verify(proof);
+const verified = await verifier.verify(proof);
 ```
+
+Successful verification returns a read-only `VerifiedProof`. It exposes the authenticated transaction digest,
+checkpoint metadata, and `ProofTargets`. Use `objectBcs(index)` and `eventContents(index)` to read the authenticated
+target payloads. Continue using `Proof` only as the untrusted transport and serialization envelope.
 
 `CommitteeResolution.fromGenesis()` decodes the BCS-encoded IOTA genesis blob and extracts its committee in Rust.
 Callers that already possess an extracted trusted committee can use `CommitteeResolution.anchored(committee)` instead.
 `Committee.fromJSON()` accepts the Rust `Committee` fields `epoch` and `voting_rights`, validates public keys, rejects
 duplicate authorities, requires total voting power to equal 10,000, and reconstructs the committee's derived lookup
-state.
+state. Use `Committee.toJSON()` to persist a resolved committee and restore it later with `Committee.fromJSON()`.
 
 The verifier fetches the certified checkpoint in each epoch-close proof, verifies it with the current committee, and
 only then accepts and caches the next committee. Each anchored verifier owns a fresh in-memory cache; the WASM Package
 does not accept a caller-provided committee cache. Retain the verifier when checking multiple proofs so it can reuse the
 committees authenticated during its lifetime. `CommitteeResolver.resolve(epoch)` and `Proof.verify(committee)` remain
-available for lower-level committee resolution and offline verification.
+available for lower-level committee resolution and offline verification; both verification methods return a
+`VerifiedProof` on success.
+
+Verification failures are normal JavaScript errors with a stable `code`. Use `isPoiError(error)` before reading the
+code. Only `PROOF_INVALID` means the proof was rejected.
+
+## What a Verified Proof Proves
+
+Successful verification authenticates the following targets relative to the supplied committee:
+
+- A transaction target proves that the selected transaction, its user signatures, and its effects are included in the
+  certified checkpoint.
+- An object target proves the exact object version returned by `objectBcs(index)`. For an object ID without a transaction
+  or event target, `makeProof()` resolves its latest version at proof construction time; the proof does not claim that it
+  remains latest. Deleted and wrapped objects are unsupported.
+- An event target proves that `eventContents(index)` returns the selected event's authenticated contents.
+
+## JSON Compatibility
+
+Proof JSON is a versioned persistence and exchange format. Releases that support `ProofV1` continue to deserialize its
+existing JSON shape and serialize the same field structure. Frozen V1 fixtures enforce this contract for transaction,
+object, and event proofs.
+
+Dependency upgrades must not silently change the `ProofV1` representation. Preserve the existing shape with custom
+serialization when necessary, or introduce a new `Proof` variant for an incompatible format change.
 
 ## Trust Boundaries
 

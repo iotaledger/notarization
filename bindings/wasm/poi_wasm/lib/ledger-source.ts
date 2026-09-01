@@ -26,6 +26,7 @@ const TRANSACTION_PROOF_FIELDS = [
     "checkpoint",
 ];
 const CHECKPOINT_PROOF_FIELDS = [
+    "checkpoint.sequence_number",
     "checkpoint.summary.bcs",
     "checkpoint.signature",
     "checkpoint.contents.bcs",
@@ -149,7 +150,7 @@ export class LedgerSource implements LedgerSourceContract {
 
     public async checkpoint(
         sequenceNumber: bigint,
-    ): Promise<CheckpointEvidence> {
+    ): Promise<CheckpointEvidence | undefined> {
         let checkpoint: CheckpointEvidence | undefined;
         let reachedEnd = false;
 
@@ -209,12 +210,6 @@ export class LedgerSource implements LedgerSourceContract {
 
                 reachedEnd = true;
             }
-        }
-
-        if (!checkpoint) {
-            throw new Error(
-                `getCheckpoint returned no checkpoint for sequence number ${sequenceNumber}`,
-            );
         }
 
         if (!reachedEnd) {

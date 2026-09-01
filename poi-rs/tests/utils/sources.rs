@@ -32,7 +32,7 @@ impl Source for RejectingSource {
         Ok(None)
     }
 
-    async fn checkpoint(&self, _sequence_number: u64) -> Result<SourceCheckpoint, SourceError> {
+    async fn checkpoint(&self, _sequence_number: u64) -> Result<Option<SourceCheckpoint>, SourceError> {
         unreachable!("rejected transactions do not resolve a checkpoint")
     }
 
@@ -54,6 +54,7 @@ pub struct RecordingSource {
     source: GrpcClient,
     transactions: Arc<Mutex<Vec<TransactionDigest>>>,
     object_override: Option<Object>,
+    omit_checkpoints: bool,
 }
 
 impl RecordingSource {
@@ -62,11 +63,17 @@ impl RecordingSource {
             source,
             transactions,
             object_override: None,
+            omit_checkpoints: false,
         }
     }
 
     pub fn with_object_override(mut self, object: Object) -> Self {
         self.object_override = Some(object);
+        self
+    }
+
+    pub fn without_checkpoints(mut self) -> Self {
+        self.omit_checkpoints = true;
         self
     }
 }
@@ -97,7 +104,11 @@ impl Source for RecordingSource {
         self.source.object(object_id, version).await
     }
 
-    async fn checkpoint(&self, sequence_number: u64) -> Result<SourceCheckpoint, SourceError> {
+    async fn checkpoint(&self, sequence_number: u64) -> Result<Option<SourceCheckpoint>, SourceError> {
+        if self.omit_checkpoints {
+            return Ok(None);
+        }
+
         self.source.checkpoint(sequence_number).await
     }
 
@@ -134,7 +145,7 @@ impl Source for MissingSource {
         Ok(None)
     }
 
-    async fn checkpoint(&self, _sequence_number: u64) -> Result<SourceCheckpoint, SourceError> {
+    async fn checkpoint(&self, _sequence_number: u64) -> Result<Option<SourceCheckpoint>, SourceError> {
         unreachable!("missing targets do not resolve a checkpoint")
     }
 

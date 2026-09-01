@@ -50,3 +50,7 @@ path = "05_event_proof.rs"
 [[example]]
 name = "advanced_01_committee_cache"
 path = "advanced/01_committee_cache.rs"
+
+[[example]]
+name = "advanced_02_trusted_node"
+path = "advanced/02_trusted_node.rs"

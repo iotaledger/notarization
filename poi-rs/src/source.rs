@@ -114,7 +114,9 @@ pub trait Source {
     async fn object(&self, object_id: ObjectId, version: Option<Version>) -> Result<Option<Object>, SourceError>;
 
     /// Fetches and decodes one certified checkpoint and its contents.
-    async fn checkpoint(&self, sequence_number: u64) -> Result<SourceCheckpoint, SourceError>;
+    ///
+    /// Returns `None` when the checkpoint does not exist.
+    async fn checkpoint(&self, sequence_number: u64) -> Result<Option<SourceCheckpoint>, SourceError>;
 
     /// Fetches the committee reported for `epoch`.
     async fn committee(&self, epoch: EpochId) -> Result<Committee, SourceError>;

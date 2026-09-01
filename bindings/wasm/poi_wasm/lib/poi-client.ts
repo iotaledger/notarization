@@ -34,7 +34,10 @@ export interface ProofEventRequest {
 export interface ProofRequest {
     /** Transaction selected as an explicit proof target. */
     transaction?: Uint8Array;
-    /** Object IDs selected as proof targets. */
+    /**
+     * Object IDs selected as proof targets. Without a transaction or event
+     * target, the source resolves the latest version at proof construction time.
+     */
     objects?: readonly Uint8Array[];
     /** Event IDs selected as proof targets. */
     events?: readonly ProofEventRequest[];

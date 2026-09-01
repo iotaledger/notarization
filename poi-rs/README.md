@@ -5,13 +5,13 @@
 The Proof of Inclusion Rust Package constructs and verifies portable evidence that IOTA ledger data is included in a
 certified checkpoint. It is the Rust Package for Proof of Inclusion in the IOTA Notarization Toolkit.
 
-Use Proof of Inclusion when a verifier needs cryptographic evidence for a transaction, event, or object state without
-trusting the source that transports the proof. `PoiClient` provides the main entry point, `ProofBuilder` constructs the
-evidence, and `ProofVerifier` verifies it locally against a committee the caller trusts.
+Use Proof of Inclusion when a verifier needs cryptographic evidence for a transaction, event, or specific object version
+without trusting the source that transports the proof. `PoiClient` provides the main entry point,
+`ProofBuilder` constructs the evidence, and `ProofVerifier` verifies it locally against a committee the caller trusts.
 
 Proof of Inclusion operates on existing IOTA ledger activity. It does not define a separate on-chain object or Move
 Package. Single Notarization and Audit Trails can create ledger activity that applications later prove, but Proof of
-Inclusion also supports transactions, events, and object states created by other IOTA applications.
+Inclusion also supports transactions, events, and object versions created by other IOTA applications.
 
 You can find the full IOTA Notarization Toolkit documentation [here](https://docs.iota.org/developer/iota-notarization).
 
@@ -131,7 +131,8 @@ let client = PoiClient::testnet()?;
 let resolution = CommitteeResolution::from_genesis(File::open("genesis.blob")?)?;
 let verifier = client.verifier(resolution);
 
-verifier.verify(proof).await?;
+let verified = verifier.verify(proof).await?;
+println!("verified transaction: {}", verified.transaction_digest());
 # Ok(())
 # }
 ```
@@ -140,21 +141,40 @@ verifier.verify(proof).await?;
 boundary. `CommitteeResolution::from_genesis()` loads an anchor committee from a trusted BCS-encoded genesis blob,
 while `CommitteeResolution::anchored()` accepts an already extracted trusted committee. Use
 `CommitteeResolution::anchored_with_cache()` or `CommitteeResolution::from_genesis_with_cache()` to supply a cache that
-contains committees authenticated for the same network.
+persists authenticated committees. Shared cache entries are keyed by both the trusted genesis checkpoint digest and
+epoch, so one backend can be shared safely by resolvers for different networks. The genesis-based constructor derives
+the chain identifier automatically; `anchored_with_cache()` requires it explicitly.
 
 Retain the verifier when checking multiple proofs so it can reuse its authenticated committee cache. `ProofVerifier`
 remains the offline entry point for callers that already possess the authoritative committee.
 
+Successful verification returns a `VerifiedProof` that borrows from the input proof and exposes authenticated checkpoint
+metadata, transaction data and digest, object targets, and event targets. Verification also authenticates the packaged
+user signatures against the checkpoint contents, although `VerifiedProof` does not expose them. Read relying-party data
+through this returned value. The original `Proof` remains the portable untrusted envelope used for transport and
+serialization.
+
 Verification checks:
 
-- the checkpoint summary is certified by the supplied committee;
-- the checkpoint contents match the certified checkpoint summary;
-- the transaction digest matches the transaction effects;
-- the transaction effects are included in the checkpoint contents;
-- an explicitly requested transaction matches the packaged transaction;
-- requested object targets derive references present in the transaction effects;
-- event data matches the digest recorded in the effects when the proof includes event targets; and
-- requested event targets belong to the transaction and select events in the authenticated event list.
+- the proof contains at least one transaction, object, or event target;
+- the supplied committee certifies the checkpoint summary and its checkpoint-contents digest;
+- the packaged transaction digest matches the transaction effects;
+- the transaction effects are included in the authenticated checkpoint contents;
+- the packaged user signatures match those committed by the checkpoint;
+- packaged event data matches the digest in the transaction effects;
+- an explicit transaction target matches the packaged transaction;
+- every object target's exact reference appears in the transaction effects; and
+- every event target has packaged event data, belongs to the packaged transaction, and selects an existing event.
+
+## What a Verified Proof Proves
+
+Successful verification authenticates the following targets relative to the supplied committee:
+
+- A transaction target proves that the selected transaction and its effects are included in the certified checkpoint.
+- An object target proves that the exact object version was written by the authenticated transaction. For an object ID
+  without a transaction or event target, the builder resolves its latest version at proof construction time; the proof
+  does not claim that it remains latest. Deleted and wrapped objects are unsupported.
+- An event target proves that the selected event and its contents appear in the authenticated transaction's event list.
 
 ## Proof Model
 
@@ -164,10 +184,19 @@ A `Proof` contains three layers of evidence:
 - A `CertifiedCheckpointSummary` and its `CheckpointContents` link the transaction to a committee-certified checkpoint.
 - A required `TransactionProof` contains the transaction, its effects, and event data when event targets are present.
 
-Object targets contain their exact object values. Verification derives each object reference and finds it in the
-transaction effects. Event targets contain `EventID` values, while the transaction proof carries the complete event list
-needed to verify the effects' event digest. A transaction target is present only when the caller explicitly requests the
-transaction itself, although transaction evidence supports every proof.
+Object targets contain their exact values. Event targets contain `EventID` values, while the
+transaction proof carries the complete event list needed to verify the effects' event digest. A transaction target is
+present only when the caller explicitly requests the transaction itself, although transaction evidence supports every
+proof.
+
+## JSON Compatibility
+
+Proof JSON is a versioned persistence and exchange format. Releases that support `ProofV1` continue to deserialize its
+existing JSON shape and serialize the same field structure. Frozen V1 fixtures enforce this contract for transaction,
+object, and event proofs.
+
+Dependency upgrades must not silently change the `ProofV1` representation. Preserve the existing shape with custom
+serialization when necessary, or introduce a new `Proof` variant for an incompatible format change.
 
 ## Trust Boundaries
 
@@ -175,8 +204,8 @@ transaction itself, although transaction evidence supports every proof.
 authoritative. `CommitteeResolver::verify()` composes committee resolution with offline verification for source-backed
 workflows, while `CommitteeResolver::resolve()` returns the authenticated committee when callers need it directly.
 
-Treat every proof payload as untrusted until verification succeeds. After successful verification, callers can trust
-the authenticated target claims relative to the supplied committee.
+Treat every proof payload as untrusted. After successful verification, trust target data relative to the supplied
+committee through the returned `VerifiedProof`; do not read relying-party data from an unrelated `Proof` value.
 
 The proof's `chain` value is informational. The verifier does not authenticate it, so applications must not use it to
 select a network, committee, genesis blob, or other trust anchor.
@@ -223,6 +252,11 @@ cargo run --release -p poi-rs --features cli --bin poi -- verify \
   proof.json
 ```
 
+For `--network mainnet` and `--network testnet`, the CLI downloads the genesis blob to the IOTA configuration
+directory under `poi/<network>/genesis.blob`. It validates the blob against the network's canonical genesis digest on
+download and every cache load. Devnet has no stable genesis digest, so verification on devnet requires an explicit
+trusted blob through `--genesis`.
+
 Run `cargo run --release -p poi-rs --features cli --bin poi -- --help` for all targets, network options, and file input
 formats.
 
@@ -231,7 +265,7 @@ formats.
 - `Proof`: Versioned Proof of Inclusion envelope.
 - `ProofV1`: Version 1 checkpoint and transaction evidence carried by `Proof::ProofV1`.
 - `TransactionProof`: Transaction, effects, and optional event evidence used to prove inclusion.
-- `ProofTargets`: Transaction, object, and event claims explicitly selected by the caller.
+- `ProofTargets`: Transaction, object, and event targets explicitly selected by the caller.
 - `PoiClient`: Source-backed entry point for proof construction and committee-aware verification.
 - `CommitteeResolution`: Trusted-node or anchored committee-resolution configuration, including the committee cache.
 - `ProofBuilder`: Proof-construction workflow for public networks or custom sources.

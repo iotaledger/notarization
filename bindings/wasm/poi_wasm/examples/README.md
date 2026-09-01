@@ -101,6 +101,12 @@ IOTA_GENESIS_PATH="$HOME/.iota/iota_config/genesis.blob" \
 npm run example:node -- 02_multi_target_proof
 ```
 
+Run the trusted-node example against any active network without a genesis blob:
+
+```bash
+npm run example:node -- 06_trusted_node
+```
+
 Run against the active public faucet network. The utility funds the active CLI
 wallet and publishes Single Notarization when necessary:
 
@@ -124,19 +130,20 @@ npm run example:node -- 05_event_proof
 | [03_reuse_verifier](./src/03_reuse_verifier.ts)         | Two creation transactions while reusing one verifier and its committee cache.              |
 | [04_object_proof](./src/04_object_proof.ts)             | A freshly created `Notarization` object, starting from only its object ID.                 |
 | [05_event_proof](./src/05_event_proof.ts)               | A fresh `LockedNotarizationCreated` event, starting from only its event ID.                |
+| [06_trusted_node](./src/06_trusted_node.ts)             | A transaction proof verified through a trusted endpoint on any network.                    |
 
 ## Committee Trust
 
 The gRPC endpoint supplies transaction, checkpoint, and committee-transition
 evidence. That evidence remains untrusted until verification succeeds.
 
-Examples 01, 02, and 03 use genesis-anchored committee resolution. The utility
+Examples 01 through 05 use genesis-anchored committee resolution. The utility
 downloads and caches the official genesis blob for mainnet, testnet, and
 devnet. Set `IOTA_GENESIS_PATH` for localnet and custom networks.
 
-Examples 04 and 05 use trusted-node resolution so they can focus on
-target-driven object and event discovery. In this mode, the selected gRPC node
-is inside the verifier's trust boundary.
+Example 06 demonstrates trusted-node resolution on any active network without a
+genesis blob. In this mode, the selected gRPC node is inside the verifier's
+trust boundary and must be operated by a party the verifier trusts.
 
 Obtain custom genesis blobs independently, verify that each blob belongs to the
 selected network, and do not accept a trust anchor from the same untrusted party

@@ -40,11 +40,14 @@ export async function reuseVerifierForMultipleProofs(): Promise<void> {
 
     console.log("Stage 4 - Verify both proofs with one verifier");
     console.log("  verifying the first proof; this resolves its checkpoint committee...");
-    await verifier.verify(firstProof);
+    const firstVerified = await verifier.verify(firstProof);
 
     console.log("  verifying the second proof with the same verifier...");
-    await verifier.verify(secondProof);
+    const secondVerified = await verifier.verify(secondProof);
 
     console.log("\n  both transaction proofs verified successfully.");
+    console.log(
+        `  authenticated checkpoints: ${firstVerified.checkpointSequenceNumber}, ${secondVerified.checkpointSequenceNumber}`,
+    );
     console.log(`Both proofs used committee resolution through ${trust.description}.`);
 }

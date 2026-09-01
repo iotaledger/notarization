@@ -5,8 +5,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
+import { Committee, CommitteeResolution, CommitteeResolver, isPoiError } from "../lib/index.js";
 import type { LedgerSource } from "../lib/source-types.js";
-import { Committee, CommitteeResolution, CommitteeResolver } from "../lib/index.js";
 
 test("the WASM resolver constructs a committee reported by a trusted node", async () => {
     const source = await committeeSource();
@@ -42,7 +42,34 @@ test("the anchored resolver reports a missing current epoch", async () => {
             source,
             CommitteeResolution.anchored(committee),
         ).resolve(1n),
-        /service information is missing the current epoch/,
+        (error) => {
+            assert.ok(isPoiError(error));
+            assert.equal(error.code, "COMMITTEE_RESOLUTION");
+            assert.match(error.message, /service information is missing the current epoch/);
+            return true;
+        },
+    );
+});
+
+test("the resolver reports source request failures separately", async () => {
+    const source = {
+        async currentEpoch() {
+            throw new Error("node unavailable");
+        },
+    } as unknown as LedgerSource;
+    const committee = await loadCommittee();
+
+    await assert.rejects(
+        new CommitteeResolver(
+            source,
+            CommitteeResolution.anchored(committee),
+        ).resolve(1n),
+        (error) => {
+            assert.ok(isPoiError(error));
+            assert.equal(error.code, "SOURCE_REQUEST");
+            assert.match(error.message, /node unavailable/);
+            return true;
+        },
     );
 });
 
@@ -82,7 +109,7 @@ interface CommitteeFixture {
 async function readCommitteeJson(): Promise<string> {
     return readFile(
         new URL(
-            "../../../../poi-rs/tests/fixtures/current/committee.json",
+            "../../../../poi-rs/tests/fixtures/v1/committee.json",
             import.meta.url,
         ),
         "utf8",

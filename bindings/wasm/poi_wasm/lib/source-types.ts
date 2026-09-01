@@ -46,7 +46,7 @@ export interface LedgerSource {
         digest: Uint8Array,
     ): Promise<TransactionEvidence | undefined>;
     object(objectId: Uint8Array, version?: bigint): Promise<Uint8Array | undefined>;
-    checkpoint(sequenceNumber: bigint): Promise<CheckpointEvidence>;
+    checkpoint(sequenceNumber: bigint): Promise<CheckpointEvidence | undefined>;
     committee(epoch: bigint): Promise<Committee>;
     currentEpoch(): Promise<bigint | undefined>;
     epochCloseSummary(
