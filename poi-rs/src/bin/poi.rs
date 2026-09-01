@@ -9,7 +9,8 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, bail, ensure};
 use clap::{ArgGroup, Args, Parser, Subcommand, ValueEnum};
-use iota_config::{IOTA_GENESIS_FILENAME, genesis::Genesis, iota_config_dir};
+use iota_config::genesis::Genesis;
+use iota_config::{IOTA_GENESIS_FILENAME, iota_config_dir};
 use iota_grpc_client::Client as GrpcClient;
 use iota_sdk_types::{ObjectId, TransactionDigest};
 use iota_types::digests::{ChainIdentifier, get_mainnet_chain_identifier, get_testnet_chain_identifier};
