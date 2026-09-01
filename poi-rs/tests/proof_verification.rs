@@ -8,6 +8,7 @@ use iota_types::effects::{TestEffectsBuilder, TransactionEvents};
 use iota_types::event::EventID;
 use iota_types::messages_checkpoint::CheckpointContentsExt;
 use iota_types::object::Object;
+use iota_types::transaction::SenderSignedTransactionAPI;
 use poi_rs::{Proof, ProofTargets, ProofV1, ProofVerifier, VerifyErrorKind};
 use utils::proofs::{event, execution_data, proof_with_events, proof_with_targets, valid_transaction_proof};
 
@@ -149,6 +150,23 @@ fn transaction_must_be_present_in_the_checkpoint() {
         .expect_err("a transaction outside the checkpoint must be rejected");
 
     assert!(matches!(error.kind, VerifyErrorKind::TransactionNotInCheckpoint));
+}
+
+#[test]
+fn transaction_signatures_must_match_the_checkpoint() {
+    let (committee, mut proof) = valid_transaction_proof();
+    proof_v1_mut(&mut proof)
+        .transaction_proof
+        .transaction
+        .data_mut_for_testing()
+        .tx_signatures_mut_for_testing()
+        .clear();
+
+    let error = ProofVerifier::new(&committee)
+        .verify(&proof)
+        .expect_err("altered transaction signatures must be rejected");
+
+    assert!(matches!(error.kind, VerifyErrorKind::TransactionSignaturesMismatch));
 }
 
 #[test]

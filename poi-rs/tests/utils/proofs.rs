@@ -53,7 +53,7 @@ fn proof_from_execution(
     execution: ExecutionData,
     events: Option<TransactionEvents>,
 ) -> (Committee, Proof) {
-    let contents = CheckpointContents::new_with_digests_only_for_tests([execution.digests()]);
+    let contents = checkpoint_contents(&execution);
     let (committee, summary) = signed_checkpoint(&contents);
     let chain = ChainIdentifier::from(*summary.digest());
     let proof = ProofV1::new(
@@ -74,7 +74,7 @@ pub fn proof_with_events(events: TransactionEvents) -> (Committee, TransactionDi
     execution.effects = TestEffectsBuilder::new(execution.transaction.data())
         .with_events_digest(events.digest())
         .build();
-    let contents = CheckpointContents::new_with_digests_only_for_tests([execution.digests()]);
+    let contents = checkpoint_contents(&execution);
     let (committee, summary) = signed_checkpoint(&contents);
     let chain = ChainIdentifier::from(*summary.digest());
     let proof = ProofV1::new(
@@ -87,6 +87,13 @@ pub fn proof_with_events(events: TransactionEvents) -> (Committee, TransactionDi
     .into();
 
     (committee, transaction_digest, proof)
+}
+
+fn checkpoint_contents(execution: &ExecutionData) -> CheckpointContents {
+    CheckpointContents::new_with_digests_and_signatures(
+        [execution.digests()],
+        vec![execution.transaction.data().signatures().to_vec()],
+    )
 }
 
 pub fn event(contents: Vec<u8>) -> Event {

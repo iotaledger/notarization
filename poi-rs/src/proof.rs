@@ -16,7 +16,7 @@ use iota_types::committee::Committee;
 use iota_types::digests::ChainIdentifier;
 use iota_types::effects::{TransactionEffects, TransactionEffectsAPI, TransactionEffectsExt, TransactionEvents};
 use iota_types::event::EventID;
-use iota_types::messages_checkpoint::{CertifiedCheckpointSummary, CheckpointContentsExt};
+use iota_types::messages_checkpoint::CertifiedCheckpointSummary;
 use iota_types::object::Object;
 use iota_types::transaction::Transaction;
 use serde::{Deserialize, Serialize};
@@ -79,6 +79,9 @@ pub enum VerifyErrorKind {
     /// The packaged transaction effects are absent from the authenticated checkpoint contents.
     #[error("transaction digest not found in the checkpoint contents")]
     TransactionNotInCheckpoint,
+    /// The packaged user signatures differ from those committed by the checkpoint.
+    #[error("transaction signatures do not match the checkpoint contents")]
+    TransactionSignaturesMismatch,
     /// The packaged events do not match the events digest in the transaction effects.
     #[error("events digest does not match the execution digest")]
     EventsDigestMismatch,
@@ -208,8 +211,8 @@ impl<'proof> VerifiedProof<'proof> {
 
     /// Returns the transaction data included in the authenticated checkpoint.
     ///
-    /// User signatures packaged with the original proof are not returned because
-    /// checkpoint inclusion does not authenticate those signature bytes.
+    /// Verification authenticates the packaged user signatures against the checkpoint
+    /// contents, but this accessor returns only the transaction data.
     pub const fn transaction(&self) -> &'proof TransactionData {
         self.transaction
     }
@@ -404,6 +407,7 @@ impl<'committee> ProofVerifier<'committee> {
     /// - the checkpoint contents match the digest in that summary;
     /// - the transaction, effects, and optional events are internally consistent;
     /// - the transaction effects occur in the authenticated checkpoint contents;
+    /// - the packaged user signatures match those committed by the checkpoint;
     /// - every selected target matches the authenticated proof data.
     ///
     /// On success, returns a [`VerifiedProof`] borrowing the authenticated targets
@@ -437,7 +441,7 @@ impl<'committee> ProofVerifier<'committee> {
                 },
             })?;
 
-        self.verify_transaction_proof(summary, &proof.checkpoint_contents, &proof.transaction_proof)?;
+        self.verify_transaction_proof(&proof.checkpoint_contents, &proof.transaction_proof)?;
         let events = self.verify_targets(&proof.targets, &proof.transaction_proof)?;
 
         Ok(VerifiedProof {
@@ -453,7 +457,6 @@ impl<'committee> ProofVerifier<'committee> {
     /// Checks the transaction-to-effects, effects-to-checkpoint, and effects-to-events links.
     fn verify_transaction_proof(
         &self,
-        summary: &CertifiedCheckpointSummary,
         checkpoint_contents: &CheckpointContents,
         transaction_proof: &TransactionProof,
     ) -> Result<(), VerifyError> {
@@ -465,13 +468,20 @@ impl<'committee> ProofVerifier<'committee> {
             });
         }
 
-        let transaction_is_in_checkpoint = checkpoint_contents
-            .enumerate_transactions(summary)
-            .any(|(_, digests)| digests == execution_digests);
-
-        if !transaction_is_in_checkpoint {
-            return Err(VerifyError {
+        let checkpoint_transaction = checkpoint_contents
+            .transactions()
+            .iter()
+            .find(|transaction| {
+                transaction.transaction == execution_digests.transaction
+                    && transaction.effects == execution_digests.effects
+            })
+            .ok_or(VerifyError {
                 kind: VerifyErrorKind::TransactionNotInCheckpoint,
+            })?;
+
+        if checkpoint_transaction.signatures.as_slice() != transaction_proof.transaction.data().signatures() {
+            return Err(VerifyError {
+                kind: VerifyErrorKind::TransactionSignaturesMismatch,
             });
         }
 

@@ -148,10 +148,11 @@ the chain identifier automatically; `anchored_with_cache()` requires it explicit
 Retain the verifier when checking multiple proofs so it can reuse its authenticated committee cache. `ProofVerifier`
 remains the offline entry point for callers that already possess the authoritative committee.
 
-Successful verification returns a `VerifiedProof` that borrows from the input proof and exposes only authenticated
-checkpoint metadata, transaction data and digest, object targets, and event targets. It intentionally omits the packaged
-user signatures because checkpoint inclusion does not authenticate those bytes. Read relying-party data through this
-returned value. The original `Proof` remains the portable untrusted envelope used for transport and serialization.
+Successful verification returns a `VerifiedProof` that borrows from the input proof and exposes authenticated checkpoint
+metadata, transaction data and digest, object targets, and event targets. Verification also authenticates the packaged
+user signatures against the checkpoint contents, although `VerifiedProof` does not expose them. Read relying-party data
+through this returned value. The original `Proof` remains the portable untrusted envelope used for transport and
+serialization.
 
 Verification checks:
 
@@ -159,6 +160,7 @@ Verification checks:
 - the supplied committee certifies the checkpoint summary and its checkpoint-contents digest;
 - the packaged transaction digest matches the transaction effects;
 - the transaction effects are included in the authenticated checkpoint contents;
+- the packaged user signatures match those committed by the checkpoint;
 - packaged event data matches the digest in the transaction effects;
 - an explicit transaction target matches the packaged transaction;
 - every object target's exact reference appears in the transaction effects; and

@@ -116,7 +116,8 @@ code. Only `PROOF_INVALID` means the proof was rejected.
 
 Successful verification authenticates the following targets relative to the supplied committee:
 
-- A transaction target proves that the selected transaction and its effects are included in the certified checkpoint.
+- A transaction target proves that the selected transaction, its user signatures, and its effects are included in the
+  certified checkpoint.
 - An object target proves the exact object version returned by `objectBcs(index)`. For an object ID without a transaction
   or event target, `makeProof()` resolves its latest version at proof construction time; the proof does not claim that it
   remains latest. Deleted and wrapped objects are unsupported.
