@@ -187,6 +187,15 @@ transaction proof carries the complete event list needed to verify the effects' 
 present only when the caller explicitly requests the transaction itself, although transaction evidence supports every
 proof.
 
+## JSON Compatibility
+
+Proof JSON is a versioned persistence and exchange format. Releases that support `ProofV1` continue to deserialize its
+existing JSON shape and serialize the same field structure. Frozen V1 fixtures enforce this contract for transaction,
+object, and event proofs.
+
+Dependency upgrades must not silently change the `ProofV1` representation. Preserve the existing shape with custom
+serialization when necessary, or introduce a new `Proof` variant for an incompatible format change.
+
 ## Trust Boundaries
 
 `ProofVerifier` is intentionally offline. It does not make RPC calls and does not decide which committee is

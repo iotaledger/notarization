@@ -241,6 +241,11 @@ impl<'proof> VerifiedProof<'proof> {
 /// proof formats without making matches in downstream crates source-breaking.
 /// Its serialized representation is externally tagged, with the variant name
 /// identifying the proof format, for example `{ "ProofV1": { ... } }`.
+///
+/// The JSON representation of each variant is a compatibility contract. A
+/// release that supports `ProofV1` must continue to deserialize its existing
+/// shape and serialize the same field structure. Incompatible changes require
+/// a new [`Proof`] variant.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum Proof {

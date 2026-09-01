@@ -122,6 +122,15 @@ Successful verification authenticates the following targets relative to the supp
   remains latest. Deleted and wrapped objects are unsupported.
 - An event target proves that `eventContents(index)` returns the selected event's authenticated contents.
 
+## JSON Compatibility
+
+Proof JSON is a versioned persistence and exchange format. Releases that support `ProofV1` continue to deserialize its
+existing JSON shape and serialize the same field structure. Frozen V1 fixtures enforce this contract for transaction,
+object, and event proofs.
+
+Dependency upgrades must not silently change the `ProofV1` representation. Preserve the existing shape with custom
+serialization when necessary, or introduce a new `Proof` variant for an incompatible format change.
+
 ## Trust Boundaries
 
 Treat the node, source adapter, and complete proof payload as untrusted until verification succeeds. Trusted-node
