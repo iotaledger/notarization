@@ -250,6 +250,11 @@ cargo run --release -p poi-rs --features cli --bin poi -- verify \
   proof.json
 ```
 
+For `--network mainnet` and `--network testnet`, the CLI downloads the genesis blob to the IOTA configuration
+directory under `poi/<network>/genesis.blob`. It validates the blob against the network's canonical genesis digest on
+download and every cache load. Devnet has no stable genesis digest, so verification on devnet requires an explicit
+trusted blob through `--genesis`.
+
 Run `cargo run --release -p poi-rs --features cli --bin poi -- --help` for all targets, network options, and file input
 formats.
 
