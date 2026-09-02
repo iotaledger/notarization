@@ -1,9 +1,14 @@
 {
-  "name": "@iota/poi-wasm",
+  "name": "@iota/proof-of-inclusion",
+  "author": "IOTA Foundation <info@iota.org>",
   "version": "0.0.1",
-  "private": true,
   "description": "Node.js WASM bindings for the IOTA Proof of Inclusion Package.",
+  "homepage": "https://www.iota.org",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iotaledger/notarization.git"
+  },
   "type": "module",
   "main": "./node/index.js",
   "types": "./node/index.d.ts",
@@ -20,6 +25,9 @@
   "files": [
     "node/*"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "npm run grpc:generate && npm run build:nodejs && npm run typecheck",
     "build:src:nodejs": "cargo build --lib --release --target wasm32-unknown-unknown --target-dir ../target",

@@ -17,7 +17,7 @@ import {
     normalizeIotaAddress,
     normalizeIotaObjectId,
 } from "@iota/iota-sdk/utils";
-import { CommitteeResolution, PoiClient } from "@iota/poi-wasm";
+import { CommitteeResolution, PoiClient } from "@iota/proof-of-inclusion";
 
 const execFileAsync = promisify(execFile);
 const REPOSITORY_ROOT = fileURLToPath(new URL("../../../../../", import.meta.url));

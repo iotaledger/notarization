@@ -13,7 +13,7 @@
  */
 
 import { fromBase58 } from "@iota/iota-sdk/utils";
-import { CommitteeResolution } from "@iota/poi-wasm";
+import { CommitteeResolution } from "@iota/proof-of-inclusion";
 import { createNotarization, preparePoiExample } from "./util.js";
 
 /** Demonstrates trusted-node committee resolution against a trusted endpoint. */

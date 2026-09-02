@@ -13,13 +13,23 @@ Proof of Inclusion operates on existing ledger activity and does not define a se
 
 ## Installation
 
-The Package currently builds from the repository. Install its development dependencies from this directory:
+Install the Package from npm:
+
+```bash
+npm install @iota/proof-of-inclusion
+```
+
+The Package requires Node.js 24 or later.
+
+## Build from Source
+
+Building the Package from the repository requires Rust 1.85 or later, `wasm-bindgen-cli`, and `wasm-opt`. Install its
+development dependencies and build it from this directory:
 
 ```bash
 npm install
+npm run build
 ```
-
-Node.js 24 or later, Rust 1.85 or later, `wasm-bindgen-cli`, and `wasm-opt` are required to build the Package.
 
 ## Client Creation
 
@@ -27,7 +37,7 @@ Create a client for a named public network or pass an explicit gRPC endpoint. Th
 implicitly.
 
 ```ts
-import { PoiClient } from "@iota/poi-wasm";
+import { PoiClient } from "@iota/proof-of-inclusion";
 
 const mainnet = PoiClient.mainnet();
 const testnet = PoiClient.testnet();
@@ -44,7 +54,7 @@ configures the source of proof material; it does not make the proof trusted.
 transaction.
 
 ```ts
-import { PoiClient } from "@iota/poi-wasm";
+import { PoiClient } from "@iota/proof-of-inclusion";
 
 const client = PoiClient.testnet();
 const proof = await client.makeProof({
@@ -73,7 +83,7 @@ Create a verifier from the same `PoiClient`. Trusted-node resolution accepts the
 inside the caller's trust boundary.
 
 ```ts
-import { CommitteeResolution } from "@iota/poi-wasm";
+import { CommitteeResolution } from "@iota/proof-of-inclusion";
 
 const verifier = client.verifier(CommitteeResolution.trustedNode());
 const verified = await verifier.verify(proof);

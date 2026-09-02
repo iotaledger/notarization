@@ -3,7 +3,7 @@
 ## Introduction
 
 These examples construct and verify portable IOTA Proof of Inclusion proofs
-with the `@iota/poi-wasm` Package. Each example creates fresh evidence through
+with the `@iota/proof-of-inclusion` Package. Each example creates fresh evidence through
 Single Notarization instead of depending on fixed historical transactions.
 
 ## Learning Objectives
