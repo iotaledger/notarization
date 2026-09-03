@@ -18,11 +18,6 @@ inputs:
     description: "Wether to start the sandbox or just install"
     required: false
     default: "true"
-  with-grpc:
-    description: "Whether to start the gRPC API server"
-    required: false
-    default: "false"
-
 runs:
   using: composite
   steps:
@@ -101,7 +96,25 @@ runs:
         echo "Starting server with log file: $LOGFILE"
 
         # Start the network
-        iota-localnet start --with-faucet ${{ inputs.with-grpc == 'true' && '--with-grpc' || '' }} ${{ inputs.logfile && format('> {0} 2>&1', inputs.logfile) || '' }} &
+        iota-localnet start --with-faucet --with-grpc ${{ inputs.logfile && format('> {0} 2>&1', inputs.logfile) || '' }} &
+
+        for attempt in {1..30}; do
+          if iota client new-env \
+            --alias localnet \
+            --rpc http://127.0.0.1:9000 \
+            --grpc http://127.0.0.1:50051 \
+            --faucet http://127.0.0.1:9123/v1/gas \
+            --json; then
+            break
+          fi
+
+          if [[ "$attempt" -eq 30 ]]; then
+            echo "failed to configure the local gRPC endpoint" >&2
+            exit 1
+          fi
+
+          sleep 1
+        done
     - name: Setup TOML CLI utils
       shell: bash
       run: |

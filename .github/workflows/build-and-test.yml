@@ -169,7 +169,6 @@ jobs:
           platform: ${{ matrix.os == 'ubuntu-24.04' && 'linux' || 'macos' }}
           logfile: ${{ env.IOTA_SERVER_LOGFILE }}
           iota-version: ${{ env.IOTA_VERSION }}
-          with-grpc: ${{ matrix.os == 'ubuntu-24.04' }}
 
       - name: test Notarization Move package
         if: matrix.os != 'windows-latest'
@@ -183,13 +182,16 @@ jobs:
 
       - name: publish Notarization Move package
         if: matrix.os != 'windows-latest'
-        run: echo "IOTA_NOTARIZATION_PKG_ID=$(./publish_package.sh)" >> "$GITHUB_ENV"
+        run: |
+          package_id=$(./publish_package.sh)
+          echo "IOTA_NOTARIZATION_PKG_ID=$package_id" >> "$GITHUB_ENV"
         working-directory: notarization-move/scripts/
 
       - name: publish Audit Trail Move package
         if: matrix.os != 'windows-latest'
         run: |
-          eval "$(./publish_package.sh)"
+          exports=$(./publish_package.sh)
+          eval "$exports"
           echo "IOTA_AUDIT_TRAIL_PKG_ID=$IOTA_AUDIT_TRAIL_PKG_ID" >> "$GITHUB_ENV"
           echo "IOTA_TF_COMPONENTS_PKG_ID=$IOTA_TF_COMPONENTS_PKG_ID" >> "$GITHUB_ENV"
         working-directory: audit-trail-move/scripts/
@@ -289,10 +291,11 @@ jobs:
         uses: "./.github/actions/iota/setup"
         with:
           iota-version: ${{ env.IOTA_VERSION }}
-          with-grpc: true
 
       - name: publish Notarization Move package
-        run: echo "IOTA_NOTARIZATION_PKG_ID=$(./publish_package.sh)" >> "$GITHUB_ENV"
+        run: |
+          package_id=$(./publish_package.sh)
+          echo "IOTA_NOTARIZATION_PKG_ID=$package_id" >> "$GITHUB_ENV"
         working-directory: notarization-move/scripts/
 
       - name: Run Wasm examples
@@ -326,10 +329,11 @@ jobs:
         uses: "./.github/actions/iota/setup"
         with:
           iota-version: ${{ env.IOTA_VERSION }}
-          with-grpc: true
 
       - name: publish Notarization Move package
-        run: echo "IOTA_NOTARIZATION_PKG_ID=$(./publish_package.sh)" >> "$GITHUB_ENV"
+        run: |
+          package_id=$(./publish_package.sh)
+          echo "IOTA_NOTARIZATION_PKG_ID=$package_id" >> "$GITHUB_ENV"
         working-directory: notarization-move/scripts/
 
       - name: Run Proof of Inclusion Wasm examples
@@ -368,7 +372,8 @@ jobs:
 
       - name: publish Audit Trail Move package
         run: |
-          eval "$(./publish_package.sh)"
+          exports=$(./publish_package.sh)
+          eval "$exports"
           echo "IOTA_AUDIT_TRAIL_PKG_ID=$IOTA_AUDIT_TRAIL_PKG_ID" >> "$GITHUB_ENV"
           echo "IOTA_TF_COMPONENTS_PKG_ID=$IOTA_TF_COMPONENTS_PKG_ID" >> "$GITHUB_ENV"
         working-directory: audit-trail-move/scripts/
@@ -410,7 +415,9 @@ jobs:
 
       - name: publish Notarization Move package
         # publish the package and set the IOTA_NOTARIZATION_PKG_ID env variable
-        run: echo "IOTA_NOTARIZATION_PKG_ID=$(./publish_package.sh)" >> "$GITHUB_ENV"
+        run: |
+          package_id=$(./publish_package.sh)
+          echo "IOTA_NOTARIZATION_PKG_ID=$package_id" >> "$GITHUB_ENV"
         working-directory: notarization-move/scripts/
 
       - name: Build Docker image
@@ -461,7 +468,8 @@ jobs:
 
       - name: publish Audit Trail Move package
         run: |
-          eval "$(./publish_package.sh)"
+          exports=$(./publish_package.sh)
+          eval "$exports"
           echo "IOTA_AUDIT_TRAIL_PKG_ID=$IOTA_AUDIT_TRAIL_PKG_ID" >> "$GITHUB_ENV"
           echo "IOTA_TF_COMPONENTS_PKG_ID=$IOTA_TF_COMPONENTS_PKG_ID" >> "$GITHUB_ENV"
         working-directory: audit-trail-move/scripts/
