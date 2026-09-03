@@ -10,10 +10,13 @@ use std::fs::File;
 use iota_config::IOTA_GENESIS_FILENAME;
 use iota_config::genesis::Genesis;
 use iota_grpc_client::Client as GrpcClient;
+use iota_grpc_client::ReadMask;
+use iota_grpc_client::read_mask_fields::TransactionField;
 use iota_sdk_types::{ObjectReference, TransactionDigest};
 use iota_types::committee::Committee;
 use iota_types::digests::ChainIdentifier;
 use iota_types::iota_system_state::{IotaSystemStateTrait, get_iota_system_state};
+use iota_types::transaction::TransactionData;
 use test_cluster::{TestCluster, TestClusterBuilder};
 
 pub mod proofs;
@@ -52,23 +55,46 @@ pub fn grpc_client(cluster: &TestCluster) -> GrpcClient {
     GrpcClient::new(cluster.grpc_url()).expect("test cluster gRPC client must connect")
 }
 
+async fn execute_transaction(cluster: &TestCluster, transaction: &TransactionData) -> TransactionDigest {
+    let signed_transaction = cluster.wallet.sign_transaction(transaction);
+    let digest = *signed_transaction.digest();
+    let response = grpc_client(cluster)
+        .execute_transaction(
+            signed_transaction.into(),
+            Some(ReadMask::from(&[
+                TransactionField::EFFECTS,
+                TransactionField::CHECKPOINT,
+            ])),
+            Some(30_000),
+        )
+        .await
+        .expect("transaction must execute and be checkpointed");
+    let transaction = response.body();
+    let effects = transaction
+        .effects()
+        .expect("transaction response must include effects")
+        .effects()
+        .expect("transaction effects must decode");
+    assert!(effects.as_v1().status.is_success(), "transaction must succeed");
+    transaction
+        .checkpoint_sequence_number()
+        .expect("transaction response must include its checkpoint");
+
+    digest
+}
+
 pub async fn transfer_tx(cluster: &TestCluster) -> CheckpointedTransfer {
     let builder = cluster.test_transaction_builder().await;
     let gas_object = builder.gas_object();
     let transaction = builder.transfer_iota(Some(1), cluster.get_address_1()).build();
-    let response = cluster.sign_and_execute_transaction(&transaction).await;
-    let checkpoint = response.checkpoint.expect("transfer transaction must be checkpointed");
-    cluster.wait_for_checkpoint(checkpoint, None).await;
+    let digest = execute_transaction(cluster, &transaction).await;
     let gas_object = cluster
         .wallet
         .get_object_ref(gas_object.object_id)
         .await
         .expect("mutated gas object must be available");
 
-    CheckpointedTransfer {
-        digest: response.digest,
-        gas_object,
-    }
+    CheckpointedTransfer { digest, gas_object }
 }
 
 pub async fn object_transfer_tx(cluster: &TestCluster) -> CheckpointedObjectTransfer {
@@ -86,9 +112,7 @@ pub async fn object_transfer_tx(cluster: &TestCluster) -> CheckpointedObjectTran
         .await
         .transfer(object, cluster.get_address_1())
         .build();
-    let response = cluster.sign_and_execute_transaction(&transaction).await;
-    let checkpoint = response.checkpoint.expect("object transfer must be checkpointed");
-    cluster.wait_for_checkpoint(checkpoint, None).await;
+    let digest = execute_transaction(cluster, &transaction).await;
     let gas_object = cluster
         .wallet
         .get_object_ref(gas_object_id)
@@ -101,7 +125,7 @@ pub async fn object_transfer_tx(cluster: &TestCluster) -> CheckpointedObjectTran
         .expect("transferred object must be available");
 
     CheckpointedObjectTransfer {
-        digest: response.digest,
+        digest,
         objects: [gas_object, transferred_object],
     }
 }
@@ -127,19 +151,14 @@ pub async fn staking_tx(cluster: &TestCluster) -> CheckpointedStaking {
         .await
         .call_staking(stake, validator)
         .build();
-    let response = cluster.sign_and_execute_transaction(&transaction).await;
-    let checkpoint = response.checkpoint.expect("staking transaction must be checkpointed");
-    cluster.wait_for_checkpoint(checkpoint, None).await;
+    let digest = execute_transaction(cluster, &transaction).await;
     let gas_object = cluster
         .wallet
         .get_object_ref(gas_object_id)
         .await
         .expect("mutated gas object must be available");
 
-    CheckpointedStaking {
-        digest: response.digest,
-        gas_object,
-    }
+    CheckpointedStaking { digest, gas_object }
 }
 
 pub fn genesis_committee(cluster: &TestCluster) -> Committee {
