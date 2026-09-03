@@ -1,0 +1,15 @@
+{
+  "name": "@iota/proof-of-inclusion API documentation",
+  "extends": [
+    "../typedoc.json"
+  ],
+  "entryPoints": [
+    "./node/index.d.ts"
+  ],
+  "tsconfig": "./tsconfig.typedoc.json",
+  "out": "./docs/wasm",
+  "validation": {
+    "notDocumented": true,
+    "notExported": false
+  }
+}
