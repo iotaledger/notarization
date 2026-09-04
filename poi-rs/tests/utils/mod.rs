@@ -9,9 +9,8 @@ use std::fs::File;
 
 use iota_config::IOTA_GENESIS_FILENAME;
 use iota_config::genesis::Genesis;
-use iota_grpc_client::Client as GrpcClient;
-use iota_grpc_client::ReadMask;
 use iota_grpc_client::read_mask_fields::TransactionField;
+use iota_grpc_client::{Client as GrpcClient, ReadMask};
 use iota_sdk_types::{ObjectReference, TransactionDigest};
 use iota_types::committee::Committee;
 use iota_types::digests::ChainIdentifier;
