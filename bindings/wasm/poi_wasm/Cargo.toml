@@ -1,0 +1,42 @@
+[package]
+name = "poi_wasm"
+version = "0.1.0-alpha"
+authors = ["IOTA Stiftung"]
+edition = "2024"
+homepage = "https://www.iota.org"
+keywords = ["iota", "proof", "inclusion", "wasm"]
+license = "Apache-2.0"
+publish = false
+readme = "README.md"
+repository = "https://github.com/iotaledger/notarization"
+rust-version = "1.85"
+description = "Node.js WASM bindings for the IOTA Proof of Inclusion Package."
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+async-trait = { version = "0.1", default-features = false }
+bcs = "0.1.6"
+console_error_panic_hook = "0.1"
+fastcrypto = "=0.1.11"
+iota-sdk-types = { git = "https://github.com/iotaledger/iota-rust-sdk.git", rev = "2f021d0556e47564e9b04bcd0b3e8347c41a0a26", default-features = false, features = ["serde"] }
+iota-types = { git = "https://github.com/iotaledger/iota.git", tag = "v1.29.0" }
+js-sys = "=0.3.85"
+poi-rs = { path = "../../../poi-rs", default-features = false }
+serde = { version = "1.0", features = ["derive"] }
+serde-wasm-bindgen = "0.6.5"
+serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
+thiserror = { version = "2.0", default-features = false }
+wasm-bindgen = "=0.2.108"
+wasm-bindgen-futures = "=0.4.58"
+
+[target.'cfg(all(target_arch = "wasm32", not(target_os = "wasi")))'.dependencies]
+getrandom = { version = "0.3", default-features = false, features = ["wasm_js"] }
+
+[profile.release]
+lto = true
+opt-level = "s"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(wasm_bindgen_unstable_test_coverage)'] }

@@ -1,0 +1,68 @@
+{
+  "name": "@iota/proof-of-inclusion",
+  "author": "IOTA Foundation <info@iota.org>",
+  "version": "0.0.1",
+  "description": "Node.js WASM bindings for the IOTA Proof of Inclusion Package.",
+  "homepage": "https://www.iota.org",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iotaledger/notarization.git"
+  },
+  "type": "module",
+  "main": "./node/index.js",
+  "types": "./node/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./node/index.d.ts",
+      "import": "./node/index.js",
+      "require": "./node/index.js"
+    }
+  },
+  "directories": {
+    "example": "examples"
+  },
+  "files": [
+    "node/*"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "npm run grpc:generate && npm run build:nodejs && npm run typecheck && npm run build:docs",
+    "build:src:nodejs": "cargo build --lib --release --target wasm32-unknown-unknown --target-dir ../target",
+    "prebundle:nodejs": "rimraf node",
+    "bundle:nodejs": "wasm-bindgen ../target/wasm32-unknown-unknown/release/poi_wasm.wasm --typescript --weak-refs --target nodejs --out-dir node && node ../build/node poi_wasm --skip-fetch-polyfill && tsc --project ./lib/tsconfig.json",
+    "build:nodejs": "npm run build:src:nodejs && npm run bundle:nodejs && wasm-opt -O node/poi_wasm_bg.wasm -o node/poi_wasm_bg.wasm",
+    "build:docs": "typedoc && npm run fix_docs",
+    "grpc:schema:update": "node scripts/update-iota-schema.mjs",
+    "grpc:generate": "node scripts/generate-grpc.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "test:node": "tsx --test examples/src/tests.ts",
+    "test:unit:node": "npm test",
+    "verify": "npm run grpc:generate && npm run build:nodejs && npm run typecheck && npm test",
+    "example:node": "tsx examples/src/main.ts",
+    "fix_docs": "find ./docs/wasm/ -type f -name '*.md' -exec sed -E -i.bak -e 's/\\.(md?)#([^#)]*)#([^#)]*)\\)/.\\1#\\2\\3)/g' {} ';' -exec rm {}.bak ';'"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "2.13.0",
+    "@connectrpc/connect": "2.1.2",
+    "@connectrpc/connect-node": "2.1.2"
+  },
+  "devDependencies": {
+    "@bufbuild/buf": "1.72.0",
+    "@bufbuild/protoc-gen-es": "2.13.0",
+    "@iota/iota-interaction-ts": "0.16.0",
+    "@iota/iota-sdk": "1.15.1",
+    "@types/node": "22.20.1",
+    "rimraf": "6.0.1",
+    "tsx": "4.23.1",
+    "typedoc": "^0.28.5",
+    "typedoc-plugin-markdown": "^4.4.1",
+    "typescript": "5.9.3"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

@@ -18,6 +18,7 @@ on:
         options:
           - notarization
           - audit-trail
+          - proof-of-inclusion
 
 env:
   GH_TOKEN: ${{ github.token }}
@@ -43,6 +44,17 @@ jobs:
       output-artifact-name: audit-trail-docs
       wasm-package-dir: bindings/wasm/audit_trail_wasm
       wasm-crate-name: audit_trail_wasm
+
+  build-wasm-proof-of-inclusion:
+    if: ${{ github.event_name == 'release' || github.event.inputs.product == 'proof-of-inclusion' }}
+    uses: "./.github/workflows/shared-build-wasm.yml"
+    with:
+      run-unit-tests: false
+      ref: ${{ inputs.ref }}
+      output-artifact-name: proof-of-inclusion-docs
+      wasm-package-dir: bindings/wasm/poi_wasm
+      wasm-crate-name: poi_wasm
+      node-version: 24.x
 
   upload-notarization-docs:
     runs-on: ubuntu-latest
@@ -103,3 +115,33 @@ jobs:
           AWS_DEFAULT_REGION: "eu-central-1"
         run: |
           aws s3 cp audit-trail-wasm.tar.gz s3://files.iota.org/iota-wiki/iota-notarization/${{ steps.get_release_version.outputs.VERSION }}/ --acl public-read
+
+  upload-proof-of-inclusion-docs:
+    runs-on: ubuntu-latest
+    needs: [build-wasm-proof-of-inclusion]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: proof-of-inclusion-docs
+          path: proof-of-inclusion-docs
+      - name: Get release version
+        id: get_release_version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            INPUT_VERSION="${{ github.ref }}"
+          else
+            INPUT_VERSION="${{ github.event.inputs.version }}"
+          fi
+          VERSION=$(echo $INPUT_VERSION | sed -e 's/.*v\([0-9]*\.[0-9]*\).*/\1/')
+          echo VERSION=$VERSION >> $GITHUB_OUTPUT
+      - name: Compress generated docs
+        run: |
+          tar czvf proof-of-inclusion-wasm.tar.gz proof-of-inclusion-docs/docs/*
+
+      - name: Upload Proof of Inclusion docs to AWS S3
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_IOTA_WIKI }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_IOTA_WIKI }}
+          AWS_DEFAULT_REGION: "eu-central-1"
+        run: |
+          aws s3 cp proof-of-inclusion-wasm.tar.gz s3://files.iota.org/iota-wiki/iota-notarization/${{ steps.get_release_version.outputs.VERSION }}/ --acl public-read

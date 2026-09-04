@@ -1,0 +1,326 @@
+{
+  "ProofV1": {
+    "chain": "J3x3hNka6L8T5y8VwEBHgJYLm5XgLm4FCQwmDcUpNAf5",
+    "targets": {
+      "transaction": null,
+      "objects": [],
+      "events": [
+        {
+          "txDigest": "25zdMVEMRtg7pDGqgLgL1Hf3s8sL9YGuN9UVeo3dECG6",
+          "eventSeq": "0"
+        }
+      ]
+    },
+    "checkpoint_summary": {
+      "data": {
+        "epoch": "0",
+        "sequence_number": "7",
+        "network_total_transactions": "40",
+        "contents_digest": "C7AbY9VsMGiK43TCv6s8FnL77Wf97KQsdJ2AEVTkXdK1",
+        "previous_digest": "D8kX1nzCc2MGmXRyPTcP9iT6spLirMSU9BYfddkGUe8R",
+        "epoch_rolling_gas_cost_summary": {
+          "computation_cost": "2000000",
+          "computation_cost_burned": "2000000",
+          "storage_cost": "16537600",
+          "storage_rebate": "0",
+          "non_refundable_storage_fee": "0"
+        },
+        "timestamp_ms": "1785157327014",
+        "checkpoint_commitments": [],
+        "end_of_epoch_data": null,
+        "version_specific_data": "AAECAAAAAAAAAA=="
+      },
+      "auth_signature": {
+        "epoch": 0,
+        "signature": "uWe3felkoJULwW0GX+V1uIz2Zkp/DyNdilZVgBL5NYl3PBRcTx+PjNywaxF9ZSDY",
+        "signers_map": [58, 48, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0]
+      }
+    },
+    "checkpoint_contents": {
+      "V1": [
+        {
+          "transaction": "123ugpG5FWSQZ3yZkxVxNyw3RjDobNMGTXDom6aJsnDU",
+          "effects": "BBbiQ6R1A9QTCg4u3KrQw7nXtNJN9o4TFLZ3az93BEYJ",
+          "signatures": [
+            {
+              "scheme": "ed25519",
+              "signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "public_key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+            }
+          ]
+        },
+        {
+          "transaction": "6Sjy1JpAgvYWp9NFZ6tYY3AMxjsB8d8Wjr7o7YDoThP6",
+          "effects": "JBMBLxwJWvnRaAbHVM1x1LRizxE8LqPmoLrfG1ZEikkv",
+          "signatures": [
+            {
+              "scheme": "ed25519",
+              "signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "public_key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+            }
+          ]
+        },
+        {
+          "transaction": "5a2akdP8QpYw5Tr7d4iE4NbybHeJw8JgRQ3PPiPfJuk7",
+          "effects": "G8r2qRw4cCWx5zet4RE3qpHRGyywKHB378kQ9Ku1vdVe",
+          "signatures": [
+            {
+              "scheme": "ed25519",
+              "signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "public_key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+            }
+          ]
+        },
+        {
+          "transaction": "25zdMVEMRtg7pDGqgLgL1Hf3s8sL9YGuN9UVeo3dECG6",
+          "effects": "fG1qHEADjgH1rbEMBy3kvLDhFcBi6akkRBf5eBsYHTt",
+          "signatures": [
+            {
+              "scheme": "ed25519",
+              "signature": "ny3sKc8wQfcK3jOtxov8TvX3FsAQmaNE+/Kmhl5ODZyPrbiwog63/67vek1SpJqCLI8HU122VxiSuKB7G8NHDA==",
+              "public_key": "3tudne38ft4blQx4QMgi89Dbud82vs9JX0wqZJjR61k="
+            }
+          ]
+        },
+        {
+          "transaction": "B1yr1zybhNUwKeadAxCRvhnYdZhhk1BDLgkjRx693bbu",
+          "effects": "73QeVLRjs57CqEzR7Za1pSbFNJurnYZiZw8wbDwNcMsK",
+          "signatures": [
+            {
+              "scheme": "ed25519",
+              "signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "public_key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+            }
+          ]
+        },
+        {
+          "transaction": "5JQhS5my3KrapKu2hKsbLRyqtHrLcB9RTggGsd5Pyx3F",
+          "effects": "CBqkCM2cP3xVHb9nEwNFk1QJ8veELTtBPdQYJGUxvvun",
+          "signatures": [
+            {
+              "scheme": "ed25519",
+              "signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "public_key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+            }
+          ]
+        },
+        {
+          "transaction": "GbemSdr6vTaJ5q6KanqizjNQCy59fJgkHpexCRBfTHrp",
+          "effects": "EN4LoN2V7ffkQ2LoDnvXNL72pSbPb3335VYtVjScxULv",
+          "signatures": [
+            {
+              "scheme": "ed25519",
+              "signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "public_key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+            }
+          ]
+        }
+      ]
+    },
+    "transaction_proof": {
+      "transaction": {
+        "data": {
+          "transaction": {
+            "V1": {
+              "kind": {
+                "Programmable": {
+                  "inputs": [
+                    {
+                      "Shared": {
+                        "object_id": "0x0000000000000000000000000000000000000000000000000000000000000005",
+                        "initial_shared_version": "1",
+                        "mutable": true
+                      }
+                    },
+                    {
+                      "ImmutableOrOwned": {
+                        "object_id": "0x7d2ecf75235b50ed8fa4b3286a28a8f9aa795d3ab267da775a6712e45d3787b4",
+                        "version": "1",
+                        "digest": "8mErr9cmex177LFsahrQAuBEpReKyLqhN1sAjnzyGunU"
+                      }
+                    },
+                    {
+                      "Pure": "jEVfIpF8OWtGo/Tr1idyhopmbms4T08M7mjQBN5F7s8="
+                    }
+                  ],
+                  "commands": [
+                    {
+                      "MoveCall": {
+                        "package": "0x0000000000000000000000000000000000000000000000000000000000000003",
+                        "module": "iota_system",
+                        "function": "request_add_stake",
+                        "type_arguments": [],
+                        "arguments": [
+                          {
+                            "Input": 0
+                          },
+                          {
+                            "Input": 1
+                          },
+                          {
+                            "Input": 2
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              "sender": "0xc9d530a1332da708bfad2d4b634cafa265b65b5d4de29e552d9200e4f117fc0b",
+              "gas_payment": {
+                "objects": [
+                  {
+                    "object_id": "0x97eb1bbdf3f02a31d920009da79477162af50544959db47a2dfefe9e7fbdd1b6",
+                    "version": "1",
+                    "digest": "HFCwd7tYY9ChQZay1eMGgVYYexdVUFacZ4TPhzX3cT1K"
+                  }
+                ],
+                "owner": "0xc9d530a1332da708bfad2d4b634cafa265b65b5d4de29e552d9200e4f117fc0b",
+                "price": "1000",
+                "budget": "5000000000"
+              },
+              "expiration": "None"
+            }
+          },
+          "signatures": [
+            {
+              "scheme": "ed25519",
+              "signature": "ny3sKc8wQfcK3jOtxov8TvX3FsAQmaNE+/Kmhl5ODZyPrbiwog63/67vek1SpJqCLI8HU122VxiSuKB7G8NHDA==",
+              "public_key": "3tudne38ft4blQx4QMgi89Dbud82vs9JX0wqZJjR61k="
+            }
+          ]
+        },
+        "auth_signature": {}
+      },
+      "effects": {
+        "V1": {
+          "status": {
+            "success": true
+          },
+          "epoch": "0",
+          "gas_cost_summary": {
+            "computation_cost": "1000000",
+            "computation_cost_burned": "1000000",
+            "storage_cost": "14576800",
+            "storage_rebate": "0",
+            "non_refundable_storage_fee": "0"
+          },
+          "transaction_digest": "25zdMVEMRtg7pDGqgLgL1Hf3s8sL9YGuN9UVeo3dECG6",
+          "gas_object_index": 5,
+          "events_digest": "9Y8mNCezYf67FvKWRYKBg57TZcqjApuxDU2ZQwXnFHSN",
+          "dependencies": ["54ohH6BW2vfMLD6r63KKuZhcgrMq2ty4XU9JHD7D2HAW"],
+          "lamport_version": "2",
+          "changed_objects": [
+            {
+              "object_id": "0x0000000000000000000000000000000000000000000000000000000000000005",
+              "input_state": {
+                "Data": {
+                  "version": "1",
+                  "digest": "4ohgCSrvVpNCSaWJJU46aBZt3NZDJ3q1BLayT8NiFcMm",
+                  "owner": {
+                    "Shared": "1"
+                  }
+                }
+              },
+              "output_state": {
+                "ObjectWrite": {
+                  "digest": "2KwThepY7sQfMY26i9JcB74CaqyQbGyZkgKdv3txJZMR",
+                  "owner": {
+                    "Shared": "1"
+                  }
+                }
+              },
+              "id_operation": "none"
+            },
+            {
+              "object_id": "0x328ca92144d761e46332a48827e1bd457b84be93342c098a7accafbf0b400600",
+              "input_state": "Missing",
+              "output_state": {
+                "ObjectWrite": {
+                  "digest": "7NkZCXoPjeFjAn2BiwqoWL8BBdHKHy66uX2PWFc5dzja",
+                  "owner": {
+                    "Address": "0xc9d530a1332da708bfad2d4b634cafa265b65b5d4de29e552d9200e4f117fc0b"
+                  }
+                }
+              },
+              "id_operation": "created"
+            },
+            {
+              "object_id": "0x5b890eaf2abcfa2ab90b77b8e6f3d5d8609586c3e583baf3dccd5af17edf48d1",
+              "input_state": "Missing",
+              "output_state": {
+                "ObjectWrite": {
+                  "digest": "8nLcDJUXKTabUKDPjTisr3ytEJCZ23szL6P4r7X9UKLs",
+                  "owner": {
+                    "Object": "0x0000000000000000000000000000000000000000000000000000000000000005"
+                  }
+                }
+              },
+              "id_operation": "created"
+            },
+            {
+              "object_id": "0x6af2a2b7ca60bf76174adfd3e9c4957f8e937759603182f9b46c7f6c5f19c6d2",
+              "input_state": {
+                "Data": {
+                  "version": "1",
+                  "digest": "GzB88P8Qmp4pikBvydmYGWVPb224hSi2gZgWbZUUvaU3",
+                  "owner": {
+                    "Object": "0x0000000000000000000000000000000000000000000000000000000000000005"
+                  }
+                }
+              },
+              "output_state": "Missing",
+              "id_operation": "deleted"
+            },
+            {
+              "object_id": "0x7d2ecf75235b50ed8fa4b3286a28a8f9aa795d3ab267da775a6712e45d3787b4",
+              "input_state": {
+                "Data": {
+                  "version": "1",
+                  "digest": "8mErr9cmex177LFsahrQAuBEpReKyLqhN1sAjnzyGunU",
+                  "owner": {
+                    "Address": "0xc9d530a1332da708bfad2d4b634cafa265b65b5d4de29e552d9200e4f117fc0b"
+                  }
+                }
+              },
+              "output_state": "Missing",
+              "id_operation": "deleted"
+            },
+            {
+              "object_id": "0x97eb1bbdf3f02a31d920009da79477162af50544959db47a2dfefe9e7fbdd1b6",
+              "input_state": {
+                "Data": {
+                  "version": "1",
+                  "digest": "HFCwd7tYY9ChQZay1eMGgVYYexdVUFacZ4TPhzX3cT1K",
+                  "owner": {
+                    "Address": "0xc9d530a1332da708bfad2d4b634cafa265b65b5d4de29e552d9200e4f117fc0b"
+                  }
+                }
+              },
+              "output_state": {
+                "ObjectWrite": {
+                  "digest": "6Pu7xMgpN2URN5vccHzYF4BqCg3x39doN4HCPU1zGsgU",
+                  "owner": {
+                    "Address": "0xc9d530a1332da708bfad2d4b634cafa265b65b5d4de29e552d9200e4f117fc0b"
+                  }
+                }
+              },
+              "id_operation": "none"
+            }
+          ],
+          "unchanged_shared_objects": [],
+          "auxiliary_data_digest": null
+        }
+      },
+      "events": [
+        {
+          "package_id": "0x0000000000000000000000000000000000000000000000000000000000000003",
+          "module": "iota_system",
+          "sender": "0xc9d530a1332da708bfad2d4b634cafa265b65b5d4de29e552d9200e4f117fc0b",
+          "type": "0x3::validator::StakingRequestEvent",
+          "contents": "Ls9FicZo2wce3fWuF76Ozh9MHFqDi/lbNDQo5sI7qjGMRV8ikXw5a0aj9OvWJ3KGimZuazhPTwzuaNAE3kXuz8nVMKEzLacIv60tS2NMr6JltltdTeKeVS2SAOTxF/wLAAAAAAAAAAAAAENP15RqAA=="
+        }
+      ]
+    }
+  }
+}
