@@ -4,6 +4,9 @@ The following code examples demonstrate how to use IOTA Single Notarization for 
 
 The folder [audit-trail](./audit-trail) contains examples for IOTA Audit Trails. See there if you want to experiment with Audit Trails examples.
 
+The folder [poi](./poi) contains examples for IOTA Proof of Inclusion. See there to learn how to construct portable
+proofs and verify them with either genesis-anchored or trusted-node committee resolution.
+
 ## Prerequisites
 
 Examples can be run against:

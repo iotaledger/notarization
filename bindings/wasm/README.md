@@ -1,24 +1,26 @@
-# WASM build projects using wasm-bindgen
+# IOTA Notarization Toolkit Wasm Packages
 
-This folder contains several crates using wasm-bindgen to import or export TS types from & to JS runtimes. These crates
-are named _artifact_ in the following to indicate that the NodeJS based JS build system is used instead of cargo.
+This folder contains the Notarization Toolkit Wasm Packages. Each Package uses `wasm-bindgen` to expose Rust types and
+functions to JavaScript and TypeScript runtimes.
 
-The `build` folder provides build scripts needed to build the artifacts.
+The `build` folder provides the shared scripts needed to build the Packages.
 
-Here is an overview of the existing artifacts:
+The following Packages are available:
 
 - `notarization_wasm`<br>
   Public surface of notarization-rs exported to JS/TypeScript
 - `audit_trail_wasm`<br>
   Public surface of audit-trail-rs exported to JS/TypeScript
+- `poi_wasm`<br>
+  Proof of Inclusion client and public surface of poi-rs exported to JS/TypeScript
 
-## Building an Artifact
+## Building a Package
 
-For build instructions please have a look into the artifact README file.
+See each Package README for its build instructions.
 
 ## Build process in general
 
-Each artifact is located in its own artifact folder (see above) containing the following important files and subfolders:
+Each Package has its own folder containing the following files and subfolders:
 
 - `tsconfig` files for the `nodejs` and `web` runtimes
 - The `package.json` file
@@ -26,61 +28,61 @@ Each artifact is located in its own artifact folder (see above) containing the f
   Contains TS files used for wasm-bindings
   - Contains `tsconfig` files for the `nodejs` and `web` runtimes with additional TS compiler configurations
 - `node` folder<br>
-  Distribution folder for the `nodejs` runtime
+  Distribution folder for the Node.js runtime
 - `web` folder<br>
   Distribution folder for the `web` runtime
 - `src` folder<br>
-  Rust code of the crate/artifact
+  Rust code of the Package
 - `tests` folder<br>
   Test code
 - `examples` folder<br>
   Example code
 
-The build process is defined by run scripts contained in the artifacts `package.json` file.
-The build process for the `nodejs` and `web` runtimes, consists of the following steps:
+The scripts in each Package's `package.json` file define its build process.
+The build process for the Node.js and web runtimes consists of the following steps:
 
-- cargo build of the crate with target wasm32-unknown-unknown
-- wasm-bindgen CLI call, generating `___.js` and `___.d.ts` files in the distribution folder of the artifact (`node` or
+- Cargo build of the crate with target `wasm32-unknown-unknown`
+- `wasm-bindgen` CLI call, generating `___.js` and `___.d.ts` files in the Package distribution folder (`node` or
   `web`)
 - execute the `build/node` or `build/web` build script (see below)
-- typescript transpiler call (tsc)<br>
+- TypeScript compiler call (`tsc`)<br>
   Converts the TS files in the `lib` folder into JS files.
-  JS files are written into the distribution folder of the artifact.
+  JS files are written into the Package distribution folder.
   The distribution folder is configured
-  in the applied tsconfig file (located in the `lib` folder of the artifact).
+  in the applied `tsconfig` file located in the Package's `lib` folder.
 - execute the `build/replace_paths` build script (see below)
 
 ## Build scripts contained in the `build` folder
 
 ### node.js
 
-Used by the `bundle:nodejs` run task in the package.json file of the artifact.
+Used by the `bundle:nodejs` script in the Package's `package.json` file.
 
 Process steps:
 
 - Add a [node-fetch polyfill](https://github.com/seanmonstar/reqwest/issues/910)
-  at the top of the main js file of the artifact
-- Generate a `package.json` file derived from the original package.json of the artifact
+  at the top of the Package's main JS file
+- Generate a `package.json` file derived from the Package's original `package.json`
   (done by `utils/generatePackage.js`)
 
 ### web.js
 
-Used by the `bundle:web` run task in the package.json file of the artifact.
+Used by the `bundle:web` script in the Package's `package.json` file.
 
 Process steps:
 
-- In the main js file of the artifact:
+- In the Package's main JS file:
   - Comment out a webpack workaround by commenting out all occurrences of<br>
     `input = new URL(<SOME_CAPTURED_REGEX_GROUP>, import.meta.url);`
-  - Create an init function which imports the artifact wasm file.
+  - Create an initialization function that imports the Package's Wasm file.
 - In the typescript source map file `<ARTIFACT_NAME>.d.ts`:
   - Adds the declaration of the above created init function to the typescript source map file
-- Generate a `package.json` file derived from the original package.json file of the artifact
+- Generate a `package.json` file derived from the Package's original `package.json`
   (done by `utils/generatePackage.js`)
 
 ### replace_paths.js
 
-Processes all JS and TS files contained in the artifact distribution folder that have previously been created
+Processes all JS and TS files previously created in the Package distribution folder
 by wasm-bindgen and the TS compiler (tsc) call.
 
 For each file, it replaces aliases defined in the
@@ -98,7 +100,7 @@ It is used by the following run tasks for the following tsconfig files and distr
 
 ## Documentation Style Guide for generated TSDoc/JSDoc
 
-The [DOC-STYLEGUIDE.md](./DOC-STYLEGUIDE.md) states rules to be followed for the documentation
-of Rust types being compiled in TS/JS types using wasm-bindgen.
+The [DOC-STYLEGUIDE.md](./DOC-STYLEGUIDE.md) defines the documentation rules for Rust types compiled into
+JavaScript/TypeScript types with `wasm-bindgen`.
 
 These rules are obligatory for developers and AI agents.

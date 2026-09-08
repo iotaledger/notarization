@@ -110,6 +110,11 @@ jobs:
 
       - uses: actions/checkout@v3
 
+      - name: Install protobuf compiler
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ github.token }}
+
       - name: Ensure, OpenSSL is available in Windows
         if: matrix.os == 'windows-latest'
         run: |
@@ -177,13 +182,16 @@ jobs:
 
       - name: publish Notarization Move package
         if: matrix.os != 'windows-latest'
-        run: echo "IOTA_NOTARIZATION_PKG_ID=$(./publish_package.sh)" >> "$GITHUB_ENV"
+        run: |
+          package_id=$(./publish_package.sh)
+          echo "IOTA_NOTARIZATION_PKG_ID=$package_id" >> "$GITHUB_ENV"
         working-directory: notarization-move/scripts/
 
       - name: publish Audit Trail Move package
         if: matrix.os != 'windows-latest'
         run: |
-          eval "$(./publish_package.sh)"
+          exports=$(./publish_package.sh)
+          eval "$exports"
           echo "IOTA_AUDIT_TRAIL_PKG_ID=$IOTA_AUDIT_TRAIL_PKG_ID" >> "$GITHUB_ENV"
           echo "IOTA_TF_COMPONENTS_PKG_ID=$IOTA_TF_COMPONENTS_PKG_ID" >> "$GITHUB_ENV"
         working-directory: audit-trail-move/scripts/
@@ -201,13 +209,12 @@ jobs:
           awk '$1 ~ /[0-9].*/' | \
           parallel -k -j 4 --retries 3 --joblog report.log ./target/release/examples/{}
           cat report.log
-      #      - name: Run Rust Readme examples
-      #        # run examples only on ubuntu for now
-      #        if: matrix.os == 'ubuntu-24.04'
-      #        run: |
-      #          cd bindings/wasm/notarization_wasm
-      #          npm ci
-      #          npm run test:readme:rust
+
+      - name: Run Proof of Inclusion Rust examples
+        if: matrix.os == 'ubuntu-24.04'
+        run: |
+          export IOTA_GENESIS_PATH="$HOME/.iota/iota_config/genesis.blob"
+          ./examples/poi/run.sh
 
       - name: Archive server logs
         if: ${{ env.IOTA_SERVER_LOGFILE }}
@@ -239,6 +246,17 @@ jobs:
       output-artifact-name: audit-trail-wasm-bindings-build
       wasm-package-dir: bindings/wasm/audit_trail_wasm
       wasm-crate-name: audit_trail_wasm
+
+  build-wasm-poi:
+    needs: check-for-run-condition
+    if: ${{ needs.check-for-run-condition.outputs.should-run == 'true' }}
+    uses: "./.github/workflows/shared-build-wasm.yml"
+    with:
+      output-artifact-name: poi-wasm-bindings-build
+      wasm-package-dir: bindings/wasm/poi_wasm
+      wasm-crate-name: poi_wasm
+      node-version: 24.x
+      additional-artifact-paths: bindings/wasm/poi_wasm/package.json
 
   test-wasm-notarization:
     needs: [build-wasm-notarization, check-for-run-condition]
@@ -275,12 +293,54 @@ jobs:
           iota-version: ${{ env.IOTA_VERSION }}
 
       - name: publish Notarization Move package
-        run: echo "IOTA_NOTARIZATION_PKG_ID=$(./publish_package.sh)" >> "$GITHUB_ENV"
+        run: |
+          package_id=$(./publish_package.sh)
+          echo "IOTA_NOTARIZATION_PKG_ID=$package_id" >> "$GITHUB_ENV"
         working-directory: notarization-move/scripts/
 
       - name: Run Wasm examples
         run: npm run test:node
         working-directory: bindings/wasm/notarization_wasm
+
+  test-wasm-poi:
+    needs: [build-wasm-poi, check-for-run-condition]
+    if: ${{ needs.check-for-run-condition.outputs.should-run == 'true' }}
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 24.x
+
+      - name: Install JS dependencies
+        run: npm ci
+        working-directory: bindings/wasm/poi_wasm
+
+      - name: Download bindings/wasm/poi_wasm artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: poi-wasm-bindings-build
+          path: bindings/wasm/poi_wasm
+
+      - name: Start iota sandbox
+        uses: "./.github/actions/iota/setup"
+        with:
+          iota-version: ${{ env.IOTA_VERSION }}
+
+      - name: publish Notarization Move package
+        run: |
+          package_id=$(./publish_package.sh)
+          echo "IOTA_NOTARIZATION_PKG_ID=$package_id" >> "$GITHUB_ENV"
+        working-directory: notarization-move/scripts/
+
+      - name: Run Proof of Inclusion Wasm examples
+        run: |
+          export IOTA_GENESIS_PATH="$HOME/.iota/iota_config/genesis.blob"
+          npm run test:node
+        working-directory: bindings/wasm/poi_wasm
 
   test-wasm-audit-trail:
     needs: [build-wasm-audit-trail, check-for-run-condition]
@@ -312,7 +372,8 @@ jobs:
 
       - name: publish Audit Trail Move package
         run: |
-          eval "$(./publish_package.sh)"
+          exports=$(./publish_package.sh)
+          eval "$exports"
           echo "IOTA_AUDIT_TRAIL_PKG_ID=$IOTA_AUDIT_TRAIL_PKG_ID" >> "$GITHUB_ENV"
           echo "IOTA_TF_COMPONENTS_PKG_ID=$IOTA_TF_COMPONENTS_PKG_ID" >> "$GITHUB_ENV"
         working-directory: audit-trail-move/scripts/
@@ -354,7 +415,9 @@ jobs:
 
       - name: publish Notarization Move package
         # publish the package and set the IOTA_NOTARIZATION_PKG_ID env variable
-        run: echo "IOTA_NOTARIZATION_PKG_ID=$(./publish_package.sh)" >> "$GITHUB_ENV"
+        run: |
+          package_id=$(./publish_package.sh)
+          echo "IOTA_NOTARIZATION_PKG_ID=$package_id" >> "$GITHUB_ENV"
         working-directory: notarization-move/scripts/
 
       - name: Build Docker image
@@ -405,7 +468,8 @@ jobs:
 
       - name: publish Audit Trail Move package
         run: |
-          eval "$(./publish_package.sh)"
+          exports=$(./publish_package.sh)
+          eval "$exports"
           echo "IOTA_AUDIT_TRAIL_PKG_ID=$IOTA_AUDIT_TRAIL_PKG_ID" >> "$GITHUB_ENV"
           echo "IOTA_TF_COMPONENTS_PKG_ID=$IOTA_TF_COMPONENTS_PKG_ID" >> "$GITHUB_ENV"
         working-directory: audit-trail-move/scripts/

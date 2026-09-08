@@ -52,6 +52,9 @@ jobs:
       - name: wasm fmt check audit_trail_wasm
         run: cargo +nightly fmt --manifest-path ./bindings/wasm/audit_trail_wasm/Cargo.toml --all -- --check
 
+      - name: wasm fmt check poi_wasm
+        run: cargo +nightly fmt --manifest-path ./bindings/wasm/poi_wasm/Cargo.toml --all -- --check
+
       - name: fmt check with dprint
         run: dprint check
 

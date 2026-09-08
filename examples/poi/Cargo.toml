@@ -1,0 +1,56 @@
+[package]
+name = "poi-examples"
+version = "0.1.0-alpha"
+authors.workspace = true
+edition.workspace = true
+publish = false
+rust-version.workspace = true
+
+[lib]
+path = "utils.rs"
+
+[dependencies]
+anyhow.workspace = true
+async-trait.workspace = true
+bcs.workspace = true
+iota-config = { git = "https://github.com/iotaledger/iota.git", tag = "v1.29.0" }
+iota-grpc-client.workspace = true
+iota-sdk-types.workspace = true
+iota-types.workspace = true
+iota_interaction = { workspace = true, features = ["keytool"] }
+notarization = { path = "../../notarization-rs" }
+poi-rs = { path = "../../poi-rs" }
+product_common = { workspace = true, features = ["test-utils"] }
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tempfile.workspace = true
+tokio.workspace = true
+
+[[example]]
+name = "01_transaction_proof"
+path = "01_transaction_proof.rs"
+
+[[example]]
+name = "02_multi_target_proof"
+path = "02_multi_target_proof.rs"
+
+[[example]]
+name = "03_reuse_verifier"
+path = "03_reuse_verifier.rs"
+
+[[example]]
+name = "04_object_proof"
+path = "04_object_proof.rs"
+
+[[example]]
+name = "05_event_proof"
+path = "05_event_proof.rs"
+
+[[example]]
+name = "advanced_01_committee_cache"
+path = "advanced/01_committee_cache.rs"
+
+[[example]]
+name = "advanced_02_trusted_node"
+path = "advanced/02_trusted_node.rs"

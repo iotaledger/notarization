@@ -11,6 +11,7 @@
 /notarization-move/build/*
 /bindings/wasm/notarization_wasm/docs/*
 /bindings/wasm/audit_trail_wasm/docs/*
+/bindings/wasm/poi_wasm/docs/*
 
 # ignore folder created in CI for downloaded iota binaries
 /iota/

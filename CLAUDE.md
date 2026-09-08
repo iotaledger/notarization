@@ -15,10 +15,12 @@ IOTA Notarization enables creation of immutable, on-chain records for arbitrary 
     whatever suites into the context the best. In this stylguide `Toolkit` is used for referencing the term. Use "title case"
     allways for `Notarization Toolkit` (never use `Notarization toolkit` or `notarization toolkit`).
 - The IOTA Trust Framework consist of Trust Framework Products (TF products)
-- The Notarization Toolkit contains two TF products: **Single Notarization** and **Audit Trails**
-  - In the context of Notarization Toolkit documentation, Single Notarization and Audit Trails are called components
-  - In the context of IOTA Trust Framework documentation, Single Notarization and Audit Trails are called TF products
-  - These rules also apply to future TF products in the Notarization Toolkit (i.e. "Proof of Inclusion")
+- The Notarization Toolkit contains three TF products: **Single Notarization**, **Audit Trails**, and **Proof of Inclusion**
+  - In the context of Notarization Toolkit documentation, Single Notarization, Audit Trails, and Proof of Inclusion are
+    called components
+  - In the context of IOTA Trust Framework documentation, Single Notarization, Audit Trails, and Proof of Inclusion are
+    called TF products
+  - These rules also apply to future TF products in the Notarization Toolkit
 - Regarding usage of singular and plural in TF product resp. Notarization Toolkit component names:
   - If the product is meant itself:
     - Use the product name (i.e. `Audit Trails`, `Notarization`) with singular form - example: "Audit Trails is the best ..."
