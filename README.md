@@ -64,7 +64,7 @@ All three components provide Rust and TypeScript/JavaScript packages:
 
 - [Rust Package README](./notarization-rs/README.md)
 - [Rust API documentation](https://iotaledger.github.io/notarization/notarization/index.html)
-- [Rust Examples](./examples/README.md)
+- [Rust Examples](./examples/notarization/README.md)
 - [Move Package README](./notarization-move/README.md)
 - [Wasm Package README](./bindings/wasm/notarization_wasm/README.md)
 - [Wasm Examples](./bindings/wasm/notarization_wasm/examples/README.md)
