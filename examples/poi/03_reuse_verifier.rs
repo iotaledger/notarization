@@ -13,7 +13,7 @@
 //! authenticated while verifying the first proof.
 
 use anyhow::{Context, Result};
-use poi_examples::prepare_poi_example;
+use examples::prepare_poi_example;
 use poi_rs::CommitteeResolution;
 
 /// Demonstrates how to:

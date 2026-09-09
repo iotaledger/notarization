@@ -26,7 +26,7 @@ const GRPC_URL_ENV: &str = "NETWORK_GRPC_URL";
 const GENESIS_PATH_ENV: &str = "IOTA_GENESIS_PATH";
 const PUBLISH_SCRIPT_FILE: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/../../notarization-move/scripts/publish_package.sh"
+    "/../notarization-move/scripts/publish_package.sh"
 );
 
 /// Clients and network metadata shared by the Rust Proof of Inclusion examples.
@@ -174,7 +174,7 @@ pub async fn prepare_poi_example() -> Result<PoiContext> {
         );
     }
 
-    let package_cache_directory = concat!(env!("CARGO_MANIFEST_DIR"), "/../../target/poi-examples");
+    let package_cache_directory = concat!(env!("CARGO_MANIFEST_DIR"), "/../target/poi-examples");
     fs::create_dir_all(package_cache_directory).context("failed to create the package cache directory")?;
     let package_cache_file = format!("{package_cache_directory}/notarization-package-{chain_identifier}.txt");
     let cached_package_id = get_cached_id(&chain_identifier, Some(&package_cache_file))

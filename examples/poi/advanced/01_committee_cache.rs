@@ -15,8 +15,8 @@
 use std::time::Instant;
 
 use anyhow::{Context, Result};
+use examples::prepare_poi_example;
 use file_committee_cache::FileCommitteeCache;
-use poi_examples::prepare_poi_example;
 use poi_rs::CommitteeResolution;
 
 /// Demonstrates how to:

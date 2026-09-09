@@ -1,21 +1,19 @@
 #!/bin/bash
 
+set -e
+
 # Script to run all examples contained in this directory
 # Usage: ./run.sh
 # Make sure to set the following environment variables:
 # - IOTA_NOTARIZATION_PKG_ID: The package ID of the notarization module
 # - IOTA_AUDIT_TRAIL_PKG_ID: The package ID of the audit trail module
 # - IOTA_TF_COMPONENTS_PKG_ID: The package ID of the tf components module
+# - IOTA_GENESIS_PATH: The trusted genesis blob for PoI on local or custom networks
+# PoI uses the active IOTA CLI environment and wallet; see examples/poi/README.md.
 
 ./examples/audit-trail/run.sh
 printf "\n================================\n"
 printf "================================\n\n"
-
-# At the moment the `examples` folder contains all single notarization (SN) examples.
-# After a `notarization` folder has been introduced to contain the SN examples,
-# uncomment the following line, update the paths in Cargo.toml and move the bash code below that line into `./examples/notarization/run.sh`.
-
-# ./examples/notarization/run.sh
 
 # Script to run all notarization examples
 # Usage: ./run.sh
@@ -57,3 +55,5 @@ done
 
 echo ""
 echo "All Notarization examples completed successfully!"
+
+./examples/poi/run.sh

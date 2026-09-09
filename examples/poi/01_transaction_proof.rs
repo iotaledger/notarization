@@ -17,7 +17,7 @@
 //! different security roles: the endpoint supplies evidence, while the genesis blob establishes trust.
 
 use anyhow::{Context, Result, ensure};
-use poi_examples::prepare_poi_example;
+use examples::prepare_poi_example;
 use poi_rs::{CommitteeResolution, Proof};
 
 /// Demonstrates how to:

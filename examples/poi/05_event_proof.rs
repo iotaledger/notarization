@@ -15,7 +15,7 @@
 //! blob, independently of the node that supplied the proof evidence.
 
 use anyhow::{Context, Result, ensure};
-use poi_examples::prepare_poi_example;
+use examples::prepare_poi_example;
 use poi_rs::CommitteeResolution;
 
 /// Demonstrates how to:
