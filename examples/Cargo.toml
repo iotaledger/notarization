@@ -6,7 +6,7 @@ edition = "2024"
 publish = false
 
 [lib]
-path = "notarization/utils.rs"
+path = "utils.rs"
 
 [[example]]
 name = "01_create_locked_notarization"
@@ -108,14 +108,52 @@ path = "audit-trail/real-world/02_clinical_trial.rs"
 name = "03_digital_product_passport"
 path = "audit-trail/real-world/03_digital_product_passport.rs"
 
+[[example]]
+name = "01_transaction_proof"
+path = "poi/01_transaction_proof.rs"
+
+[[example]]
+name = "02_multi_target_proof"
+path = "poi/02_multi_target_proof.rs"
+
+[[example]]
+name = "03_reuse_verifier"
+path = "poi/03_reuse_verifier.rs"
+
+[[example]]
+name = "04_object_proof"
+path = "poi/04_object_proof.rs"
+
+[[example]]
+name = "05_event_proof"
+path = "poi/05_event_proof.rs"
+
+[[example]]
+name = "advanced_01_committee_cache"
+path = "poi/advanced/01_committee_cache.rs"
+
+[[example]]
+name = "advanced_02_trusted_node"
+path = "poi/advanced/02_trusted_node.rs"
+
 [dependencies]
 anyhow.workspace = true
+async-trait.workspace = true
 audit_trails = { path = "../audit-trail-rs" }
+bcs.workspace = true
 chrono.workspace = true
+iota-config = { git = "https://github.com/iotaledger/iota.git", tag = "v1.29.0" }
+iota-grpc-client.workspace = true
 iota-sdk.workspace = true
 iota-sdk-types.workspace = true
+iota-types.workspace = true
+iota_interaction = { workspace = true, features = ["keytool"] }
 notarization = { path = "../notarization-rs" }
+poi-rs = { path = "../poi-rs" }
 product_common = { workspace = true, features = ["core-client", "test-utils", "transaction"] }
+reqwest.workspace = true
+serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
+tempfile.workspace = true
 tokio.workspace = true

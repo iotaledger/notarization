@@ -12,7 +12,7 @@
 //! the selected transaction; the builder rejects targets from another transaction.
 
 use anyhow::{Context, Result, ensure};
-use poi_examples::prepare_poi_example;
+use examples::prepare_poi_example;
 use poi_rs::CommitteeResolution;
 
 /// Demonstrates how to:

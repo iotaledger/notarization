@@ -2,6 +2,9 @@
 
 ## Introduction
 
+These examples are targets in the shared [`examples`](../Cargo.toml) Cargo package, alongside
+the Single Notarization and Audit Trails examples.
+
 These Rust examples create fresh ledger activity and use it to construct and verify portable IOTA Proof of Inclusion
 proofs. Each example reads the active IOTA CLI environment and wallet, creates a locked `Notarization` object, and uses
 the resulting transaction, object, or event as its proof target.
@@ -64,14 +67,14 @@ verifier's trust boundary.
 Run an example from the repository root:
 
 ```bash
-cargo run --release -p poi-examples --example 01_transaction_proof
+cargo run --release -p examples --example 01_transaction_proof
 ```
 
 For localnet genesis-anchored examples, provide the genesis blob created by that local network:
 
 ```bash
 export IOTA_GENESIS_PATH=/path/to/localnet/genesis.blob
-cargo run --release -p poi-examples --example 01_transaction_proof
+cargo run --release -p examples --example 01_transaction_proof
 ```
 
 The focused runner executes every example:

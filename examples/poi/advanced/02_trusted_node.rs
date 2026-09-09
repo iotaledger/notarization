@@ -11,7 +11,7 @@
 //! must be operated by a party the verifier trusts.
 
 use anyhow::{Context, Result};
-use poi_examples::prepare_poi_example;
+use examples::prepare_poi_example;
 use poi_rs::CommitteeResolution;
 
 /// Demonstrates trusted-node committee resolution against a trusted endpoint.

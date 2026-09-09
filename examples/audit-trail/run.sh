@@ -30,6 +30,7 @@ examples=(
     "09_tagged_records"
     "10_capability_constraints"
     "11_manage_record_tags"
+    "12_correct_records"
     "01_customs_clearance"
     "02_clinical_trial"
     "03_digital_product_passport"
