@@ -30,20 +30,15 @@ The toolkit includes:
 - **Audit Trails**
   Use this for structured record histories with sequential entries, role-based access control, locking, and tagging.
 - **Proof of Inclusion**
-  Use this to construct portable cryptographic evidence that a transaction, event, or object state is included in a
-  certified IOTA checkpoint, and to verify that evidence locally.
+  Use this to construct portable cryptographic evidence that a transaction event, or object state is included in a certified IOTA checkpoint, and to verify that evidence locally.
 
 ## Where To Start
 
-Use [Single Notarization](#single-notarization) for one on-chain object that stores arbitrary data, a document hash, or
-the latest state of a record.
+Use [Single Notarization](#single-notarization) for one on-chain object that stores arbitrary data, a document hash, or the latest state of a record.
 
-Use [Audit Trails](#audit-trails) for structured record histories with permissions, capabilities, tagging, and write or
-delete controls.
+Use [Audit Trails](#audit-trails) for structured record histories with permissions, capabilities, tagging, and write or delete controls.
 
-Use [Proof of Inclusion](#proof-of-inclusion) when a verifier needs portable evidence that a transaction, event, or
-object state is included in a certified checkpoint. Proof of Inclusion verifies existing ledger activity and does not
-define a separate on-chain object or Move Package.
+Use [Proof of Inclusion](#proof-of-inclusion) when a verifier needs portable evidence that a transaction, event, or object state is included in a certified checkpoint. Proof of Inclusion verifies existing ledger activity and does not define a separate on-chain object or Move Package.
 
 ## Packages
 

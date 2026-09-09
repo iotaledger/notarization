@@ -5,13 +5,9 @@
 These examples are targets in the shared [`examples`](../Cargo.toml) Cargo package, alongside
 the Single Notarization and Audit Trails examples.
 
-These Rust examples create fresh ledger activity and use it to construct and verify portable IOTA Proof of Inclusion
-proofs. Each example reads the active IOTA CLI environment and wallet, creates a locked `Notarization` object, and uses
-the resulting transaction, object, or event as its proof target.
+These Rust examples create fresh ledger activity and use it to construct and verify portable IOTA Proof of Inclusion proofs. Each example reads the active IOTA CLI environment and wallet, creates a locked `Notarization` object, and uses the resulting transaction, object, or event as its proof target.
 
-Proof construction and verification have separate trust responsibilities. The configured gRPC endpoint supplies
-untrusted ledger evidence. Genesis-anchored verification authenticates that evidence from a trusted genesis blob,
-while trusted-node verification places the connected node inside the verifier's trust boundary.
+Proof construction and verification have separate trust responsibilities. The configured gRPC endpoint supplies untrusted ledger evidence. Genesis-anchored verification authenticates that evidence from a trusted genesis blob, while trusted-node verification places the connected node inside the verifier's trust boundary.
 
 ## Learning Objectives
 

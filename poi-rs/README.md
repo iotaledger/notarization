@@ -2,29 +2,22 @@
 
 ## Introduction
 
-The Proof of Inclusion Rust Package constructs and verifies portable evidence that IOTA ledger data is included in a
-certified checkpoint. It is the Rust Package for Proof of Inclusion in the IOTA Notarization Toolkit.
+The Proof of Inclusion Rust Package constructs and verifies portable evidence that IOTA ledger data is included in a certified checkpoint. It is the Rust Package for Proof of Inclusion in the IOTA Notarization Toolkit.
 
-Use Proof of Inclusion when a verifier needs cryptographic evidence for a transaction, event, or specific object version
-without trusting the source that transports the proof. `PoiClient` provides the main entry point,
-`ProofBuilder` constructs the evidence, and `ProofVerifier` verifies it locally against a committee the caller trusts.
+Use Proof of Inclusion when a verifier needs cryptographic evidence for a transaction, event, or specific object version without trusting the source that transports the proof. `PoiClient` provides the main entry point, `ProofBuilder` constructs the evidence, and `ProofVerifier` verifies it locally against a committee the caller trusts.
 
-Proof of Inclusion operates on existing IOTA ledger activity. It does not define a separate on-chain object or Move
-Package. Single Notarization and Audit Trails can create ledger activity that applications later prove, but Proof of
-Inclusion also supports transactions, events, and object versions created by other IOTA applications.
+Proof of Inclusion operates on existing IOTA ledger activity. It does not define a separate on-chain object or Move Package. Single Notarization and Audit Trails can create ledger activity that applications later prove, but Proof of Inclusion also supports transactions, events, and object versions created by other IOTA applications.
 
 You can find the full IOTA Notarization Toolkit documentation [here](https://docs.iota.org/developer/iota-notarization).
 
 ## Process Flows
 
-Proof construction and verification are separate workflows with different trust responsibilities. Proof construction
-collects evidence from a ledger source, while verification authenticates that evidence relative to a committee trust
+Proof construction and verification are separate workflows with different trust responsibilities. Proof construction collects evidence from a ledger source, while verification authenticates that evidence relative to a committee trust
 decision made by the caller.
 
 ### Constructing a Proof
 
-The following sequence shows how `PoiClient` and `ProofBuilder` construct one proof for one or more targets. Every target
-must belong to the same transaction.
+The following sequence shows how `PoiClient` and `ProofBuilder` construct one proof for one or more targets. Every target must belong to the same transaction.
 
 ```mermaid
 sequenceDiagram
@@ -46,13 +39,11 @@ sequenceDiagram
 ```
 
 `Source` is the transport boundary. It fetches decoded transaction, object, checkpoint, chain, and committee evidence.
-`ProofBuilder` owns target resolution, consistency checks, duplicate suppression, and proof construction, so custom
-sources do not reimplement that workflow.
+`ProofBuilder` owns target resolution, consistency checks, duplicate suppression, and proof construction, so custom sources do not reimplement that workflow.
 
 ### Verifying a Proof
 
-The following sequence shows committee-aware verification through `PoiClient::verifier()`. Committee resolution may
-fetch evidence, but `ProofVerifier` performs the final proof checks locally without making network requests.
+The following sequence shows committee-aware verification through `PoiClient::verifier()`. Committee resolution may fetch evidence, but `ProofVerifier` performs the final proof checks locally without making network requests.
 
 ```mermaid
 sequenceDiagram
@@ -77,13 +68,11 @@ sequenceDiagram
 ```
 
 `CommitteeResolution::TrustedNode` accepts committee data from a node already inside the caller's trust boundary.
-Anchored resolution starts from a trusted committee or genesis blob and authenticates every committee transition before
-accepting the committee required by the proof.
+Anchored resolution starts from a trusted committee or genesis blob and authenticates every committee transition before accepting the committee required by the proof.
 
 ## Proof Construction
 
-`PoiClient` provides explicit constructors for the public IOTA networks. The client does not select a default network,
-so the calling application always chooses where it fetches proof material.
+`PoiClient` provides explicit constructors for the public IOTA networks. The client does not select a default network, so the calling application always chooses where it fetches proof material.
 
 ```rust,no_run
 use iota_sdk_types::TransactionDigest;
@@ -101,25 +90,18 @@ let proof = client
 # }
 ```
 
-Use `PoiClient::testnet()` or `PoiClient::devnet()` for the other public networks. Applications can pass a custom `Source`
-to `PoiClient::new(source)` when they use a private node, archive, fixture, or local test cluster. `ProofBuilder` remains
-available directly for lower-level use.
+Use `PoiClient::testnet()` or `PoiClient::devnet()` for the other public networks. Applications can pass a custom `Source` to `PoiClient::new(source)` when they use a private node, archive, fixture, or local test cluster. `ProofBuilder` remains available directly for lower-level use.
 
-A builder can stack multiple object and event targets by calling `object()` and `event()` repeatedly or by using the
-`objects()` and `events()` batch methods. Every target must belong to the same transaction. The builder ignores exact
+A builder can stack multiple object and event targets by calling `object()` and `event()` repeatedly or by using the `objects()` and `events()` batch methods. Every target must belong to the same transaction. The builder ignores exact
 duplicates and reuses one transaction and one checkpoint for the complete target set.
 
-Network selection configures only the proof source. It does not make the returned proof trusted or select an
-authoritative committee for verification.
+Network selection configures only the proof source. It does not make the returned proof trusted or select an authoritative committee for verification.
 
-The default `native-grpc` feature implements `Source` directly for the SDK `GrpcClient` and provides the public-network
-constructors. WASM packages can disable default features and supply a JavaScript-backed `Source` without compiling
-native gRPC.
+The default `native-grpc` feature implements `Source` directly for the SDK `GrpcClient` and provides the public-network constructors. WASM packages can disable default features and supply a JavaScript-backed `Source` without compiling native gRPC.
 
 ## Verification
 
-Create a verifier from the same `PoiClient` for the common source-backed workflow. The verifier resolves the committee
-required by the proof and then performs offline proof verification.
+Create a verifier from the same `PoiClient` for the common source-backed workflow. The verifier resolves the committee required by the proof and then performs offline proof verification.
 
 ```rust,no_run
 use std::fs::File;
@@ -137,22 +119,13 @@ println!("verified transaction: {}", verified.transaction_digest());
 # }
 ```
 
-`CommitteeResolution::TrustedNode` is available when the connected node is explicitly inside the caller's trust
-boundary. `CommitteeResolution::from_genesis()` loads an anchor committee from a trusted BCS-encoded genesis blob,
-while `CommitteeResolution::anchored()` accepts an already extracted trusted committee. Use
+`CommitteeResolution::TrustedNode` is available when the connected node is explicitly inside the caller's trust boundary. `CommitteeResolution::from_genesis()` loads an anchor committee from a trusted BCS-encoded genesis blob, while `CommitteeResolution::anchored()` accepts an already extracted trusted committee. Use
 `CommitteeResolution::anchored_with_cache()` or `CommitteeResolution::from_genesis_with_cache()` to supply a cache that
-persists authenticated committees. Shared cache entries are keyed by both the trusted genesis checkpoint digest and
-epoch, so one backend can be shared safely by resolvers for different networks. The genesis-based constructor derives
-the chain identifier automatically; `anchored_with_cache()` requires it explicitly.
+persists authenticated committees. Shared cache entries are keyed by both the trusted genesis checkpoint digest and epoch, so one backend can be shared safely by resolvers for different networks. The genesis-based constructor derives the chain identifier automatically; `anchored_with_cache()` requires it explicitly.
 
-Retain the verifier when checking multiple proofs so it can reuse its authenticated committee cache. `ProofVerifier`
-remains the offline entry point for callers that already possess the authoritative committee.
+Retain the verifier when checking multiple proofs so it can reuse its authenticated committee cache. `ProofVerifier` remains the offline entry point for callers that already possess the authoritative committee.
 
-Successful verification returns a `VerifiedProof` that borrows from the input proof and exposes authenticated checkpoint
-metadata, transaction data and digest, object targets, and event targets. Verification also authenticates the packaged
-user signatures against the checkpoint contents, although `VerifiedProof` does not expose them. Read relying-party data
-through this returned value. The original `Proof` remains the portable untrusted envelope used for transport and
-serialization.
+Successful verification returns a `VerifiedProof` that borrows from the input proof and exposes authenticated checkpoint metadata, transaction data and digest, object targets, and event targets. Verification also authenticates the packaged user signatures against the checkpoint contents, although `VerifiedProof` does not expose them. Read relying-party data through this returned value. The original `Proof` remains the portable untrusted envelope used for transport and serialization.
 
 Verification checks:
 
@@ -184,36 +157,26 @@ A `Proof` contains three layers of evidence:
 - A `CertifiedCheckpointSummary` and its `CheckpointContents` link the transaction to a committee-certified checkpoint.
 - A required `TransactionProof` contains the transaction, its effects, and event data when event targets are present.
 
-Object targets contain their exact values. Event targets contain `EventID` values, while the
-transaction proof carries the complete event list needed to verify the effects' event digest. A transaction target is
-present only when the caller explicitly requests the transaction itself, although transaction evidence supports every
-proof.
+Object targets contain their exact values. Event targets contain `EventID` values, while the transaction proof carries the complete event list needed to verify the effects' event digest. A transaction target is present only when the caller explicitly requests the transaction itself, although transaction evidence supports every proof.
 
 ## JSON Compatibility
 
-Proof JSON is a versioned persistence and exchange format. Releases that support `ProofV1` continue to deserialize its
-existing JSON shape and serialize the same field structure. Frozen V1 fixtures enforce this contract for transaction,
-object, and event proofs.
+Proof JSON is a versioned persistence and exchange format. Releases that support `ProofV1` continue to deserialize its existing JSON shape and serialize the same field structure. Frozen V1 fixtures enforce this contract for transaction, object, and event proofs.
 
-Dependency upgrades must not silently change the `ProofV1` representation. Preserve the existing shape with custom
-serialization when necessary, or introduce a new `Proof` variant for an incompatible format change.
+Dependency upgrades must not silently change the `ProofV1` representation. Preserve the existing shape with custom serialization when necessary, or introduce a new `Proof` variant for an incompatible format change.
 
 ## Trust Boundaries
 
-`ProofVerifier` is intentionally offline. It does not make RPC calls and does not decide which committee is
-authoritative. `CommitteeResolver::verify()` composes committee resolution with offline verification for source-backed
+`ProofVerifier` is intentionally offline. It does not make RPC calls and does not decide which committee is authoritative. `CommitteeResolver::verify()` composes committee resolution with offline verification for source-backed
 workflows, while `CommitteeResolver::resolve()` returns the authenticated committee when callers need it directly.
 
-Treat every proof payload as untrusted. After successful verification, trust target data relative to the supplied
-committee through the returned `VerifiedProof`; do not read relying-party data from an unrelated `Proof` value.
+Treat every proof payload as untrusted. After successful verification, trust target data relative to the supplied committee through the returned `VerifiedProof`; do not read relying-party data from an unrelated `Proof` value.
 
-The proof's `chain` value is informational. The verifier does not authenticate it, so applications must not use it to
-select a network, committee, genesis blob, or other trust anchor.
+The proof's `chain` value is informational. The verifier does not authenticate it, so applications must not use it to select a network, committee, genesis blob, or other trust anchor.
 
 ## Command-Line Interface
 
-The optional `cli` feature builds the `poi` command for creating and verifying JSON proofs. CLI verification uses a
-trusted genesis blob and does not provide trusted-node verification.
+The optional `cli` feature builds the `poi` command for creating and verifying JSON proofs. CLI verification uses a trusted genesis blob and does not provide trusted-node verification.
 
 ### Building the CLI From Source
 
@@ -226,8 +189,7 @@ cd notarization
 cargo build --release -p poi-rs --features cli --bin poi
 ```
 
-Cargo writes the binary to `target/release/poi` on Linux and macOS or `target\release\poi.exe` on Windows. Run the
-locally built binary from the repository root:
+Cargo writes the binary to `target/release/poi` on Linux and macOS or `target\release\poi.exe` on Windows. Run the locally built binary from the repository root:
 
 ```bash
 ./target/release/poi --help
@@ -252,13 +214,9 @@ cargo run --release -p poi-rs --features cli --bin poi -- verify \
   proof.json
 ```
 
-For `--network mainnet` and `--network testnet`, the CLI downloads the genesis blob to the IOTA configuration
-directory under `poi/<network>/genesis.blob`. It validates the blob against the network's canonical genesis digest on
-download and every cache load. Devnet has no stable genesis digest, so verification on devnet requires an explicit
-trusted blob through `--genesis`.
+For `--network mainnet` and `--network testnet`, the CLI downloads the genesis blob to the IOTA configuration directory under `poi/<network>/genesis.blob`. It validates the blob against the network's canonical genesis digest on download and every cache load. Devnet has no stable genesis digest, so verification on devnet requires an explicit trusted blob through `--genesis`.
 
-Run `cargo run --release -p poi-rs --features cli --bin poi -- --help` for all targets, network options, and file input
-formats.
+Run `cargo run --release -p poi-rs --features cli --bin poi -- --help` for all targets, network options, and file input formats.
 
 ## Glossary
 
@@ -285,8 +243,7 @@ formats.
 - [Proof of Inclusion Wasm Examples](https://github.com/iotaledger/notarization/tree/main/bindings/wasm/poi_wasm/examples/README.md)
 - [Repository Root](https://github.com/iotaledger/notarization/tree/main/README.md)
 
-This README is also the crate-level rustdoc entry point. Source files provide detailed API documentation for all public
-types and methods.
+This README is also the crate-level rustdoc entry point. Source files provide detailed API documentation for all public types and methods.
 
 ## Bindings
 
