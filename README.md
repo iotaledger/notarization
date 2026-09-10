@@ -30,20 +30,15 @@ The toolkit includes:
 - **Audit Trails**
   Use this for structured record histories with sequential entries, role-based access control, locking, and tagging.
 - **Proof of Inclusion**
-  Use this to construct portable cryptographic evidence that a transaction, event, or object state is included in a
-  certified IOTA checkpoint, and to verify that evidence locally.
+  Use this to construct portable cryptographic evidence that a transaction event, or object state is included in a certified IOTA checkpoint, and to verify that evidence locally.
 
 ## Where To Start
 
-Use [Single Notarization](#single-notarization) for one on-chain object that stores arbitrary data, a document hash, or
-the latest state of a record.
+Use [Single Notarization](#single-notarization) for one on-chain object that stores arbitrary data, a document hash, or the latest state of a record.
 
-Use [Audit Trails](#audit-trails) for structured record histories with permissions, capabilities, tagging, and write or
-delete controls.
+Use [Audit Trails](#audit-trails) for structured record histories with permissions, capabilities, tagging, and write or delete controls.
 
-Use [Proof of Inclusion](#proof-of-inclusion) when a verifier needs portable evidence that a transaction, event, or
-object state is included in a certified checkpoint. Proof of Inclusion verifies existing ledger activity and does not
-define a separate on-chain object or Move Package.
+Use [Proof of Inclusion](#proof-of-inclusion) when a verifier needs portable evidence that a transaction, event, or object state is included in a certified checkpoint. Proof of Inclusion verifies existing ledger activity and does not define a separate on-chain object or Move Package.
 
 ## Packages
 
@@ -69,7 +64,7 @@ All three components provide Rust and TypeScript/JavaScript packages:
 
 - [Rust Package README](./notarization-rs/README.md)
 - [Rust API documentation](https://iotaledger.github.io/notarization/notarization/index.html)
-- [Rust Examples](./examples/README.md)
+- [Rust Examples](./examples/notarization/README.md)
 - [Move Package README](./notarization-move/README.md)
 - [Wasm Package README](./bindings/wasm/notarization_wasm/README.md)
 - [Wasm Examples](./bindings/wasm/notarization_wasm/examples/README.md)

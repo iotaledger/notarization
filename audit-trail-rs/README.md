@@ -251,7 +251,7 @@ The trail deletion process does not remove records automatically. The trail must
 - [Audit Trails Move Package](https://github.com/iotaledger/notarization/tree/main/audit-trail-move): On-chain contract package that defines the shared object model, permissions, locking, and events.
 - [Audit Trails Wasm Package](https://github.com/iotaledger/notarization/tree/main/bindings/wasm/audit_trail_wasm): JavaScript and TypeScript bindings for browser and Node.js integrations.
 - [Audit Trails Wasm Examples](https://github.com/iotaledger/notarization/tree/main/bindings/wasm/audit_trail_wasm/examples/README.md): Runnable audit-trail examples for JS and TS consumers.
-- [Repository Examples](https://github.com/iotaledger/notarization/tree/main/examples/README.md): End-to-end examples across the Notarization Toolkit.
+- [Repository Examples](https://github.com/iotaledger/notarization/tree/main/examples): End-to-end examples across the Notarization Toolkit.
 
 This README is also used as the crate-level rustdoc entry point, while the source files provide detailed API documentation for all public types and methods.
 

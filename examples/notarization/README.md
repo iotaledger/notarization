@@ -2,10 +2,9 @@
 
 The following code examples demonstrate how to use IOTA Single Notarization for creating, managing, and interacting with notarized documents on the IOTA network.
 
-The folder [audit-trail](./audit-trail) contains examples for IOTA Audit Trails. See there if you want to experiment with Audit Trails examples.
+The folder [audit-trail](../audit-trail/README.md) contains examples for IOTA Audit Trails. See there if you want to experiment with Audit Trails examples.
 
-The folder [poi](./poi) contains examples for IOTA Proof of Inclusion. See there to learn how to construct portable
-proofs and verify them with either genesis-anchored or trusted-node committee resolution.
+The folder [poi](../poi/README.md) contains examples for IOTA Proof of Inclusion. See there to learn how to construct portable proofs and verify them with either genesis-anchored or trusted-node committee resolution.
 
 ## Prerequisites
 
@@ -31,16 +30,18 @@ You'll need one or more of the following environment variables depending on your
 
 ## Running Examples
 
-Run an example using the following command (environment variables depend on your setup):
+These examples are targets in the shared [`examples`](../Cargo.toml) Cargo package.
+
+Run the following commands from the repository root (environment variables depend on your setup):
 
 ```bash
-IOTA_NOTARIZATION_PKG_ID=0x... cargo run --example <example-name>
+IOTA_NOTARIZATION_PKG_ID=0x... cargo run -p examples --example <example-name>
 ```
 
 For instance, to run the `01_create_locked_notarization` example:
 
 ```bash
-IOTA_NOTARIZATION_PKG_ID=0x... cargo run --release --example 01_create_locked_notarization
+IOTA_NOTARIZATION_PKG_ID=0x... cargo run --release -p examples --example 01_create_locked_notarization
 ```
 
 ## Basic Examples
@@ -49,14 +50,14 @@ The following basic CRUD (Create, Read, Update, Delete) examples are available:
 
 | Name                                                                                                                                               | Information                                                                       |
 | :------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------- |
-| [01_create_locked_notarization](https://github.com/iotaledger/notarization/tree/main/examples/notarization/01_create_locked_notarization.rs)       | Demonstrates how to create a locked notarization with delete locks.               |
-| [02_create_dynamic_notarization](https://github.com/iotaledger/notarization/tree/main/examples/notarization/02_create_dynamic_notarization.rs)     | Demonstrates how to create dynamic notarizations with and without transfer locks. |
-| [03_update_dynamic_notarization](https://github.com/iotaledger/notarization/tree/main/examples/notarization/03_update_dynamic_notarization.rs)     | Demonstrates that dynamic notarizations can be updated                            |
-| [04_destroy_notarization](https://github.com/iotaledger/notarization/tree/main/examples/notarization/04_destroy_notarization.rs)                   | Demonstrates notarization destruction scenarios based on lock types.              |
-| [05_update_state](https://github.com/iotaledger/notarization/tree/main/examples/notarization/05_update_state.rs)                                   | Demonstrates state updates on dynamic notarizations including binary data.        |
-| [06_update_metadata](https://github.com/iotaledger/notarization/tree/main/examples/notarization/06_update_metadata.rs)                             | Demonstrates metadata updates and their behavior vs state updates.                |
-| [07_transfer_dynamic_notarization](https://github.com/iotaledger/notarization/tree/main/examples/notarization/07_transfer_dynamic_notarization.rs) | Demonstrates transfer scenarios for different notarization types and lock states. |
-| [08_access_read_only_methods](https://github.com/iotaledger/notarization/tree/main/examples/notarization/08_access_read_only_methods.rs)           | Comprehensive demonstration of all read-only inspection methods.                  |
+| [01_create_locked_notarization](./01_create_locked_notarization.rs)       | Demonstrates how to create a locked notarization with delete locks.               |
+| [02_create_dynamic_notarization](./02_create_dynamic_notarization.rs)     | Demonstrates how to create dynamic notarizations with and without transfer locks. |
+| [03_update_dynamic_notarization](./03_update_dynamic_notarization.rs)     | Demonstrates that dynamic notarizations can be updated                            |
+| [04_destroy_notarization](./04_destroy_notarization.rs)                   | Demonstrates notarization destruction scenarios based on lock types.              |
+| [05_update_state](./05_update_state.rs)                                   | Demonstrates state updates on dynamic notarizations including binary data.        |
+| [06_update_metadata](./06_update_metadata.rs)                             | Demonstrates metadata updates and their behavior vs state updates.                |
+| [07_transfer_dynamic_notarization](./07_transfer_dynamic_notarization.rs) | Demonstrates transfer scenarios for different notarization types and lock states. |
+| [08_access_read_only_methods](./08_access_read_only_methods.rs)           | Comprehensive demonstration of all read-only inspection methods.                  |
 
 ## Real-World Examples
 
@@ -64,8 +65,8 @@ The following examples demonstrate practical use cases with proper field usage:
 
 | Name                                                                                                                                | Information                                                                        |
 | :---------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------- |
-| [iot_weather_station](https://github.com/iotaledger/notarization/tree/main/examples/notarization/real-world/iot_weather_station.rs) | IoT weather station using dynamic notarization for continuous sensor data updates. |
-| [legal_contract](https://github.com/iotaledger/notarization/tree/main/examples/notarization/real-world/legal_contract.rs)           | Legal contract using locked notarization for immutable document hash attestation.  |
+| [01_iot_weather_station](./real-world/01_iot_weather_station.rs) | IoT weather station using dynamic notarization for continuous sensor data updates. |
+| [02_legal_contract](./real-world/02_legal_contract.rs)           | Legal contract using locked notarization for immutable document hash attestation.  |
 
 ## Notarization Types
 
