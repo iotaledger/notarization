@@ -79,7 +79,7 @@ impl From<&ProofTargets> for WasmProofTargets {
     }
 }
 
-/// Authenticated targets returned by successful proof verification.
+/// Authenticated transaction evidence and targets returned by successful proof verification.
 #[wasm_bindgen(js_name = VerifiedProof, inspectable)]
 #[derive(Clone)]
 pub struct WasmVerifiedProof(Proof);
@@ -120,6 +120,29 @@ impl WasmVerifiedProof {
     #[wasm_bindgen(getter)]
     pub fn targets(&self) -> WasmProofTargets {
         self.0.targets().into()
+    }
+
+    /// Returns the authenticated transaction effects encoded as BCS.
+    #[wasm_bindgen(js_name = effectsBcs)]
+    pub fn effects_bcs(&self) -> WasmResult<Uint8Array> {
+        let bytes = bcs::to_bytes(&self.0.transaction_proof().effects)?;
+        Ok(Uint8Array::from(bytes.as_slice()))
+    }
+
+    /// Returns the complete authenticated event list encoded as BCS, in transaction order.
+    ///
+    /// Returns `undefined` only when the authenticated effects commit to no events.
+    /// Explicitly selected event targets remain available through `targets`.
+    #[wasm_bindgen(js_name = eventsBcs)]
+    pub fn events_bcs(&self) -> WasmResult<Option<Uint8Array>> {
+        let bytes = self
+            .0
+            .transaction_proof()
+            .events
+            .as_ref()
+            .map(bcs::to_bytes)
+            .transpose()?;
+        Ok(bytes.map(|bytes| Uint8Array::from(bytes.as_slice())))
     }
 
     /// Returns a selected authenticated object encoded as BCS.

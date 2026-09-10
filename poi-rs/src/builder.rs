@@ -235,12 +235,13 @@ impl<S: Source> ProofBuilder<S> {
             .ok_or(ProofBuilderError::CheckpointNotFound {
                 sequence_number: checkpoint_sequence_number,
             })?;
-        let transaction_events = if self.event_ids.is_empty() {
-            None
-        } else {
-            let events = transaction.events.ok_or_else(|| ProofBuilderError::EventNotFound {
-                event_id: self.event_ids[0],
-            })?;
+        if !self.event_ids.is_empty() {
+            let events = transaction
+                .events
+                .as_ref()
+                .ok_or_else(|| ProofBuilderError::EventNotFound {
+                    event_id: self.event_ids[0],
+                })?;
 
             for event_id in &self.event_ids {
                 let event_exists = usize::try_from(event_id.event_seq)
@@ -250,10 +251,8 @@ impl<S: Source> ProofBuilder<S> {
                     return Err(ProofBuilderError::EventNotFound { event_id: *event_id });
                 }
             }
-
-            Some(events)
-        };
-        let transaction_proof = TransactionProof::new(transaction.transaction, transaction.effects, transaction_events);
+        }
+        let transaction_proof = TransactionProof::new(transaction.transaction, transaction.effects, transaction.events);
         let mut targets = ProofTargets::new();
         if let Some(transaction_digest) = self.transaction_digests.first().copied() {
             targets = targets.set_transaction(transaction_digest);

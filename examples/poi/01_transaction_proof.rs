@@ -117,6 +117,11 @@ async fn main() -> Result<()> {
     println!("\nTransaction proof verified successfully.");
     println!("  transaction:       {}", verified.transaction_digest());
     println!("  checkpoint number: {}", verified.checkpoint_sequence_number());
+    println!("  execution status:  {:?}", verified.effects().as_v1().status);
+    println!(
+        "  emitted events:    {}",
+        verified.events().map_or(0, |events| events.0.len())
+    );
 
     Ok(())
 }

@@ -1,6 +1,7 @@
 // Copyright 2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+import { bcs } from "@iota/iota-sdk/bcs";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
@@ -28,6 +29,7 @@ const fixtures: readonly {
             assert.equal(proof.targets.transaction, proof.transaction);
             assert.deepEqual(proof.targets.objects, []);
             assert.deepEqual(proof.targets.events, []);
+            assert.equal(proof.eventsBcs(), undefined);
             assert.throws(() => proof.objectBcs(0), /object target index 0 is out of bounds/);
             assert.throws(() => proof.eventContents(0), /event target index 0 is out of bounds/);
         },
@@ -50,6 +52,7 @@ const fixtures: readonly {
             assert.ok(proof.targets.objects[0]?.digest);
             assert.ok(proof.objectBcs(0).length > 0);
             assert.deepEqual(proof.targets.events, []);
+            assert.equal(proof.eventsBcs(), undefined);
         },
     },
     {
@@ -74,6 +77,9 @@ const fixtures: readonly {
             );
             assert.equal(proof.targets.events[0]?.eventSequence, 0n);
             assert.ok(proof.eventContents(0).length > 0);
+            const events = proof.eventsBcs();
+            assert.ok(events);
+            assert.equal(events[0], 1); // The fixture contains one event in its BCS vector.
         },
     },
 ];
@@ -93,10 +99,27 @@ test("the public proof fixtures round trip and verify offline", async (context) 
             assert.ok(verified.checkpointSequenceNumber >= 0n);
             assert.ok(verified.checkpointTimestampMs > 0n);
             assert.ok(verified.transaction);
+            const effects = bcs.TransactionEffects.parse(verified.effectsBcs());
+            assert.equal(effects.V1?.transactionDigest, verified.transaction);
             fixture.assertTargets(receivedProof.targets);
             fixture.assertVerified(verified);
         });
     }
+});
+
+test("complete authenticated events are exposed without event targets", async () => {
+    const committee = Committee.fromJSON(await readFixture("committee.json"));
+    const original = Proof.fromJSON(await readFixture("event.json")).verify(committee);
+    const fixture = JSON.parse(await readFixture("event.json"));
+    fixture.ProofV1.targets.transaction = original.transaction;
+    fixture.ProofV1.targets.events = [];
+
+    const verified = Proof.fromJSON(JSON.stringify(fixture)).verify(committee);
+
+    assert.deepEqual(verified.targets.events, []);
+    assert.ok(verified.eventsBcs());
+    assert.deepEqual(verified.eventsBcs(), original.eventsBcs());
+    assert.deepEqual(verified.effectsBcs(), original.effectsBcs());
 });
 
 test("rejects event sequences outside the wasm32 index range", async () => {

@@ -78,6 +78,39 @@ async fn stacked_targets_are_deduplicated_and_reuse_transaction_evidence() {
 }
 
 #[tokio::test]
+async fn proofs_without_event_targets_retain_transaction_events() {
+    let cluster = start_test_cluster().await;
+    let staking = staking_tx(&cluster).await;
+    let source = grpc_client(&cluster);
+    let expected_events = source
+        .transaction(staking.digest)
+        .await
+        .expect("transaction request must succeed")
+        .expect("executed transaction must exist")
+        .events
+        .expect("staking transaction must emit events");
+    let client = PoiClient::from_grpc_client(source);
+
+    for builder in [
+        client.proof().transaction(staking.digest),
+        client.proof().object(staking.gas_object.object_id),
+    ] {
+        let proof = builder.build().await.expect("proof must be constructed");
+
+        assert!(proof.targets().events.is_empty());
+        let events = proof
+            .transaction_proof()
+            .events
+            .as_ref()
+            .expect("proof must retain events without explicit event targets");
+        assert_eq!(events, &expected_events);
+        let _verified = ProofVerifier::new(&cluster.committee())
+            .verify(&proof)
+            .expect("proof with untargeted events must verify offline");
+    }
+}
+
+#[tokio::test]
 async fn transaction_not_returned_by_the_source_is_reported_as_missing() {
     let transaction_digest = TransactionDigest::random();
 

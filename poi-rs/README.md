@@ -125,7 +125,9 @@ persists authenticated committees. Shared cache entries are keyed by both the tr
 
 Retain the verifier when checking multiple proofs so it can reuse its authenticated committee cache. `ProofVerifier` remains the offline entry point for callers that already possess the authoritative committee.
 
-Successful verification returns a `VerifiedProof` that borrows from the input proof and exposes authenticated checkpoint metadata, transaction data and digest, object targets, and event targets. Verification also authenticates the packaged user signatures against the checkpoint contents, although `VerifiedProof` does not expose them. Read relying-party data through this returned value. The original `Proof` remains the portable untrusted envelope used for transport and serialization.
+Successful verification returns a `VerifiedProof` that borrows from the input proof and exposes authenticated checkpoint metadata, transaction data and digest, execution effects, and the complete event list. `effects()` returns the execution effects, including execution status and object changes. `events()` returns all events in transaction order, or `None` only when the effects commit to no events. `targets()` preserves the transaction, object, and event targets explicitly selected by the caller; selecting an event does not filter `events()`.
+
+Verification also authenticates the packaged user signatures against the checkpoint contents, although `VerifiedProof` does not expose them. Read relying-party data through this returned value. The original `Proof` remains the portable untrusted envelope used for transport and serialization.
 
 Verification checks:
 
@@ -134,7 +136,7 @@ Verification checks:
 - the packaged transaction digest matches the transaction effects;
 - the transaction effects are included in the authenticated checkpoint contents;
 - the packaged user signatures match those committed by the checkpoint;
-- packaged event data matches the digest in the transaction effects;
+- the event list is present exactly when the transaction effects commit to events, and its digest matches;
 - an explicit transaction target matches the packaged transaction;
 - every object target's exact reference appears in the transaction effects; and
 - every event target has packaged event data, belongs to the packaged transaction, and selects an existing event.
@@ -155,7 +157,7 @@ A `Proof` contains three layers of evidence:
 
 - `ProofTargets` records the transaction, objects, and events explicitly selected by the caller.
 - A `CertifiedCheckpointSummary` and its `CheckpointContents` link the transaction to a committee-certified checkpoint.
-- A required `TransactionProof` contains the transaction, its effects, and event data when event targets are present.
+- A required `TransactionProof` contains the transaction, its effects, and its complete event list when present, regardless of which targets were selected.
 
 Object targets contain their exact values. Event targets contain `EventID` values, while the transaction proof carries the complete event list needed to verify the effects' event digest. A transaction target is present only when the caller explicitly requests the transaction itself, although transaction evidence supports every proof.
 

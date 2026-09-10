@@ -36,7 +36,8 @@ fn valid_transaction_proof_is_accepted() {
         proof.transaction_proof().transaction.data().transaction()
     );
     assert!(verified.objects().is_empty());
-    assert_eq!(verified.events().len(), 0);
+    assert!(verified.events().is_none());
+    assert_eq!(verified.effects(), &proof.transaction_proof().effects);
     assert_eq!(verified.checkpoint_epoch(), 0);
     assert_eq!(verified.checkpoint_sequence_number(), 0);
     assert_eq!(verified.checkpoint_timestamp_ms(), 0);
@@ -80,21 +81,23 @@ fn checkpoint_signature_must_match_the_supplied_committee() {
 }
 
 #[test]
-fn verified_event_content_is_exposed() {
+fn verified_events_include_events_outside_the_selected_targets() {
+    let other_event = event(vec![4, 5, 6]);
     let target = event(vec![1, 2, 3]);
-    let (committee, transaction_digest, mut proof) = proof_with_events(TransactionEvents(vec![target.clone()]));
+    let expected_events = TransactionEvents(vec![other_event, target]);
+    let (committee, transaction_digest, mut proof) = proof_with_events(expected_events.clone());
     let event_id = EventID {
         tx_digest: transaction_digest,
-        event_seq: 0,
+        event_seq: 1,
     };
     proof_v1_mut(&mut proof).targets = ProofTargets::new().add_event(event_id);
 
     let verified = ProofVerifier::new(&committee)
         .verify(&proof)
         .expect("a valid event proof must verify");
-    let events = verified.events().collect::<Vec<_>>();
-
-    assert_eq!(events, vec![(&event_id, &target)]);
+    assert_eq!(verified.events(), Some(&expected_events));
+    assert_eq!(verified.effects(), &proof.transaction_proof().effects);
+    assert_eq!(verified.targets().events, vec![event_id]);
 }
 
 #[test]
@@ -117,6 +120,40 @@ fn events_digest_must_match_the_effects() {
     let error = ProofVerifier::new(&committee)
         .verify(&proof)
         .expect_err("mismatched transaction events must be rejected");
+
+    assert!(matches!(error.kind, VerifyErrorKind::EventsDigestMismatch));
+}
+
+#[test]
+fn committed_events_cannot_be_omitted_without_event_targets() {
+    let (committee, transaction_digest, mut proof) = proof_with_events(TransactionEvents(vec![event(vec![1, 2, 3])]));
+    proof_v1_mut(&mut proof).targets = ProofTargets::new().set_transaction(transaction_digest);
+
+    let verified = ProofVerifier::new(&committee)
+        .verify(&proof)
+        .expect("complete events must verify without event targets");
+    assert_eq!(verified.events(), proof.transaction_proof().events.as_ref());
+    assert!(verified.targets().events.is_empty());
+    proof_v1_mut(&mut proof).transaction_proof.events = None;
+
+    let error = ProofVerifier::new(&committee)
+        .verify(&proof)
+        .expect_err("committed events must not be omitted even without event targets");
+
+    assert!(matches!(error.kind, VerifyErrorKind::EventsDigestMismatch));
+}
+
+#[test]
+fn committed_events_cannot_be_truncated_without_event_targets() {
+    let first_event = event(vec![1, 2, 3]);
+    let (committee, transaction_digest, mut proof) =
+        proof_with_events(TransactionEvents(vec![first_event.clone(), event(vec![4, 5, 6])]));
+    proof_v1_mut(&mut proof).targets = ProofTargets::new().set_transaction(transaction_digest);
+    proof_v1_mut(&mut proof).transaction_proof.events = Some(TransactionEvents(vec![first_event]));
+
+    let error = ProofVerifier::new(&committee)
+        .verify(&proof)
+        .expect_err("the complete committed event list is required even without event targets");
 
     assert!(matches!(error.kind, VerifyErrorKind::EventsDigestMismatch));
 }
@@ -217,17 +254,12 @@ fn event_target_must_belong_to_the_proven_transaction() {
 
 #[test]
 fn event_target_requires_packaged_event_data() {
-    let target = event(vec![1, 2, 3]);
-    let (committee, transaction_digest, mut proof) = proof_with_events(TransactionEvents(vec![target]));
+    let (committee, mut proof) = valid_transaction_proof();
     let event_id = EventID {
-        tx_digest: transaction_digest,
+        tx_digest: *proof.transaction_proof().transaction.digest(),
         event_seq: 0,
     };
-    {
-        let proof = proof_v1_mut(&mut proof);
-        proof.targets = ProofTargets::new().add_event(event_id);
-        proof.transaction_proof.events = None;
-    }
+    proof_v1_mut(&mut proof).targets = ProofTargets::new().add_event(event_id);
 
     let error = ProofVerifier::new(&committee)
         .verify(&proof)
