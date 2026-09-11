@@ -152,15 +152,10 @@ jobs:
           awk '{print $1}' | \
           xargs -I {} cargo check -p {}
 
-      # Clean debug target to avoid bloating the GitHub Actions cache.
-      # The previous builds cannot be re-used at all for the full --all-features --release build anyway.
-      - name: Clean target
+      # Remove debug artifacts from feature checks while preserving cached release artifacts.
+      - name: Clean debug target
         if: matrix.os == 'ubuntu-24.04'
-        run: cargo clean
-
-        # Build the library, tests, and examples without running them to avoid recompilation in the run tests step
-      - name: Build with default features
-        run: cargo build --workspace --tests --examples --release
+        run: cargo clean --profile dev
 
       - name: Start iota sandbox
         if: matrix.os != 'windows-latest'
@@ -195,6 +190,11 @@ jobs:
           echo "IOTA_AUDIT_TRAIL_PKG_ID=$IOTA_AUDIT_TRAIL_PKG_ID" >> "$GITHUB_ENV"
           echo "IOTA_TF_COMPONENTS_PKG_ID=$IOTA_TF_COMPONENTS_PKG_ID" >> "$GITHUB_ENV"
         working-directory: audit-trail-move/scripts/
+
+      # Move testing and publication can update Move.lock, which the Rust build scripts watch.
+      # Build afterward so tests and examples reuse artifacts from the final Move inputs.
+      - name: Build with default features
+        run: cargo build --workspace --tests --examples --release
 
       - name: Run tests
         if: matrix.os != 'windows-latest'
