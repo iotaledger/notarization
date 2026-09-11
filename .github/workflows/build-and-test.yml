@@ -75,7 +75,7 @@ jobs:
   build-and-test:
     runs-on: ${{ matrix.os }}
     needs: [check-for-run-condition, check-for-modification]
-    if: ${{ needs.check-for-run-condition.outputs.should-run == 'true' && needs.check-for-modification.outputs.core-modified == 'true' }}
+    if: ${{ needs.check-for-run-condition.outputs.should-run == 'true' && (github.event_name == 'schedule' || needs.check-for-modification.outputs.core-modified == 'true') }}
     strategy:
       fail-fast: false
       matrix:
@@ -126,6 +126,8 @@ jobs:
         with:
           os: ${{ runner.os }}
           job: ${{ github.job }}
+          toolchain: ${{ github.event_name == 'schedule' && 'stable' || '1.98.1' }}
+          update-dependencies: ${{ github.event_name == 'schedule' }}
           cargo-cache-enabled: true
           target-cache-enabled: true
           sccache-enabled: true
@@ -139,18 +141,18 @@ jobs:
       - name: Check --no-default-features
         if: matrix.os == 'ubuntu-24.04'
         run: |
-          cargo metadata --format-version 1 | \
+          cargo metadata --locked --format-version 1 | \
           jq -r '.workspace_members[]' | \
           awk '{print $1}' | \
-          xargs -I {} cargo check -p {} --no-default-features
+          xargs -I {} cargo check --locked -p {} --no-default-features
 
       - name: Check default features
         if: matrix.os == 'ubuntu-24.04'
         run: |
-          cargo metadata --format-version 1 | \
+          cargo metadata --locked --format-version 1 | \
           jq -r '.workspace_members[]' | \
           awk '{print $1}' | \
-          xargs -I {} cargo check -p {}
+          xargs -I {} cargo check --locked -p {}
 
       # Remove debug artifacts from feature checks while preserving cached release artifacts.
       - name: Clean debug target
@@ -194,18 +196,18 @@ jobs:
       # Move testing and publication can update Move.lock, which the Rust build scripts watch.
       # Build afterward so tests and examples reuse artifacts from the final Move inputs.
       - name: Build with default features
-        run: cargo build --workspace --tests --examples --release
+        run: cargo build --locked --workspace --tests --examples --release
 
       - name: Run tests
         if: matrix.os != 'windows-latest'
-        run: cargo test --workspace --release -- --test-threads=1
+        run: cargo test --locked --workspace --release -- --test-threads=1
 
       - name: Run Rust examples
         # run examples only on ubuntu for now
         if: matrix.os == 'ubuntu-24.04'
         run: |
           export IOTA_GENESIS_PATH="$HOME/.iota/iota_config/genesis.blob"
-          cargo metadata --format-version 1 --no-deps --manifest-path ./examples/Cargo.toml | \
+          cargo metadata --locked --format-version 1 --no-deps --manifest-path ./examples/Cargo.toml | \
           jq -r '.packages[] | select(.name == "examples") | .targets[] |
             select(.kind | index("example")) | .name' | \
           parallel -k -j 1 --retries 3 --joblog report.log ./target/release/examples/{}
