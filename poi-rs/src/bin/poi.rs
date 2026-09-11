@@ -200,7 +200,7 @@ fn write_verification_summary(mut writer: impl Write, proof: &VerifiedProof<'_>)
             object_ref.object_id, object_ref.version, object_ref.digest
         )?;
     }
-    for (event, _) in proof.events() {
+    for event in &proof.targets().events {
         writeln!(writer, "    event:       {}:{}", event.tx_digest, event.event_seq)?;
     }
 

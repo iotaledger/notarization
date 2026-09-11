@@ -83,11 +83,14 @@ async fn main() -> Result<()> {
         .context("event proof verification failed")?;
 
     println!("Event proof verified successfully.");
-    for (event_id, event) in verified.events() {
-        println!(
-            "  authenticated event: {event_id:?} ({} BCS bytes)",
-            event.contents.len()
-        );
+    if let Some(events) = verified.events() {
+        for (sequence, event) in events.0.iter().enumerate() {
+            println!(
+                "  authenticated event: {}:{sequence} ({} BCS bytes)",
+                verified.transaction_digest(),
+                event.contents.len()
+            );
+        }
     }
 
     Ok(())

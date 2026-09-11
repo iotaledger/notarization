@@ -11,7 +11,7 @@
 //! [`CertifiedCheckpointSummary`]: iota_types::messages_checkpoint::CertifiedCheckpointSummary
 //! [`Committee`]: iota_types::committee::Committee
 
-use iota_sdk_types::{CheckpointContents, Event, Transaction as TransactionData, TransactionDigest};
+use iota_sdk_types::{CheckpointContents, Transaction as TransactionData, TransactionDigest};
 use iota_types::committee::Committee;
 use iota_types::digests::ChainIdentifier;
 use iota_types::effects::{TransactionEffects, TransactionEffectsAPI, TransactionEffectsExt, TransactionEvents};
@@ -82,7 +82,7 @@ pub enum VerifyErrorKind {
     /// The packaged user signatures differ from those committed by the checkpoint.
     #[error("transaction signatures do not match the checkpoint contents")]
     TransactionSignaturesMismatch,
-    /// The packaged events do not match the events digest in the transaction effects.
+    /// The presence or digest of packaged events does not match the transaction effects.
     #[error("events digest does not match the execution digest")]
     EventsDigestMismatch,
     /// Event targets are present but the proof does not contain transaction events.
@@ -149,15 +149,15 @@ impl ProofTargets {
 
 /// Transaction-specific evidence carried by a [`Proof`].
 ///
-/// The effects identify the transaction in its checkpoint. Event data is
-/// included when the proof declares event targets.
+/// The effects identify the transaction in its checkpoint. Proof construction
+/// includes the transaction's complete event list, regardless of event targets.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TransactionProof {
     /// The transaction being proven.
     pub transaction: Transaction,
     /// The transaction's execution effects.
     pub effects: TransactionEffects,
-    /// Complete event list included when the proof declares event targets.
+    /// Complete event list returned by the source, when present.
     pub events: Option<TransactionEvents>,
 }
 
@@ -176,7 +176,7 @@ impl TransactionProof {
     }
 }
 
-/// Authenticated targets borrowed from a successfully verified proof.
+/// Authenticated transaction evidence and targets borrowed from a successfully verified proof.
 ///
 /// Values are exposed through this type only after all checkpoint, transaction,
 /// object, and event checks have succeeded. The original [`Proof`] remains
@@ -188,9 +188,10 @@ pub struct VerifiedProof<'proof> {
     checkpoint_summary: &'proof CertifiedCheckpointSummary,
     transaction: &'proof TransactionData,
     transaction_digest: TransactionDigest,
-    transaction_target: Option<&'proof TransactionDigest>,
+    targets: &'proof ProofTargets,
     objects: &'proof [Object],
-    events: Vec<(&'proof EventID, &'proof Event)>,
+    effects: &'proof TransactionEffects,
+    events: Option<&'proof TransactionEvents>,
 }
 
 impl<'proof> VerifiedProof<'proof> {
@@ -224,7 +225,12 @@ impl<'proof> VerifiedProof<'proof> {
 
     /// Returns the explicit transaction target, when the proof declared one.
     pub const fn transaction_target(&self) -> Option<&'proof TransactionDigest> {
-        self.transaction_target
+        self.targets.transaction.as_ref()
+    }
+
+    /// Returns the authenticated targets explicitly selected by the caller.
+    pub const fn targets(&self) -> &'proof ProofTargets {
+        self.targets
     }
 
     /// Returns the authenticated object targets.
@@ -232,9 +238,17 @@ impl<'proof> VerifiedProof<'proof> {
         self.objects
     }
 
-    /// Returns authenticated event targets paired with their event contents.
-    pub fn events(&self) -> impl ExactSizeIterator<Item = (&'proof EventID, &'proof Event)> + '_ {
-        self.events.iter().copied()
+    /// Returns the authenticated execution effects, including execution status and object changes.
+    pub const fn effects(&self) -> &'proof TransactionEffects {
+        self.effects
+    }
+
+    /// Returns the complete authenticated event list in transaction order.
+    ///
+    /// Returns `None` only when the authenticated effects commit to no events.
+    /// Explicitly selected event targets remain available through [`Self::targets`].
+    pub const fn events(&self) -> Option<&'proof TransactionEvents> {
+        self.events
     }
 }
 
@@ -408,6 +422,7 @@ impl<'committee> ProofVerifier<'committee> {
     /// - the transaction, effects, and optional events are internally consistent;
     /// - the transaction effects occur in the authenticated checkpoint contents;
     /// - the packaged user signatures match those committed by the checkpoint;
+    /// - the event list is present exactly when the effects commit to events, and its digest matches;
     /// - every selected target matches the authenticated proof data.
     ///
     /// On success, returns a [`VerifiedProof`] borrowing the authenticated targets
@@ -442,15 +457,16 @@ impl<'committee> ProofVerifier<'committee> {
             })?;
 
         self.verify_transaction_proof(&proof.checkpoint_contents, &proof.transaction_proof)?;
-        let events = self.verify_targets(&proof.targets, &proof.transaction_proof)?;
+        self.verify_targets(&proof.targets, &proof.transaction_proof)?;
 
         Ok(VerifiedProof {
             checkpoint_summary: summary,
             transaction: proof.transaction_proof.transaction.data().transaction(),
             transaction_digest: *proof.transaction_proof.transaction.digest(),
-            transaction_target: proof.targets.transaction.as_ref(),
+            targets: &proof.targets,
             objects: &proof.targets.objects,
-            events,
+            effects: &proof.transaction_proof.effects,
+            events: proof.transaction_proof.events.as_ref(),
         })
     }
 
@@ -485,23 +501,18 @@ impl<'committee> ProofVerifier<'committee> {
             });
         }
 
-        if let Some(events) = &transaction_proof.events {
-            if transaction_proof.effects.events_digest() != Some(&events.digest()) {
-                return Err(VerifyError {
-                    kind: VerifyErrorKind::EventsDigestMismatch,
-                });
-            }
+        let events_digest = transaction_proof.events.as_ref().map(TransactionEvents::digest);
+        if transaction_proof.effects.events_digest() != events_digest.as_ref() {
+            return Err(VerifyError {
+                kind: VerifyErrorKind::EventsDigestMismatch,
+            });
         }
 
         Ok(())
     }
 
     /// Checks every declared target against the transaction proof.
-    fn verify_targets<'proof>(
-        &self,
-        targets: &'proof ProofTargets,
-        transaction_proof: &'proof TransactionProof,
-    ) -> Result<Vec<(&'proof EventID, &'proof Event)>, VerifyError> {
+    fn verify_targets(&self, targets: &ProofTargets, transaction_proof: &TransactionProof) -> Result<(), VerifyError> {
         let transaction_digest = transaction_proof.effects.execution_digests().transaction;
 
         if targets.transaction.is_some_and(|target| target != transaction_digest) {
@@ -510,20 +521,20 @@ impl<'committee> ProofVerifier<'committee> {
             });
         }
 
-        let events = self.verify_event_targets(targets, transaction_proof)?;
+        self.verify_event_targets(targets, transaction_proof)?;
         self.verify_object_targets(targets, transaction_proof)?;
 
-        Ok(events)
+        Ok(())
     }
 
     /// Checks each event target against the proven transaction and its packaged events.
-    fn verify_event_targets<'proof>(
+    fn verify_event_targets(
         &self,
-        targets: &'proof ProofTargets,
-        transaction_proof: &'proof TransactionProof,
-    ) -> Result<Vec<(&'proof EventID, &'proof Event)>, VerifyError> {
+        targets: &ProofTargets,
+        transaction_proof: &TransactionProof,
+    ) -> Result<(), VerifyError> {
         if targets.events.is_empty() {
-            return Ok(Vec::new());
+            return Ok(());
         }
 
         let Some(events) = &transaction_proof.events else {
@@ -533,7 +544,6 @@ impl<'committee> ProofVerifier<'committee> {
         };
 
         let execution_digests = transaction_proof.effects.execution_digests();
-        let mut verified_events = Vec::with_capacity(targets.events.len());
         for event_id in &targets.events {
             if event_id.tx_digest != execution_digests.transaction {
                 return Err(VerifyError {
@@ -541,20 +551,19 @@ impl<'committee> ProofVerifier<'committee> {
                 });
             }
 
-            let event = usize::try_from(event_id.event_seq)
+            let event_exists = usize::try_from(event_id.event_seq)
                 .ok()
-                .and_then(|index| events.get(index));
-            let Some(event) = event else {
+                .is_some_and(|index| events.get(index).is_some());
+            if !event_exists {
                 return Err(VerifyError {
                     kind: VerifyErrorKind::EventSequenceOutOfBounds {
                         sequence: event_id.event_seq,
                     },
                 });
-            };
-            verified_events.push((event_id, event));
+            }
         }
 
-        Ok(verified_events)
+        Ok(())
     }
 
     /// Checks each object target against the transaction effects.

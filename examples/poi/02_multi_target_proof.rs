@@ -92,7 +92,7 @@ async fn main() -> Result<()> {
 
     println!("\nMulti-target proof verified successfully.");
     println!("  object targets: {}", verified.objects().len());
-    println!("  event targets:  {}", verified.events().len());
+    println!("  event targets:  {}", verified.targets().events.len());
 
     Ok(())
 }

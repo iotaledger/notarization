@@ -70,9 +70,9 @@ The `transaction` field selects the transaction explicitly. The `objects` and `e
 targets. Event sequence numbers and all other 64-bit values use JavaScript `bigint`.
 
 The serialized proof records the targets explicitly selected by the caller. Its checkpoint summary and checkpoint
-contents are sibling fields, while the required transaction proof contains the transaction, effects, and optional event
-evidence. Object targets contain the selected historical object values, and event targets select events from the
-authenticated transaction event list.
+contents are sibling fields, while the required transaction proof contains the transaction, effects, and complete event
+list when present, regardless of which targets were selected. Object targets contain the selected historical object
+values, and event targets select events from the authenticated transaction event list.
 
 The JavaScript source adapter passes only opaque BCS bytes and checkpoint sequence numbers into WASM. Rust decodes those
 values into existing IOTA domain types and delegates target resolution and proof construction to `poi-rs`.
@@ -103,8 +103,16 @@ const verified = await verifier.verify(proof);
 ```
 
 Successful verification returns a read-only `VerifiedProof`. It exposes the authenticated transaction digest,
-checkpoint metadata, and `ProofTargets`. Use `objectBcs(index)` and `eventContents(index)` to read the authenticated
-target payloads. Continue using `Proof` only as the untrusted transport and serialization envelope.
+checkpoint metadata, and `ProofTargets`. `effectsBcs()` returns the authenticated transaction effects as BCS bytes.
+`eventsBcs()` returns the complete authenticated event list as BCS bytes, or `undefined` only when the effects commit to
+no events. The list preserves transaction order and includes events outside the explicitly selected targets.
+
+Use `objectBcs(index)` and `eventContents(index)` to read the authenticated selected target payloads. These indices refer
+to `targets.objects` and `targets.events`, respectively. Continue using `Proof` only as the untrusted transport and
+serialization envelope.
+
+Verification requires the complete event list whenever the transaction effects commit to events, even without selected
+event targets. It rejects missing event data, unexpected event data, and event lists whose digest does not match the effects.
 
 `CommitteeResolution.fromGenesis()` decodes the BCS-encoded IOTA genesis blob and extracts its committee in Rust.
 Callers that already possess an extracted trusted committee can use `CommitteeResolution.anchored(committee)` instead.
