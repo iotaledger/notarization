@@ -126,7 +126,6 @@ jobs:
         with:
           os: ${{ runner.os }}
           job: ${{ github.job }}
-          toolchain: ${{ github.event_name == 'schedule' && 'stable' || '1.98.1' }}
           update-dependencies: ${{ github.event_name == 'schedule' }}
           cargo-cache-enabled: true
           target-cache-enabled: true

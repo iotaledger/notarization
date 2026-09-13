@@ -5,9 +5,9 @@ inputs:
     description: "Additionally install specified target for this toolchain, ex. x86_64-apple-darwin"
     required: false
   toolchain:
-    description: "Rust toolchain to install and use. Normal builds use a pinned release."
+    description: "Rust toolchain to install and use. Default: current stable."
     required: false
-    default: "1.98.1"
+    default: stable
   update-dependencies:
     description: "Resolve newer dependencies for scheduled compatibility checks."
     required: false
@@ -43,10 +43,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Get current date
-      shell: bash
-      run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
-
     - name: Setup rust toolchain
       id: rust-toolchain
       shell: bash
@@ -71,6 +67,12 @@ runs:
         echo "cache-key=${compiler// /-}" >> "$GITHUB_OUTPUT"
         RUSTUP_TOOLCHAIN="$TOOLCHAIN" cargo --version
 
+    # Resolve new versions only for compatibility runs, before computing cache keys.
+    - name: Update dependencies
+      if: inputs.update-dependencies == 'true'
+      run: cargo update
+      shell: bash
+
     - name: Cache cargo
       uses: actions/cache@v4
       if: inputs.cargo-cache-enabled == 'true'
@@ -81,19 +83,12 @@ runs:
           ~/.cargo/registry/index/
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
-        # Add date to the cache to keep it up to date
-        key: ${{ inputs.os }}-cargo-${{ inputs.job }}-${{ hashFiles('**/Cargo.toml') }}-${{ env.CURRENT_DATE }}
+        # Refresh when resolved dependencies change
+        key: ${{ inputs.os }}-cargo-${{ inputs.job }}-${{ hashFiles('**/Cargo.lock') }}
         # Restore from outdated cache for speed
         restore-keys: |
-          ${{ inputs.os }}-cargo-${{ inputs.job }}-${{ hashFiles('**/Cargo.toml') }}-
           ${{ inputs.os }}-cargo-${{ inputs.job }}-
           ${{ inputs.os }}-cargo-
-
-    # Resolve new versions only for compatibility runs, before computing cache keys.
-    - name: Update dependencies
-      if: inputs.update-dependencies == 'true'
-      run: cargo update
-      shell: bash
 
     - name: Cache build target
       uses: actions/cache@v4
