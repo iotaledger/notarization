@@ -116,7 +116,7 @@ event targets. It rejects missing event data, unexpected event data, and event l
 
 `CommitteeResolution.fromGenesis()` decodes the BCS-encoded IOTA genesis blob and extracts its committee in Rust.
 Callers that already possess an extracted trusted committee can use `CommitteeResolution.anchored(committee)` instead.
-`Committee.fromJSON()` accepts the Rust `Committee` fields `epoch` and `voting_rights`, validates public keys, rejects
+`Committee.fromJSON()` accepts the Rust `Committee` fields `epoch` and `voting_rights`, checks public-key lengths, rejects
 duplicate authorities, requires total voting power to equal 10,000, and reconstructs the committee's derived lookup
 state. Use `Committee.toJSON()` to persist a resolved committee and restore it later with `Committee.fromJSON()`.
 
