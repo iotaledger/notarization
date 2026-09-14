@@ -26,9 +26,9 @@ on:
       - "bindings/wasm/audit_trail_wasm/README.md"
 
   schedule:
-    # * is a special character in YAML so you have to quote this string
-    - cron: "5 0 * * *" # everyday, 00:05, used for testnet scheduled test
-    - cron: "10 0 * * *" # everyday, 00:10 used for devnet scheduled test
+    # Run the morning after the usual upstream release day (times are UTC).
+    - cron: "25 3 * * 4" # testnet: Thursday, 06:25
+    - cron: "25 3 * * 2" # devnet: Tuesday, 06:25
 
 env:
   RUST_BACKTRACE: full
@@ -36,7 +36,7 @@ env:
   SCCACHE_CACHE_SIZE: 2G
   SCCACHE_IDLE_TIMEOUT: 0
   # SCCACHE_RECACHE: 1 # uncomment to clear sccache cache, then re-comment
-  IOTA_VERSION: ${{github.event.schedule && (github.event.schedule == '5 0 * * *' && 'testnet' || 'devnet')}}
+  IOTA_VERSION: ${{github.event.schedule && (github.event.schedule == '25 3 * * 4' && 'testnet' || 'devnet')}}
 
 jobs:
   check-for-run-condition:
