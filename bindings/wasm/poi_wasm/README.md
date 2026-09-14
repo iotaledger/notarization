@@ -169,7 +169,7 @@ Download a different upstream schema only as an intentional update:
 npm run grpc:schema:update -- <full-iota-rust-sdk-commit>
 ```
 
-Regenerate the TypeScript client from the committed schema image:Idk wh
+Regenerate the TypeScript client from the committed schema image:
 
 ```bash
 npm run grpc:generate
