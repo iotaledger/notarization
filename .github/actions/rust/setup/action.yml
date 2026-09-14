@@ -5,9 +5,13 @@ inputs:
     description: "Additionally install specified target for this toolchain, ex. x86_64-apple-darwin"
     required: false
   toolchain:
-    description: "Toolchain to install. Default: stable."
+    description: "Rust toolchain to install and use. Default: current stable."
     required: false
     default: stable
+  update-dependencies:
+    description: "Resolve newer dependencies for scheduled compatibility checks."
+    required: false
+    default: "false"
   components:
     description: "Comma-separated string of additional components to install e.g. `clippy`, `rustfmt`"
     required: false
@@ -39,54 +43,35 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Get current date
-      shell: bash
-      run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
-
     - name: Setup rust toolchain
+      id: rust-toolchain
       shell: bash
+      env:
+        TOOLCHAIN: ${{ inputs.toolchain }}
+        TARGET: ${{ inputs.target }}
+        COMPONENTS: ${{ inputs.components }}
       run: |
-
-        # self update is currently broken on Windows runners:
-        #   https://github.com/rust-lang/rustup/issues/3709
-        # so we'll skip self update for windows
-        OS=${{ inputs.os }}
-        IS_WINDOWS=false; [[ $OS =~ ^[wW]indows ]] && IS_WINDOWS=true
-
-        if [[ $IS_WINDOWS = true ]] ;
-        then
-          echo "skipping self update on windows runner due to https://github.com/rust-lang/rustup/issues/3709"
-        elif ! rustup self update; then
-            echo "rustup self update failed"
+        args=("$TOOLCHAIN" --profile minimal --no-self-update)
+        if [[ -n "$TARGET" ]]; then
+          args+=(--target "$TARGET")
         fi
-
-        TARGET=${{ inputs.target }}
-        if [[ $TARGET != '' ]]; then
-          rustup target add $TARGET
+        if [[ -n "$COMPONENTS" ]]; then
+          args+=(--component "$COMPONENTS")
         fi
+        rustup toolchain install "${args[@]}"
 
-        if [[ $IS_WINDOWS = true ]] ;
-        then
-            echo "skipping self update on windows runner due to https://github.com/rust-lang/rustup/issues/3709"
-            rustup update --no-self-update
-        else
-            rustup update
-        fi
+        # Select this toolchain for subsequent steps, including nested WASM packages.
+        echo "RUSTUP_TOOLCHAIN=$TOOLCHAIN" >> "$GITHUB_ENV"
+        compiler=$(RUSTUP_TOOLCHAIN="$TOOLCHAIN" rustc --version)
+        echo "$compiler"
+        echo "cache-key=${compiler// /-}" >> "$GITHUB_OUTPUT"
+        RUSTUP_TOOLCHAIN="$TOOLCHAIN" cargo --version
 
-        TOOLCHAIN=${{ inputs.toolchain }}
-        if [[ $TOOLCHAIN != 'stable' ]]; then
-           rustup toolchain install $TOOLCHAIN
-        fi
-
-        COMPONENTS=${{ inputs.components }}
-        if [[ $COMPONENTS != '' ]]; then
-          for i in ${COMPONENTS//,/ }
-          do
-            rustup component add $i $(if [ $TOOLCHAIN != '' ]; then echo --toolchain $TOOLCHAIN; fi)
-          done
-        fi
-
-        rustup show
+    # Resolve new versions only for compatibility runs, before computing cache keys.
+    - name: Update dependencies
+      if: inputs.update-dependencies == 'true'
+      run: cargo update
+      shell: bash
 
     - name: Cache cargo
       uses: actions/cache@v4
@@ -98,39 +83,30 @@ runs:
           ~/.cargo/registry/index/
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
-        # Add date to the cache to keep it up to date
-        key: ${{ inputs.os }}-cargo-${{ inputs.job }}-${{ hashFiles('**/Cargo.toml') }}-${{ env.CURRENT_DATE }}
+        # Refresh when resolved dependencies change
+        key: ${{ inputs.os }}-cargo-${{ inputs.job }}-${{ hashFiles('**/Cargo.lock') }}
         # Restore from outdated cache for speed
         restore-keys: |
-          ${{ inputs.os }}-cargo-${{ inputs.job }}-${{ hashFiles('**/Cargo.toml') }}-
           ${{ inputs.os }}-cargo-${{ inputs.job }}-
           ${{ inputs.os }}-cargo-
-
-    # Generate Cargo.lock files for build, sccache cache keys.
-    # Allows dependencies updated on crates.io between runs to trigger storing an updated cache,
-    # which hashing Cargo.toml files alone does not.
-    - name: Cargo update
-      run: cargo update
-      shell: bash
 
     - name: Cache build target
       uses: actions/cache@v4
       if: inputs.target-cache-enabled == 'true'
       with:
         path: ${{ inputs.target-cache-path }}
-        # Add date to the cache to keep it up to date
-        key: ${{ inputs.os }}-target-${{ inputs.job }}-${{ hashFiles('**/Cargo.lock') }}
+        key: ${{ inputs.os }}-target-${{ steps.rust-toolchain.outputs.cache-key }}-${{ inputs.job }}-${{ hashFiles('**/Cargo.lock') }}
         # Restore from outdated cache for speed
         restore-keys: |
-          ${{ inputs.os }}-target-${{ inputs.job }}-
-          ${{ inputs.os }}-target-
+          ${{ inputs.os }}-target-${{ steps.rust-toolchain.outputs.cache-key }}-${{ inputs.job }}-
+          ${{ inputs.os }}-target-${{ steps.rust-toolchain.outputs.cache-key }}-
 
     - name: Cache sccache
       uses: actions/cache@v4
       if: inputs.sccache-enabled == 'true'
       with:
         path: ${{ inputs.sccache-path }}
-        key: ${{ inputs.os }}-sccache-${{ inputs.job }}-${{ hashFiles('**/Cargo.lock') }}
+        key: ${{ inputs.os }}-sccache-${{ steps.rust-toolchain.outputs.cache-key }}-${{ inputs.job }}-${{ hashFiles('**/Cargo.lock') }}
         restore-keys: |
-          ${{ inputs.os }}-sccache-${{ inputs.job }}-
-          ${{ inputs.os }}-sccache-
+          ${{ inputs.os }}-sccache-${{ steps.rust-toolchain.outputs.cache-key }}-${{ inputs.job }}-
+          ${{ inputs.os }}-sccache-${{ steps.rust-toolchain.outputs.cache-key }}-
