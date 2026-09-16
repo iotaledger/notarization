@@ -38,7 +38,7 @@ jobs:
           components: rustfmt
 
       - name: Install cargo-license-template
-        run: cargo install cargo-license-template
+        run: cargo +stable install cargo-license-template
 
       - name: Install dprint
         run: npm install -g dprint
