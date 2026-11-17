@@ -99,9 +99,9 @@ impl RecordsOps {
 
         let replaced = linked_table::fetch_node::<_, u64, Record<Data>>(
             client,
-            trail.records.id,
+            *trail.records.id.object_id(),
             DynamicFieldName {
-                type_: TypeTag::U64,
+                type_tag: TypeTag::U64,
                 value: IotaMoveValue::from(MoveValue::U64(sequence_number)).to_json_value(),
             },
         )

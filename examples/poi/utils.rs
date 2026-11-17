@@ -7,7 +7,7 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result, bail, ensure};
 use iota_config::{IOTA_GENESIS_FILENAME, iota_config_dir};
-use iota_grpc_client::Client as GrpcClient;
+use iota_grpc_client::GrpcClient;
 use iota_interaction::KeytoolSigner;
 use iota_sdk_types::{ObjectId, TransactionDigest};
 use iota_types::event::EventID;

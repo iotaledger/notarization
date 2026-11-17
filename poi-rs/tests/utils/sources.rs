@@ -4,7 +4,7 @@
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
-use iota_grpc_client::Client as GrpcClient;
+use iota_grpc_client::GrpcClient;
 use iota_sdk_types::{ObjectId, TransactionDigest, Version};
 use iota_types::committee::{Committee, EpochId};
 use iota_types::digests::ChainIdentifier;

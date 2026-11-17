@@ -7,7 +7,8 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::hash::Hash;
 
-use iota_interaction::types::collection_types::{VecMap, VecSet};
+use iota_sdk_move_types::iota_framework::vec_map::VecMap;
+use iota_sdk_move_types::iota_framework::vec_set::VecSet;
 use serde::{Deserialize, Deserializer};
 
 /// Deserializes a Move `VecMap<K, V>` into a Rust [`HashMap`].

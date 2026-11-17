@@ -11,14 +11,16 @@
 //! [`CertifiedCheckpointSummary`]: iota_types::messages_checkpoint::CertifiedCheckpointSummary
 //! [`Committee`]: iota_types::committee::Committee
 
-use iota_sdk_types::{CheckpointContents, Transaction as TransactionData, TransactionDigest};
+use iota_sdk_types::{
+    CheckpointContents, Transaction as TransactionData, TransactionDigest, TransactionEffects, TransactionEvents,
+};
 use iota_types::committee::Committee;
 use iota_types::digests::ChainIdentifier;
-use iota_types::effects::{TransactionEffects, TransactionEffectsAPI, TransactionEffectsExt, TransactionEvents};
+use iota_types::effects::{TransactionEffectsAPI, TransactionEffectsExt};
 use iota_types::event::EventID;
 use iota_types::messages_checkpoint::CertifiedCheckpointSummary;
 use iota_types::object::Object;
-use iota_types::transaction::Transaction;
+use iota_types::transaction::TransactionEnvelope as Transaction;
 use serde::{Deserialize, Serialize};
 
 use crate::BoxError;
@@ -259,10 +261,10 @@ impl<'proof> VerifiedProof<'proof> {
 /// Its serialized representation is externally tagged, with the variant name
 /// identifying the proof format, for example `{ "ProofV1": { ... } }`.
 ///
-/// The JSON representation of each variant is a compatibility contract. A
-/// release that supports `ProofV1` must continue to deserialize its existing
-/// shape and serialize the same field structure. Incompatible changes require
-/// a new [`Proof`] variant.
+/// The JSON representation of each variant embeds the serde encoding of the
+/// IOTA SDK types it contains, so it can change when those types change. The
+/// proof format is not stable before 1.0: a proof serialized by one release is
+/// not guaranteed to deserialize in another.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum Proof {
@@ -581,7 +583,7 @@ impl<'committee> ProofVerifier<'committee> {
             let object_ref = object.as_inner().object_ref();
             changed_objects
                 .iter()
-                .find(|changed_object_ref| changed_object_ref.0 == object_ref)
+                .find(|(owned_ref, _)| *owned_ref.reference() == object_ref)
                 .ok_or(VerifyError {
                     kind: VerifyErrorKind::ObjectNotFound,
                 })?;

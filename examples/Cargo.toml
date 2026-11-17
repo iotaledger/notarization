@@ -142,7 +142,7 @@ async-trait.workspace = true
 audit_trails = { path = "../audit-trail-rs" }
 bcs.workspace = true
 chrono.workspace = true
-iota-config = { git = "https://github.com/iotaledger/iota.git", tag = "v1.29.0" }
+iota-config = { git = "https://github.com/iotaledger/iota.git", tag = "v1.35.2" }
 iota-grpc-client.workspace = true
 iota-sdk.workspace = true
 iota-sdk-types.workspace = true

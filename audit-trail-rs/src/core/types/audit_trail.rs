@@ -5,13 +5,14 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use iota_interaction::ident_str;
-use iota_interaction::types::collection_types::LinkedTable;
-use iota_interaction::types::id::UID;
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
+use iota_sdk_move_types::iota_framework::linked_table::LinkedTable;
+use iota_sdk_move_types::iota_framework::object::UID;
 use iota_sdk_types::{Address, Argument, ObjectId, TypeTag};
 use serde::{Deserialize, Serialize};
 
 use super::locking::LockingConfig;
+use super::record::Record;
 use super::role_map::RoleMap;
 use crate::core::internal::move_collections::deserialize_vec_map;
 use crate::core::internal::tx;
@@ -71,7 +72,7 @@ pub struct OnChainAuditTrail {
     /// Current record sequence number cursor.
     pub sequence_number: u64,
     /// Linked table containing the trail records.
-    pub records: LinkedTable<u64>,
+    pub records: LinkedTable<u64, Record>,
     /// Registry of allowed record tags.
     pub tags: TagRegistry,
     /// Active locking rules for the trail.

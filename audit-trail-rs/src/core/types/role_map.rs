@@ -4,10 +4,10 @@
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 
-use iota_interaction::types::collection_types::LinkedTable;
-use iota_interaction::types::id::UID;
 use iota_interaction::types::programmable_transaction_builder::ProgrammableTransactionBuilder as Ptb;
 use iota_interaction::{MoveType, ident_str};
+use iota_sdk_move_types::iota_framework::linked_table::LinkedTable;
+use iota_sdk_move_types::iota_framework::object::UID;
 use iota_sdk_types::{Address, Argument, ObjectId, TypeTag};
 use serde::{Deserialize, Serialize};
 use serde_aux::field_attributes::deserialize_option_number_from_string;
@@ -32,7 +32,7 @@ pub struct RoleMap {
     /// Move `INITIAL_ADMIN_ROLE_NAME` constant). The role bearing this name cannot be deleted.
     pub initial_admin_role_name: String,
     /// Denylist of revoked capability IDs.
-    pub revoked_capabilities: LinkedTable<ObjectId>,
+    pub revoked_capabilities: LinkedTable<ObjectId, u64>,
     /// Capability IDs currently recognized as initial-admin capabilities.
     #[serde(deserialize_with = "deserialize_vec_set")]
     pub initial_admin_cap_ids: HashSet<ObjectId>,
@@ -183,7 +183,7 @@ impl MoveType for Capability {
 #[cfg(test)]
 mod tests {
     use iota_interaction::types::base_types::dbg_object_id;
-    use iota_interaction::types::id::UID;
+    use iota_sdk_move_types::iota_framework::object::UID;
     use iota_sdk_types::Address;
     use serde_json::json;
 

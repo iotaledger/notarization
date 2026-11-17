@@ -3,7 +3,7 @@
 
 use std::collections::HashSet;
 
-use iota_interaction::types::collection_types::VecSet;
+use iota_sdk_move_types::iota_framework::vec_set::VecSet;
 use iota_sdk_types::{Address, ObjectId};
 use serde::{Deserialize, Serialize};
 use serde_aux::field_attributes::{deserialize_number_from_string, deserialize_option_number_from_string};

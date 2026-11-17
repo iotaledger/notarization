@@ -121,7 +121,7 @@ impl PermissionSet {
             .collect::<Result<Vec<_>, _>>()?;
 
         Ok(ptb.command(Command::MakeMoveVector(MakeMoveVector {
-            type_: Some(permission_type),
+            type_tag: Some(permission_type),
             elements: permission_args,
         })))
     }

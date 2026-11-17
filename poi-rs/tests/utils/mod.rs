@@ -9,13 +9,12 @@ use std::fs::File;
 
 use iota_config::IOTA_GENESIS_FILENAME;
 use iota_config::genesis::Genesis;
+use iota_grpc_client::GrpcClient;
 use iota_grpc_client::read_mask_fields::TransactionField;
-use iota_grpc_client::{Client as GrpcClient, ReadMask};
-use iota_sdk_types::{ObjectReference, TransactionDigest};
+use iota_sdk_types::{ObjectReference, Transaction as TransactionData, TransactionDigest};
 use iota_types::committee::Committee;
 use iota_types::digests::ChainIdentifier;
 use iota_types::iota_system_state::{IotaSystemStateTrait, get_iota_system_state};
-use iota_types::transaction::TransactionData;
 use test_cluster::{TestCluster, TestClusterBuilder};
 
 pub mod proofs;
@@ -58,14 +57,9 @@ async fn execute_transaction(cluster: &TestCluster, transaction: &TransactionDat
     let signed_transaction = cluster.wallet.sign_transaction(transaction);
     let digest = *signed_transaction.digest();
     let response = grpc_client(cluster)
-        .execute_transaction(
-            signed_transaction.into(),
-            Some(ReadMask::from(&[
-                TransactionField::EFFECTS,
-                TransactionField::CHECKPOINT,
-            ])),
-            Some(30_000),
-        )
+        .execute_transaction(signed_transaction.into())
+        .read_mask([TransactionField::EFFECTS, TransactionField::CHECKPOINT])
+        .checkpoint_inclusion_timeout_ms(30_000)
         .await
         .expect("transaction must execute and be checkpointed");
     let transaction = response.body();

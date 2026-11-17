@@ -8,9 +8,9 @@ use std::marker::PhantomData;
 
 use iota_interaction::move_core_types::annotated_value::MoveValue;
 use iota_interaction::rpc_types::IotaMoveValue;
-use iota_interaction::types::collection_types::LinkedTable;
 use iota_interaction::types::dynamic_field::DynamicFieldName;
 use iota_interaction::{IotaKeySignature, OptionalSync};
+use iota_sdk_move_types::iota_framework::linked_table::LinkedTable;
 use iota_sdk_types::{ObjectId, TypeTag};
 use product_common::core_client::{CoreClient, CoreClientReadOnly};
 use product_common::transaction::transaction_builder::TransactionBuilder;
@@ -275,7 +275,7 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
         })
     }
 
-    async fn load_records_table(&self) -> Result<LinkedTable<u64>, Error>
+    async fn load_records_table(&self) -> Result<LinkedTable<u64, Record>, Error>
     where
         C: AuditTrailReadOnly,
     {
@@ -287,7 +287,7 @@ impl<'a, C, D> TrailRecords<'a, C, D> {
 
 async fn list_linked_table_page<C, V>(
     client: &C,
-    table: &LinkedTable<u64>,
+    table: &LinkedTable<u64, Record>,
     start_key: Option<u64>,
     limit: usize,
 ) -> Result<(BTreeMap<u64, V>, Option<u64>), Error>
@@ -315,9 +315,9 @@ where
 
         let node = linked_table::fetch_node::<_, u64, V>(
             client,
-            table.id,
+            *table.id.object_id(),
             DynamicFieldName {
-                type_: TypeTag::U64,
+                type_tag: TypeTag::U64,
                 value: IotaMoveValue::from(MoveValue::U64(key)).to_json_value(),
             },
         )
@@ -332,7 +332,7 @@ where
 
 async fn list_linked_table<C, V>(
     client: &C,
-    table: &LinkedTable<u64>,
+    table: &LinkedTable<u64, Record>,
     max_entries: Option<usize>,
 ) -> Result<HashMap<u64, V>, Error>
 where

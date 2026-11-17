@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #[cfg(feature = "native-grpc")]
-use iota_grpc_client::Client as GrpcClient;
+use iota_grpc_client::GrpcClient;
 
 use crate::{CommitteeResolution, CommitteeResolver, ProofBuilder, Source};
 
@@ -40,17 +40,17 @@ where
 #[cfg(feature = "native-grpc")]
 impl PoiClient<GrpcClient> {
     /// Creates a client connected to the public IOTA mainnet gRPC endpoint.
-    pub fn mainnet() -> iota_grpc_client::Result<Self> {
+    pub fn mainnet() -> iota_grpc_client::GrpcResult<Self> {
         GrpcClient::new_mainnet().map(Self::new)
     }
 
     /// Creates a client connected to the public IOTA testnet gRPC endpoint.
-    pub fn testnet() -> iota_grpc_client::Result<Self> {
+    pub fn testnet() -> iota_grpc_client::GrpcResult<Self> {
         GrpcClient::new_testnet().map(Self::new)
     }
 
     /// Creates a client connected to the public IOTA devnet gRPC endpoint.
-    pub fn devnet() -> iota_grpc_client::Result<Self> {
+    pub fn devnet() -> iota_grpc_client::GrpcResult<Self> {
         GrpcClient::new_devnet().map(Self::new)
     }
 

@@ -22,15 +22,16 @@ bcs = "0.1"
 chrono = { version = "0.4", default-features = false }
 clap = { version = "4.6.1", features = ["derive"] }
 hyper = "1"
-iota-grpc-client = { git = "https://github.com/iotaledger/iota-rust-sdk.git", package = "iota-sdk-grpc-client", rev = "2f021d0556e47564e9b04bcd0b3e8347c41a0a26" }
-iota-grpc-types = { git = "https://github.com/iotaledger/iota-rust-sdk.git", package = "iota-sdk-grpc-types", rev = "2f021d0556e47564e9b04bcd0b3e8347c41a0a26" }
-iota-sdk = { git = "https://github.com/iotaledger/iota.git", package = "iota-sdk", tag = "v1.29.0" }
-iota-sdk-types = { git = "https://github.com/iotaledger/iota-rust-sdk.git", rev = "2f021d0556e47564e9b04bcd0b3e8347c41a0a26", default-features = false }
-iota-types = { git = "https://github.com/iotaledger/iota.git", tag = "v1.29.0" }
-iota_interaction = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.24", default-features = false, package = "iota_interaction" }
-iota_interaction_rust = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.24", default-features = false, package = "iota_interaction_rust" }
-iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.24", default-features = false, package = "iota_interaction_ts" }
-product_common = { git = "https://github.com/iotaledger/product-core.git", tag = "v0.8.24", default-features = false, package = "product_common" }
+iota-grpc-client = { version = "1.0.0-rc.2", package = "iota-sdk-grpc-client" }
+iota-grpc-types = { version = "1.0.0-rc.1", package = "iota-sdk-grpc-types" }
+iota-sdk = { git = "https://github.com/iotaledger/iota.git", package = "iota-sdk", tag = "v1.35.2" }
+iota-sdk-move-types = { version = "1.0.0-rc.2", default-features = false, features = ["serde"] }
+iota-sdk-types = { version = "1.0.0-rc.2", default-features = false }
+iota-types = { git = "https://github.com/iotaledger/iota.git", tag = "v1.35.2" }
+iota_interaction = { git = "https://github.com/iotaledger/product-core.git", branch = "chore/bump-iota-v1.35.2", default-features = false, package = "iota_interaction" }
+iota_interaction_rust = { git = "https://github.com/iotaledger/product-core.git", branch = "chore/bump-iota-v1.35.2", default-features = false, package = "iota_interaction_rust" }
+iota_interaction_ts = { git = "https://github.com/iotaledger/product-core.git", branch = "chore/bump-iota-v1.35.2", default-features = false, package = "iota_interaction_ts" }
+product_common = { git = "https://github.com/iotaledger/product-core.git", branch = "chore/bump-iota-v1.35.2", default-features = false, package = "product_common" }
 reqwest = { version = "0.12.28", default-features = false, features = ["rustls-tls"] }
 secret-storage = { git = "https://github.com/iotaledger/secret-storage.git", tag = "v0.3.0", default-features = false }
 serde = { version = "1.0", default-features = false, features = ["alloc", "derive"] }
