@@ -7,9 +7,7 @@ use std::collections::HashSet;
 use iota_interaction::rpc_types::{
     IotaObjectDataFilter, IotaObjectDataOptions, IotaObjectResponseQuery, IotaParsedData,
 };
-use iota_interaction::types::MoveTypeTagTrait;
 use iota_interaction::types::dynamic_field::DynamicFieldName;
-use iota_interaction::types::id::ID;
 use iota_interaction::{IotaClientTrait, OptionalSync};
 use iota_sdk_types::{Address, ObjectId, ObjectReference, StructTag};
 use product_common::core_client::CoreClientReadOnly;
@@ -139,9 +137,9 @@ where
 
         let node = linked_table::fetch_node::<_, ObjectId, u64>(
             client,
-            table.id,
+            *table.id.object_id(),
             DynamicFieldName {
-                type_: ID::get_type_tag(),
+                type_tag: iota_sdk_types::TypeTag::Struct(Box::new(StructTag::new_id())),
                 value: serde_json::Value::String(Address::from(key).to_string()),
             },
         )
@@ -254,7 +252,7 @@ mod tests {
     use std::collections::HashSet;
 
     use iota_interaction::types::base_types::dbg_object_id;
-    use iota_interaction::types::id::UID;
+    use iota_sdk_move_types::iota_framework::object::UID;
     use iota_sdk_types::{Address, ObjectId};
 
     use super::capability_matches;

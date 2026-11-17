@@ -4,9 +4,10 @@
 //! Helpers for reading Move `LinkedTable` nodes through dynamic fields.
 
 use iota_interaction::rpc_types::{IotaData as _, IotaObjectDataOptions};
-use iota_interaction::types::collection_types::LinkedTableNode;
-use iota_interaction::types::dynamic_field::{DynamicFieldName, Field};
+use iota_interaction::types::dynamic_field::DynamicFieldName;
 use iota_interaction::{IotaClientTrait, OptionalSync};
+use iota_sdk_move_types::iota_framework::dynamic_field::Field;
+use iota_sdk_move_types::iota_framework::linked_table::Node as LinkedTableNode;
 use iota_sdk_types::ObjectId;
 use product_common::core_client::CoreClientReadOnly;
 use serde::de::DeserializeOwned;

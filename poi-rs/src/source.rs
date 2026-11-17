@@ -2,13 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use async_trait::async_trait;
-use iota_sdk_types::{CheckpointContents, ObjectId, TransactionDigest, Version};
+use iota_sdk_types::{CheckpointContents, ObjectId, TransactionDigest, TransactionEffects, TransactionEvents, Version};
 use iota_types::committee::{Committee, EpochId};
 use iota_types::digests::ChainIdentifier;
-use iota_types::effects::{TransactionEffects, TransactionEvents};
 use iota_types::messages_checkpoint::CertifiedCheckpointSummary;
 use iota_types::object::Object;
-use iota_types::transaction::Transaction;
+use iota_types::transaction::TransactionEnvelope as Transaction;
 
 use crate::BoxError;
 

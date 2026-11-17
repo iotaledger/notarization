@@ -6,16 +6,15 @@ use std::io::Read;
 use std::sync::Arc;
 
 #[cfg(feature = "native-grpc")]
-use iota_grpc_client::Client as GrpcClient;
-use iota_sdk_types::CheckpointContents;
+use iota_grpc_client::GrpcClient;
+use iota_sdk_types::{CheckpointContents, TransactionEffects, TransactionEvents};
 use iota_types::committee::{Committee, EpochId};
 use iota_types::digests::ChainIdentifier;
-use iota_types::effects::{TransactionEffects, TransactionEvents};
 use iota_types::error::IotaError;
 use iota_types::iota_system_state::{IotaSystemStateTrait, get_iota_system_state};
 use iota_types::messages_checkpoint::CertifiedCheckpointSummary;
 use iota_types::object::Object;
-use iota_types::transaction::Transaction;
+use iota_types::transaction::TransactionEnvelope as Transaction;
 use serde::Deserialize;
 
 use crate::{
@@ -604,8 +603,9 @@ mod tests {
     use std::collections::BTreeMap;
     use std::sync::Mutex;
 
-    use iota_sdk_types::gas::GasCostSummary;
-    use iota_sdk_types::{CheckpointDigest, CheckpointSummary, EndOfEpochData, ObjectId, TransactionDigest, Version};
+    use iota_sdk_types::{
+        CheckpointDigest, CheckpointSummary, EndOfEpochData, GasCostSummary, ObjectId, TransactionDigest, Version,
+    };
     use iota_types::digests::ChainIdentifier;
     use iota_types::messages_checkpoint::CertifiedCheckpointSummary;
     use iota_types::object::Object;

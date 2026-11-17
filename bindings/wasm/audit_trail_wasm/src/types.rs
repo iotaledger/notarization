@@ -11,7 +11,7 @@ use audit_trails::core::types::{
     RevokedCapabilitiesCleanedUp, Role, RoleAdminPermissions, RoleCreated, RoleDeleted, RoleMap, RoleTags, RoleUpdated,
     TimeLock,
 };
-use iota_interaction::types::collection_types::LinkedTable;
+use iota_sdk_move_types::iota_framework::linked_table::LinkedTable;
 use iota_sdk_types::ObjectId;
 use js_sys::Uint8Array;
 use product_common::bindings::WasmAddress;
@@ -432,8 +432,8 @@ pub struct WasmLinkedTable {
     pub tail: Option<u64>,
 }
 
-impl From<LinkedTable<u64>> for WasmLinkedTable {
-    fn from(value: LinkedTable<u64>) -> Self {
+impl From<LinkedTable<u64, Record>> for WasmLinkedTable {
+    fn from(value: LinkedTable<u64, Record>) -> Self {
         Self {
             id: value.id.to_string(),
             size: value.size,
@@ -618,8 +618,8 @@ pub struct WasmObjectIdLinkedTable {
     pub tail: Option<String>,
 }
 
-impl From<LinkedTable<ObjectId>> for WasmObjectIdLinkedTable {
-    fn from(value: LinkedTable<ObjectId>) -> Self {
+impl From<LinkedTable<ObjectId, u64>> for WasmObjectIdLinkedTable {
+    fn from(value: LinkedTable<ObjectId, u64>) -> Self {
         Self {
             id: value.id.to_string(),
             size: value.size,

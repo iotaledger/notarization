@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #[cfg(feature = "native-grpc")]
-use iota_grpc_client::Client as GrpcClient;
+use iota_grpc_client::GrpcClient;
 use iota_sdk_types::{ObjectId, ObjectReference, TransactionDigest};
 use iota_types::effects::TransactionEffectsExt;
 use iota_types::event::EventID;
@@ -93,7 +93,7 @@ impl ProofBuilder<GrpcClient> {
     ///
     /// Selecting an endpoint does not establish verification trust. Verify the
     /// constructed proof with a committee trusted for mainnet.
-    pub fn mainnet() -> iota_grpc_client::Result<Self> {
+    pub fn mainnet() -> iota_grpc_client::GrpcResult<Self> {
         GrpcClient::new_mainnet().map(Self::from_grpc_client)
     }
 
@@ -101,7 +101,7 @@ impl ProofBuilder<GrpcClient> {
     ///
     /// Selecting an endpoint does not establish verification trust. Verify the
     /// constructed proof with a committee trusted for testnet.
-    pub fn testnet() -> iota_grpc_client::Result<Self> {
+    pub fn testnet() -> iota_grpc_client::GrpcResult<Self> {
         GrpcClient::new_testnet().map(Self::from_grpc_client)
     }
 
@@ -109,7 +109,7 @@ impl ProofBuilder<GrpcClient> {
     ///
     /// Selecting an endpoint does not establish verification trust. Verify the
     /// constructed proof with a committee trusted for devnet.
-    pub fn devnet() -> iota_grpc_client::Result<Self> {
+    pub fn devnet() -> iota_grpc_client::GrpcResult<Self> {
         GrpcClient::new_devnet().map(Self::from_grpc_client)
     }
 
@@ -196,7 +196,10 @@ impl<S: Source> ProofBuilder<S> {
             for object_id in self.object_ids.iter().copied() {
                 let object_ref = changed_objects
                     .iter()
-                    .find_map(|(object_ref, _, _)| (object_ref.object_id == object_id).then_some(*object_ref))
+                    .find_map(|(owned_ref, _)| {
+                        let object_ref = owned_ref.reference();
+                        (object_ref.object_id == object_id).then_some(*object_ref)
+                    })
                     .ok_or(ProofBuilderError::ObjectNotChangedByTransaction {
                         object_id,
                         transaction_digest,

@@ -7,12 +7,12 @@ use async_trait::async_trait;
 use fastcrypto::traits::ToFromBytes;
 use iota_sdk_types::{
     CheckpointContents, CheckpointDigest, ObjectId, SignedCheckpointSummary, SignedTransaction, Transaction,
-    TransactionDigest, UserSignature, Version,
+    TransactionDigest, TransactionEffects, TransactionEvents, UserSignature, Version,
 };
 use iota_types::base_types::AuthorityName;
 use iota_types::committee::{Committee, EpochId};
 use iota_types::digests::ChainIdentifier;
-use iota_types::effects::{TransactionEffects, TransactionEffectsAPI, TransactionEvents};
+use iota_types::effects::TransactionEffectsAPI;
 use iota_types::messages_checkpoint::CertifiedCheckpointSummary;
 use iota_types::object::Object;
 use js_sys::Uint8Array;
@@ -226,7 +226,7 @@ fn decode_transaction(evidence: JsTransactionEvidence) -> Result<SourceTransacti
         .map(|bytes| decode_bcs::<UserSignature>(bytes))
         .collect::<Result<Vec<_>, _>>()
         .map_err(SourceError::invalid_response)?;
-    let transaction: iota_types::transaction::Transaction = SignedTransaction {
+    let transaction: iota_types::transaction::TransactionEnvelope = SignedTransaction {
         transaction,
         signatures,
     }

@@ -3,8 +3,8 @@
 
 mod utils;
 
-use iota_sdk_types::CheckpointContents;
-use iota_types::effects::{TestEffectsBuilder, TransactionEvents};
+use iota_sdk_types::{CheckpointContents, TransactionEvents};
+use iota_types::effects::TestEffectsBuilder;
 use iota_types::event::EventID;
 use iota_types::messages_checkpoint::CheckpointContentsExt;
 use iota_types::object::Object;
