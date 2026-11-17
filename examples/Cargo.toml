@@ -148,12 +148,12 @@ iota-sdk-types.workspace = true
 iota-types.workspace = true
 iota_interaction = { workspace = true, features = ["keytool"] }
 notarization = { path = "../notarization-rs" }
-poi-rs = { path = "../poi-rs" }
 # poi-rs is its own workspace on newer IOTA types than the other components. The Proof of Inclusion
 # examples convert the notarization identifiers they prove into these types.
 poi-iota-grpc-client = { version = "1.0.0-rc.2", package = "iota-sdk-grpc-client" }
 poi-iota-sdk-types = { version = "1.0.0-rc.2", package = "iota-sdk-types", default-features = false }
 poi-iota-types = { git = "https://github.com/iotaledger/iota.git", tag = "v1.35.2", package = "iota-types" }
+poi-rs = { path = "../poi-rs" }
 product_common = { workspace = true, features = ["core-client", "test-utils", "transaction"] }
 reqwest.workspace = true
 serde.workspace = true
