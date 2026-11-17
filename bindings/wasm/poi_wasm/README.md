@@ -143,12 +143,11 @@ Successful verification authenticates the following targets relative to the supp
 
 ## JSON Compatibility
 
-Proof JSON is a versioned persistence and exchange format. Releases that support `ProofV1` continue to deserialize its
-existing JSON shape and serialize the same field structure. Frozen V1 fixtures enforce this contract for transaction,
-object, and event proofs.
+Proof JSON is a versioned exchange format. The `ProofV1` representation embeds the serde encoding of the IOTA SDK
+types it contains, so a dependency upgrade can change it. The format is not stable before 1.0: a proof serialized by
+one release is not guaranteed to deserialize in another.
 
-Dependency upgrades must not silently change the `ProofV1` representation. Preserve the existing shape with custom
-serialization when necessary, or introduce a new `Proof` variant for an incompatible format change.
+Frozen V1 fixtures detect representation changes for the transaction, object, and event proofs they cover.
 
 ## Trust Boundaries
 

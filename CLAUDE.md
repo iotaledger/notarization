@@ -71,6 +71,9 @@ IOTA Notarization enables creation of immutable, on-chain records for arbitrary 
 cargo build --workspace --tests --examples
 cargo check -p notarization-rs
 cargo check -p audit-trail-rs
+
+# Proof of Inclusion is its own workspace (poi-rs/Cargo.toml, own Cargo.lock)
+cargo check --manifest-path poi-rs/Cargo.toml --all-features
 ```
 
 ### Test
@@ -81,6 +84,9 @@ cargo test --workspace --release -- --test-threads=1
 
 # Single test
 cargo test --release -p notarization-rs test_name -- --test-threads=1
+
+# Proof of Inclusion tests (in-process test cluster, no sandbox needed)
+cargo test --manifest-path poi-rs/Cargo.toml --all-features -- --test-threads=1
 
 # Move contract tests (from notarization-move/ or audit-trail-move/)
 iota move test
@@ -216,7 +222,7 @@ Use `examples::get_funded_notarization_client()` to get a `NotarizationClient<In
 
 ## Workspace Structure
 
-The root `Cargo.toml` defines a workspace with members: `notarization-rs`, `audit-trail-rs`, `examples`. The WASM crates (`bindings/wasm/*`) are excluded from the workspace and built separately.
+The root `Cargo.toml` defines a workspace with members: `notarization-rs`, `audit-trail-rs`, `examples`. `poi-rs` (Proof of Inclusion) and the WASM crates (`bindings/wasm/*`) are excluded from the workspace and built separately. `poi-rs` is its own workspace with its own `Cargo.lock`, so it can follow IOTA node and SDK releases independently of `product-core`.
 
 - **`notarization-rs/`** — Rust client library for notarization
 - **`notarization-move/`** — Move smart contracts for notarization

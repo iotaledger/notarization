@@ -6,7 +6,7 @@ mod utils;
 use std::fs::File;
 
 use iota_config::IOTA_GENESIS_FILENAME;
-use iota_grpc_client::Client as GrpcClient;
+use iota_grpc_client::GrpcClient;
 use poi_rs::{
     CommitteeCache, CommitteeCacheKey, CommitteeResolution, CommitteeResolutionErrorKind, MemoryCommitteeCache,
     PoiClient,

@@ -163,9 +163,9 @@ Object targets contain their exact values. Event targets contain `EventID` value
 
 ## JSON Compatibility
 
-Proof JSON is a versioned persistence and exchange format. Releases that support `ProofV1` continue to deserialize its existing JSON shape and serialize the same field structure. Frozen V1 fixtures enforce this contract for transaction, object, and event proofs.
+Proof JSON is a versioned exchange format. The `ProofV1` representation embeds the serde encoding of the IOTA SDK types it contains, so a dependency upgrade can change it. The format is not stable before 1.0: a proof serialized by one release is not guaranteed to deserialize in another.
 
-Dependency upgrades must not silently change the `ProofV1` representation. Preserve the existing shape with custom serialization when necessary, or introduce a new `Proof` variant for an incompatible format change.
+Frozen V1 fixtures detect representation changes for the transaction, object, and event proofs they cover.
 
 ## Trust Boundaries
 
@@ -188,13 +188,13 @@ The project does not distribute pre-built `poi` binaries. Build the CLI locally 
 ```bash
 git clone https://github.com/iotaledger/notarization.git
 cd notarization
-cargo build --release -p poi-rs --features cli --bin poi
+cargo build --release --manifest-path poi-rs/Cargo.toml --features cli --bin poi
 ```
 
-Cargo writes the binary to `target/release/poi` on Linux and macOS or `target\release\poi.exe` on Windows. Run the locally built binary from the repository root:
+poi-rs is its own Cargo workspace, so Cargo writes the binary to `poi-rs/target/release/poi` on Linux and macOS or `poi-rs\target\release\poi.exe` on Windows. Run the locally built binary from the repository root:
 
 ```bash
-./target/release/poi --help
+./poi-rs/target/release/poi --help
 ```
 
 You can also build from source and install `poi` into Cargo's binary directory:
@@ -206,19 +206,19 @@ cargo install --path poi-rs --features cli --bin poi --locked
 ### Using the CLI
 
 ```bash
-cargo run --release -p poi-rs --features cli --bin poi -- create \
+cargo run --release --manifest-path poi-rs/Cargo.toml --features cli --bin poi -- create \
   --network testnet \
   --transaction <transaction-digest> \
   --output proof.json
 
-cargo run --release -p poi-rs --features cli --bin poi -- verify \
+cargo run --release --manifest-path poi-rs/Cargo.toml --features cli --bin poi -- verify \
   --network testnet \
   proof.json
 ```
 
 For `--network mainnet` and `--network testnet`, the CLI downloads the genesis blob to the IOTA configuration directory under `poi/<network>/genesis.blob`. It validates the blob against the network's canonical genesis digest on download and every cache load. Devnet has no stable genesis digest, so verification on devnet requires an explicit trusted blob through `--genesis`.
 
-Run `cargo run --release -p poi-rs --features cli --bin poi -- --help` for all targets, network options, and file input formats.
+Run `cargo run --release --manifest-path poi-rs/Cargo.toml --features cli --bin poi -- --help` for all targets, network options, and file input formats.
 
 ## Glossary
 

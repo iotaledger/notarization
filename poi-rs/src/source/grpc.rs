@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use async_trait::async_trait;
+use iota_grpc_client::GrpcClient;
 use iota_grpc_client::read_mask_fields::{
     CheckpointResponseField, EpochField, ObjectField, ServiceInfoField, TransactionField,
 };
-use iota_grpc_client::{Client as GrpcClient, ReadMask};
 use iota_grpc_types::proto::TryFromProtoError;
 use iota_sdk_types::{
     CheckpointContents, CheckpointDigest, ObjectId, SignedCheckpointSummary, SignedTransaction, TransactionDigest,
@@ -16,7 +16,7 @@ use iota_types::digests::ChainIdentifier;
 use iota_types::effects::TransactionEffectsAPI;
 use iota_types::messages_checkpoint::CertifiedCheckpointSummary;
 use iota_types::object::Object;
-use iota_types::transaction::Transaction;
+use iota_types::transaction::TransactionEnvelope as Transaction;
 
 use super::{Source, SourceCheckpoint, SourceError, SourceTransaction};
 
@@ -24,7 +24,8 @@ use super::{Source, SourceCheckpoint, SourceError, SourceTransaction};
 impl Source for GrpcClient {
     async fn chain_identifier(&self) -> Result<ChainIdentifier, SourceError> {
         let service_info = self
-            .get_service_info(Some(ReadMask::from(ServiceInfoField::CHAIN_ID)))
+            .service_info()
+            .read_mask(ServiceInfoField::CHAIN_ID)
             .await
             .map_err(SourceError::request)?;
         let chain_identifier = service_info
@@ -33,7 +34,7 @@ impl Source for GrpcClient {
             .map_err(SourceError::invalid_response)?;
 
         Ok(ChainIdentifier::from(CheckpointDigest::new(
-            chain_identifier.into_inner(),
+            chain_identifier.into_bytes(),
         )))
     }
 
@@ -42,17 +43,15 @@ impl Source for GrpcClient {
         transaction_digest: TransactionDigest,
     ) -> Result<Option<SourceTransaction>, SourceError> {
         let transactions = self
-            .get_transactions(
-                &[transaction_digest],
-                Some(ReadMask::from(&[
-                    TransactionField::TRANSACTION_BCS,
-                    TransactionField::SIGNATURES,
-                    TransactionField::EFFECTS_BCS,
-                    TransactionField::EVENTS_DIGEST,
-                    TransactionField::EVENTS_EVENTS_BCS,
-                    TransactionField::CHECKPOINT,
-                ])),
-            )
+            .transactions([transaction_digest])
+            .read_mask([
+                TransactionField::TRANSACTION_BCS,
+                TransactionField::SIGNATURES,
+                TransactionField::EFFECTS_BCS,
+                TransactionField::EVENTS_DIGEST,
+                TransactionField::EVENTS_EVENTS_BCS,
+                TransactionField::CHECKPOINT,
+            ])
             .await
             .map_err(SourceError::request)?;
         let Some(executed_transaction) = transactions.into_inner().into_iter().next() else {
@@ -110,7 +109,8 @@ impl Source for GrpcClient {
 
     async fn object(&self, object_id: ObjectId, version: Option<Version>) -> Result<Option<Object>, SourceError> {
         let objects = self
-            .get_objects(&[(object_id, version)], Some(ReadMask::from(ObjectField::BCS)))
+            .objects_with_versions([(object_id, version)])
+            .read_mask(ObjectField::BCS)
             .await
             .map_err(SourceError::request)?;
         let Some(response) = objects.into_inner().into_iter().next() else {
@@ -128,16 +128,12 @@ impl Source for GrpcClient {
 
     async fn checkpoint(&self, sequence_number: u64) -> Result<Option<SourceCheckpoint>, SourceError> {
         let checkpoint = match self
-            .get_checkpoint_by_sequence_number(
-                sequence_number,
-                Some(ReadMask::from(&[
-                    CheckpointResponseField::CHECKPOINT_SUMMARY_BCS,
-                    CheckpointResponseField::CHECKPOINT_SIGNATURE,
-                    CheckpointResponseField::CHECKPOINT_CONTENTS_BCS,
-                ])),
-                None,
-                None,
-            )
+            .checkpoint_by_sequence_number(sequence_number)
+            .read_mask([
+                CheckpointResponseField::CHECKPOINT_SUMMARY_BCS,
+                CheckpointResponseField::CHECKPOINT_SIGNATURE,
+                CheckpointResponseField::CHECKPOINT_CONTENTS_BCS,
+            ])
             .await
         {
             Ok(response) => response.into_inner(),
@@ -160,7 +156,9 @@ impl Source for GrpcClient {
 
     async fn committee(&self, epoch: EpochId) -> Result<Committee, SourceError> {
         let epoch_info = self
-            .get_epoch(Some(epoch), Some(ReadMask::from(EpochField::COMMITTEE)))
+            .epoch()
+            .epoch_number(epoch)
+            .read_mask(EpochField::COMMITTEE)
             .await
             .map_err(SourceError::request)?
             .into_inner();
@@ -170,7 +168,8 @@ impl Source for GrpcClient {
     }
 
     async fn current_epoch(&self) -> Result<Option<EpochId>, SourceError> {
-        self.get_service_info(Some(ReadMask::from(ServiceInfoField::EPOCH)))
+        self.service_info()
+            .read_mask(ServiceInfoField::EPOCH)
             .await
             .map(|response| response.body().epoch)
             .map_err(SourceError::request)
@@ -178,10 +177,9 @@ impl Source for GrpcClient {
 
     async fn epoch_close_summary(&self, epoch: EpochId) -> Result<Option<CertifiedCheckpointSummary>, SourceError> {
         let epoch_info = self
-            .get_epoch(
-                Some(epoch),
-                Some(ReadMask::from(EpochField::EPOCH_CLOSE_PROOF_CHECKPOINT)),
-            )
+            .epoch()
+            .epoch_number(epoch)
+            .read_mask(EpochField::EPOCH_CLOSE_PROOF_CHECKPOINT)
             .await
             .map_err(SourceError::request)?
             .into_inner();

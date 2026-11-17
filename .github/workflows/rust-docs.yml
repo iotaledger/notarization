@@ -26,6 +26,8 @@ jobs:
         with:
           command: doc
           args: --workspace --no-deps
+      - name: Generate Proof of Inclusion documentation
+        run: cargo doc --manifest-path poi-rs/Cargo.toml --target-dir target --no-deps
       - name: Upload static files as artifact
         uses: actions/upload-pages-artifact@v3
         if: ${{ !inputs.dry-run }}

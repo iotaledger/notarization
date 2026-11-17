@@ -16,4 +16,4 @@ Create a temporary Rust test beside `proof_serialization.rs` and construct the f
 
 Write the committee once as `committee.json`, then serialize transaction-only, object and event target proofs as `transaction.json`, `object.json` and `event.json`.
 
-Run the temporary generator with `cargo test -p poi-rs --test <generator-test> -- --test-threads=1`. The test helpers generate new random values, so compare the serialized structure rather than expecting identical bytes. Remove the generator after writing the files, inspect the fixture diff, and run `cargo test -p poi-rs --test proof_serialization -- --test-threads=1` before accepting a new fixture version.
+Run the temporary generator with `cargo test --manifest-path poi-rs/Cargo.toml --test <generator-test> -- --test-threads=1`. The test helpers generate new random values, so compare the serialized structure rather than expecting identical bytes. Remove the generator after writing the files, inspect the fixture diff, and run `cargo test --manifest-path poi-rs/Cargo.toml --test proof_serialization -- --test-threads=1` before accepting a new fixture version.

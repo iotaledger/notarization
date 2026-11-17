@@ -70,7 +70,9 @@ runs:
     # Resolve new versions only for compatibility runs, before computing cache keys.
     - name: Update dependencies
       if: inputs.update-dependencies == 'true'
-      run: cargo update
+      run: |
+        cargo update
+        cargo update --manifest-path poi-rs/Cargo.toml
       shell: bash
 
     - name: Cache cargo
