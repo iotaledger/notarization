@@ -8,7 +8,7 @@ use iota_types::effects::TransactionEffectsExt;
 use iota_types::event::EventID;
 use iota_types::object::Object;
 
-use crate::{Proof, ProofTargets, ProofV1, Source, SourceError, TransactionProof};
+use crate::{Proof, ProofTargets, ProofV2, Source, SourceError, TransactionProof};
 
 /// Error returned when a proof cannot be constructed by [`ProofBuilder`].
 #[derive(Debug, thiserror::Error)]
@@ -267,7 +267,7 @@ impl<S: Source> ProofBuilder<S> {
             targets = targets.add_event(event_id);
         }
 
-        Ok(ProofV1::new(
+        Ok(ProofV2::new(
             chain_identifier,
             targets,
             checkpoint.summary,

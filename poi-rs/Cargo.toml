@@ -41,7 +41,7 @@ iota-sdk-types = { version = "1.0.0-rc.2", default-features = false }
 iota-types = { git = "https://github.com/iotaledger/iota.git", tag = "v1.35.2" }
 reqwest = { version = "0.12.28", default-features = false, features = ["rustls-tls"], optional = true }
 serde = { version = "1.0", default-features = false, features = ["alloc", "derive"] }
-serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
+serde_json = { version = "1.0", default-features = false, features = ["alloc", "preserve_order"] }
 thiserror = { version = "2.0", default-features = false }
 tokio = { version = "1.52.2", default-features = false, features = ["sync"] }
 

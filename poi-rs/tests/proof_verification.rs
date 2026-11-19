@@ -9,13 +9,13 @@ use iota_types::event::EventID;
 use iota_types::messages_checkpoint::CheckpointContentsExt;
 use iota_types::object::Object;
 use iota_types::transaction::SenderSignedTransactionAPI;
-use poi_rs::{Proof, ProofTargets, ProofV1, ProofVerifier, VerifyErrorKind};
+use poi_rs::{Proof, ProofTargets, ProofV2, ProofVerifier, VerifyErrorKind};
 use utils::proofs::{event, execution_data, proof_with_events, proof_with_targets, valid_transaction_proof};
 
-fn proof_v1_mut(proof: &mut Proof) -> &mut ProofV1 {
+fn proof_v2_mut(proof: &mut Proof) -> &mut ProofV2 {
     match proof {
-        Proof::ProofV1(proof) => proof,
-        _ => panic!("test helper expected a version 1 proof"),
+        Proof::ProofV2(proof) => proof,
+        _ => panic!("test helper expected a version 2 proof"),
     }
 }
 
@@ -46,7 +46,7 @@ fn valid_transaction_proof_is_accepted() {
 #[test]
 fn proof_requires_a_target() {
     let (committee, mut proof) = valid_transaction_proof();
-    proof_v1_mut(&mut proof).targets = ProofTargets::new();
+    proof_v2_mut(&mut proof).targets = ProofTargets::new();
 
     let error = ProofVerifier::new(&committee)
         .verify(&proof)
@@ -58,7 +58,7 @@ fn proof_requires_a_target() {
 #[test]
 fn transaction_target_must_match_the_packaged_transaction() {
     let (committee, mut proof) = valid_transaction_proof();
-    proof_v1_mut(&mut proof).targets =
+    proof_v2_mut(&mut proof).targets =
         ProofTargets::new().set_transaction(iota_sdk_types::TransactionDigest::new([0xff; 32]));
 
     let error = ProofVerifier::new(&committee)
@@ -90,7 +90,7 @@ fn verified_events_include_events_outside_the_selected_targets() {
         tx_digest: transaction_digest,
         event_seq: 1,
     };
-    proof_v1_mut(&mut proof).targets = ProofTargets::new().add_event(event_id);
+    proof_v2_mut(&mut proof).targets = ProofTargets::new().add_event(event_id);
 
     let verified = ProofVerifier::new(&committee)
         .verify(&proof)
@@ -103,7 +103,7 @@ fn verified_events_include_events_outside_the_selected_targets() {
 #[test]
 fn transaction_digest_must_match_the_effects() {
     let (committee, mut proof) = valid_transaction_proof();
-    proof_v1_mut(&mut proof).transaction_proof.effects = execution_data().effects;
+    proof_v2_mut(&mut proof).transaction_proof.effects = execution_data().effects;
 
     let error = ProofVerifier::new(&committee)
         .verify(&proof)
@@ -115,7 +115,7 @@ fn transaction_digest_must_match_the_effects() {
 #[test]
 fn events_digest_must_match_the_effects() {
     let (committee, mut proof) = valid_transaction_proof();
-    proof_v1_mut(&mut proof).transaction_proof.events = Some(TransactionEvents(Vec::new()));
+    proof_v2_mut(&mut proof).transaction_proof.events = Some(TransactionEvents(Vec::new()));
 
     let error = ProofVerifier::new(&committee)
         .verify(&proof)
@@ -127,14 +127,14 @@ fn events_digest_must_match_the_effects() {
 #[test]
 fn committed_events_cannot_be_omitted_without_event_targets() {
     let (committee, transaction_digest, mut proof) = proof_with_events(TransactionEvents(vec![event(vec![1, 2, 3])]));
-    proof_v1_mut(&mut proof).targets = ProofTargets::new().set_transaction(transaction_digest);
+    proof_v2_mut(&mut proof).targets = ProofTargets::new().set_transaction(transaction_digest);
 
     let verified = ProofVerifier::new(&committee)
         .verify(&proof)
         .expect("complete events must verify without event targets");
     assert_eq!(verified.events(), proof.transaction_proof().events.as_ref());
     assert!(verified.targets().events.is_empty());
-    proof_v1_mut(&mut proof).transaction_proof.events = None;
+    proof_v2_mut(&mut proof).transaction_proof.events = None;
 
     let error = ProofVerifier::new(&committee)
         .verify(&proof)
@@ -148,8 +148,8 @@ fn committed_events_cannot_be_truncated_without_event_targets() {
     let first_event = event(vec![1, 2, 3]);
     let (committee, transaction_digest, mut proof) =
         proof_with_events(TransactionEvents(vec![first_event.clone(), event(vec![4, 5, 6])]));
-    proof_v1_mut(&mut proof).targets = ProofTargets::new().set_transaction(transaction_digest);
-    proof_v1_mut(&mut proof).transaction_proof.events = Some(TransactionEvents(vec![first_event]));
+    proof_v2_mut(&mut proof).targets = ProofTargets::new().set_transaction(transaction_digest);
+    proof_v2_mut(&mut proof).transaction_proof.events = Some(TransactionEvents(vec![first_event]));
 
     let error = ProofVerifier::new(&committee)
         .verify(&proof)
@@ -162,7 +162,7 @@ fn committed_events_cannot_be_truncated_without_event_targets() {
 fn checkpoint_contents_must_match_the_signed_summary() {
     let (committee, mut proof) = valid_transaction_proof();
     let alternate = execution_data();
-    proof_v1_mut(&mut proof).checkpoint_contents =
+    proof_v2_mut(&mut proof).checkpoint_contents =
         CheckpointContents::new_with_digests_only_for_tests([alternate.digests()]);
 
     let error = ProofVerifier::new(&committee)
@@ -177,7 +177,7 @@ fn transaction_must_be_present_in_the_checkpoint() {
     let (committee, mut proof) = valid_transaction_proof();
     let alternate = execution_data();
     {
-        let proof = proof_v1_mut(&mut proof);
+        let proof = proof_v2_mut(&mut proof);
         proof.transaction_proof.transaction = alternate.transaction;
         proof.transaction_proof.effects = alternate.effects;
     }
@@ -192,7 +192,7 @@ fn transaction_must_be_present_in_the_checkpoint() {
 #[test]
 fn transaction_signatures_must_match_the_checkpoint() {
     let (committee, mut proof) = valid_transaction_proof();
-    proof_v1_mut(&mut proof)
+    proof_v2_mut(&mut proof)
         .transaction_proof
         .transaction
         .data_mut_for_testing()
@@ -213,7 +213,7 @@ fn forged_effects_with_the_same_transaction_are_rejected() {
     let forged_effects = TestEffectsBuilder::new(proof.transaction_proof().transaction.data())
         .with_events_digest(forged_events.digest())
         .build();
-    proof_v1_mut(&mut proof).transaction_proof.effects = forged_effects;
+    proof_v2_mut(&mut proof).transaction_proof.effects = forged_effects;
 
     let error = ProofVerifier::new(&committee)
         .verify(&proof)
@@ -243,7 +243,7 @@ fn event_target_must_belong_to_the_proven_transaction() {
         tx_digest: iota_sdk_types::TransactionDigest::new([0xff; 32]),
         event_seq: 0,
     };
-    proof_v1_mut(&mut proof).targets = ProofTargets::new().add_event(event_id);
+    proof_v2_mut(&mut proof).targets = ProofTargets::new().add_event(event_id);
 
     let error = ProofVerifier::new(&committee)
         .verify(&proof)
@@ -259,7 +259,7 @@ fn event_target_requires_packaged_event_data() {
         tx_digest: *proof.transaction_proof().transaction.digest(),
         event_seq: 0,
     };
-    proof_v1_mut(&mut proof).targets = ProofTargets::new().add_event(event_id);
+    proof_v2_mut(&mut proof).targets = ProofTargets::new().add_event(event_id);
 
     let error = ProofVerifier::new(&committee)
         .verify(&proof)
@@ -276,7 +276,7 @@ fn event_sequence_must_exist_in_the_transaction() {
         tx_digest: transaction_digest,
         event_seq: 1,
     };
-    proof_v1_mut(&mut proof).targets = ProofTargets::new().add_event(event_id);
+    proof_v2_mut(&mut proof).targets = ProofTargets::new().add_event(event_id);
 
     let error = ProofVerifier::new(&committee)
         .verify(&proof)

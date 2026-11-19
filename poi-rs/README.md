@@ -163,9 +163,11 @@ Object targets contain their exact values. Event targets contain `EventID` value
 
 ## JSON Compatibility
 
-Proof JSON is a versioned exchange format. The `ProofV1` representation embeds the serde encoding of the IOTA SDK types it contains, so a dependency upgrade can change it. The format is not stable before 1.0: a proof serialized by one release is not guaranteed to deserialize in another.
+Proof JSON is a versioned persistence and exchange format. Releases that support `ProofV1` continue to deserialize its existing JSON shape and serialize the same field structure. Frozen V1 and V2 fixtures enforce this contract for transaction, object, event, and consensus commit prologue proofs.
 
-Frozen V1 fixtures detect representation changes for the transaction, object, and event proofs they cover.
+Dependency upgrades must not silently change the `ProofV1` representation. Preserve the existing shape with custom serialization when necessary, or introduce a new `Proof` variant for an incompatible format change.
+
+The builder creates `ProofV2` proofs. `ProofV2` has the same fields and binary encoding as `ProofV1` and uses the JSON names of the current IOTA SDK types: `iota-sdk-types` 1.0.0-rc.1 renamed six identifiers that can occur in a proof, for example `CancelledTransactions` to `CanceledTransactions` and `MoveAuthenticationError` to `MoveAuthentication`. A `ProofV1` proof keeps its original names when it is read and written back, and verifies the same way. `ProofV2::from` converts a version 1 proof. Releases before `ProofV2` cannot read it.
 
 ## Trust Boundaries
 
@@ -224,6 +226,7 @@ Run `cargo run --release --manifest-path poi-rs/Cargo.toml --features cli --bin 
 
 - `Proof`: Versioned Proof of Inclusion envelope.
 - `ProofV1`: Version 1 checkpoint and transaction evidence carried by `Proof::ProofV1`.
+- `ProofV2`: Version 2 checkpoint and transaction evidence carried by `Proof::ProofV2`. The builder creates this version.
 - `TransactionProof`: Transaction, effects, and optional event evidence used to prove inclusion.
 - `ProofTargets`: Transaction, object, and event targets explicitly selected by the caller.
 - `PoiClient`: Source-backed entry point for proof construction and committee-aware verification.

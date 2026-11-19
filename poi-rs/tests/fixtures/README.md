@@ -1,6 +1,10 @@
 # Proof Fixtures
 
-The `v1` directory contains frozen fixtures for the version 1 proof format. The fixtures are synthetic test data, not captures from localnet or a public IOTA network. They use an epoch 0 single-validator test committee and share one generated checkpoint body.
+The `v1` directory contains frozen fixtures for the version 1 proof format. The fixtures are synthetic test data, not captures from localnet or a public IOTA network. The transaction, object, and event fixtures use an epoch 0 single-validator test committee and share one generated checkpoint body.
+
+`v1/consensus_commit_prologue.json` covers the JSON names that `iota-sdk-types` 1.0.0-rc.1 renamed. It was generated on the last release with the old names (commit `d2bfdbc`, iota v1.29.0): a consensus commit prologue with a canceled transaction, bound to the effects of a random test transaction with a failed status (`MoveAuthenticationError` wrapping `ExecutionCancelledDueToSharedObjectCongestionV2`) and a canceled unchanged shared object. It verifies against its own test committee in `v1/consensus_commit_prologue_committee.json`.
+
+The `v2` directory contains the same proofs in the version 2 format: each `v1` fixture converted with `ProofV2::from` and serialized with `serde_json::to_string_pretty()`. They verify against the `v1` committees.
 
 Do not rewrite the `v1` files for routine refactors. When the serialized proof format changes intentionally, generate a new versioned directory and update the compatibility tests to cover both versions as appropriate.
 
