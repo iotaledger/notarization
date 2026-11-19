@@ -204,14 +204,16 @@ jobs:
       # Build afterward so tests and examples reuse artifacts from the final Move inputs.
       - name: Build with default features
         run: cargo build --locked --workspace --tests --examples --release
+      # Library and CLI on every platform. The test-cluster tests (and the IOTA node stack they
+      # compile) only build in the Ubuntu test step below.
       - name: Build Proof of Inclusion
-        run: cargo build --locked --manifest-path poi-rs/Cargo.toml --target-dir target --tests --release --all-features
+        run: cargo build --locked --manifest-path poi-rs/Cargo.toml --target-dir target --release --all-features
 
       - name: Run tests
         if: matrix.os != 'windows-latest'
         run: cargo test --locked --workspace --release -- --test-threads=1
       - name: Run Proof of Inclusion tests
-        if: matrix.os != 'windows-latest'
+        if: matrix.os == 'ubuntu-24.04'
         run: cargo test --locked --manifest-path poi-rs/Cargo.toml --target-dir target --release --all-features -- --test-threads=1
 
       - name: Run Rust examples
