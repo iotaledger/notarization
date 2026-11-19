@@ -1,6 +1,9 @@
 // Copyright 2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+// `#[wasm_bindgen(getter_with_clone)]` emits `Clone::clone` getters for `Copy` fields as module-level items.
+#![allow(clippy::clone_on_copy)]
+
 use iota_sdk_types::{ObjectId, TransactionDigest};
 use iota_types::event::EventID;
 use js_sys::Uint8Array;

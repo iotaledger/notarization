@@ -66,7 +66,7 @@ impl WasmNotarizationClientReadOnly {
         let inner_client = NotarizationClientReadOnly::new_with_pkg_id(
             iota_client,
             ObjectId::from_str(&iota_notarization_pkg_id)
-                .map_err(|e| anyhow!("Could not parse iota_notarization_pkg_id: {}", e.to_string()))
+                .map_err(|e| anyhow!("Could not parse iota_notarization_pkg_id: {}", e))
                 .wasm_result()?,
         )
         .await

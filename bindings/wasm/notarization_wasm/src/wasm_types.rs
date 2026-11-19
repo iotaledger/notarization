@@ -69,7 +69,7 @@ impl WasmData {
     /// For binary payloads the bytes are interpreted as UTF-8; invalid byte
     /// sequences are replaced with the Unicode replacement character.
     #[wasm_bindgen(js_name = toString)]
-    pub fn to_string(&self) -> String {
+    pub fn to_text(&self) -> String {
         match &self.0 {
             Data::Bytes(bytes) => String::from_utf8_lossy(bytes).to_string(),
             Data::Text(text) => text.to_string(),
