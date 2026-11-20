@@ -163,9 +163,11 @@ Object targets contain their exact values. Event targets contain `EventID` value
 
 ## JSON Compatibility
 
-Proof JSON is a versioned persistence and exchange format. Releases that support `ProofV1` continue to deserialize its existing JSON shape and serialize the same field structure. Frozen V1 fixtures enforce this contract for transaction, object, and event proofs.
+Proof JSON is a versioned persistence and exchange format. Releases that support `ProofV1` continue to deserialize its existing JSON shape and serialize the same field structure. Frozen V1 and V2 fixtures enforce this contract for transaction, object, event, and consensus commit prologue proofs.
 
 Dependency upgrades must not silently change the `ProofV1` representation. Preserve the existing shape with custom serialization when necessary, or introduce a new `Proof` variant for an incompatible format change.
+
+The builder creates `ProofV2` proofs. `ProofV2` has the same fields and binary encoding as `ProofV1` and uses the JSON names of the current IOTA SDK types: `iota-sdk-types` 1.0.0-rc.1 renamed six identifiers that can occur in a proof, for example `CancelledTransactions` to `CanceledTransactions` and `MoveAuthenticationError` to `MoveAuthentication`. A `ProofV1` proof keeps its original names when it is read and written back, and verifies the same way. `ProofV2::from` converts a version 1 proof. Releases before `ProofV2` cannot read it.
 
 ## Trust Boundaries
 
@@ -183,18 +185,18 @@ The optional `cli` feature builds the `poi` command for creating and verifying J
 ### Building the CLI From Source
 
 The project does not distribute pre-built `poi` binaries. Build the CLI locally from the repository source with Rust
-1.85 or later:
+1.95 or later:
 
 ```bash
 git clone https://github.com/iotaledger/notarization.git
 cd notarization
-cargo build --release -p poi-rs --features cli --bin poi
+cargo build --release --manifest-path poi-rs/Cargo.toml --features cli --bin poi
 ```
 
-Cargo writes the binary to `target/release/poi` on Linux and macOS or `target\release\poi.exe` on Windows. Run the locally built binary from the repository root:
+poi-rs is its own Cargo workspace, so Cargo writes the binary to `poi-rs/target/release/poi` on Linux and macOS or `poi-rs\target\release\poi.exe` on Windows. Run the locally built binary from the repository root:
 
 ```bash
-./target/release/poi --help
+./poi-rs/target/release/poi --help
 ```
 
 You can also build from source and install `poi` into Cargo's binary directory:
@@ -206,24 +208,25 @@ cargo install --path poi-rs --features cli --bin poi --locked
 ### Using the CLI
 
 ```bash
-cargo run --release -p poi-rs --features cli --bin poi -- create \
+cargo run --release --manifest-path poi-rs/Cargo.toml --features cli --bin poi -- create \
   --network testnet \
   --transaction <transaction-digest> \
   --output proof.json
 
-cargo run --release -p poi-rs --features cli --bin poi -- verify \
+cargo run --release --manifest-path poi-rs/Cargo.toml --features cli --bin poi -- verify \
   --network testnet \
   proof.json
 ```
 
 For `--network mainnet` and `--network testnet`, the CLI downloads the genesis blob to the IOTA configuration directory under `poi/<network>/genesis.blob`. It validates the blob against the network's canonical genesis digest on download and every cache load. Devnet has no stable genesis digest, so verification on devnet requires an explicit trusted blob through `--genesis`.
 
-Run `cargo run --release -p poi-rs --features cli --bin poi -- --help` for all targets, network options, and file input formats.
+Run `cargo run --release --manifest-path poi-rs/Cargo.toml --features cli --bin poi -- --help` for all targets, network options, and file input formats.
 
 ## Glossary
 
 - `Proof`: Versioned Proof of Inclusion envelope.
 - `ProofV1`: Version 1 checkpoint and transaction evidence carried by `Proof::ProofV1`.
+- `ProofV2`: Version 2 checkpoint and transaction evidence carried by `Proof::ProofV2`. The builder creates this version.
 - `TransactionProof`: Transaction, effects, and optional event evidence used to prove inclusion.
 - `ProofTargets`: Transaction, object, and event targets explicitly selected by the caller.
 - `PoiClient`: Source-backed entry point for proof construction and committee-aware verification.

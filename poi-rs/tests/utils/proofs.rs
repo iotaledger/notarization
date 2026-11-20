@@ -1,15 +1,16 @@
 // Copyright 2020-2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use iota_sdk_types::gas::GasCostSummary;
-use iota_sdk_types::{CheckpointContents, CheckpointSummary, Event, TransactionDigest};
+use iota_sdk_types::{
+    Address, CheckpointContents, CheckpointSummary, Event, GasCostSummary, Identifier, ObjectId, StructTag,
+    TransactionDigest, TransactionEvents,
+};
 use iota_types::base_types::ExecutionData;
 use iota_types::committee::Committee;
 use iota_types::digests::ChainIdentifier;
-use iota_types::effects::{TestEffectsBuilder, TransactionEvents};
+use iota_types::effects::TestEffectsBuilder;
 use iota_types::messages_checkpoint::{CertifiedCheckpointSummary, CheckpointContentsExt, FullCheckpointContents};
-use iota_types::sdk_types::{Address, Identifier, ObjectId, StructTag};
-use poi_rs::{Proof, ProofTargets, ProofV1, TransactionProof};
+use poi_rs::{Proof, ProofTargets, ProofV2, TransactionProof};
 
 pub fn execution_data() -> ExecutionData {
     FullCheckpointContents::random_for_testing()
@@ -56,7 +57,7 @@ fn proof_from_execution(
     let contents = checkpoint_contents(&execution);
     let (committee, summary) = signed_checkpoint(&contents);
     let chain = ChainIdentifier::from(*summary.digest());
-    let proof = ProofV1::new(
+    let proof = ProofV2::new(
         chain,
         targets,
         summary,
@@ -77,7 +78,7 @@ pub fn proof_with_events(events: TransactionEvents) -> (Committee, TransactionDi
     let contents = checkpoint_contents(&execution);
     let (committee, summary) = signed_checkpoint(&contents);
     let chain = ChainIdentifier::from(*summary.digest());
-    let proof = ProofV1::new(
+    let proof = ProofV2::new(
         chain,
         ProofTargets::new(),
         summary,
@@ -101,7 +102,7 @@ pub fn event(contents: Vec<u8>) -> Event {
         package_id: ObjectId::SYSTEM,
         module: Identifier::IOTA_SYSTEM_MODULE,
         sender: Address::SYSTEM,
-        type_: StructTag::new(
+        struct_tag: StructTag::new(
             Address::SYSTEM,
             Identifier::IOTA_SYSTEM_MODULE,
             Identifier::SYSTEM_EPOCH_INFO_EVENT,

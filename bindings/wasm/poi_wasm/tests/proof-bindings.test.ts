@@ -87,22 +87,43 @@ const fixtures: readonly {
 test("the public proof fixtures round trip and verify offline", async (context) => {
     const committee = Committee.fromJSON(await readFixture("committee.json"));
 
-    for (const fixture of fixtures) {
-        await context.test(fixture.name, async () => {
-            const proof = Proof.fromJSON(await readFixture(`${fixture.name}.json`));
-            const receivedProof = Proof.fromJSON(proof.toJSON());
+    for (const version of [1, 2]) {
+        for (const fixture of fixtures) {
+            await context.test(`v${version} ${fixture.name}`, async () => {
+                const json = await readFixture(`${fixture.name}.json`, version);
+                const proof = Proof.fromJSON(json);
+                assert.deepEqual(JSON.parse(proof.toJSON()), JSON.parse(json));
+                const receivedProof = Proof.fromJSON(proof.toJSON());
 
-            const verified = receivedProof.verify(committee);
-            assert.equal(receivedProof.version, 1);
-            assert.equal(receivedProof.checkpointEpoch, 0n);
-            assert.equal(verified.checkpointEpoch, 0n);
-            assert.ok(verified.checkpointSequenceNumber >= 0n);
-            assert.ok(verified.checkpointTimestampMs > 0n);
-            assert.ok(verified.transaction);
-            const effects = bcs.TransactionEffects.parse(verified.effectsBcs());
-            assert.equal(effects.V1?.transactionDigest, verified.transaction);
-            fixture.assertTargets(receivedProof.targets);
-            fixture.assertVerified(verified);
+                const verified = receivedProof.verify(committee);
+                assert.equal(receivedProof.version, version);
+                assert.equal(receivedProof.checkpointEpoch, 0n);
+                assert.equal(verified.checkpointEpoch, 0n);
+                assert.ok(verified.checkpointSequenceNumber >= 0n);
+                assert.ok(verified.checkpointTimestampMs > 0n);
+                assert.ok(verified.transaction);
+                const effects = bcs.TransactionEffects.parse(verified.effectsBcs());
+                assert.equal(effects.V1?.transactionDigest, verified.transaction);
+                fixture.assertTargets(receivedProof.targets);
+                fixture.assertVerified(verified);
+            });
+        }
+    }
+});
+
+test("version 1 proofs keep their JSON names and verify like version 2 proofs", async (context) => {
+    const committee = Committee.fromJSON(await readFixture("consensus_commit_prologue_committee.json"));
+    const spelling = { 1: "CancelledTransactions", 2: "CanceledTransactions" } as const;
+
+    for (const version of [1, 2] as const) {
+        await context.test(`v${version} consensus commit prologue`, async () => {
+            const json = await readFixture("consensus_commit_prologue.json", version);
+            const proof = Proof.fromJSON(json);
+
+            assert.equal(proof.version, version);
+            assert.deepEqual(JSON.parse(proof.toJSON()), JSON.parse(json));
+            assert.ok(proof.toJSON().includes(spelling[version]));
+            assert.equal(proof.verify(committee).transaction, proof.targets.transaction);
         });
     }
 });
@@ -184,9 +205,9 @@ interface EventProofFixture {
     };
 }
 
-function readFixture(name: string): Promise<string> {
+function readFixture(name: string, version = 1): Promise<string> {
     return readFile(
-        new URL(`../../../../poi-rs/tests/fixtures/v1/${name}`, import.meta.url),
+        new URL(`../../../../poi-rs/tests/fixtures/v${version}/${name}`, import.meta.url),
         "utf8",
     );
 }

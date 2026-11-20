@@ -75,7 +75,7 @@ mod file_committee_cache {
     use std::io::Write;
     use std::path::PathBuf;
 
-    use iota_types::committee::Committee;
+    use poi_iota_types::committee::Committee;
     use poi_rs::{CommitteeCache, CommitteeCacheError, CommitteeCacheKey};
     use tempfile::NamedTempFile;
 

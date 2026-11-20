@@ -30,3 +30,9 @@ jobs:
       - uses: actions-rs/audit-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+      # poi-rs is its own workspace with its own lockfile. Runs from the repository root so
+      # .cargo/audit.toml applies.
+      - name: Audit the Proof of Inclusion lockfile
+        run: |
+          cargo install cargo-audit --locked
+          cargo audit --file poi-rs/Cargo.lock

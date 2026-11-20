@@ -7,12 +7,13 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result, bail, ensure};
 use iota_config::{IOTA_GENESIS_FILENAME, iota_config_dir};
-use iota_grpc_client::Client as GrpcClient;
 use iota_interaction::KeytoolSigner;
-use iota_sdk_types::{ObjectId, TransactionDigest};
-use iota_types::event::EventID;
+use iota_sdk_types::ObjectId;
 use notarization::client::{NotarizationClient, NotarizationClientReadOnly};
 use notarization::core::types::{State, TimeLock};
+use poi_iota_grpc_client::GrpcClient;
+use poi_iota_sdk_types::{ObjectId as PoiObjectId, TransactionDigest as PoiTransactionDigest};
+use poi_iota_types::event::EventID;
 use poi_rs::PoiClient;
 use product_common::test_utils::{
     TEST_GAS_BUDGET, get_active_address, get_balance, get_cached_id, get_client, init_product_package, request_funds,
@@ -101,9 +102,9 @@ impl PoiContext {
             .await
             .context("failed to create the example Notarization object")?;
 
-        let transaction_digest = created.response.digest;
-        let object_id = *created.output.id.object_id();
-        let event_id = created
+        let setup_digest = created.response.digest;
+        let setup_object_id = *created.output.id.object_id();
+        let setup_event_id = created
             .response
             .events
             .as_ref()
@@ -114,14 +115,20 @@ impl PoiContext {
             .id;
 
         ensure!(
-            event_id.tx_digest == transaction_digest,
+            setup_event_id.tx_digest == setup_digest,
             "the creation event does not belong to the setup transaction"
         );
 
+        // poi-rs uses newer IOTA types than the Notarization client, so the identifiers are carried
+        // over by their bytes.
+        let transaction_digest = PoiTransactionDigest::new(setup_digest.into_inner());
         Ok(NotarizationTargets {
             transaction_digest,
-            object_id,
-            event_id,
+            object_id: PoiObjectId::new(setup_object_id.into_bytes()),
+            event_id: EventID {
+                tx_digest: transaction_digest,
+                event_seq: setup_event_id.event_seq,
+            },
         })
     }
 }
@@ -130,9 +137,9 @@ impl PoiContext {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct NotarizationTargets {
     /// Transaction that created the `Notarization` object.
-    pub transaction_digest: TransactionDigest,
+    pub transaction_digest: PoiTransactionDigest,
     /// Locked `Notarization` object created by the transaction.
-    pub object_id: ObjectId,
+    pub object_id: PoiObjectId,
     /// `LockedNotarizationCreated` event emitted by the transaction.
     pub event_id: EventID,
 }

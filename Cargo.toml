@@ -8,8 +8,9 @@ rust-version = "1.85"
 
 [workspace]
 resolver = "2"
-members = ["audit-trail-rs", "examples", "notarization-rs", "poi-rs"]
+members = ["audit-trail-rs", "examples", "notarization-rs"]
 exclude = [
+  "poi-rs",
   "bindings/wasm/notarization_wasm",
   "bindings/wasm/audit_trail_wasm",
   "bindings/wasm/poi_wasm",
@@ -20,10 +21,7 @@ anyhow = "1.0"
 async-trait = "0.1"
 bcs = "0.1"
 chrono = { version = "0.4", default-features = false }
-clap = { version = "4.6.1", features = ["derive"] }
 hyper = "1"
-iota-grpc-client = { git = "https://github.com/iotaledger/iota-rust-sdk.git", package = "iota-sdk-grpc-client", rev = "2f021d0556e47564e9b04bcd0b3e8347c41a0a26" }
-iota-grpc-types = { git = "https://github.com/iotaledger/iota-rust-sdk.git", package = "iota-sdk-grpc-types", rev = "2f021d0556e47564e9b04bcd0b3e8347c41a0a26" }
 iota-sdk = { git = "https://github.com/iotaledger/iota.git", package = "iota-sdk", tag = "v1.29.0" }
 iota-sdk-types = { git = "https://github.com/iotaledger/iota-rust-sdk.git", rev = "2f021d0556e47564e9b04bcd0b3e8347c41a0a26", default-features = false }
 iota-types = { git = "https://github.com/iotaledger/iota.git", tag = "v1.29.0" }

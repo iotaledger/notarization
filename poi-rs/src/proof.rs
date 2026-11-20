@@ -11,17 +11,21 @@
 //! [`CertifiedCheckpointSummary`]: iota_types::messages_checkpoint::CertifiedCheckpointSummary
 //! [`Committee`]: iota_types::committee::Committee
 
-use iota_sdk_types::{CheckpointContents, Transaction as TransactionData, TransactionDigest};
+use iota_sdk_types::{
+    CheckpointContents, Transaction as TransactionData, TransactionDigest, TransactionEffects, TransactionEvents,
+};
 use iota_types::committee::Committee;
 use iota_types::digests::ChainIdentifier;
-use iota_types::effects::{TransactionEffects, TransactionEffectsAPI, TransactionEffectsExt, TransactionEvents};
+use iota_types::effects::{TransactionEffectsAPI, TransactionEffectsExt};
 use iota_types::event::EventID;
 use iota_types::messages_checkpoint::CertifiedCheckpointSummary;
 use iota_types::object::Object;
-use iota_types::transaction::Transaction;
-use serde::{Deserialize, Serialize};
+use iota_types::transaction::TransactionEnvelope as Transaction;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::BoxError;
+
+mod v1_json;
 
 /// An error serializing or deserializing a proof.
 #[derive(Debug, thiserror::Error)]
@@ -257,27 +261,45 @@ impl<'proof> VerifiedProof<'proof> {
 /// The enum is non-exhaustive so future crate versions can add support for new
 /// proof formats without making matches in downstream crates source-breaking.
 /// Its serialized representation is externally tagged, with the variant name
-/// identifying the proof format, for example `{ "ProofV1": { ... } }`.
+/// identifying the proof format, for example `{ "ProofV2": { ... } }`.
 ///
 /// The JSON representation of each variant is a compatibility contract. A
 /// release that supports `ProofV1` must continue to deserialize its existing
 /// shape and serialize the same field structure. Incompatible changes require
 /// a new [`Proof`] variant.
+///
+/// [`ProofBuilder`](crate::ProofBuilder) creates [`ProofV2`] proofs. Both
+/// versions carry the same evidence and verify the same way. They differ only in
+/// the JSON names of a few IOTA SDK types, see [`ProofV1`].
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum Proof {
     /// A version 1 proof.
     ProofV1(ProofV1),
+    /// A version 2 proof.
+    ProofV2(ProofV2),
 }
 
 /// Version 1 evidence that a transaction is included in a certified checkpoint.
+///
+/// Version 1 proofs were written with `iota-sdk-types` before 1.0.0-rc.1. Their
+/// JSON spells six identifiers of those types differently from [`ProofV2`]:
+/// `CancelledTransactions` and `cancelled_transactions` in the consensus commit
+/// prologue, `Cancelled` for unchanged shared objects, and the execution errors
+/// `ExecutionCancelledDueToSharedObjectCongestion`,
+/// `ExecutionCancelledDueToRandomnessUnavailable`,
+/// `ExecutionCancelledDueToSharedObjectCongestionV2` and
+/// `MoveAuthenticationError`. Deserialization accepts that spelling and
+/// serialization writes it, so a version 1 proof keeps its JSON shape. The fields
+/// and their binary encoding are the same as in [`ProofV2`], which
+/// `ProofV2::from` converts to.
 ///
 /// [`ProofTargets`] records the values selected by the caller. The checkpoint
 /// and transaction proof fields contain the evidence for those targets.
 ///
 /// [`Proof::chain`] identifies the network reported by the proof source. It is
 /// informational and is not checked during verification.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct ProofV1 {
     /// The network reported by the proof source.
     pub chain: ChainIdentifier,
@@ -312,9 +334,119 @@ impl ProofV1 {
     }
 }
 
+impl Serialize for ProofV1 {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let fields = ProofFields {
+            chain: &self.chain,
+            targets: &self.targets,
+            checkpoint_summary: &self.checkpoint_summary,
+            checkpoint_contents: &self.checkpoint_contents,
+            transaction_proof: &self.transaction_proof,
+        };
+        let mut value = serde_json::to_value(fields).map_err(serde::ser::Error::custom)?;
+        v1_json::rename(&mut value, v1_json::Direction::ToV1);
+        value.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for ProofV1 {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let mut value = serde_json::Value::deserialize(deserializer)?;
+        v1_json::rename(&mut value, v1_json::Direction::FromV1);
+        let ProofV2 {
+            chain,
+            targets,
+            checkpoint_summary,
+            checkpoint_contents,
+            transaction_proof,
+        } = serde_json::from_value(value).map_err(serde::de::Error::custom)?;
+
+        Ok(Self::new(
+            chain,
+            targets,
+            checkpoint_summary,
+            checkpoint_contents,
+            transaction_proof,
+        ))
+    }
+}
+
+/// Version 2 evidence that a transaction is included in a certified checkpoint.
+///
+/// The fields serialize with the JSON names of the current IOTA SDK types.
+///
+/// [`ProofTargets`] records the values selected by the caller. The checkpoint
+/// and transaction proof fields contain the evidence for those targets.
+///
+/// [`Proof::chain`] identifies the network reported by the proof source. It is
+/// informational and is not checked during verification.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ProofV2 {
+    /// The network reported by the proof source.
+    pub chain: ChainIdentifier,
+    /// The values selected for this proof.
+    pub targets: ProofTargets,
+    /// The certified summary of the checkpoint containing the transaction.
+    pub checkpoint_summary: CertifiedCheckpointSummary,
+    /// Contents committed to by the checkpoint summary.
+    pub checkpoint_contents: CheckpointContents,
+    /// The transaction and its execution data
+    pub transaction_proof: TransactionProof,
+}
+
+impl ProofV2 {
+    const VERSION: u16 = 2;
+
+    /// Creates a version 2 proof payload.
+    pub fn new(
+        chain: ChainIdentifier,
+        targets: ProofTargets,
+        checkpoint_summary: CertifiedCheckpointSummary,
+        checkpoint_contents: CheckpointContents,
+        transaction_proof: TransactionProof,
+    ) -> Self {
+        Self {
+            chain,
+            targets,
+            checkpoint_summary,
+            checkpoint_contents,
+            transaction_proof,
+        }
+    }
+}
+
+impl From<ProofV1> for ProofV2 {
+    /// Converts a version 1 proof into a version 2 proof with the same evidence.
+    fn from(proof: ProofV1) -> Self {
+        Self::new(
+            proof.chain,
+            proof.targets,
+            proof.checkpoint_summary,
+            proof.checkpoint_contents,
+            proof.transaction_proof,
+        )
+    }
+}
+
+/// The fields of [`ProofV2`], borrowed. Serializes exactly like [`ProofV2`].
+#[derive(Serialize)]
+struct ProofFields<'proof> {
+    chain: &'proof ChainIdentifier,
+    targets: &'proof ProofTargets,
+    checkpoint_summary: &'proof CertifiedCheckpointSummary,
+    checkpoint_contents: &'proof CheckpointContents,
+    transaction_proof: &'proof TransactionProof,
+}
+
 impl From<ProofV1> for Proof {
     fn from(proof: ProofV1) -> Self {
         Self::ProofV1(proof)
+    }
+}
+
+impl From<ProofV2> for Proof {
+    fn from(proof: ProofV2) -> Self {
+        Self::ProofV2(proof)
     }
 }
 
@@ -323,6 +455,7 @@ impl Proof {
     pub const fn version(&self) -> u16 {
         match self {
             Self::ProofV1(_) => ProofV1::VERSION,
+            Self::ProofV2(_) => ProofV2::VERSION,
         }
     }
 
@@ -332,6 +465,7 @@ impl Proof {
     pub const fn chain(&self) -> &ChainIdentifier {
         match self {
             Self::ProofV1(proof) => &proof.chain,
+            Self::ProofV2(proof) => &proof.chain,
         }
     }
 
@@ -342,6 +476,7 @@ impl Proof {
     pub const fn targets(&self) -> &ProofTargets {
         match self {
             Self::ProofV1(proof) => &proof.targets,
+            Self::ProofV2(proof) => &proof.targets,
         }
     }
 
@@ -349,6 +484,7 @@ impl Proof {
     pub const fn checkpoint_summary(&self) -> &CertifiedCheckpointSummary {
         match self {
             Self::ProofV1(proof) => &proof.checkpoint_summary,
+            Self::ProofV2(proof) => &proof.checkpoint_summary,
         }
     }
 
@@ -356,6 +492,7 @@ impl Proof {
     pub const fn checkpoint_contents(&self) -> &CheckpointContents {
         match self {
             Self::ProofV1(proof) => &proof.checkpoint_contents,
+            Self::ProofV2(proof) => &proof.checkpoint_contents,
         }
     }
 
@@ -363,6 +500,7 @@ impl Proof {
     pub const fn transaction_proof(&self) -> &TransactionProof {
         match self {
             Self::ProofV1(proof) => &proof.transaction_proof,
+            Self::ProofV2(proof) => &proof.transaction_proof,
         }
     }
 
@@ -432,21 +570,17 @@ impl<'committee> ProofVerifier<'committee> {
     ///
     /// Returns an error if any check fails.
     pub fn verify<'proof>(&self, proof: &'proof Proof) -> Result<VerifiedProof<'proof>, VerifyError> {
-        match proof {
-            Proof::ProofV1(proof) => self.verify_v1(proof),
-        }
-    }
-
-    /// Verifies a version 1 proof and all of its targets.
-    fn verify_v1<'proof>(&self, proof: &'proof ProofV1) -> Result<VerifiedProof<'proof>, VerifyError> {
-        if proof.targets.is_empty() {
+        // All proof versions carry the same evidence, they differ only in their JSON representation.
+        let targets = proof.targets();
+        let transaction_proof = proof.transaction_proof();
+        if targets.is_empty() {
             return Err(VerifyError {
                 kind: VerifyErrorKind::MissingTarget,
             });
         }
 
-        let summary = &proof.checkpoint_summary;
-        let contents = Some(&proof.checkpoint_contents);
+        let summary = proof.checkpoint_summary();
+        let contents = Some(proof.checkpoint_contents());
 
         summary
             .verify_with_contents(self.committee, contents)
@@ -456,17 +590,17 @@ impl<'committee> ProofVerifier<'committee> {
                 },
             })?;
 
-        self.verify_transaction_proof(&proof.checkpoint_contents, &proof.transaction_proof)?;
-        self.verify_targets(&proof.targets, &proof.transaction_proof)?;
+        self.verify_transaction_proof(proof.checkpoint_contents(), transaction_proof)?;
+        self.verify_targets(targets, transaction_proof)?;
 
         Ok(VerifiedProof {
             checkpoint_summary: summary,
-            transaction: proof.transaction_proof.transaction.data().transaction(),
-            transaction_digest: *proof.transaction_proof.transaction.digest(),
-            targets: &proof.targets,
-            objects: &proof.targets.objects,
-            effects: &proof.transaction_proof.effects,
-            events: proof.transaction_proof.events.as_ref(),
+            transaction: transaction_proof.transaction.data().transaction(),
+            transaction_digest: *transaction_proof.transaction.digest(),
+            targets,
+            objects: &targets.objects,
+            effects: &transaction_proof.effects,
+            events: transaction_proof.events.as_ref(),
         })
     }
 
@@ -581,7 +715,7 @@ impl<'committee> ProofVerifier<'committee> {
             let object_ref = object.as_inner().object_ref();
             changed_objects
                 .iter()
-                .find(|changed_object_ref| changed_object_ref.0 == object_ref)
+                .find(|(owned_ref, _)| *owned_ref.reference() == object_ref)
                 .ok_or(VerifyError {
                     kind: VerifyErrorKind::ObjectNotFound,
                 })?;

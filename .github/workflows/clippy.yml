@@ -49,6 +49,9 @@ jobs:
         with:
           args: --all-targets --all-features -- -D warnings
 
+      - name: Proof of Inclusion clippy check
+        run: cargo clippy --manifest-path ./poi-rs/Cargo.toml --all-targets --all-features -- -D warnings
+
       - name: Wasm clippy check notarization_wasm
         uses: actions-rs-plus/clippy-check@b09a9c37c9df7db8b1a5d52e8fe8e0b6e3d574c4
         if: ${{ false }}

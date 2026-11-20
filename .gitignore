@@ -1,4 +1,5 @@
 /target
+/poi-rs/target
 /.history
 
 .vscode
