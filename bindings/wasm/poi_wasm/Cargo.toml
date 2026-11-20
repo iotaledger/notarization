@@ -1,6 +1,6 @@
 [package]
 name = "poi_wasm"
-version = "0.1.0-alpha"
+version = "0.2.0-alpha"
 authors = ["IOTA Stiftung"]
 edition = "2024"
 homepage = "https://www.iota.org"
@@ -9,7 +9,7 @@ license = "Apache-2.0"
 publish = false
 readme = "README.md"
 repository = "https://github.com/iotaledger/notarization"
-rust-version = "1.85"
+rust-version = "1.95"
 description = "Node.js WASM bindings for the IOTA Proof of Inclusion Package."
 
 [lib]

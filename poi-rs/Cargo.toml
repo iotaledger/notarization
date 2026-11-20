@@ -1,13 +1,13 @@
 [package]
 name = "poi-rs"
-version = "0.1.0-alpha"
+version = "0.2.0-alpha"
 authors = ["IOTA Stiftung"]
 edition = "2024"
 homepage = "https://www.iota.org"
 keywords = ["iota", "proof", "inclusion", "notarization"]
 license = "Apache-2.0"
 repository = "https://github.com/iotaledger/notarization"
-rust-version = "1.85"
+rust-version = "1.95"
 description = "Proof of Inclusion support for the IOTA Notarization Toolkit."
 
 # Proof of Inclusion is its own workspace so it can follow IOTA node and SDK releases independently

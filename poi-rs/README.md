@@ -185,7 +185,7 @@ The optional `cli` feature builds the `poi` command for creating and verifying J
 ### Building the CLI From Source
 
 The project does not distribute pre-built `poi` binaries. Build the CLI locally from the repository source with Rust
-1.85 or later:
+1.95 or later:
 
 ```bash
 git clone https://github.com/iotaledger/notarization.git

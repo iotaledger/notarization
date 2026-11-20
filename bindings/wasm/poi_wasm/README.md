@@ -23,7 +23,7 @@ The Package requires Node.js 24 or later.
 
 ## Build from Source
 
-Building the Package from the repository requires Rust 1.85 or later, `wasm-bindgen-cli`, and `wasm-opt`. Install its
+Building the Package from the repository requires Rust 1.95 or later, `wasm-bindgen-cli`, and `wasm-opt`. Install its
 development dependencies and build it from this directory:
 
 ```bash
