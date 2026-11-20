@@ -85,11 +85,11 @@ jobs:
             sccache-path: /home/runner/.cache/sccache
           - os: macos-latest
             sccache-path: /Users/runner/Library/Caches/Mozilla.sccache
-          - os: windows-latest
-            sccache-path: C:\\Users\\runner\\AppData\\Local\\Mozilla\\sccache\\cache
     env:
       SCCACHE_DIR: ${{ matrix.sccache-path }}
-      RUSTC_WRAPPER: sccache
+      # No sccache on Windows: since cargo 1.100 the rustc command line of crates with many dependencies
+      # exceeds the Windows limit, and sccache expands cargo's argfile (os error 206, mozilla/sccache#3053).
+      RUSTC_WRAPPER: ${{ matrix.os != 'windows-latest' && 'sccache' || '' }}
       IOTA_SERVER_LOGFILE: >-
         ${{
           matrix.os != 'windows-latest' &&
@@ -129,10 +129,11 @@ jobs:
           update-dependencies: ${{ github.event_name == 'schedule' }}
           cargo-cache-enabled: true
           target-cache-enabled: true
-          sccache-enabled: true
+          sccache-enabled: ${{ matrix.os != 'windows-latest' }}
           sccache-path: ${{ matrix.sccache-path }}
 
       - name: Setup sccache
+        if: matrix.os != 'windows-latest'
         uses: "./.github/actions/rust/sccache/setup"
         with:
           os: ${{matrix.os}}
@@ -222,6 +223,7 @@ jobs:
           retention-days: 1
 
       - name: Stop sccache
+        if: matrix.os != 'windows-latest'
         uses: "./.github/actions/rust/sccache/stop"
         with:
           os: ${{matrix.os}}

@@ -1,6 +1,9 @@
 // Copyright 2026 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+// `#[wasm_bindgen(getter_with_clone)]` emits `Clone::clone` getters for `Copy` fields as module-level items.
+#![allow(clippy::clone_on_copy)]
+
 use std::collections::{HashMap, HashSet};
 
 use audit_trails::core::types::{
@@ -59,7 +62,7 @@ impl WasmData {
     ///
     /// @returns A string view of the payload.
     #[wasm_bindgen(js_name = toString)]
-    pub fn to_string(&self) -> String {
+    pub fn to_text(&self) -> String {
         match &self.0 {
             Data::Bytes(bytes) => String::from_utf8_lossy(bytes).to_string(),
             Data::Text(text) => text.clone(),

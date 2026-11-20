@@ -38,7 +38,13 @@ jobs:
           components: rustfmt
 
       - name: Install cargo-license-template
-        run: cargo +stable install cargo-license-template
+        # Since Rust 1.100, cargo install uses the packaged Cargo.lock (rust-lang/cargo#17388). The one in
+        # cargo-license-template 0.1.3 (2022) pins regex 1.5, which rejects `\/` in .license_template, and a
+        # cargo_metadata that rejects edition 2024. Install without it, so dependencies resolve as before.
+        run: |
+          curl -sSfL https://static.crates.io/crates/cargo-license-template/cargo-license-template-0.1.3.crate | tar xz -C "$RUNNER_TEMP"
+          rm "$RUNNER_TEMP/cargo-license-template-0.1.3/Cargo.lock"
+          cargo +stable install --path "$RUNNER_TEMP/cargo-license-template-0.1.3"
 
       - name: Install dprint
         run: npm install -g dprint
